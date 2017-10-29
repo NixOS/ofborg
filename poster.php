@@ -22,14 +22,14 @@ function runner($msg) {
         echo "Yikes, $num failede\n";
     }
 
-    reply_to_issue($in, implode("\n", $body->output), $body->success);
+    reply_to_issue($in, implode("\n", $body->output), $body->success, $body->system);
 
     var_dump($body->success);
 
     $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag']);
 }
 
-function reply_to_issue($issue, $output, $success) {
+function reply_to_issue($issue, $output, $success, $system) {
     $client = gh_client();
     $pr = $client->api('pull_request')->show(
         $issue->repository->owner->login,
@@ -43,7 +43,7 @@ function reply_to_issue($issue, $output, $success) {
         $issue->repository->name,
         $issue->issue->number,
         array(
-            'body' => "```\n$output\n```",
+            'body' => "For system: $system\n\n```\n$output\n```",
             'event' => $success ? 'APPROVE' : 'COMMENT',
             'commit_id' => $sha,
         ));

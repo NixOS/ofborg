@@ -66,6 +66,7 @@ function runner($msg) {
     );
 
     $forward = [
+        'system' => NIX_SYSTEM,
         'payload' => $in,
         'output' => $lastlines,
         'success' => $pass,
