@@ -93,7 +93,7 @@ function array_intersperse($array, $val) {
 function outrunner($msg) {
     try {
         return runner($msg);
-    } catch (ExecException $e) {
+    } catch (\GHE\ExecException $e) {
         var_dump($e->getMessage());
         var_dump($e->getCode());
         var_dump($e->getOutput());

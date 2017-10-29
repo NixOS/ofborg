@@ -22,6 +22,8 @@
 
 The conspicuously missing config.php looks like:
 
+(you'll need to create the `WORKING_DIR`)
+
 ```php
 <?php
 
