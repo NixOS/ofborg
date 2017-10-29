@@ -97,6 +97,7 @@ function outrunner($msg) {
         var_dump($e->getMessage());
         var_dump($e->getCode());
         var_dump($e->getOutput());
+        $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag']);
     }
 }
 
