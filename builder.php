@@ -11,7 +11,7 @@ $channel->basic_qos(null, 1, true);
 list($queueName, , ) = $channel->queue_declare('build-results',
                                                false, true, false, false);
 
-list($queueName, , ) = $channel->queue_declare('build-inputs-x86_64-linux',
+list($queueName, , ) = $channel->queue_declare('build-inputs-' . NIX_SYSTEM,
                                                false, true, false, false);
 $channel->queue_bind($queueName, 'build-jobs');
 
@@ -21,7 +21,7 @@ function runner($msg) {
     $body = json_decode($msg->body);
     $in = $body->payload;
 
-    $co = new GHE\Checkout("/home/grahamc/.nix-test", "builder");
+    $co = new GHE\Checkout(WORKING_DIR, "builder");
     $pname = $co->checkOutRef($in->repository->full_name,
                               $in->repository->clone_url,
                               $in->issue->number,

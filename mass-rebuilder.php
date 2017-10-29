@@ -81,7 +81,7 @@ function runner($msg) {
 
         $against_name = "origin/" . $in->pull_request->base->ref;
         echo "Building against $against_name\n";
-        $co = new GHE\Checkout("/home/grahamc/.nix-test", "mr-est");
+        $co = new GHE\Checkout(WORKING_DIR, "mr-est");
     $pname = $co->checkOutRef($in->repository->full_name,
             $in->repository->clone_url,
             $in->number,

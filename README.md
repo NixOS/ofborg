@@ -29,6 +29,9 @@ require_once __DIR__ . '/vendor/autoload.php';
 use PhpAmqpLib\Connection\AMQPSSLConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 
+define("NIX_SYSTEM", "x86_64-linux");
+define("WORKING_DIR", "/home/grahamc/.nix-test");
+
 function rabbitmq_conn() {
     $connection = new AMQPSSLConnection(
         'events.nix.gsc.io', 5671,
