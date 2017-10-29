@@ -1,0 +1,4 @@
+config.php
+vendor
+*.log
+test.php
