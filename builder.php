@@ -35,8 +35,8 @@ function runner($msg) {
     if ($body->build_default) {
         echo "building via nix-build .\n";
 
-        $cmd = 'NIX_PATH=nixpkgs=%s nix-build --option restrict-eval true --keep-going .';
-        $args = [$pname];
+        $cmd = 'NIX_PATH=nixpkgs=%s nix-build --argstr system %s --option restrict-eval true --keep-going .';
+        $args = [$pname, NIX_SYSTEM];
     } else {
         echo "building via nix-build . -A\n";
         $attrs = array_intersperse(array_values((array)$body->attrs), '-A');
@@ -44,8 +44,9 @@ function runner($msg) {
 
         $fillers = implode(" ", array_fill(0, count($attrs), '%s'));
 
-        $cmd = 'NIX_PATH=nixpkgs=%s nix-build --option restrict-eval true --keep-going . ' . $fillers;
+        $cmd = 'NIX_PATH=nixpkgs=%s nix-build --argstr system %s --option restrict-eval true --keep-going . ' . $fillers;
         $args = $attrs;
+        array_unshift($args, NIX_SYSTEM);
         array_unshift($args, $pname);
     }
 
