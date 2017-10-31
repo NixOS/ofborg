@@ -20,7 +20,7 @@ class Checkout {
 
         $guard = $this->guard($bname);
         if (!is_dir($bname)) {
-            echo "Cloning " . $id . " to $bname\n";
+            echo "Cloning https://github.com/" . $repo_name . "/pull/" . $id . " to $bname\n";
             Exec::exec('git clone --reference-if-able %s %s %s',
                        [
                            $pname,
@@ -33,7 +33,7 @@ class Checkout {
             throw new CoFailedException("Failed to chdir to $bname\n");
         }
 
-        echo "fetching " . $id . " in $bname\n";
+        echo "fetching https://github.com/" . $repo_name . "/pull/" . $id . " in $bname\n";
         Exec::exec('git fetch origin');
         try {
             Exec::exec('git am --abort');
@@ -53,7 +53,7 @@ class Checkout {
             throw new CoFailedException("Failed to chdir to $bname\n");
         }
 
-        $guard = $this->guard($pname);
+        $guard = $this->guard($bname);
         Exec::exec('curl -L %s | git am --no-gpg-sign -', [$patch_url]);
         $this->release($guard);
     }
@@ -82,7 +82,7 @@ class Checkout {
             throw new CoFailedException("Failed to chdir to $pname");
         }
 
-        echo "Fetching $name to $pname\n";
+        echo "Fetching $name in $pname\n";
         Exec::exec('git fetch origin');
     }
 
@@ -99,11 +99,13 @@ class Checkout {
     }
 
     function guard($path) {
+        echo "about to lock $path\n";
         $res = fopen("$path.lock", 'c');
         while (!flock($res, LOCK_EX)) {
             echo "waiting for lock on $path...\n";
             sleep(1);
         }
+        echo "got lock on $path\n";
 
         return  $res;
     }
