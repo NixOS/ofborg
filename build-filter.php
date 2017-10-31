@@ -13,8 +13,7 @@ $channel->exchange_declare('build-jobs', 'fanout', false, true, false);
 
 list($queueName, , ) = $channel->queue_declare('build-inputs',
                                                false, true, false, false);
-$channel->queue_bind($queueName, 'nixos/nixpkgs');
-$channel->queue_bind($queueName, 'grahamc/elm-stuff');
+$channel->queue_bind($queueName, 'github-events', 'issue_comment.nixos/nixpkgs');
 
 function runner($msg) {
     $in = json_decode($msg->body);
