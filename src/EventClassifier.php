@@ -44,6 +44,22 @@ class EventClassifier {
             return "fork";
         }
 
+        if (self::isCreateEvent($payload)) {
+            return "create";
+        }
+
+        if (self::isDeleteEvent($payload)) {
+            return "delete";
+        }
+
+        if (self::isProjectCardEvent($payload)) {
+            return "project_card";
+        }
+
+        if (self::isProjectColumnEvent($payload)) {
+            return "project_column";
+        }
+
         throw new EventClassifierUnknownException();
     }
 
@@ -112,10 +128,8 @@ class EventClassifier {
     }
 
     public static function isPushEvent($payload) {
-        return isset($payload->head_commit)
-            && isset($payload->commits)
-            && isset($payload->compare)
-            && isset($payload->forced);
+        return isset($payload->before)
+            && isset($payload->after);
     }
 
     public static function isWatchEvent($payload) {
@@ -126,6 +140,27 @@ class EventClassifier {
     public static function isForkEvent($payload) {
         return isset($payload->forkee);
     }
+
+    public static function isCreateEvent($payload) {
+        return isset($payload->ref_type)
+            && isset($payload->ref)
+            && isset($payload->master_branch);
+    }
+
+    public static function isDeleteEvent($payload) {
+        return isset($payload->ref_type)
+            && isset($payload->ref)
+            && !isset($payload->master_branch);
+    }
+
+    public static function isProjectCardEvent($payload) {
+        return isset($payload->project_card);
+    }
+
+    public static function isProjectColumnEvent($payload) {
+        return isset($payload->project_column);
+    }
+
 
 }
 
