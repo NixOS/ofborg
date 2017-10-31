@@ -32,6 +32,12 @@ function runner($msg) {
         return true;
     }
 
+    $cmt = explode(' ', strtolower($in->comment->body));
+    if (!in_array('@grahamcofborg', $cmt)) {
+        echo "not a borgpr\n";
+        return true;
+    }
+
     if (!\GHE\ACL::isUserAuthorized($in->comment->user->login)) {
         echo "Commenter not authorized (" . $in->comment->user->login . ")\n";
         return true;
@@ -54,12 +60,6 @@ function runner($msg) {
     #    echo "PR isn't open\n";
     #    return true;
     # }
-
-    $cmt = explode(' ', strtolower($in->comment->body));
-    if (!in_array('@grahamcofborg', $cmt)) {
-        echo "not a borgpr\n";
-        return true;
-    }
 
     $cmt = explode(' ', $in->comment->body);
 
