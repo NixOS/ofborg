@@ -73,7 +73,10 @@ function runner($msg) {
     ];
 
     $message = new AMQPMessage(json_encode($forward),
-                               array('content_type' => 'application/json'));
+                               array(
+                                   'content_type' => 'application/json',
+                                   'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
+                               ));
     $msg->delivery_info['channel']->basic_publish($message, '', 'build-results');
     $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag']);
 

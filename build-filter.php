@@ -93,7 +93,10 @@ function runner($msg) {
     echo "forwarding to build-jobs :)\n";
 
     $message = new AMQPMessage(json_encode($forward),
-                               array('content_type' => 'application/json'));
+                               array(
+                                   'content_type' => 'application/json',
+                                   'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
+                               ));
     $msg->delivery_info['channel']->basic_publish($message, 'build-jobs');
     return true;
 }
