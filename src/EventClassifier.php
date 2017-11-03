@@ -52,6 +52,10 @@ class EventClassifier {
             return "delete";
         }
 
+        if (self::isProjectEvent($payload)) {
+            return "project";
+        }
+
         if (self::isProjectCardEvent($payload)) {
             return "project_card";
         }
@@ -151,6 +155,10 @@ class EventClassifier {
         return isset($payload->ref_type)
             && isset($payload->ref)
             && !isset($payload->master_branch);
+    }
+
+    public static function isProjectEvent($payload) {
+        return isset($payload->project);
     }
 
     public static function isProjectCardEvent($payload) {

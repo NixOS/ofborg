@@ -105,6 +105,7 @@ function runner($msg) {
             'number' => $in->number,
             'target_branch' => $in->pull_request->base->ref,
             'patch_url' => $in->pull_request->patch_url,
+            'head_sha' => $in->pull_request->head->sha,
         ],
     ];
 

@@ -21,7 +21,7 @@ class Checkout {
         $guard = $this->guard($bname);
         if (!is_dir($bname)) {
             echo "Cloning https://github.com/" . $repo_name . "/pull/" . $id . " to $bname\n";
-            Exec::exec('git clone --reference-if-able %s %s %s',
+            Exec::exec('git clone --shared --reference-if-able %s %s %s',
                        [
                            $pname,
                            $clone_url,
