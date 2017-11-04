@@ -91,6 +91,8 @@ function runner($msg) {
         echo "Uninteresting event " . $in->action . "\n";
         $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag']);
         return true;
+    } else {
+        echo "so-called interesting event: " . $in->action . "\n";
     }
 
     $forward = [
