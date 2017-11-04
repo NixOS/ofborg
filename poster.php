@@ -30,21 +30,38 @@ function runner($msg) {
 }
 
 function reply_to_issue($issue, $output, $success, $system) {
+    $num = $issue->issue->number;
+    $owner = $issue->repository->owner->login;
+    $repo = $issue->repository->name;
+    $event = $success ? 'APPROVE' : 'COMMENT';
+    $passfail = $success ? "Success" : "Failure";
+
+    echo "Sending $event to $owner/$repo#$num with " . $passfail . " on $system\n";
+
     $client = gh_client();
     $pr = $client->api('pull_request')->show(
-        $issue->repository->owner->login,
-        $issue->repository->name,
-        $issue->issue->number
+        $owner,
+        $repo,
+        $num
     );
+
+    if ($pr['state'] == 'closed') {
+        $event = 'COMMENT';
+    }
+
     $sha = $pr['head']['sha'];
+    echo "Latest sha: $sha\n";
+    echo "Body:\n";
+    echo $output;
+    echo "\n\n";
 
     $client->api('pull_request')->reviews()->create(
-        $issue->repository->owner->login,
-        $issue->repository->name,
-        $issue->issue->number,
+        $owner,
+        $repo,
+        $num,
         array(
-            'body' => "For system: $system\n\n```\n$output\n```",
-            'event' => $success ? 'APPROVE' : 'COMMENT',
+            'body' => "$passfail for system: $system\n\n```\n$output\n```",
+            'event' => $event,
             'commit_id' => $sha,
         ));
 }
@@ -53,7 +70,7 @@ function reply_to_issue($issue, $output, $success, $system) {
 function outrunner($msg) {
     try {
         return runner($msg);
-    } catch (ExecException $e) {
+    } catch (GHE\ExecException $e) {
         var_dump($e->getMessage());
         var_dump($e->getCode());
         var_dump($e->getOutput());
