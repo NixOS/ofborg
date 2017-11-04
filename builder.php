@@ -81,7 +81,7 @@ function runner($msg) {
                                    'content_type' => 'application/json',
                                    'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
                                ));
-    $msg->delivery_info['channel']->basic_publish($message, '', 'build-results');
+    $msg->delivery_info['channel']->basic_publish($message, 'build-results');
     $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag']);
 
     echo "finished\n";
