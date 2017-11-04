@@ -44,7 +44,7 @@ function runner($msg) {
 
         $fillers = implode(" ", array_fill(0, count($attrs), '%s'));
 
-        $cmd = 'NIX_PATH=nixpkgs=%s nix-build --argstr system %s --option restrict-eval true --keep-going . ' . $fillers;
+        $cmd = 'NIX_PATH=nixpkgs=%s nix-build --no-out-link --argstr system %s --option restrict-eval true --keep-going . ' . $fillers;
         $args = $attrs;
         array_unshift($args, NIX_SYSTEM);
         array_unshift($args, $pname);

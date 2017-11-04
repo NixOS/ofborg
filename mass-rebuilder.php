@@ -195,7 +195,7 @@ function try_eval($ghclient, $owner, $name, $sha, $eval_name, $cmd, $args) {
         $ghclient->api('repository')->statuses()->create(
             $owner,
             $name,
-            $head_sha,
+            $sha,
             [
                 'state' => 'failure',
                 'description' => 'Failed to evaluate ' . $eval_name,
@@ -209,10 +209,10 @@ function try_eval($ghclient, $owner, $name, $sha, $eval_name, $cmd, $args) {
         $ghclient->api('repository')->statuses()->create(
             $owner,
             $name,
-            $head_sha,
+            $sha,
             [
                 'state' => 'success',
-                'description' => 'Evaluation of $eval_name is OK',
+                'description' => 'Evaluation of ' . $eval_name . ' is OK',
                 'context' => 'grahamcofborg-eval-' . $eval_name,
             ]
         );

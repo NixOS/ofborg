@@ -49,7 +49,7 @@ class RebuildTagClassifier {
             $suffix = "101-500";
         } else if ($count > 10) {
             $suffix = "11-100";
-        } else if ($count > 1) {
+        } else if ($count > 0) {
             $suffix = "1-10";
         } else {
             $suffix = "0";

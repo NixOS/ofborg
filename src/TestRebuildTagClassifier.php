@@ -5,6 +5,15 @@ namespace GHE;
 
 class TestRebuildTagClassifier extends \PHPUnit\Framework\TestCase
 {
+    function testParseLabelJustOne() {
+        $this->assertEquals(
+            ["10.rebuild-linux: 1-10", "10.rebuild-darwin: 0"],
+            RebuildTagClassifier::parseAndLabel([
+                "Estimating rebuild amount by counting changed Hydra jobs.",
+                "      1 x86_64-linux",
+            ]));
+    }
+
     function testExecParseAndLabelGarbage() {
         $this->assertEquals(
             ["10.rebuild-darwin: 0", "10.rebuild-linux: 0", ],
@@ -54,6 +63,15 @@ class TestRebuildTagClassifier extends \PHPUnit\Framework\TestCase
             ["x86_64-linux" => 5],
             RebuildTagClassifier::parse(["  5 x86_64-linux"])
         );
+    }
+
+    function testParseJustOne() {
+        $this->assertEquals(
+            ["x86_64-linux" => 1],
+            RebuildTagClassifier::parse([
+                "Estimating rebuild amount by counting changed Hydra jobs.",
+                "      1 x86_64-linux",
+            ]));
     }
 
     function testExecParseDarwinOnly() {
