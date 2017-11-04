@@ -20,9 +20,16 @@
    the build is from.
 
 
+## Getting Started
+
+ - you'll need to create the `WORKING_DIR`
+ - nix-shell
+ - composer install
+ - php builder.php
+
 The conspicuously missing config.php looks like:
 
-(you'll need to create the `WORKING_DIR`)
+
 
 ```php
 <?php
@@ -49,6 +56,8 @@ function rabbitmq_conn() {
     return $connection;
 }
 
+/*
+# Only leader machines (ie: graham's) need this:
 function gh_client() {
     $client = new \Github\Client();
     $client->authenticate('githubusername',
@@ -56,7 +65,6 @@ function gh_client() {
                           Github\Client::AUTH_HTTP_PASSWORD);
 
     return $client;
-
-
 }
+*/
 ```
