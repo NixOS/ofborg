@@ -11,6 +11,7 @@ class ACL {
 
     static public function getUsers() {
         return [
+            '7c6f434c',
             'copumpkin',
             'disassembler',
             'domenkozar',
