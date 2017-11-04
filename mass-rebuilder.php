@@ -53,16 +53,11 @@ function runner($msg) {
 
     $ghclient = gh_client();
 
+    $overallstatus = new GHE\CommitStatus($ghclient, $in->repo->owner,
+                                          $in->repo->name, $head_sha,
+                                          'grahamcofborg-eval');
     echo "marking PR as pending\n";
-    $ghclient->api('repository')->statuses()->create(
-        $in->repo->owner,
-        $in->repo->name,
-        $head_sha,
-        [
-            'state' => 'pending',
-            'context' => 'grahamcofborg-eval',
-        ]
-    );
+    $overallstatus->pending('GrahamCOfBorg is starting');
 
     $against_name = "origin/" . $in->pr->target_branch;
     echo "Building against $against_name\n";
@@ -72,6 +67,7 @@ function runner($msg) {
                               $in->pr->number,
                               $against_name
     );
+    $overallstatus->pending('Checked out ' . $against_name);
 
     $against = GHE\Exec::exec('git rev-parse %s', [$against_name]);
     echo " $against_name is $against[0]\n";
@@ -84,18 +80,10 @@ function runner($msg) {
 
     try {
         $co->applyPatches($pname, $in->pr->patch_url);
+        $overallstatus->pending('Applied patches from ' . $in->pr->number);
     } catch (GHE\ExecException $e) {
         echo "marking PR as failed to apply patches\n";
-        $ghclient->api('repository')->statuses()->create(
-            $in->repo->owner,
-            $in->repo->name,
-            $head_sha,
-            [
-                'state' => 'error',
-                'description' => "failed to apply patches to $against_name",
-                'context' => 'grahamcofborg-eval',
-            ]
-        );
+        $overallstatus->error('Failed to apply patches to ' . $against_name);
 
         echo "Received ExecException applying patches, likely due to conflicts:\n";
         var_dump($e->getCode());
@@ -106,25 +94,11 @@ function runner($msg) {
         return false;
     }
 
-    try {
-        GHE\Exec::exec('nix-env --file . --query --available --json > /dev/null 2>&1');
-    } catch (GHE\ExecException $e) {
-        echo "marking PR as failed to evaluate\n";
-        $ghclient->api('repository')->statuses()->create(
-            $in->repo->owner,
-            $in->repo->name,
-            $head_sha,
-            [
-                'state' => 'failure',
-                'description' => 'Failed to evaluate packages',
-                'context' => 'grahamcofborg-eval',
-            ]
-        );
+    $querypkgsstatus = new GHE\CommitStatus($ghclient, $in->repo->owner,
+                                            $in->repo->name, $head_sha,
+                                            'grahamcofborg-eval-packagelist');
 
-        $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag']);
-        return false;
-    }
-
+    $overallstatus->pending('Checking if stdenv changed');
     $new_darwin_stdenv = identify_stdenv("x86_64-darwin");
     $new_linux_stdenv = identify_stdenv("x86_64-linux");
     echo "new stdenvs:\n";
@@ -134,6 +108,12 @@ function runner($msg) {
 
     $current = GHE\Exec::exec('git rev-parse HEAD');
     echo " currently at ${current[0]}\n";
+
+    $overallstatus->pending('Checking for sub-evals');
+
+    try_eval($ghclient, $in->repo->owner, $in->repo->name, $head_sha,
+             'package-list',
+             'nix-env --file . --query --available > /dev/null 2>&1', []);
 
     try_eval($ghclient, $in->repo->owner, $in->repo->name, $head_sha,
              'nixos-options',
@@ -155,22 +135,13 @@ function runner($msg) {
              'nixpkgs-unstable-jobset',
              'nix-instantiate ./pkgs/top-level/release.nix -A unstable', []);
 
-    reply_to_issue($in->repo, $in->pr,
+    reply_to_issue($overallstatus, $in->repo, $in->pr,
                    $new_darwin_stdenv !== $prev_darwin_stdenv,
                    $new_linux_stdenv !== $prev_linux_stdenv,
                    $against[0], $current[0]);
 
     echo "marking PR as success\n";
-    $ghclient->api('repository')->statuses()->create(
-        $in->repo->owner,
-        $in->repo->name,
-        $head_sha,
-        [
-            'state' => 'success',
-            'description' => 'Evaluation checks OK',
-            'context' => 'grahamcofborg-eval',
-        ]
-    );
+    $overallstatus->success('Evaluation checks OK');
 
     $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag']);
     return true;
@@ -178,45 +149,22 @@ function runner($msg) {
 
 function try_eval($ghclient, $owner, $name, $sha, $eval_name, $cmd, $args) {
     echo "Starting $eval_name on $sha\n";
-    $ghclient->api('repository')->statuses()->create(
-        $owner,
-        $name,
-        $sha,
-        [
-            'state' => 'pending',
-            'context' => 'grahamcofborg-eval-' . $eval_name,
-        ]
-    );
+
+    $status = new GHE\CommitStatus($ghclient, $owner,
+                                   $name, $sha,
+                                   'grahamcofborg-eval-' . $eval_name);
+
+    $status->pending("starting to run $cmd");
 
     try {
         GHE\Exec::exec($cmd, $args);
+        echo "Success running $eval_name on $sha\n";
+        $status->success("Finished running $cmd");
     } catch (GHE\ExecException $e) {
         echo "Failed to run $eval_name on $sha\n";
-        $ghclient->api('repository')->statuses()->create(
-            $owner,
-            $name,
-            $sha,
-            [
-                'state' => 'failure',
-                'description' => 'Failed to evaluate ' . $eval_name,
-                'context' => 'grahamcofborg-eval-' . $eval_name,
-            ]
-        );
+        $status->pending("Failed to run $cmd");
         return false;
     }
-
-    echo "Success running $eval_name on $sha\n";
-        $ghclient->api('repository')->statuses()->create(
-            $owner,
-            $name,
-            $sha,
-            [
-                'state' => 'success',
-                'description' => 'Evaluation of ' . $eval_name . ' is OK',
-                'context' => 'grahamcofborg-eval-' . $eval_name,
-            ]
-        );
-
 }
 
 function identify_stdenv($arch) {
@@ -227,7 +175,7 @@ function identify_stdenv($arch) {
     return array_pop($lines);
 }
 
-function reply_to_issue($repo, $pr, $darwin_changed, $linux_changed, $prev, $current) {
+function reply_to_issue($overallstatus, $repo, $pr, $darwin_changed, $linux_changed, $prev, $current) {
     $client = gh_client();
 
     echo "current labels:\n";
@@ -238,6 +186,7 @@ function reply_to_issue($repo, $pr, $darwin_changed, $linux_changed, $prev, $cur
     $already_there = array_map(function($val) { return $val['name']; }, $already_there);
     var_dump($already_there);
 
+    $overallstatus->pending("Diffing derivations");
     $output = GHE\Exec::exec('$(nix-instantiate --eval -E %s) %s %s',
                              [
                                  '<nixpkgs/maintainers/scripts/rebuild-amount.sh>',
