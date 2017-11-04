@@ -8,12 +8,16 @@ $connection = rabbitmq_conn();
 $channel = $connection->channel();
 $channel->basic_qos(null, 1, true);
 
+/*
+TODO: move this to a Leader-side job
 list($queueName, , ) = $channel->queue_declare('build-results',
                                                false, true, false, false);
 
 list($queueName, , ) = $channel->queue_declare('build-inputs-' . NIX_SYSTEM,
                                                false, true, false, false);
 $channel->queue_bind($queueName, 'build-jobs');
+*/
+$queueName = 'build-inputs-' . NIX_SYSTEM;
 
 
 function runner($msg) {
