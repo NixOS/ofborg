@@ -19,7 +19,7 @@ function runner($msg) {
     if ($body->success) {
         echo "yay! $num passed!\n";
     } else {
-        echo "Yikes, $num failede\n";
+        echo "Yikes, $num failed\n";
     }
 
     reply_to_issue($in, implode("\n", $body->output), $body->success, $body->system);
