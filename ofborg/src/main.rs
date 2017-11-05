@@ -18,10 +18,12 @@ fn main() {
     let project = cloner.project("NixOS/nixpkgs".to_string(),
                                  "https://github.com/nixos/nixpkgs.git".to_string()
     );
+    let co = project.clone_for("builder".to_string(),
+                               "1234".to_string()).unwrap();
 
-    let refpath = project.checkout_ref("builder-1234".to_string(),
-                                       "origin/master".to_string()
-    );
+    let refpath = co.checkout_ref("origin/master".as_ref());
+    co.fetch_pr(31228).unwrap();
+    co.merge_commit("7214d0f6f7a6467205761f87973140727154e1b3".as_ref()).unwrap();
 
     match refpath {
         Ok(path) => {

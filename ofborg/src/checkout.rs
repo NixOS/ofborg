@@ -1,9 +1,11 @@
 use std::path::{Path,PathBuf};
 use md5;
 use std::fs;
-use std::io::Error;
+use std::io::{Error,ErrorKind};
 use ofborg::clone;
 use ofborg::clone::GitClonable;
+use std::ffi::OsStr;
+use std::process::Command;
 
 pub struct CachedCloner {
     root: PathBuf
@@ -18,6 +20,13 @@ pub fn cached_cloner(path: &Path) -> CachedCloner {
 pub struct CachedProject {
     root: PathBuf,
     clone_url: String
+}
+
+pub struct CachedProjectCo {
+    root: PathBuf,
+    id: String,
+    clone_url: String,
+    local_reference: PathBuf,
 }
 
 impl CachedCloner {
@@ -39,28 +48,111 @@ impl CachedCloner {
 }
 
 impl CachedProject {
-    pub fn checkout_ref(&self,
-                        name: String,
-                        git_ref: String,
-    ) -> Result<String, Error> {
-        let repo_cache_path = self.prefetch_cache()?;
+    pub fn clone_for(&self, use_category: String, id: String) -> Result<CachedProjectCo, Error> {
+        self.prefetch_cache()?;
 
-        // let build_dir = self.build_dir();
+        let mut new_root = self.root.clone();
+        new_root.push(use_category);
 
-        return Ok(repo_cache_path.to_str().unwrap().to_string())
+        return Ok(CachedProjectCo{
+            root: new_root,
+            id: id,
+            clone_url: self.clone_from().clone(),
+            local_reference: self.clone_to().clone(),
+        })
     }
 
     fn prefetch_cache(&self) -> Result<PathBuf, Error> {
         fs::create_dir_all(&self.root)?;
 
         self.clone_repo()?;
+        self.fetch_repo()?;
 
         return Ok(self.clone_to());
     }
 }
 
-impl clone::GitClonable for CachedProject {
+impl CachedProjectCo {
+    pub fn checkout_ref(&self, git_ref: &OsStr) -> Result<String, Error> {
+        self.clone_repo()?;
+        self.fetch_repo()?;
+        self.clean()?;
+        self.checkout(git_ref)?;
 
+        // let build_dir = self.build_dir();
+
+        return Ok(self.clone_to().to_str().unwrap().to_string())
+    }
+
+    pub fn fetch_pr(&self, pr_id: i64) -> Result<(),Error> {
+        let mut lock = self.lock()?;
+
+        let result = Command::new("git")
+            .arg("fetch")
+            .arg("origin")
+            .arg(format!("+refs/pull/{}/head:pr", pr_id))
+            .current_dir(self.clone_to())
+            .status()?;
+
+        lock.unlock();
+
+        if result.success() {
+            return Ok(())
+        } else {
+            return Err(Error::new(ErrorKind::Other, "Failed to fetch PR"));
+        }
+    }
+
+    pub fn merge_commit(&self, commit: &OsStr) -> Result<(), Error> {
+        let mut lock = self.lock()?;
+
+        let result = Command::new("git")
+            .arg("merge")
+            .arg("--no-gpg-sign")
+            .arg("-m")
+            .arg("Automatic merge for GrahamCOfBorg")
+            .arg(commit)
+            .current_dir(self.clone_to())
+            .status()?;
+
+        lock.unlock();
+
+        if result.success() {
+            return Ok(())
+        } else {
+            return Err(Error::new(ErrorKind::Other, "Failed to merge"));
+        }
+    }
+}
+
+impl clone::GitClonable for CachedProjectCo {
+    fn clone_from(&self) -> String {
+        return self.clone_url.clone()
+    }
+
+    fn clone_to(&self) -> PathBuf {
+        let mut clone_path = self.root.clone();
+        clone_path.push(&self.id);
+        return clone_path
+    }
+
+    fn lock_path(&self) -> PathBuf {
+        let mut lock_path = self.root.clone();
+        lock_path.push(format!("{}.lock", self.id));
+        return lock_path
+    }
+
+    fn extra_clone_args(&self) -> Vec<&OsStr> {
+        let local_ref = self.local_reference.as_ref();
+        return vec![
+            OsStr::new("--shared"),
+            OsStr::new("--reference-if-able"),
+            local_ref,
+        ]
+    }
+}
+
+impl clone::GitClonable for CachedProject {
     fn clone_from(&self) -> String {
         return self.clone_url.clone()
     }
@@ -73,55 +165,13 @@ impl clone::GitClonable for CachedProject {
 
     fn lock_path(&self) -> PathBuf {
         let mut clone_path = self.root.clone();
-        clone_path.set_file_name("clone.lock");
+        clone_path.push("clone.lock");
         return clone_path
     }
 
-    fn extra_clone_args(&self) -> Vec<String> {
-        return vec!()
+    fn extra_clone_args(&self) -> Vec<&OsStr> {
+        return vec![
+            OsStr::new("--bare"),
+        ]
     }
 }
-
-/*
-    fn try_clone_repo(&self) -> Result<(), Error> {
-
-
-        let result = Command::new("git")
-            .arg("clone")
-            .arg("--bare")
-            .arg(&self.clone_url)
-            .arg(&self.clone_path())
-            .status()?;
-
-        if result.success() {
-            return Ok(())
-        } else {
-            return Err(Error::new(ErrorKind::Other, "Failed to clone"));
-        }
-    }
-
-    fn try_fetch(&self) -> Result<(), Error> {
-        let result = Command::new("git")
-            .arg("fetch")
-            .arg("origin")
-            .current_dir(self.clone_path())
-            .status()?;
-
-        if result.success() {
-            return Ok(())
-        } else {
-            return Err(Error::new(ErrorKind::Other, "Failed to fetch"));
-        }
-    }
-
-
-}
-
-impl locks::Lockable for CachedProject {
-    fn lock_path(&self) -> PathBuf {
-        let mut clone_path = self.root.clone();
-        clone_path.set_file_name("clone.lock");
-        return clone_path
-    }
-}
-*/
