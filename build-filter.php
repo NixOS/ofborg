@@ -82,8 +82,26 @@ function runner($msg) {
             'attrs' => [],
         ];
     } else {
+        $client = gh_client();
+        $pr_deets = $client->api('pull_request')->show(
+            $in->repository->owner->login,
+            $in->repository->name,
+            $in->issue->number);
+
         $forward = [
-            'payload' => $in,
+            'original_payload' => $in,
+            'repo' => [
+                'owner' => $in->repository->owner->login,
+                'name' => $in->repository->name,
+                'full_name' => $in->repository->full_name,
+                'clone_url' => $in->repository->clone_url,
+            ],
+            'pr' => [
+                'number' => $in->issue->number,
+                'target_branch' => $pr_deets['base']['ref'],
+                'patch_url' => $pr_deets['patch_url'],
+                'head_sha' => $pr_deets['head']['sha'],
+            ],
             'build_default' => false,
             'attrs' => $tokens,
         ];

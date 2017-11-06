@@ -23,7 +23,7 @@ $queueName = 'build-inputs-' . NIX_SYSTEM;
 function runner($msg) {
     echo "got a job!\n";
     $body = json_decode($msg->body);
-    $in = $body->payload;
+    $in = $body->original_payload;
 
     $co = new GHE\Checkout(WORKING_DIR, "builder");
     $pname = $co->checkOutRef($in->repository->full_name,
