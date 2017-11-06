@@ -9,11 +9,11 @@ $channel = $connection->channel();
 $channel->basic_qos(null, 1, true);
 
 
-$channel->exchange_declare('build-jobs', 'fanout', false, true, false);
+$channel->exchange_declare('build-results', 'fanout', false, true, false);
+$channel->queue_bind('build-results', 'build-results', '');
 
 list($queueName, , ) = $channel->queue_declare('build-results',
                                                false, true, false, false);
-$channel->queue_bind($queueName, 'build-jobs');
 
 function runner($msg) {
     $body = json_decode($msg->body);
