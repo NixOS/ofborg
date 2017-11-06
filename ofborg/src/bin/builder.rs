@@ -1,6 +1,10 @@
 extern crate ofborg;
 extern crate amqp;
 
+use std::env;
+use amqp::{Consumer, Channel};
+use amqp::protocol::basic::{Deliver,BasicProperties};
+
 use std::path::Path;
 use amqp::Basic;
 use amqp::protocol;
@@ -9,22 +13,19 @@ use amqp::Table;
 use std::process;
 use std::io::Error;
 
+use ofborg::config;
 use ofborg::checkout;
 use ofborg::worker;
-use ofborg::worker::{Actions,StdPr,StdRepo};
-
-
-pub struct BuildJob {
-    pub repo: StdRepo,
-    pub pr: StdPr,
-}
-
+use ofborg::message::buildjob;
+use ofborg::worker::Actions;
 
 fn main() {
+    let cfg = config::load(env::args().nth(1).unwrap().as_ref());
+
     println!("Hello, world!");
 
 
-    let mut session = Session::open_url("amqps://grahamc:cCbKQmwnRcd8kvPW9cjmMSkp@events.nix.gsc.io//").unwrap();
+    let mut session = Session::open_url(&cfg.rabbitmq.as_uri()).unwrap();
     let mut channel = session.open_channel(1).unwrap();
 
     //queue: &str, passive: bool, durable: bool, exclusive: bool, auto_delete: bool, nowait: bool, arguments: Table
@@ -39,7 +40,7 @@ fn main() {
         worker::new(BuildWorker{
             cloner: cloner
         }),
-        "my_queue_name",
+        "build-inputs-samples",
         "lmao1",
         false,
         false,
@@ -48,11 +49,11 @@ fn main() {
         Table::new()
     );
 
-    if let Err(result) = channel.basic_publish("", "my_queue_name", true, false,
-                                               protocol::basic::BasicProperties{ content_type: Some("text".to_string()), ..Default::default()}, (b"Hello from rust!").to_vec()) {
-        println!("Failed to publish: {:?}", result);
-        process::exit(1);
-    }
+    channel.start_consuming();
+
+    channel.close(200, "Bye").unwrap();
+    session.close(200, "Good Bye");
+
 }
 
 struct BuildWorker {
@@ -60,14 +61,31 @@ struct BuildWorker {
 }
 
 impl worker::SimpleWorker for BuildWorker {
-    type J = BuildJob;
+    type J = buildjob::BuildJob;
 
-    fn consumer(&self, job: BuildJob, resp: Actions) -> Result<(), Error> {
+    fn msg_to_job(&self, method: &Deliver, headers: &BasicProperties,
+                  body: &Vec<u8>) -> Result<Self::J, String> {
+        println!("lmao I got a job?");
+        return match buildjob::from(body) {
+            Ok(e) => { return Ok(e) }
+            Err(e) => {
+                println!("{:?}", String::from_utf8(body.clone()));
+                panic!("{:?}", e);
+            }
+        }
+    }
+
+    fn consumer(&self, job: buildjob::BuildJob, resp: Actions) -> Result<(), Error> {
         let project = self.cloner.project(job.repo.full_name, job.repo.clone_url);
         let co = project.clone_for("builder".to_string(),
                                    job.pr.number.to_string())?;
 
-        let refpath = co.checkout_ref(job.pr.target_branch.as_ref());
+        let target_branch = match job.pr.target_branch {
+            Some(x) => { x }
+            None => { String::from("origin/master") }
+        };
+
+        let refpath = co.checkout_ref(target_branch.as_ref());
         co.fetch_pr(job.pr.number).unwrap();
         co.merge_commit(job.pr.head_sha.as_ref()).unwrap();
 
