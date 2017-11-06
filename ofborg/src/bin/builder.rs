@@ -7,33 +7,14 @@ use amqp::protocol;
 use amqp::Session;
 use amqp::Table;
 use std::process;
+use std::io::Error;
 
 use ofborg::checkout;
+use ofborg::worker;
+use ofborg::worker::{Actions,StdPr,StdRepo,BuildJob};
 
 fn main() {
     println!("Hello, world!");
-
-
-    let cloner = checkout::cached_cloner(Path::new("/home/grahamc/.nix-test-rs"));
-    let project = cloner.project("NixOS/nixpkgs".to_string(),
-                                 "https://github.com/nixos/nixpkgs.git".to_string()
-    );
-    let co = project.clone_for("builder".to_string(),
-                               "1234".to_string()).unwrap();
-
-    let refpath = co.checkout_ref("origin/master".as_ref());
-    co.fetch_pr(31228).unwrap();
-    co.merge_commit("7214d0f6f7a6467205761f87973140727154e1b3".as_ref()).unwrap();
-
-    match refpath {
-        Ok(path) => {
-            println!("Got path: {:?}", path);
-        }
-        Err(wat) => {
-            println!("Failed to do a checkout of ref : {:?}", wat);
-        }
-    }
-
 
 
     if false {
@@ -46,10 +27,52 @@ fn main() {
             process::exit(1);
         }
 
+        let cloner = checkout::cached_cloner(Path::new("/home/grahamc/.nix-test-rs"));
+
+        channel.basic_consume(
+            worker::new(BuildWorker{
+                cloner: cloner
+            }),
+            "my_queue_name",
+            "lmao1",
+            false,
+            false,
+            false,
+            false,
+            Table::new()
+        );
+
         if let Err(result) = channel.basic_publish("", "my_queue_name", true, false,
                                                    protocol::basic::BasicProperties{ content_type: Some("text".to_string()), ..Default::default()}, (b"Hello from rust!").to_vec()) {
             println!("Failed to publish: {:?}", result);
             process::exit(1);
         }
+    }
+}
+
+struct BuildWorker {
+    cloner: checkout::CachedCloner,
+}
+
+impl worker::SimpleWorker for BuildWorker {
+    fn consumer(&self, job: BuildJob, resp: Actions) -> Result<(), Error> {
+        let project = self.cloner.project(job.repo.full_name, job.repo.clone_url);
+        let co = project.clone_for("builder".to_string(),
+                                   job.pr.number.to_string())?;
+
+        let refpath = co.checkout_ref(job.pr.target_branch.as_ref());
+        co.fetch_pr(job.pr.number).unwrap();
+        co.merge_commit(job.pr.head_sha.as_ref()).unwrap();
+
+        match refpath {
+            Ok(path) => {
+                println!("Got path: {:?}", path);
+            }
+            Err(wat) => {
+                println!("Failed to do a checkout of ref : {:?}", wat);
+            }
+        }
+
+        return Ok(())
     }
 }
