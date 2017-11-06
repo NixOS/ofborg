@@ -60,7 +60,9 @@ struct BuildWorker {
 }
 
 impl worker::SimpleWorker for BuildWorker {
-    fn consumer<BuildJob>(&self, job: BuildJob, resp: Actions) -> Result<(), Error> {
+    type J = BuildJob;
+
+    fn consumer(&self, job: BuildJob, resp: Actions) -> Result<(), Error> {
         let project = self.cloner.project(job.repo.full_name, job.repo.clone_url);
         let co = project.clone_for("builder".to_string(),
                                    job.pr.number.to_string())?;

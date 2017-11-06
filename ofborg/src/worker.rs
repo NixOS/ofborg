@@ -23,7 +23,8 @@ pub struct Actions {
 }
 
 pub trait SimpleWorker {
-    fn consumer<J>(&self, job: J, resp: Actions) -> Result<(), Error>;
+    type J;
+    fn consumer(&self, job: Self::J, resp: Actions) -> Result<(), Error>;
 }
 
 pub fn new<T: SimpleWorker>(worker: T) -> Worker<T> {
