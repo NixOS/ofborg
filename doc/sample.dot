@@ -1,0 +1,18 @@
+digraph ClassDiagram {
+    "PR approved to build,\n`@grahamcofborg sample 10`" -> "does the PR change stdenv?";
+    "does the PR change stdenv?" -> "refuse, won't do\nmass rebuilds" [label="yes"];
+    "does the PR change stdenv?" -> "stdenv already built?" [label="no"];
+    "stdenv already built?" -> "Comment:\n(stdenv not available, will retry later.)" [label="no"];
+    "Comment:\n(stdenv not available, will retry later.)" ->
+      "put the build job back to the delayed build queue";
+    "put the build job back to the delayed build queue" ->
+      "5 min later...";
+    "5 min later..." -> "stdenv built yet?";
+    "stdenv built yet?" -> "put the build job back to the delayed build queue"[label="no"];
+    "stdenv built yet?" -> "proceed with build"[label="yes"];
+    "stdenv already built?" -> "proceed with build" [label="yes"];
+    "proceed with build" -> "diff prev commit's drvs with current commit's drvs";
+    "diff prev commit's drvs with current commit's drvs" -> "select 10 drvs";
+    "select 10 drvs" -> "build them";
+    "build them" -> "comment on github issue with a build report";
+}
