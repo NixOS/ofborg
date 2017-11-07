@@ -17,7 +17,6 @@ use ofborg::config;
 use ofborg::checkout;
 use ofborg::worker;
 use ofborg::message::buildjob;
-use ofborg::worker::Actions;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
@@ -62,6 +61,7 @@ struct BuildWorker {
 
 impl worker::SimpleWorker for BuildWorker {
     type J = buildjob::BuildJob;
+    type A = buildjob::Actions;
 
     fn msg_to_job(&self, method: &Deliver, headers: &BasicProperties,
                   body: &Vec<u8>) -> Result<Self::J, String> {
@@ -75,7 +75,12 @@ impl worker::SimpleWorker for BuildWorker {
         }
     }
 
-    fn consumer(&self, job: buildjob::BuildJob, resp: Actions) -> Result<(), Error> {
+    fn job_to_actions(&self, channel: &mut amqp::Channel, job: &buildjob::BuildJob) -> buildjob::Actions {
+        return buildjob::Actions{};
+    }
+
+
+    fn consumer(&self, job: buildjob::BuildJob, resp: buildjob::Actions) -> Result<(), Error> {
         let project = self.cloner.project(job.repo.full_name, job.repo.clone_url);
         let co = project.clone_for("builder".to_string(),
                                    job.pr.number.to_string())?;

@@ -10,3 +10,5 @@ pub struct BuildJob {
 pub fn from(data: &Vec<u8>) -> Result<BuildJob, serde_json::error::Error> {
     return serde_json::from_slice(&data);
 }
+
+pub struct Actions{}

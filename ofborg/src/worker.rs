@@ -13,10 +13,13 @@ pub struct Actions {
 
 pub trait SimpleWorker {
     type J;
-    fn consumer(&self, job: Self::J, resp: Actions) -> Result<(), Error>;
+    type A;
+    fn consumer(&self, job: Self::J, resp: Self::A) -> Result<(), Error>;
 
     fn msg_to_job(&self, method: &Deliver, headers: &BasicProperties,
                   body: &Vec<u8>) -> Result<Self::J, String>;
+
+    fn job_to_actions(&self,  channel: &mut Channel, job: &Self::J) -> Self::A;
 }
 
 pub fn new<T: SimpleWorker>(worker: T) -> Worker<T> {
@@ -34,19 +37,8 @@ impl <T: SimpleWorker + Send> Consumer for Worker<T> {
                        headers: BasicProperties,
                        body: Vec<u8>) {
 
-        match self.internal.msg_to_job(&method, &headers, &body) {
-            Ok(job) => {
-                let actions = Actions{};
-                match self.internal.consumer(job, actions) {
-                    Ok(_) => { /* :) */ }
-                    Err(_) => {
-                        panic!("failed to run job!");
-                    }
-                }
-            }
-            Err(e) => {
-                panic!(e);
-            }
-        }
+        let job = self.internal.msg_to_job(&method, &headers, &body).unwrap();
+        let actions = self.internal.job_to_actions(channel, &job);
+        self.internal.consumer(job, actions).unwrap();
     }
 }
