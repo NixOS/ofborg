@@ -17,6 +17,7 @@ use ofborg::config;
 use ofborg::checkout;
 use ofborg::worker;
 use ofborg::message::buildjob;
+use ofborg::nix;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
@@ -90,18 +91,13 @@ impl worker::SimpleWorker for BuildWorker {
             None => { String::from("origin/master") }
         };
 
-        let refpath = co.checkout_ref(target_branch.as_ref());
+        let refpath = co.checkout_ref(target_branch.as_ref()).unwrap();
         co.fetch_pr(job.pr.number).unwrap();
         co.merge_commit(job.pr.head_sha.as_ref()).unwrap();
 
-        match refpath {
-            Ok(path) => {
-                println!("Got path: {:?}", path);
-            }
-            Err(wat) => {
-                println!("Failed to do a checkout of ref : {:?}", wat);
-            }
-        }
+        println!("Got path: {:?}", refpath);
+
+        let cmd = nix::safely_build_attrs_cmd(refpath, job.attrs);
 
         return Ok(())
     }

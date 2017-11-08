@@ -5,6 +5,7 @@ use serde_json;
 pub struct BuildJob {
     pub repo: Repo,
     pub pr: Pr,
+    pub attrs: Vec<String>,
 }
 
 pub fn from(data: &Vec<u8>) -> Result<BuildJob, serde_json::error::Error> {
