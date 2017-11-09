@@ -5,6 +5,8 @@ use std::io::Read;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
+    pub checkout: CheckoutConfig,
+    pub nix: NixConfig,
     pub rabbitmq: RabbitMQConfig,
 }
 
@@ -14,6 +16,18 @@ pub struct RabbitMQConfig {
     pub username: String,
     pub password: String,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct NixConfig {
+    pub system: String,
+    pub remote: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CheckoutConfig {
+    pub root: String,
+}
+
 
 impl RabbitMQConfig {
     pub fn as_uri(&self) -> String{

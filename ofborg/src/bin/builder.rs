@@ -1,6 +1,7 @@
 extern crate ofborg;
 extern crate amqp;
 
+use std::collections::LinkedList;
 use std::env;
 use amqp::{Consumer, Channel};
 use amqp::protocol::basic::{Deliver,BasicProperties};
@@ -12,6 +13,9 @@ use amqp::Session;
 use amqp::Table;
 use std::process;
 use std::io::Error;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::BufRead;
 
 use ofborg::config;
 use ofborg::checkout;
@@ -34,11 +38,14 @@ fn main() {
         process::exit(1);
     }
 
-    let cloner = checkout::cached_cloner(Path::new("/home/grahamc/.nix-test-rs"));
+    let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
+    let nix = nix::new(cfg.nix.system.clone(), cfg.nix.remote);
 
     channel.basic_consume(
         worker::new(BuildWorker{
-            cloner: cloner
+            cloner: cloner,
+            nix: nix,
+            system: cfg.nix.system.clone()
         }),
         "build-inputs-samples",
         "lmao1",
@@ -58,6 +65,8 @@ fn main() {
 
 struct BuildWorker {
     cloner: checkout::CachedCloner,
+    nix: nix::Nix,
+    system: String,
 }
 
 impl worker::SimpleWorker for BuildWorker {
@@ -76,8 +85,12 @@ impl worker::SimpleWorker for BuildWorker {
         }
     }
 
-    fn job_to_actions(&self, channel: &mut amqp::Channel, job: &buildjob::BuildJob) -> buildjob::Actions {
-        return buildjob::Actions{};
+    fn job_to_actions(&self, channel: amqp::Channel, job: buildjob::BuildJob) -> buildjob::Actions {
+        return buildjob::Actions{
+            system: self.system.clone(),
+            channel: channel,
+            job: job,
+        };
     }
 
 
@@ -95,9 +108,48 @@ impl worker::SimpleWorker for BuildWorker {
         co.fetch_pr(job.pr.number).unwrap();
         co.merge_commit(job.pr.head_sha.as_ref()).unwrap();
 
-        println!("Got path: {:?}", refpath);
+        println!("Got path: {:?}, building", refpath);
 
-        let cmd = nix::safely_build_attrs_cmd(refpath, job.attrs);
+
+        let success: bool;
+        let reader: BufReader<File>;
+        match self.nix.safely_build_attrs(refpath.as_ref(), job.attrs) {
+            Ok(r) => {
+                success = true;
+                reader = BufReader::new(r);
+            }
+            Err(r) => {
+                success = false;
+                reader = BufReader::new(r);
+            }
+        }
+        println!("ok built ({:?}), building", success);
+
+        let l10 = reader.lines().fold(LinkedList::new(),
+
+                                      |mut coll, line|
+                                      {
+                                          match line {
+                                              Ok(e) => { coll.push_back(e); }
+                                              Err(wtf) => {
+                                                  println!("Got err in lines: {:?}", wtf);
+                                                  coll.push_back(String::from("<line omitted due to error>"));
+                                              }
+                                          }
+
+                                          if coll.len() == 11 {
+                                              coll.pop_front();
+                                          }
+
+                                          return coll
+                                      }
+        );
+        println!("Lines: {:?}", l10);
+
+        resp.build_finished(
+            success,
+            l10.into_iter().collect::<Vec<_>>()
+        );
 
         return Ok(())
     }

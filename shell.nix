@@ -12,7 +12,7 @@ let
 
   phpEnv = stdenv.mkDerivation rec {
     name = "gh-event-forwarder";
-    src = ./.;
+    src = null;
     buildInputs = with pkgs; [
       php
       phpPackages.composer
@@ -29,7 +29,6 @@ let
 
   rustEnv = stdenv.mkDerivation rec {
     name = "gh-event-forwarder";
-    src = ./.;
     buildInputs = with pkgs; [
       php
       phpPackages.composer
@@ -38,7 +37,7 @@ let
       openssl
     ];
 
-    HISTFILE = "${src}/.bash_hist";
+    HISTFILE = "${toString ./.}/.bash_hist";
   };
 
 

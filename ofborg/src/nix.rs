@@ -3,34 +3,60 @@ use std::ffi::OsString;
 use std::process::{Command,Stdio};
 use tempfile::tempfile;
 use std::fs::File;
+use std::io::Seek;
+use std::io::SeekFrom;
 
-pub fn safely_build_attrs(nixpkgs: &Path, attrs: Vec<String>) -> Result<File,File> {
-    let mut nixpath = OsString::new();
-    nixpath.push("nixpkgs=");
-    nixpath.push(nixpkgs.as_os_str());
+pub struct Nix {
+    system: String,
+    remote: String
+}
 
-    let stdout = tempfile().unwrap();
-    let stderr = stdout.try_clone().unwrap();
-    let reader = stderr.try_clone().unwrap();
-
-    let mut cmd = Command::new("nix-build")
-        .env_clear()
-        .current_dir(nixpkgs)
-        .stdout(Stdio::from(stdout))
-        .stderr(Stdio::from(stderr))
-        .env("NIX_PATH", nixpath);
-
-    for attr in attrs {
-        cmd.arg("-A");
-        cmd.arg(attr);
+pub fn new(system: String, remote: String) -> Nix {
+    return Nix{
+        system: system,
+        remote: remote,
     }
+}
 
-    let stat = cmd
-        .status()
-        .unwrap();
+impl Nix {
+    pub fn safely_build_attrs(&self, nixpkgs: &Path, attrs: Vec<String>) -> Result<File,File> {
+        let mut nixpath = OsString::new();
+        nixpath.push("nixpkgs=");
+        nixpath.push(nixpkgs.as_os_str());
 
+        let mut attrargs: Vec<String> = Vec::with_capacity(attrs.len() * 2);
+        for attr in attrs {
+            attrargs.push(String::from("-A"));
+            attrargs.push(attr);
+        }
 
-    return Ok(reader);
+        let stdout = tempfile().unwrap();
+        let stderr = stdout.try_clone().unwrap();
+        let mut reader = stderr.try_clone().unwrap();
+
+        let status = Command::new("nix-build")
+            .env_clear()
+            .current_dir(nixpkgs)
+            .stdout(Stdio::from(stdout))
+            .stderr(Stdio::from(stderr))
+            .env("NIX_PATH", nixpath)
+            .env("NIX_REMOTE", &self.remote)
+            .arg("--no-out-link")
+            .args(&["--option", "restrict-eval", "true"])
+            .args(&["--argstr", "system", &self.system])
+            .arg("--keep-going")
+            .args(attrargs)
+            .status()
+            .unwrap();
+
+        reader.seek(SeekFrom::Start(0)).unwrap();
+
+        if status.success() {
+            return Ok(reader)
+        } else {
+            return Err(reader)
+        }
+    }
 }
 
 /*

@@ -19,7 +19,7 @@ pub trait SimpleWorker {
     fn msg_to_job(&self, method: &Deliver, headers: &BasicProperties,
                   body: &Vec<u8>) -> Result<Self::J, String>;
 
-    fn job_to_actions(&self,  channel: &mut Channel, job: &Self::J) -> Self::A;
+    fn job_to_actions(&self,  channel: Channel, job: Self::J) -> Self::A;
 }
 
 pub fn new<T: SimpleWorker>(worker: T) -> Worker<T> {
