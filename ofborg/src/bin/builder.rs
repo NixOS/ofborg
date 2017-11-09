@@ -71,7 +71,7 @@ struct BuildWorker {
 
 impl worker::SimpleWorker for BuildWorker {
     type J = buildjob::BuildJob;
-    type A = buildjob::Actions;
+    type R = buildjob::Actions;
 
     fn msg_to_job(&self, method: &Deliver, headers: &BasicProperties,
                   body: &Vec<u8>) -> Result<Self::J, String> {
@@ -85,21 +85,19 @@ impl worker::SimpleWorker for BuildWorker {
         }
     }
 
-    fn job_to_actions(&self, channel: amqp::Channel, job: buildjob::BuildJob) -> buildjob::Actions {
+    fn job_to_actions(&self) -> buildjob::Actions {
         return buildjob::Actions{
             system: self.system.clone(),
-            channel: channel,
-            job: job,
         };
     }
 
 
-    fn consumer(&self, job: buildjob::BuildJob, resp: buildjob::Actions) -> Result<(), Error> {
-        let project = self.cloner.project(job.repo.full_name, job.repo.clone_url);
+    fn consumer(&self, job: &buildjob::BuildJob, resp: buildjob::Actions) -> Result<(), Error> {
+        let project = self.cloner.project(job.repo.full_name.clone(), job.repo.clone_url.clone());
         let co = project.clone_for("builder".to_string(),
                                    job.pr.number.to_string())?;
 
-        let target_branch = match job.pr.target_branch {
+        let target_branch = match job.pr.target_branch.clone() {
             Some(x) => { x }
             None => { String::from("origin/master") }
         };
@@ -113,7 +111,7 @@ impl worker::SimpleWorker for BuildWorker {
 
         let success: bool;
         let reader: BufReader<File>;
-        match self.nix.safely_build_attrs(refpath.as_ref(), job.attrs) {
+        match self.nix.safely_build_attrs(refpath.as_ref(), job.attrs.clone()) {
             Ok(r) => {
                 success = true;
                 reader = BufReader::new(r);
@@ -146,10 +144,16 @@ impl worker::SimpleWorker for BuildWorker {
         );
         println!("Lines: {:?}", l10);
 
+        let last10lines = l10.into_iter().collect::<Vec<_>>();
+
+        /*
         resp.build_finished(
-            success,
-            l10.into_iter().collect::<Vec<_>>()
+        &job,
+        &mut channel,
+        success,
+        last10lines.clone()
         );
+        */
 
         return Ok(())
     }

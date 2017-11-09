@@ -16,15 +16,13 @@ pub fn from(data: &Vec<u8>) -> Result<BuildJob, serde_json::error::Error> {
 
 pub struct Actions {
     pub system: String,
-    pub job: BuildJob,
-    pub channel: Channel
 }
 
 impl Actions {
-    pub fn build_finished(&mut self, success: bool, lines: Vec<String>) {
+    pub fn build_finished(&mut self, job: &BuildJob, channel: &mut Channel, success: bool, lines: Vec<String>) {
         let msg = buildresult::BuildResult {
-            repo: self.job.repo.clone(),
-            pr: self.job.pr.clone(),
+            repo: job.repo.clone(),
+            pr: job.pr.clone(),
             system: self.system.clone(),
             output: lines,
             success: success
@@ -35,7 +33,9 @@ impl Actions {
             ..Default::default()
         };
 
-        self.channel.basic_publish("build-results", "", true, true,
-                             props, serde_json::to_string(&msg).unwrap().into_bytes()).unwrap();
+
+
+        channel.basic_publish("build-results", "", true, true,
+                              props, serde_json::to_string(&msg).unwrap().into_bytes()).unwrap();
     }
 }
