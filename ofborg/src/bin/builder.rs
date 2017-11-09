@@ -3,12 +3,10 @@ extern crate amqp;
 
 use std::collections::LinkedList;
 use std::env;
-use amqp::{Consumer, Channel};
 use amqp::protocol::basic::{Deliver,BasicProperties};
 
 use std::path::Path;
 use amqp::Basic;
-use amqp::protocol;
 use amqp::Session;
 use amqp::Table;
 use std::process;
@@ -80,7 +78,7 @@ impl BuildWorker {
 impl worker::SimpleWorker for BuildWorker {
     type J = buildjob::BuildJob;
 
-    fn msg_to_job(&self, method: &Deliver, headers: &BasicProperties,
+    fn msg_to_job(&self, _: &Deliver, _: &BasicProperties,
                   body: &Vec<u8>) -> Result<Self::J, String> {
         println!("lmao I got a job?");
         return match buildjob::from(body) {
@@ -92,10 +90,10 @@ impl worker::SimpleWorker for BuildWorker {
         }
     }
 
-    fn consumer(&self, job: &buildjob::BuildJob) -> Result<(), Error> {
+    fn consumer(&self, job: &buildjob::BuildJob) -> worker::Actions {
         let project = self.cloner.project(job.repo.full_name.clone(), job.repo.clone_url.clone());
         let co = project.clone_for("builder".to_string(),
-                                   job.pr.number.to_string())?;
+                                   job.pr.number.to_string()).unwrap();
 
         let target_branch = match job.pr.target_branch.clone() {
             Some(x) => { x }
@@ -146,15 +144,11 @@ impl worker::SimpleWorker for BuildWorker {
 
         let last10lines = l10.into_iter().collect::<Vec<_>>();
 
-        /*
-        resp.build_finished(
-        &job,
-        &mut channel,
-        success,
-        last10lines.clone()
-        );
-        */
 
-        return Ok(())
+        return self.actions().build_finished(
+            &job,
+            success,
+            last10lines.clone()
+        );
     }
 }

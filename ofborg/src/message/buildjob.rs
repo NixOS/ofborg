@@ -1,7 +1,8 @@
 use ofborg::message::{Pr,Repo};
 use ofborg::message::buildresult;
+use ofborg::worker;
 use serde_json;
-use amqp::{Basic, Channel, protocol};
+use amqp::{Channel, protocol};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BuildJob {
@@ -19,7 +20,7 @@ pub struct Actions {
 }
 
 impl Actions {
-    pub fn build_finished(&mut self, job: &BuildJob, channel: &mut Channel, success: bool, lines: Vec<String>) {
+    pub fn build_finished(&mut self, job: &BuildJob, success: bool, lines: Vec<String>) -> worker::Actions {
         let msg = buildresult::BuildResult {
             repo: job.repo.clone(),
             pr: job.pr.clone(),
@@ -34,8 +35,16 @@ impl Actions {
         };
 
 
-
-        channel.basic_publish("build-results", "", true, true,
-                              props, serde_json::to_string(&msg).unwrap().into_bytes()).unwrap();
+        return vec![
+            worker::Action::Publish(worker::QueueMsg{
+                exchange: Some("build-results".to_owned()),
+                routing_key: None,
+                mandatory: true,
+                immediate: true,
+                properties: Some(props),
+                content: serde_json::to_string(&msg).unwrap().into_bytes()
+            }),
+            worker::Action::Ack
+        ];
     }
 }
