@@ -103,7 +103,7 @@ function runner($msg) {
                 'head_sha' => $pr_deets['head']['sha'],
             ],
             'build_default' => false,
-            'attrs' => $tokens,
+            'attrs' => array_values($tokens),
         ];
     }
 
