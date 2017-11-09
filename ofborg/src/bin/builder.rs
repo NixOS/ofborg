@@ -69,9 +69,16 @@ struct BuildWorker {
     system: String,
 }
 
+impl BuildWorker {
+    fn actions(&self) -> buildjob::Actions {
+        return buildjob::Actions{
+            system: self.system.clone(),
+        };
+    }
+}
+
 impl worker::SimpleWorker for BuildWorker {
     type J = buildjob::BuildJob;
-    type R = buildjob::Actions;
 
     fn msg_to_job(&self, method: &Deliver, headers: &BasicProperties,
                   body: &Vec<u8>) -> Result<Self::J, String> {
@@ -85,14 +92,7 @@ impl worker::SimpleWorker for BuildWorker {
         }
     }
 
-    fn job_to_actions(&self) -> buildjob::Actions {
-        return buildjob::Actions{
-            system: self.system.clone(),
-        };
-    }
-
-
-    fn consumer(&self, job: &buildjob::BuildJob, resp: buildjob::Actions) -> Result<(), Error> {
+    fn consumer(&self, job: &buildjob::BuildJob) -> Result<(), Error> {
         let project = self.cloner.project(job.repo.full_name.clone(), job.repo.clone_url.clone());
         let co = project.clone_for("builder".to_string(),
                                    job.pr.number.to_string())?;
