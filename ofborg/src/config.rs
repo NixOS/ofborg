@@ -12,6 +12,7 @@ pub struct Config {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RabbitMQConfig {
+    pub ssl: bool,
     pub host: String,
     pub username: String,
     pub password: String,
@@ -31,7 +32,9 @@ pub struct CheckoutConfig {
 
 impl RabbitMQConfig {
     pub fn as_uri(&self) -> String{
-        return format!("amqps://{}:{}@{}//", self.username, self.password, self.host);
+        return format!("{}://{}:{}@{}//",
+                       if self.ssl { "amqps" } else { "amqp" },
+                       self.username, self.password, self.host);
     }
 }
 
