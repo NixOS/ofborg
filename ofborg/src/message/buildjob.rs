@@ -40,7 +40,7 @@ impl Actions {
                 exchange: Some("build-results-x".to_owned()),
                 routing_key: None,
                 mandatory: true,
-                immediate: true,
+                immediate: false,
                 properties: Some(props),
                 content: serde_json::to_string(&msg).unwrap().into_bytes()
             }),
