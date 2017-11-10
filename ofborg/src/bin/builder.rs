@@ -2,6 +2,7 @@ extern crate ofborg;
 extern crate amqp;
 extern crate env_logger;
 
+use std::{thread, time};
 use std::collections::LinkedList;
 use std::env;
 use amqp::protocol::basic::{Deliver,BasicProperties};
@@ -9,6 +10,7 @@ use amqp::protocol::basic::{Deliver,BasicProperties};
 use std::path::Path;
 use amqp::Basic;
 use amqp::Session;
+use amqp::Channel;
 use amqp::Table;
 use std::process;
 use std::io::Error;
@@ -22,6 +24,7 @@ use ofborg::worker;
 use ofborg::message::buildjob;
 use ofborg::nix;
 
+
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
     env_logger::init().unwrap();
@@ -29,7 +32,76 @@ fn main() {
 
 
     let mut session = Session::open_url(&cfg.rabbitmq.as_uri()).unwrap();
-    let mut channel = session.open_channel(1).unwrap();
+    println!("Connected to rabbitmq");
+    {
+        println!("About to open channel #1");
+        let mut hbchan = session.open_channel(1).unwrap();
+        println!("Opened channel #1");
+        //queue: &str,                 passive, durable, exclusive, auto_delete, nowait, arguments: Table
+        match hbchan.queue_declare("", false,   false,   true,      true,        false,   Table::new()) {
+            Err(problem) => {
+                println!("Failed to declare a queue: {:?}", problem);
+                process::exit(1);
+            }
+            Ok(resp) => {
+                println!("Got personal queue: {:?}", resp);
+
+                let queueName = resp.queue;
+                hbchan.basic_publish(
+                    "",
+                    queueName.as_ref(),
+                    true,
+                    false,
+                    BasicProperties {
+                        content_type: Some("text".to_owned()),
+                        ..Default::default()
+                    },
+                    (b"Hello from rust!").to_vec()
+                ).unwrap();
+
+                let qnameC = queueName.clone();
+
+                thread::spawn(move || {
+                    hbchan.basic_consume(
+                        move |chan: &mut Channel, deliver: Deliver, headers: BasicProperties, data: Vec<u8>|
+                        {
+                            chan.basic_publish(
+                                "",
+                                qnameC.as_ref(),
+                                true,
+                                false,
+                                BasicProperties {
+                                    content_type: Some("text".to_owned()),
+                                    ..Default::default()
+                                },
+                                (b"Hello from rust!").to_vec()
+                            ).unwrap();
+
+                            let ten_sec = time::Duration::from_secs(1);
+                            thread::sleep(ten_sec);
+                            println!("Got a plastic heartbeat <3");
+                            chan.basic_ack(deliver.delivery_tag, false).unwrap();
+
+                        },
+                        queueName,
+                        String::from("hbchanner1"),
+                        false,
+                        false,
+                        false,
+                        false,
+                        Table::new()
+                    );
+
+                    hbchan.start_consuming();
+                    println!("Erm... in the heartbaets");
+                    process::exit(1);
+                });
+            }
+        }
+
+    }
+
+    let mut channel = session.open_channel(2).unwrap();
 
     //queue: &str, passive: bool, durable: bool, exclusive: bool, auto_delete: bool, nowait: bool, arguments: Table
     if let Err(problem) = channel.queue_declare("my_queue_name", false, true, false, false, false, Table::new()) {
@@ -55,10 +127,21 @@ fn main() {
         Table::new()
     );
 
+    let ten_sec = time::Duration::from_secs(10);
+    thread::sleep(ten_sec);
+
+
+
     channel.start_consuming();
 
+
+    println!("Finished consuming?");
+
+
     channel.close(200, "Bye").unwrap();
+    println!("Closed the channel");
     session.close(200, "Good Bye");
+    println!("Closed the session... EOF");
 
 }
 
