@@ -20,6 +20,7 @@ pub enum Action {
     Publish(QueueMsg),
 }
 
+#[derive(Debug)]
 pub struct QueueMsg {
     pub exchange: Option<String>,
     pub routing_key: Option<String>,
