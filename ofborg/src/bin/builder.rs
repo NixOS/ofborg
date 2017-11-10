@@ -1,5 +1,6 @@
 extern crate ofborg;
 extern crate amqp;
+extern crate env_logger;
 
 use std::collections::LinkedList;
 use std::env;
@@ -23,7 +24,7 @@ use ofborg::nix;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
-
+    env_logger::init().unwrap();
     println!("Hello, world!");
 
 
