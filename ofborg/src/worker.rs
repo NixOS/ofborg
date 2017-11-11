@@ -61,32 +61,27 @@ impl <T: SimpleWorker + Send> Consumer for Worker<T> {
         for action in self.internal.consumer(&job) {
             match action {
                 Action::Ack => {
-                    println!("Ack");
                     channel.basic_ack(method.delivery_tag, false).unwrap();
                 }
                 Action::NackRequeue => {
-                    println!("Nack Requeue");
                     channel.basic_nack(method.delivery_tag, false, true).unwrap();
                 }
                 Action::NackDump => {
-                    println!("Nack Dump");
                     channel.basic_nack(method.delivery_tag, false, false).unwrap();
                 }
                 Action::Publish(msg) => {
                     let exch = msg.exchange.clone().unwrap_or("".to_owned());
                     let key = msg.routing_key.clone().unwrap_or("".to_owned());
 
-                    println!("Publishing, {:?} -> {:?}: {:?}", exch, key, msg);
-
                     let props = msg.properties.unwrap_or(BasicProperties{ ..Default::default()});
-                    println!("{:?}", channel.basic_publish(
+                    channel.basic_publish(
                         exch,
                         key,
                         msg.mandatory,
                         msg.immediate,
                         props,
                         msg.content
-                    ).unwrap());
+                    ).unwrap();
                 }
             }
         }

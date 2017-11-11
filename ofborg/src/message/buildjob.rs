@@ -37,14 +37,14 @@ impl Actions {
 
         return vec![
             worker::Action::Publish(worker::QueueMsg{
-                exchange: Some("build-results-x".to_owned()),
+                exchange: Some("build-results".to_owned()),
                 routing_key: None,
                 mandatory: true,
                 immediate: false,
                 properties: Some(props),
                 content: serde_json::to_string(&msg).unwrap().into_bytes()
             }),
-            worker::Action::NackRequeue
+            worker::Action::Ack
         ];
     }
 }

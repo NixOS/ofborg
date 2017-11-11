@@ -47,7 +47,7 @@ impl worker::SimpleWorker for PlasticHeartbeatWorker {
 
         return vec![
             worker::Action::Publish(self.message()),
-            worker::Action::NackRequeue
+            worker::Action::Ack
         ];
     }
 }
@@ -87,7 +87,7 @@ pub fn start_on_channel(mut hbchan: Channel, consumer_name: String) {
                 }
             ),
             queue_name,
-            String::from(consumer_name),
+            String::from(format!("{}-heartbeat", consumer_name)),
             false,
             false,
             false,
