@@ -1,6 +1,8 @@
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Repo {
+    pub owner: String,
+    pub name: String,
     pub full_name: String,
     pub clone_url: String,
 }
