@@ -8,6 +8,7 @@ extern crate amqp;
 extern crate fs2;
 extern crate md5;
 
+pub mod acl;
 pub mod checkout;
 pub mod locks;
 pub mod clone;
@@ -16,6 +17,7 @@ pub mod config;
 pub mod message;
 pub mod tasks;
 pub mod nix;
+pub mod ghevent;
 
 pub mod ofborg {
     pub use config;
@@ -25,5 +27,7 @@ pub mod ofborg {
     pub use worker;
     pub use message;
     pub use tasks;
+    pub use ghevent;
     pub use nix;
+    pub use acl;
 }

@@ -3,6 +3,8 @@ use std::fs::File;
 use std::path::Path;
 use std::io::Read;
 
+use ofborg::acl;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
     pub runner: RunnerConfig,
@@ -28,6 +30,7 @@ pub struct NixConfig {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RunnerConfig {
     pub identity: String,
+    pub authorized_users: Option<Vec<String>>
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -38,6 +41,14 @@ pub struct CheckoutConfig {
 impl Config {
     pub fn whoami(&self) -> String {
         return format!("{}-{}", self.runner.identity, self.nix.system);
+    }
+
+    pub fn acl(&self) -> acl::ACL {
+        return acl::ACL::new(
+            self.runner.authorized_users
+                .clone()
+                .expect("fetching config's runner.authorized_users")
+        );
     }
 }
 
