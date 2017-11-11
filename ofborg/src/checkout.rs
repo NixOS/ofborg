@@ -105,6 +105,21 @@ impl CachedProjectCo {
         }
     }
 
+    pub fn commit_exists(&self, commit: &OsStr) -> bool {
+        let mut lock = self.lock().expect("Failed to lock");
+
+        let result = Command::new("git")
+            .arg("show")
+            .arg(commit)
+            .current_dir(self.clone_to())
+            .status()
+            .expect("git show <commit> failed");
+
+        lock.unlock();
+
+        return result.success();
+    }
+
     pub fn merge_commit(&self, commit: &OsStr) -> Result<(), Error> {
         let mut lock = self.lock()?;
 

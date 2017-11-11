@@ -64,7 +64,16 @@ impl worker::SimpleWorker for BuildWorker {
 
         let refpath = co.checkout_ref(target_branch.as_ref()).unwrap();
         co.fetch_pr(job.pr.number).unwrap();
-        co.merge_commit(job.pr.head_sha.as_ref()).unwrap();
+
+        if !co.commit_exists(job.pr.head_sha.as_ref()) {
+            info!("Commit {} doesn't exist", job.pr.head_sha);
+            return self.actions().commit_missing(&job);
+        }
+
+        if let Err(_) = co.merge_commit(job.pr.head_sha.as_ref()) {
+            info!("Failed to merge {}", job.pr.head_sha);
+            return self.actions().merge_failed(&job);
+        }
 
         println!("Got path: {:?}, building", refpath);
 

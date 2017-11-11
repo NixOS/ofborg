@@ -20,6 +20,40 @@ pub struct Actions {
 }
 
 impl Actions {
+    pub fn commit_missing(&mut self, _job: &BuildJob) -> worker::Actions {
+        return vec![
+            worker::Action::Ack
+        ];
+    }
+
+    pub fn merge_failed(&mut self, job: &BuildJob) -> worker::Actions {
+        let msg = buildresult::BuildResult {
+            repo: job.repo.clone(),
+            pr: job.pr.clone(),
+            system: self.system.clone(),
+            output: vec![String::from("Merge failed")],
+            success: false
+        };
+
+        let props =  protocol::basic::BasicProperties {
+            content_type: Some("application/json".to_owned()),
+            ..Default::default()
+        };
+
+
+        return vec![
+            worker::Action::Publish(worker::QueueMsg{
+                exchange: Some("build-results".to_owned()),
+                routing_key: None,
+                mandatory: true,
+                immediate: false,
+                properties: Some(props),
+                content: serde_json::to_string(&msg).unwrap().into_bytes()
+            }),
+            worker::Action::Ack
+        ];
+    }
+
     pub fn build_finished(&mut self, job: &BuildJob, success: bool, lines: Vec<String>) -> worker::Actions {
         let msg = buildresult::BuildResult {
             repo: job.repo.clone(),
