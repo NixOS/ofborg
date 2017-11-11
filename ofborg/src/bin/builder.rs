@@ -37,12 +37,6 @@ fn main() {
 
     let mut channel = session.open_channel(2).unwrap();
 
-    //queue: &str, passive: bool, durable: bool, exclusive: bool, auto_delete: bool, nowait: bool, arguments: Table
-    if let Err(problem) = channel.queue_declare("my_queue_name", false, true, false, false, false, Table::new()) {
-        println!("Failed to declare a queue: {:?}", problem);
-        process::exit(1);
-    }
-
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
     let nix = nix::new(cfg.nix.system.clone(), cfg.nix.remote.clone());
 
