@@ -23,20 +23,47 @@ pub trait GitClonable {
     fn lock_path(&self) -> PathBuf;
 
     fn lock(&self) -> Result<Lock, Error> {
-        println!("Locking {:?}", self.lock_path());
-        let lock = fs::File::create(self.lock_path())?;
-        lock.lock_exclusive()?;
-        return Ok(Lock{
-            lock: Some(lock)
-        })
+        info!("Locking {:?}", self.lock_path());
+
+        match fs::File::create(self.lock_path()) {
+            Err(e) => {
+                warn!("Failed to create lock file {:?}: {}",
+                      self.lock_path(), e
+                );
+                return Err(e);
+            }
+            Ok(lock) => {
+                match lock.lock_exclusive() {
+                    Err(e) => {
+                        warn!("Failed to get exclusive lock on file {:?}: {}",
+                              self.lock_path(), e
+                        );
+                        return Err(e);
+                    }
+                    Ok(_) => {
+                        debug!("Got lock on {:?}", self.lock_path());
+                        return Ok(Lock{
+                            lock: Some(lock)
+                        });
+                    }
+                }
+            }
+
+        }
     }
 
     fn clone_repo(&self) -> Result<(), Error> {
         let mut lock = self.lock()?;
 
         if self.clone_to().is_dir() {
+            debug!("Found dir at {:?}, initial clone is done",
+                   self.clone_to());
             return Ok(())
         }
+
+        info!("Initial cloning of {} to {:?}",
+               self.clone_from(),
+               self.clone_to());
 
         let result = Command::new("git")
             .arg("clone")
@@ -57,6 +84,7 @@ pub trait GitClonable {
     fn fetch_repo(&self) -> Result<(), Error> {
         let mut lock = self.lock()?;
 
+        info!("Fetching from origin in {:?}", self.clone_to());
         let result = Command::new("git")
             .arg("fetch")
             .arg("origin")
@@ -75,18 +103,21 @@ pub trait GitClonable {
     fn clean(&self) -> Result<(), Error> {
         let mut lock = self.lock()?;
 
+        info!("git am --abort");
         Command::new("git")
             .arg("am")
             .arg("--abort")
             .current_dir(self.clone_to())
             .status()?;
 
+        info!("git merge --abort");
         Command::new("git")
             .arg("merge")
             .arg("--abort")
             .current_dir(self.clone_to())
             .status()?;
 
+        info!("git reset --hard");
         Command::new("git")
             .arg("reset")
             .arg("--hard")
@@ -100,6 +131,7 @@ pub trait GitClonable {
 
     fn checkout(&self, git_ref: &OsStr) -> Result<(), Error> {
         let mut lock = self.lock()?;
+
 
         let result = Command::new("git")
             .arg("checkout")

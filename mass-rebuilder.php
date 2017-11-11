@@ -162,7 +162,7 @@ function try_eval($ghclient, $owner, $name, $sha, $eval_name, $cmd, $args) {
         $status->success("Finished running $cmd");
     } catch (GHE\ExecException $e) {
         echo "Failed to run $eval_name on $sha\n";
-        $status->pending("Failed to run $cmd");
+        $status->failure("Failed to run $cmd");
         return false;
     }
 }

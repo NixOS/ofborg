@@ -3,6 +3,9 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
+#[macro_use]
+extern crate log;
+
 extern crate tempfile;
 extern crate amqp;
 extern crate fs2;
