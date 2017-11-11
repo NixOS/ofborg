@@ -2,7 +2,7 @@ use ofborg::message::{Pr,Repo};
 use ofborg::message::buildresult;
 use ofborg::worker;
 use serde_json;
-use amqp::{Channel, protocol};
+use amqp::protocol;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BuildJob {

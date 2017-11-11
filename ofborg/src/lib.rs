@@ -14,6 +14,7 @@ pub mod clone;
 pub mod worker;
 pub mod config;
 pub mod message;
+pub mod tasks;
 pub mod nix;
 
 pub mod ofborg {
@@ -23,5 +24,6 @@ pub mod ofborg {
     pub use clone;
     pub use worker;
     pub use message;
+    pub use tasks;
     pub use nix;
 }

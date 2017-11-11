@@ -22,6 +22,7 @@ use ofborg::config;
 use ofborg::checkout;
 use ofborg::worker;
 use ofborg::message::buildjob;
+use ofborg::tasks;
 use ofborg::nix;
 
 
@@ -36,69 +37,10 @@ fn main() {
     {
         println!("About to open channel #1");
         let mut hbchan = session.open_channel(1).unwrap();
+
         println!("Opened channel #1");
-        //queue: &str,                 passive, durable, exclusive, auto_delete, nowait, arguments: Table
-        match hbchan.queue_declare("", false,   false,   true,      true,        false,   Table::new()) {
-            Err(problem) => {
-                println!("Failed to declare a queue: {:?}", problem);
-                process::exit(1);
-            }
-            Ok(resp) => {
-                println!("Got personal queue: {:?}", resp);
 
-                let queueName = resp.queue;
-                hbchan.basic_publish(
-                    "",
-                    queueName.as_ref(),
-                    true,
-                    false,
-                    BasicProperties {
-                        content_type: Some("text".to_owned()),
-                        ..Default::default()
-                    },
-                    (b"Hello from rust!").to_vec()
-                ).unwrap();
-
-                let qnameC = queueName.clone();
-
-                thread::spawn(move || {
-                    hbchan.basic_consume(
-                        move |chan: &mut Channel, deliver: Deliver, headers: BasicProperties, data: Vec<u8>|
-                        {
-                            chan.basic_publish(
-                                "",
-                                qnameC.as_ref(),
-                                true,
-                                false,
-                                BasicProperties {
-                                    content_type: Some("text".to_owned()),
-                                    ..Default::default()
-                                },
-                                (b"Hello from rust!").to_vec()
-                            ).unwrap();
-
-                            let ten_sec = time::Duration::from_secs(1);
-                            thread::sleep(ten_sec);
-                            println!("Got a plastic heartbeat <3");
-                            chan.basic_ack(deliver.delivery_tag, false).unwrap();
-
-                        },
-                        queueName,
-                        String::from("hbchanner1"),
-                        false,
-                        false,
-                        false,
-                        false,
-                        Table::new()
-                    );
-
-                    hbchan.start_consuming();
-                    println!("Erm... in the heartbaets");
-                    process::exit(1);
-                });
-            }
-        }
-
+        tasks::heartbeat::start_on_channel(hbchan, cfg.whoami());
     }
 
     let mut channel = session.open_channel(2).unwrap();
