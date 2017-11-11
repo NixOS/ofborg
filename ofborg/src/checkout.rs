@@ -109,6 +109,7 @@ impl CachedProjectCo {
         let mut lock = self.lock().expect("Failed to lock");
 
         let result = Command::new("git")
+            .arg("--no-pager")
             .arg("show")
             .arg(commit)
             .current_dir(self.clone_to())
