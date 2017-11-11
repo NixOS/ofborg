@@ -2,14 +2,12 @@ extern crate ofborg;
 extern crate amqp;
 extern crate env_logger;
 
-use std::{thread, time};
 use std::env;
 
 use std::path::Path;
 use amqp::Basic;
 use amqp::Session;
 use amqp::Table;
-use std::process;
 
 use ofborg::config;
 use ofborg::checkout;
