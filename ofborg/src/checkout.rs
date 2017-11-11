@@ -74,6 +74,8 @@ impl CachedProject {
 
 impl CachedProjectCo {
     pub fn checkout_ref(&self, git_ref: &OsStr) -> Result<String, Error> {
+        fs::create_dir_all(&self.root)?;
+
         self.clone_repo()?;
         self.fetch_repo()?;
         self.clean()?;
