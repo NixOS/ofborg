@@ -48,7 +48,7 @@ fn main() {
 
     channel.basic_consume(
         worker::new(tasks::build::BuildWorker::new(cloner, nix, cfg.nix.system.clone())),
-        "build-inputs-samples",
+        format!("build-inputs-{}", cfg.nix.system.clone()).as_ref(),
         format!("{}-builder", cfg.whoami()).as_ref(),
         false,
         false,

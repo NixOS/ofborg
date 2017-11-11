@@ -1,0 +1,18 @@
+{
+    "runner": {
+        "identity": "grahamc-laptop"
+    },
+    "checkout": {
+        "root": "/home/grahamc/.nix-test-rs"
+    },
+    "nix": {
+        "system": "x86_64-linux",
+        "remote": "daemon"
+    },
+    "rabbitmq": {
+        "ssl": true,
+        "host": "events.nix.gsc.io",
+        "username": "...",
+        "password": "..."
+    }
+}
