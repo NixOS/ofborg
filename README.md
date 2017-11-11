@@ -68,3 +68,19 @@ function gh_client() {
 }
 */
 ```
+
+
+## Getting started on the rust one...
+
+```
+cargo build
+```
+
+then copy config.example.json to config.json and edit its vars. Set
+`nix.remote` to an empty string if you're not using the daemon.
+
+Run
+
+```
+./target/debug/builder ./config.json
+```
