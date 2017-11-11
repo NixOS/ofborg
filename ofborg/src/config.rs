@@ -5,6 +5,7 @@ use std::io::Read;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
+    pub runner: RunnerConfig,
     pub checkout: CheckoutConfig,
     pub nix: NixConfig,
     pub rabbitmq: RabbitMQConfig,
@@ -25,8 +26,19 @@ pub struct NixConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct RunnerConfig {
+    pub identity: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct CheckoutConfig {
     pub root: String,
+}
+
+impl Config {
+    pub fn whoami(&self) -> String {
+        return format!("{}-{}", self.runner.identity, self.nix.system);
+    }
 }
 
 
