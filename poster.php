@@ -17,26 +17,25 @@ list($queueName, , ) = $channel->queue_declare('build-results',
 
 function runner($msg) {
     $body = json_decode($msg->body);
-    $in = $body->payload;
 
-    $num = $in->issue->number;
+    $num = $body->pr->number;
     if ($body->success) {
         echo "yay! $num passed!\n";
     } else {
         echo "Yikes, $num failed\n";
     }
 
-    reply_to_issue($in, implode("\n", $body->output), $body->success, $body->system);
+    reply_to_issue($body, implode("\n", $body->output), $body->success, $body->system);
 
     var_dump($body->success);
 
     $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag']);
 }
 
-function reply_to_issue($issue, $output, $success, $system) {
-    $num = $issue->issue->number;
-    $owner = $issue->repository->owner->login;
-    $repo = $issue->repository->name;
+function reply_to_issue($body, $output, $success, $system) {
+    $num = $body->pr->number;
+    $owner = $body->repo->owner;
+    $repo = $body->repo->name;
     $event = $success ? 'APPROVE' : 'COMMENT';
     $passfail = $success ? "Success" : "Failure";
 
@@ -53,8 +52,8 @@ function reply_to_issue($issue, $output, $success, $system) {
         $event = 'COMMENT';
     }
 
-    $sha = $pr['head']['sha'];
-    echo "Latest sha: $sha\n";
+    $sha = $body->pr->head_sha;
+    echo "On sha: $sha\n";
     echo "Body:\n";
     echo $output;
     echo "\n\n";
