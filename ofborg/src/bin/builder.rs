@@ -51,9 +51,6 @@ fn main() {
         Table::new()
     ).unwrap();
 
-    let ten_sec = time::Duration::from_secs(10);
-    thread::sleep(ten_sec);
-
     channel.start_consuming();
 
     println!("Finished consuming?");
