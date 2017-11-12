@@ -33,6 +33,7 @@ function outrunner($msg) {
 }
 
 function runner($msg) {
+    echo "Msg Sha: " . md5($msg->body) . "\n";
     $in = json_decode($msg->body);
 
     try {
@@ -92,7 +93,7 @@ function runner($msg) {
         $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag']);
         return true;
     } else {
-        echo "so-called interesting event: " . $in->action . "\n";
+        echo "so-called interesting event on #" . $in->number . ": " . $in->action . "\n";
     }
 
     $forward = [

@@ -64,6 +64,10 @@ class EventClassifier {
             return "project_column";
         }
 
+        if (self::isLabelEvent($payload)) {
+            return "label";
+        }
+
         throw new EventClassifierUnknownException();
     }
 
@@ -169,6 +173,12 @@ class EventClassifier {
         return isset($payload->project_column);
     }
 
+    public static function isLabelEvent($payload) {
+        return isset($payload->label)
+            && isset($payload->action)
+            && in_array($payload->action,
+                        ['created', 'edited', 'deleted']);
+    }
 
 }
 
