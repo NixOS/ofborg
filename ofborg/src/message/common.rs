@@ -10,6 +10,6 @@ pub struct Repo {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Pr {
     pub target_branch: Option<String>,
-    pub number: i64,
+    pub number: u64,
     pub head_sha: String,
 }

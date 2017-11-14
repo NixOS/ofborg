@@ -86,7 +86,7 @@ impl CachedProjectCo {
         return Ok(self.clone_to().to_str().unwrap().to_string())
     }
 
-    pub fn fetch_pr(&self, pr_id: i64) -> Result<(),Error> {
+    pub fn fetch_pr(&self, pr_id: u64) -> Result<(),Error> {
         let mut lock = self.lock()?;
 
         let result = Command::new("git")

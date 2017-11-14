@@ -40,7 +40,6 @@ impl Actions {
             ..Default::default()
         };
 
-
         return vec![
             worker::Action::Publish(worker::QueueMsg{
                 exchange: Some("build-results".to_owned()),
