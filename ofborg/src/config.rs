@@ -11,6 +11,7 @@ pub struct Config {
     pub checkout: CheckoutConfig,
     pub nix: NixConfig,
     pub rabbitmq: RabbitMQConfig,
+    pub github: Option<GithubConfig>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -25,6 +26,12 @@ pub struct RabbitMQConfig {
 pub struct NixConfig {
     pub system: String,
     pub remote: String,
+}
+
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GithubConfig {
+    pub token: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
