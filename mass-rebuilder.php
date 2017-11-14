@@ -111,9 +111,9 @@ function runner($msg) {
 
     $overallstatus->pending('Checking for sub-evals');
 
-    try_eval($ghclient, $in->repo->owner, $in->repo->name, $head_sha,
+    $try_counting_drvs = try_eval($ghclient, $in->repo->owner, $in->repo->name, $head_sha,
              'package-list',
-             'nix-env --file . --query --available > /dev/null 2>&1', []);
+             'nix-env --file . --query --available --json > /dev/null 2>&1', []);
 
     try_eval($ghclient, $in->repo->owner, $in->repo->name, $head_sha,
              'nixos-options',
@@ -135,10 +135,12 @@ function runner($msg) {
              'nixpkgs-unstable-jobset',
              'nix-instantiate ./pkgs/top-level/release.nix -A unstable', []);
 
-    reply_to_issue($overallstatus, $in->repo, $in->pr,
-                   $new_darwin_stdenv !== $prev_darwin_stdenv,
-                   $new_linux_stdenv !== $prev_linux_stdenv,
-                   $against[0], $current[0]);
+    if ($try_counting_drvs) {
+        reply_to_issue($overallstatus, $in->repo, $in->pr,
+                       $new_darwin_stdenv !== $prev_darwin_stdenv,
+                       $new_linux_stdenv !== $prev_linux_stdenv,
+                       $against[0], $current[0]);
+    }
 
     echo "marking PR as success\n";
     $overallstatus->success('Evaluation checks OK');
@@ -160,6 +162,7 @@ function try_eval($ghclient, $owner, $name, $sha, $eval_name, $cmd, $args) {
         GHE\Exec::exec($cmd, $args);
         echo "Success running $eval_name on $sha\n";
         $status->success("Finished running $cmd");
+        return true;
     } catch (GHE\ExecException $e) {
         echo "Failed to run $eval_name on $sha\n";
         $status->failure("Failed to run $cmd");
