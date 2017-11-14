@@ -2,6 +2,18 @@ extern crate ofborg;
 extern crate amqp;
 extern crate env_logger;
 
+extern crate hyper;
+extern crate hubcaps;
+extern crate hyper_native_tls;
+
+use std::{thread, time};
+use hyper::Client;
+use hyper::net::HttpsConnector;
+use hyper_native_tls::NativeTlsClient;
+use hubcaps::{Credentials, Github};
+
+
+
 use std::env;
 
 use amqp::Basic;
@@ -30,13 +42,25 @@ fn main() {
         tasks::heartbeat::start_on_channel(hbchan, cfg.whoami());
     }
 
+
     let mut channel = session.open_channel(2).unwrap();
 
     channel.basic_consume(
         worker::new(tasks::buildfilter::BuildFilterWorker::new(
-            cfg.acl()
+            cfg.acl(),
+            Github::new(
+                "my-cool-user-agent/0.1.0",
+                // tls configured hyper client
+                Client::with_connector(
+                    HttpsConnector::new(
+                        NativeTlsClient::new().unwrap()
+                    )
+                ),
+                Credentials::Token(cfg.github.clone().unwrap().token)
+            )
+
         )),
-        "build-inputs-samples",
+        "build-inputs",
         format!("{}-build-filter", cfg.whoami()).as_ref(),
         false,
         false,

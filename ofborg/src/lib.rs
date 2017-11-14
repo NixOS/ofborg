@@ -6,6 +6,10 @@ extern crate serde_json;
 #[macro_use]
 extern crate log;
 
+extern crate hubcaps;
+extern crate hyper;
+extern crate hyper_native_tls;
+
 extern crate tempfile;
 extern crate amqp;
 extern crate fs2;
@@ -21,6 +25,7 @@ pub mod message;
 pub mod tasks;
 pub mod nix;
 pub mod ghevent;
+pub mod commentparser;
 
 pub mod ofborg {
     pub use config;
@@ -33,4 +38,5 @@ pub mod ofborg {
     pub use ghevent;
     pub use nix;
     pub use acl;
+    pub use commentparser;
 }

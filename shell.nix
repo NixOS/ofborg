@@ -34,7 +34,8 @@ let
       phpPackages.composer
       rust.rustc
       rust.cargo
-      openssl
+      openssl.dev
+      pkgconfig
     ];
 
     HISTFILE = "${toString ./.}/.bash_hist";
