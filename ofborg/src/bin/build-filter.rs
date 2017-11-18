@@ -6,7 +6,6 @@ extern crate hyper;
 extern crate hubcaps;
 extern crate hyper_native_tls;
 
-use std::{thread, time};
 use hyper::Client;
 use hyper::net::HttpsConnector;
 use hyper_native_tls::NativeTlsClient;
