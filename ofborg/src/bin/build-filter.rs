@@ -6,12 +6,6 @@ extern crate hyper;
 extern crate hubcaps;
 extern crate hyper_native_tls;
 
-use hyper::Client;
-use hyper::net::HttpsConnector;
-use hyper_native_tls::NativeTlsClient;
-use hubcaps::{Credentials, Github};
-
-
 
 use std::env;
 
@@ -47,17 +41,7 @@ fn main() {
     channel.basic_consume(
         worker::new(tasks::buildfilter::BuildFilterWorker::new(
             cfg.acl(),
-            Github::new(
-                "my-cool-user-agent/0.1.0",
-                // tls configured hyper client
-                Client::with_connector(
-                    HttpsConnector::new(
-                        NativeTlsClient::new().unwrap()
-                    )
-                ),
-                Credentials::Token(cfg.github.clone().unwrap().token)
-            )
-
+            cfg.github()
         )),
         "build-inputs",
         format!("{}-build-filter", cfg.whoami()).as_ref(),

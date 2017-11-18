@@ -2,6 +2,12 @@ use serde_json;
 use std::fs::File;
 use std::path::Path;
 use std::io::Read;
+use hyper::Client;
+use hyper::net::HttpsConnector;
+use hyper_native_tls::NativeTlsClient;
+use hubcaps::{Credentials, Github};
+
+
 
 use ofborg::acl;
 
@@ -56,6 +62,19 @@ impl Config {
                 .clone()
                 .expect("fetching config's runner.authorized_users")
         );
+    }
+
+    pub fn github(&self) -> Github {
+        Github::new(
+            "my-cool-user-agent/0.1.0",
+            // tls configured hyper client
+            Client::with_connector(
+                HttpsConnector::new(
+                    NativeTlsClient::new().unwrap()
+                )
+            ),
+            Credentials::Token(self.github.clone().unwrap().token)
+        )
     }
 }
 
