@@ -53,6 +53,7 @@ impl Nix {
             .current_dir(nixpkgs)
             .stdout(Stdio::from(stdout))
             .stderr(Stdio::from(stderr))
+            .env("HOME", "/homeless-shelter")
             .env("NIX_PATH", nixpath)
             .env("NIX_REMOTE", &self.remote)
             .args(&["--option", "restrict-eval", "true"])
