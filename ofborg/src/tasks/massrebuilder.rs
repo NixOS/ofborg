@@ -56,7 +56,21 @@ impl worker::SimpleWorker for MassRebuildWorker {
             .repo(job.repo.owner.clone(), job.repo.name.clone());
         let gists = self.github.gists();
 
+
+        let mut overall_status = CommitStatus::new(
+            repo.statuses(),
+            job.pr.head_sha.clone(),
+            "grahamcofborg-eval".to_owned(),
+            "Starting".to_owned(),
+            None
+        );
+
+        overall_status.set_with_description("Starting", hubcaps::statuses::State::Pending);
+
         let project = self.cloner.project(job.repo.full_name.clone(), job.repo.clone_url.clone());
+
+        overall_status.set_with_description("Cloning project", hubcaps::statuses::State::Pending);
+
         let co = project.clone_for("mr-est".to_string(),
                                    job.pr.number.to_string()).unwrap();
 
@@ -65,30 +79,65 @@ impl worker::SimpleWorker for MassRebuildWorker {
             None => { String::from("origin/master") }
         };
 
+        overall_status.set_with_description(
+            format!("Checking out {}", target_branch),
+            hubcaps::statuses::State::Pending
+        );
         let refpath = co.checkout_ref(target_branch.as_ref()).unwrap();
 
+
+        overall_status.set_with_description(
+            "Checking original stdenvs",
+            hubcaps::statuses::State::Pending
+        );
 
         let mut stdenvs = Stdenvs::new(self.nix.clone(), PathBuf::from(&refpath));
         stdenvs.identify_before();
 
+        overall_status.set_with_description(
+            "Fetching PR",
+            hubcaps::statuses::State::Pending
+        );
+
         co.fetch_pr(job.pr.number).unwrap();
 
         if !co.commit_exists(job.pr.head_sha.as_ref()) {
+            overall_status.set_with_description(
+                "Commit not found",
+                hubcaps::statuses::State::Error
+            );
+
             info!("Commit {} doesn't exist", job.pr.head_sha);
             return self.actions().skip(&job);
         }
 
+        overall_status.set_with_description(
+            "Merging PR",
+            hubcaps::statuses::State::Pending
+        );
+
         if let Err(_) = co.merge_commit(job.pr.head_sha.as_ref()) {
+            overall_status.set_with_description(
+                "Failed to merge",
+                hubcaps::statuses::State::Failure
+            );
+
             info!("Failed to merge {}", job.pr.head_sha);
             return self.actions().skip(&job);
         }
 
+        overall_status.set_with_description(
+            "Checking new stdenvs",
+            hubcaps::statuses::State::Pending
+        );
+
         stdenvs.identify_after();
 
         println!("Got path: {:?}, building", refpath);
-        if !stdenvs.are_same() {
-            println!("Stdenvs changed? {:?}", stdenvs.changed());
-        }
+        overall_status.set_with_description(
+            "Begining Evaluations",
+            hubcaps::statuses::State::Pending
+        );
 
         let eval_checks = vec![
             EvalChecker::new("package-list",
@@ -157,18 +206,15 @@ impl worker::SimpleWorker for MassRebuildWorker {
         let eval_results: bool = eval_checks.into_iter()
             .map(|check|
                  {
-                     let statuses = repo.statuses();
+                     let mut status = CommitStatus::new(
+                         repo.statuses(),
+                         job.pr.head_sha.clone(),
+                         check.name(),
+                         check.cli_cmd(),
+                         None
+                     );
 
-                     statuses.create(
-                         job.pr.head_sha.as_ref(),
-                         &hubcaps::statuses::StatusOptions::builder(
-                             hubcaps::statuses::State::Pending
-                         )
-                             .context(check.name())
-                             .description(check.cli_cmd())
-                             .target_url("")
-                             .build()
-                     ).expect("Failed to mark pending status on commit");
+                     status.set(hubcaps::statuses::State::Pending);
 
                      let state: hubcaps::statuses::State;
                      let mut out: File;
@@ -199,14 +245,8 @@ impl worker::SimpleWorker for MassRebuildWorker {
                          }
                      ).expect("Failed to create gist!").html_url;
 
-                     statuses.create(
-                         job.pr.head_sha.as_ref(),
-                         &hubcaps::statuses::StatusOptions::builder(state.clone())
-                             .context(check.name())
-                             .description(check.cli_cmd())
-                             .target_url(gist_url)
-                             .build()
-                     ).expect("Failed to mark final status on commit");
+                     status.set_url(Some(gist_url));
+                     status.set(state.clone());
 
                      if state == hubcaps::statuses::State::Success {
                          return Ok(())
@@ -217,7 +257,68 @@ impl worker::SimpleWorker for MassRebuildWorker {
             )
             .all(|status| status == Ok(()));
 
+        if eval_results {
+            overall_status.set_with_description(
+                "Calculating Changed Outputs",
+                hubcaps::statuses::State::Pending
+            );
+
+            if !stdenvs.are_same() {
+                println!("Stdenvs changed? {:?}", stdenvs.changed());
+            }
+
+
+        }
+
         return vec![];
+    }
+}
+
+struct CommitStatus<'a> {
+    api: hubcaps::statuses::Statuses<'a>,
+    sha: String,
+    context: String,
+    description: String,
+    url: String,
+}
+
+impl <'a> CommitStatus<'a> {
+    fn new(api: hubcaps::statuses::Statuses<'a>, sha: String, context: String, description: String, url: Option<String>) -> CommitStatus<'a> {
+        let mut stat = CommitStatus {
+            api: api,
+            sha: sha,
+            context: context,
+            description: description,
+            url: "".to_owned(),
+        };
+
+        stat.set_url(url);
+
+        return stat
+    }
+
+    fn set_url(&mut self, url: Option<String>) {
+        self.url = url.unwrap_or(String::from(""))
+    }
+
+    fn set_with_description(&mut self, description: &str, state: hubcaps::statuses::State) {
+        self.set_description(description.to_owned());
+        self.set(state);
+    }
+
+    fn set_description(&mut self, description: String) {
+        self.description = description;
+    }
+
+    fn set(&self, state: hubcaps::statuses::State) {
+        self.api.create(
+            self.sha.as_ref(),
+            &hubcaps::statuses::StatusOptions::builder(state)
+                .context(self.context.clone())
+                .description(self.description.clone())
+                .target_url(self.url.clone())
+                .build()
+        ).expect("Failed to mark final status on commit");
     }
 }
 
