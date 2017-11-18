@@ -13,6 +13,7 @@ pub struct Response {
 
 pub type Actions = Vec<Action>;
 
+#[derive(Debug)]
 pub enum Action {
     Ack,
     NackRequeue,

@@ -1,6 +1,7 @@
 extern crate amqp;
 extern crate env_logger;
 
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::io::BufRead;
@@ -13,17 +14,20 @@ use ofborg::nix;
 
 use ofborg::worker;
 use amqp::protocol::basic::{Deliver,BasicProperties};
+use hubcaps;
 
 pub struct MassRebuildWorker {
     cloner: checkout::CachedCloner,
     nix: nix::Nix,
+    github: hubcaps::Github,
 }
 
 impl MassRebuildWorker {
-    pub fn new(cloner: checkout::CachedCloner, nix: nix::Nix) -> MassRebuildWorker {
+    pub fn new(cloner: checkout::CachedCloner, nix: nix::Nix, github: hubcaps::Github) -> MassRebuildWorker {
         return MassRebuildWorker{
             cloner: cloner,
             nix: nix,
+            github: github,
         };
     }
 
@@ -48,6 +52,10 @@ impl worker::SimpleWorker for MassRebuildWorker {
     }
 
     fn consumer(&self, job: &massrebuildjob::MassRebuildJob) -> worker::Actions {
+        let repo = self.github
+            .repo(job.repo.owner.clone(), job.repo.name.clone());
+        let gists = self.github.gists();
+
         let project = self.cloner.project(job.repo.full_name.clone(), job.repo.clone_url.clone());
         let co = project.clone_for("mr-est".to_string(),
                                    job.pr.number.to_string()).unwrap();
@@ -146,7 +154,68 @@ impl worker::SimpleWorker for MassRebuildWorker {
             ),
         ];
 
-        eval_checks.into_iter().map(|check| check.execute((&refpath).to_owned()));
+        let eval_results: bool = eval_checks.into_iter()
+            .map(|check|
+                 {
+                     let statuses = repo.statuses();
+
+                     statuses.create(
+                         job.pr.head_sha.as_ref(),
+                         &hubcaps::statuses::StatusOptions::builder(
+                             hubcaps::statuses::State::Pending
+                         )
+                             .context(check.name())
+                             .description(check.cli_cmd())
+                             .target_url("")
+                             .build()
+                     ).expect("Failed to mark pending status on commit");
+
+                     let state: hubcaps::statuses::State;
+                     let mut out: File;
+                     match check.execute((&refpath).to_owned()) {
+                         Ok(o) => {
+                             out = o;
+                             state = hubcaps::statuses::State::Success;
+                         }
+                         Err(o) => {
+                             out = o;
+                             state = hubcaps::statuses::State::Failure;
+                         }
+                     }
+
+                     let mut files = HashMap::new();
+                     files.insert(check.name(),
+                                  hubcaps::gists::Content {
+                                      filename: Some(check.name()),
+                                      content: file_to_str(&mut out),
+                                  }
+                     );
+
+                     let gist_url = gists.create(
+                         &hubcaps::gists::GistOptions {
+                             description: Some(format!("{:?}", state)),
+                             public: Some(true),
+                             files: files,
+                         }
+                     ).expect("Failed to create gist!").html_url;
+
+                     statuses.create(
+                         job.pr.head_sha.as_ref(),
+                         &hubcaps::statuses::StatusOptions::builder(state.clone())
+                             .context(check.name())
+                             .description(check.cli_cmd())
+                             .target_url(gist_url)
+                             .build()
+                     ).expect("Failed to mark final status on commit");
+
+                     if state == hubcaps::statuses::State::Success {
+                         return Ok(())
+                     } else {
+                         return Err(())
+                     }
+                 }
+            )
+            .all(|status| status == Ok(()));
 
         return vec![];
     }
@@ -170,8 +239,18 @@ impl EvalChecker {
         }
     }
 
-    fn execute(&self, path: String) {
-        self.nix.safely(&self.cmd, &Path::new(&path), self.args.clone());
+    fn name(&self) -> String {
+        format!("grahamcofborg-eval-{}", self.name)
+    }
+
+    fn execute(&self, path: String) -> Result<File, File> {
+        self.nix.safely(&self.cmd, &Path::new(&path), self.args.clone())
+    }
+
+    fn cli_cmd(&self) -> String {
+        let mut cli = vec![self.cmd.clone()];
+        cli.append(&mut self.args.clone());
+        return cli.join(" ");
     }
 }
 
