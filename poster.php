@@ -52,6 +52,11 @@ function reply_to_issue($body, $output, $success, $system) {
         $event = 'COMMENT';
     }
 
+    // With multiple archs, it is better to not approve at all, since
+    // another arch may come in later with a failure.
+    // - By request of Domen
+    $event = 'COMMENT';
+
     $sha = $body->pr->head_sha;
     echo "On sha: $sha\n";
     echo "Body:\n";
