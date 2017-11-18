@@ -30,9 +30,9 @@ impl Nix {
             attrargs.push(attr);
         }
 
-        let stdout = tempfile().unwrap();
-        let stderr = stdout.try_clone().unwrap();
-        let mut reader = stderr.try_clone().unwrap();
+        let stdout = tempfile().expect("Fetching a stdout tempfile");
+        let stderr = stdout.try_clone().expect("Cloning stdout for stderr");
+        let mut reader = stderr.try_clone().expect("Cloning stderr to the reader");
 
         let status = Command::new("nix-build")
             .env_clear()
@@ -47,9 +47,9 @@ impl Nix {
             .arg("--keep-going")
             .args(attrargs)
             .status()
-            .unwrap();
+            .expect("Running nix-build");
 
-        reader.seek(SeekFrom::Start(0)).unwrap();
+        reader.seek(SeekFrom::Start(0)).expect("Seeking to Start(0)");
 
         if status.success() {
             return Ok(reader)
@@ -58,17 +58,3 @@ impl Nix {
         }
     }
 }
-
-/*
-        $attrs = array_intersperse(array_values((array)$body->attrs), '-A');
-        var_dump($attrs);
-
-        $fillers = implode(" ", array_fill(0, count($attrs), '%s'));
-
-        $cmd = 'NIX_PATH=nixpkgs=%s nix-build --no-out-link --argstr system %s --option restrict-eval true --keep-going . ' . $fillers;
-        $args = $attrs;
-        array_unshift($args, NIX_SYSTEM);
-        array_unshift($args, $pname);
-
-
-*/
