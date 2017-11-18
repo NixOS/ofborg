@@ -5,6 +5,7 @@ use std::fs::File;
 use std::io::Read;
 use std::io::BufRead;
 use std::io::BufReader;
+use std::path::Path;
 use std::path::PathBuf;
 use ofborg::checkout;
 use ofborg::message::massrebuildjob;
@@ -81,7 +82,96 @@ impl worker::SimpleWorker for MassRebuildWorker {
             println!("Stdenvs changed? {:?}", stdenvs.changed());
         }
 
+        let eval_checks = vec![
+            EvalChecker::new("package-list",
+                             "nix-env",
+                             vec![
+                                 String::from("--file"),
+                                 String::from("."),
+                                 String::from("--query"),
+                                 String::from("--available"),
+                                 String::from("--json"),
+                             ],
+                             self.nix.clone()
+            ),
+
+            EvalChecker::new("nixos-options",
+                             "nix-instantiate",
+                             vec![
+                                 String::from("./nixos/release.nix"),
+                                 String::from("-A"),
+                                 String::from("options"),
+                             ],
+                             self.nix.clone()
+            ),
+
+            EvalChecker::new("nixos-manual",
+                             "nix-instantiate",
+                             vec![
+                                 String::from("./nixos/release.nix"),
+                                 String::from("-A"),
+                                 String::from("manual"),
+                             ],
+                             self.nix.clone()
+            ),
+
+            EvalChecker::new("nixpkgs-manual",
+                             "nix-instantiate",
+                             vec![
+                                 String::from("./pkgs/top-level/release.nix"),
+                                 String::from("-A"),
+                                 String::from("manual"),
+                             ],
+                             self.nix.clone()
+            ),
+
+            EvalChecker::new("nixpkgs-tarball",
+                             "nix-instantiate",
+                             vec![
+                                 String::from("./pkgs/top-level/release.nix"),
+                                 String::from("-A"),
+                                 String::from("tarball"),
+                             ],
+                             self.nix.clone()
+            ),
+
+            EvalChecker::new("nixpkgs-unstable-jobset",
+                             "nix-instantiate",
+                             vec![
+                                 String::from("./pkgs/top-level/release.nix"),
+                                 String::from("-A"),
+                                 String::from("unstable"),
+                             ],
+                             self.nix.clone()
+            ),
+        ];
+
+        eval_checks.into_iter().map(|check| check.execute((&refpath).to_owned()));
+
         return vec![];
+    }
+}
+
+struct EvalChecker {
+    name: String,
+    cmd: String,
+    args: Vec<String>,
+    nix: nix::Nix,
+
+}
+
+impl EvalChecker {
+    fn new(name: &str, cmd: &str, args: Vec<String>, nix: nix::Nix) -> EvalChecker {
+        EvalChecker{
+            name: name.to_owned(),
+            cmd: cmd.to_owned(),
+            args: args,
+            nix: nix,
+        }
+    }
+
+    fn execute(&self, path: String) {
+        self.nix.safely(&self.cmd, &Path::new(&path), self.args.clone());
     }
 }
 
