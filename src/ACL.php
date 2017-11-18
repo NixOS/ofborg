@@ -6,6 +6,7 @@ class ACL {
         return [
             'grahamc/elm-stuff',
             'nixos/nixpkgs',
+            'nixos/nixpkgs-channels',
         ];
     }
 
