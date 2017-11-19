@@ -132,6 +132,7 @@ pub trait GitClonable {
     fn checkout(&self, git_ref: &OsStr) -> Result<(), Error> {
         let mut lock = self.lock()?;
 
+        debug!("git checkout {:?}", git_ref);
 
         let result = Command::new("git")
             .arg("checkout")

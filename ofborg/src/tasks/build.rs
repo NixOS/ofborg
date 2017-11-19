@@ -62,7 +62,7 @@ impl worker::SimpleWorker for BuildWorker {
             None => { String::from("origin/master") }
         };
 
-        let refpath = co.checkout_ref(target_branch.as_ref()).unwrap();
+        let refpath = co.checkout_origin_ref(target_branch.as_ref()).unwrap();
         co.fetch_pr(job.pr.number).unwrap();
 
         if !co.commit_exists(job.pr.head_sha.as_ref()) {

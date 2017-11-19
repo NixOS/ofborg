@@ -5,6 +5,7 @@ use std::io::{Error,ErrorKind};
 use ofborg::clone;
 use ofborg::clone::GitClonable;
 use std::ffi::OsStr;
+use std::ffi::OsString;
 use std::process::Command;
 
 pub struct CachedCloner {
@@ -73,6 +74,13 @@ impl CachedProject {
 }
 
 impl CachedProjectCo {
+    pub fn checkout_origin_ref(&self, git_ref: &OsStr) -> Result<String, Error> {
+        let mut pref = OsString::from("origin/");
+        pref.push(git_ref);
+
+        self.checkout_ref(&pref)
+    }
+
     pub fn checkout_ref(&self, git_ref: &OsStr) -> Result<String, Error> {
         fs::create_dir_all(&self.root)?;
 
