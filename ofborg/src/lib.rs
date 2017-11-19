@@ -23,9 +23,13 @@ pub mod worker;
 pub mod config;
 pub mod message;
 pub mod tasks;
+pub mod evalchecker;
 pub mod nix;
 pub mod ghevent;
 pub mod commentparser;
+pub mod commitstatus;
+pub mod outpathdiff;
+
 
 pub mod ofborg {
     pub use config;
@@ -35,8 +39,11 @@ pub mod ofborg {
     pub use worker;
     pub use message;
     pub use tasks;
+    pub use evalchecker;
+    pub use commitstatus;
     pub use ghevent;
     pub use nix;
     pub use acl;
     pub use commentparser;
+    pub use outpathdiff;
 }

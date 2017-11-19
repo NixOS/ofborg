@@ -51,10 +51,15 @@ fn main() {
     let nix = nix::new(cfg.nix.system.clone(), cfg.nix.remote.clone());
 
 
-    let mrw = tasks::massrebuilder::MassRebuildWorker::new(cloner, nix, cfg.github());
+    let mrw = tasks::massrebuilder::MassRebuildWorker::new(
+        cloner,
+        nix,
+        cfg.github(),
+        cfg.checkout.root.clone()
+    );
     println!("{:?}", mrw.consumer(&message::massrebuildjob::MassRebuildJob{
         pr: ofborg::message::Pr {
-            head_sha: String::from("e82a34e55cc52e0eace0d9b5d4452c7359038a19"),
+            head_sha: String::from("85589b80e81d5839cc91eb6be2cc3f7c041b760a"),
             number: 30777,
             target_branch: Some(String::from("master")),
         },
@@ -70,7 +75,7 @@ fn main() {
 
 
     channel.basic_consume(
-        worker::new(tasks::massrebuilder::MassRebuildWorker::new(cloner, nix, cfg.github())),
+        worker::new(mrw),
         "mass-rebuild-check-jobs",
         format!("{}-mass-rebuild-checker", cfg.whoami()).as_ref(),
         false,

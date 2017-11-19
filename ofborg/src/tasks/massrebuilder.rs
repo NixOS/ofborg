@@ -13,6 +13,9 @@ use ofborg::message::massrebuildjob;
 use ofborg::nix;
 
 use ofborg::worker;
+use ofborg::outpathdiff::OutPathDiff;
+use ofborg::evalchecker::EvalChecker;
+use ofborg::commitstatus::CommitStatus;
 use amqp::protocol::basic::{Deliver,BasicProperties};
 use hubcaps;
 
@@ -20,14 +23,16 @@ pub struct MassRebuildWorker {
     cloner: checkout::CachedCloner,
     nix: nix::Nix,
     github: hubcaps::Github,
+    tmp_root: String,
 }
 
 impl MassRebuildWorker {
-    pub fn new(cloner: checkout::CachedCloner, nix: nix::Nix, github: hubcaps::Github) -> MassRebuildWorker {
+    pub fn new(cloner: checkout::CachedCloner, nix: nix::Nix, github: hubcaps::Github, tmp_root: String) -> MassRebuildWorker {
         return MassRebuildWorker{
             cloner: cloner,
             nix: nix,
             github: github,
+            tmp_root: tmp_root,
         };
     }
 
@@ -76,23 +81,36 @@ impl worker::SimpleWorker for MassRebuildWorker {
 
         let target_branch = match job.pr.target_branch.clone() {
             Some(x) => { x }
-            None => { String::from("origin/master") }
+            None => { String::from("master") }
         };
 
         overall_status.set_with_description(
-            format!("Checking out {}", target_branch),
+            format!("Checking out {}", &target_branch).as_ref(),
             hubcaps::statuses::State::Pending
         );
-        let refpath = co.checkout_ref(target_branch.as_ref()).unwrap();
-
+        info!("Checking out target branch {}", &target_branch);
+        let refpath = co.checkout_origin_ref(target_branch.as_ref()).unwrap();
 
         overall_status.set_with_description(
             "Checking original stdenvs",
             hubcaps::statuses::State::Pending
         );
 
+
         let mut stdenvs = Stdenvs::new(self.nix.clone(), PathBuf::from(&refpath));
         stdenvs.identify_before();
+
+        let mut rebuildsniff = OutPathDiff::new(
+            self.nix.clone(),
+            PathBuf::from(&refpath)
+        );
+
+        overall_status.set_with_description(
+            "Checking original out paths",
+            hubcaps::statuses::State::Pending
+        );
+
+        rebuildsniff.find_before();
 
         overall_status.set_with_description(
             "Fetching PR",
@@ -132,6 +150,13 @@ impl worker::SimpleWorker for MassRebuildWorker {
         );
 
         stdenvs.identify_after();
+
+        overall_status.set_with_description(
+            "Checking new out paths",
+            hubcaps::statuses::State::Pending
+        );
+
+        rebuildsniff.find_after();
 
         println!("Got path: {:?}, building", refpath);
         overall_status.set_with_description(
@@ -218,7 +243,7 @@ impl worker::SimpleWorker for MassRebuildWorker {
 
                      let state: hubcaps::statuses::State;
                      let mut out: File;
-                     match check.execute((&refpath).to_owned()) {
+                     match check.execute(Path::new(&refpath)) {
                          Ok(o) => {
                              out = o;
                              state = hubcaps::statuses::State::Success;
@@ -263,95 +288,28 @@ impl worker::SimpleWorker for MassRebuildWorker {
                 hubcaps::statuses::State::Pending
             );
 
+            tagger = StdenvTagger::new();
             if !stdenvs.are_same() {
                 println!("Stdenvs changed? {:?}", stdenvs.changed());
             }
 
+            if let Some(attrs) = rebuildsniff.calculate_rebuild() {
+                bucketize_attrs(attrs)
+            }
 
+            overall_status.set_with_description(
+                "^.^!",
+                hubcaps::statuses::State::Success
+            );
+
+        } else {
+            overall_status.set_with_description(
+                "Complete, with errors",
+                hubcaps::statuses::State::Failed
+            );
         }
 
         return vec![];
-    }
-}
-
-struct CommitStatus<'a> {
-    api: hubcaps::statuses::Statuses<'a>,
-    sha: String,
-    context: String,
-    description: String,
-    url: String,
-}
-
-impl <'a> CommitStatus<'a> {
-    fn new(api: hubcaps::statuses::Statuses<'a>, sha: String, context: String, description: String, url: Option<String>) -> CommitStatus<'a> {
-        let mut stat = CommitStatus {
-            api: api,
-            sha: sha,
-            context: context,
-            description: description,
-            url: "".to_owned(),
-        };
-
-        stat.set_url(url);
-
-        return stat
-    }
-
-    fn set_url(&mut self, url: Option<String>) {
-        self.url = url.unwrap_or(String::from(""))
-    }
-
-    fn set_with_description(&mut self, description: &str, state: hubcaps::statuses::State) {
-        self.set_description(description.to_owned());
-        self.set(state);
-    }
-
-    fn set_description(&mut self, description: String) {
-        self.description = description;
-    }
-
-    fn set(&self, state: hubcaps::statuses::State) {
-        self.api.create(
-            self.sha.as_ref(),
-            &hubcaps::statuses::StatusOptions::builder(state)
-                .context(self.context.clone())
-                .description(self.description.clone())
-                .target_url(self.url.clone())
-                .build()
-        ).expect("Failed to mark final status on commit");
-    }
-}
-
-struct EvalChecker {
-    name: String,
-    cmd: String,
-    args: Vec<String>,
-    nix: nix::Nix,
-
-}
-
-impl EvalChecker {
-    fn new(name: &str, cmd: &str, args: Vec<String>, nix: nix::Nix) -> EvalChecker {
-        EvalChecker{
-            name: name.to_owned(),
-            cmd: cmd.to_owned(),
-            args: args,
-            nix: nix,
-        }
-    }
-
-    fn name(&self) -> String {
-        format!("grahamcofborg-eval-{}", self.name)
-    }
-
-    fn execute(&self, path: String) -> Result<File, File> {
-        self.nix.safely(&self.cmd, &Path::new(&path), self.args.clone())
-    }
-
-    fn cli_cmd(&self) -> String {
-        let mut cli = vec![self.cmd.clone()];
-        cli.append(&mut self.args.clone());
-        return cli.join(" ");
     }
 }
 
