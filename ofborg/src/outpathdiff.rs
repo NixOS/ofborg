@@ -95,12 +95,12 @@ impl OutPathDiff {
         if let Some(cur) = self.current {
             if let Some(orig) = self.original {
                 for key in cur.keys() {
-                    debug!("Checking out {}", key);
+                    trace!("Checking out {}", key);
                     if cur.get(key) != orig.get(key) {
-                        debug!("    {:?} != {:?}", cur.get(key), orig.get(key));
+                        trace!("    {:?} != {:?}", cur.get(key), orig.get(key));
                         rebuild.push(key.clone())
                     } else {
-                        debug!("    {:?} == {:?}", cur.get(key), orig.get(key));
+                        trace!("    {:?} == {:?}", cur.get(key), orig.get(key));
                     }
                 }
 

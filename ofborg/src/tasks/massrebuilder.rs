@@ -305,7 +305,7 @@ impl worker::SimpleWorker for MassRebuildWorker {
         } else {
             overall_status.set_with_description(
                 "Complete, with errors",
-                hubcaps::statuses::State::Failed
+                hubcaps::statuses::State::Failure
             );
         }
 
