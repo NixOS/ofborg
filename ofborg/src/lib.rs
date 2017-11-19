@@ -29,6 +29,7 @@ pub mod ghevent;
 pub mod commentparser;
 pub mod commitstatus;
 pub mod outpathdiff;
+pub mod tagger;
 
 
 pub mod ofborg {
@@ -46,4 +47,5 @@ pub mod ofborg {
     pub use acl;
     pub use commentparser;
     pub use outpathdiff;
+    pub use tagger;
 }

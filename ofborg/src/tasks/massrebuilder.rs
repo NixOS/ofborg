@@ -13,6 +13,7 @@ use ofborg::message::massrebuildjob;
 use ofborg::nix;
 
 use ofborg::worker;
+use ofborg::tagger::RebuildTagger;
 use ofborg::outpathdiff::OutPathDiff;
 use ofborg::evalchecker::EvalChecker;
 use ofborg::commitstatus::CommitStatus;
@@ -288,14 +289,18 @@ impl worker::SimpleWorker for MassRebuildWorker {
                 hubcaps::statuses::State::Pending
             );
 
-            tagger = StdenvTagger::new();
+            // let tagger = StdenvTagger::new();
             if !stdenvs.are_same() {
                 println!("Stdenvs changed? {:?}", stdenvs.changed());
             }
 
+            let mut rebuildTags = RebuildTagger::new();
             if let Some(attrs) = rebuildsniff.calculate_rebuild() {
-                bucketize_attrs(attrs)
+                tagger.parse_attrs(attrs);
             }
+            println!("New Tags: {:?}", tagger.tags_to_add());
+            println!("Drop Tags: {:?}", tagger.tags_to_remove());
+
 
             overall_status.set_with_description(
                 "^.^!",
