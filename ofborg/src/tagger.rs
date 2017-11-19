@@ -1,3 +1,58 @@
+use ofborg::tasks;
+
+pub struct StdenvTagger {
+    possible: Vec<String>,
+    selected: Vec<String>,
+}
+
+impl StdenvTagger {
+    pub fn new() -> StdenvTagger {
+        let mut t = StdenvTagger {
+            possible: vec![
+                String::from("10.rebuild-linux-stdenv"),
+                String::from("10.rebuild-darwin-stdenv"),
+            ],
+            selected: vec![],
+        };
+        t.possible.sort();
+
+        return t;
+    }
+
+    pub fn changed(&mut self, systems: Vec<tasks::massrebuilder::System>) {
+        for system in systems {
+            match system {
+                tasks::massrebuilder::System::X8664Darwin => {
+                    self.selected.push(String::from("10.rebuild-darwin-stdenv"));
+                }
+                tasks::massrebuilder::System::X8664Linux => {
+                    self.selected.push(String::from("10.rebuild-linux-stdenv"));
+                }
+            }
+        }
+
+        for tag in &self.selected {
+            if !self.possible.contains(&tag) {
+                panic!("Tried to add label {} but it isn't in the possible list!", tag);
+            }
+        }
+    }
+
+    pub fn tags_to_add(&self) -> Vec<String> {
+        self.selected.clone()
+    }
+
+    pub fn tags_to_remove(&self) -> Vec<String> {
+        let mut remove = self.possible.clone();
+        for tag in &self.selected {
+            let pos = remove.binary_search(&tag).unwrap();
+            remove.remove(pos);
+        }
+
+        return remove;
+    }
+}
+
 
 pub struct RebuildTagger {
     possible: Vec<String>,

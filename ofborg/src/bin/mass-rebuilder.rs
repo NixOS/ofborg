@@ -57,6 +57,7 @@ fn main() {
         cfg.github(),
         cfg.checkout.root.clone()
     );
+    /*
     println!("{:?}", mrw.consumer(&message::massrebuildjob::MassRebuildJob{
         pr: ofborg::message::Pr {
             head_sha: String::from("85589b80e81d5839cc91eb6be2cc3f7c041b760a"),
@@ -70,9 +71,7 @@ fn main() {
             name: String::from("nixpkgs"),
         }
     }));
-    panic!();
-
-
+     */
 
     channel.basic_consume(
         worker::new(mrw),

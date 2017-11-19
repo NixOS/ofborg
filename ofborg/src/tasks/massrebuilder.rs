@@ -13,7 +13,7 @@ use ofborg::message::massrebuildjob;
 use ofborg::nix;
 
 use ofborg::worker;
-use ofborg::tagger::RebuildTagger;
+use ofborg::tagger::{StdenvTagger,RebuildTagger};
 use ofborg::outpathdiff::OutPathDiff;
 use ofborg::evalchecker::EvalChecker;
 use ofborg::commitstatus::CommitStatus;
@@ -61,7 +61,7 @@ impl worker::SimpleWorker for MassRebuildWorker {
         let repo = self.github
             .repo(job.repo.owner.clone(), job.repo.name.clone());
         let gists = self.github.gists();
-
+        let issue = repo.issue(job.pr.number);
 
         let mut overall_status = CommitStatus::new(
             repo.statuses(),
@@ -289,18 +289,19 @@ impl worker::SimpleWorker for MassRebuildWorker {
                 hubcaps::statuses::State::Pending
             );
 
-            // let tagger = StdenvTagger::new();
+            let mut stdenvtagger = StdenvTagger::new();
             if !stdenvs.are_same() {
-                println!("Stdenvs changed? {:?}", stdenvs.changed());
+                stdenvtagger.changed(stdenvs.changed());
             }
+            update_labels(&issue, stdenvtagger.tags_to_add(),
+                          stdenvtagger.tags_to_remove());
 
             let mut rebuildTags = RebuildTagger::new();
             if let Some(attrs) = rebuildsniff.calculate_rebuild() {
-                tagger.parse_attrs(attrs);
+                rebuildTags.parse_attrs(attrs);
             }
-            println!("New Tags: {:?}", tagger.tags_to_add());
-            println!("Drop Tags: {:?}", tagger.tags_to_remove());
-
+            update_labels(&issue, rebuildTags.tags_to_add(),
+                          rebuildTags.tags_to_remove());
 
             overall_status.set_with_description(
                 "^.^!",
@@ -324,7 +325,7 @@ enum StdenvFrom {
 }
 
 #[derive(Debug)]
-enum System {
+pub enum System {
     X8664Darwin,
     X8664Linux
 }
@@ -422,6 +423,35 @@ impl Stdenvs {
                 None
             }
         }
+    }
+}
+
+
+pub fn update_labels(issue: &hubcaps::issues::IssueRef, add: Vec<String>, remove: Vec<String>) {
+    let l = issue.labels();
+
+    let existing: Vec<String> = issue.get().unwrap().labels
+        .iter()
+        .map(|l| l.name.clone())
+        .collect();
+    println!("Already: {:?}", existing);
+    let to_add = add
+        .iter()
+        .filter(|l| !existing.contains(l)) // Remove labels already on the issue
+        .map(|l| l.as_ref()).collect();
+    info!("Adding labels: {:?}", to_add);
+
+    let to_remove: Vec<String> = remove
+        .iter()
+        .filter(|l| existing.contains(l)) // Remove labels already on the issue
+        .map(|l| l.clone())
+        .collect();
+    info!("Removing labels: {:?}", to_remove);
+
+    l.add(to_add);
+
+    for label in to_remove {
+        l.remove(&label);
     }
 }
 
