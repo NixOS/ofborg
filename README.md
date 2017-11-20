@@ -73,6 +73,12 @@ function gh_client() {
 ## Getting started on the rust one...
 
 ```
+nix-shell ./shell.nix -A rustEnv
+$ cd ofborg
+$ cargo build
+```
+
+```
 cargo build
 ```
 

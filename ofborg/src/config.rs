@@ -66,7 +66,7 @@ impl Config {
 
     pub fn github(&self) -> Github {
         Github::new(
-            "my-cool-user-agent/0.1.0",
+            "github.com/grahamc/ofborg",
             // tls configured hyper client
             Client::with_connector(
                 HttpsConnector::new(
