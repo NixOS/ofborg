@@ -24,16 +24,14 @@ pub struct MassRebuildWorker {
     cloner: checkout::CachedCloner,
     nix: nix::Nix,
     github: hubcaps::Github,
-    tmp_root: String,
 }
 
 impl MassRebuildWorker {
-    pub fn new(cloner: checkout::CachedCloner, nix: nix::Nix, github: hubcaps::Github, tmp_root: String) -> MassRebuildWorker {
+    pub fn new(cloner: checkout::CachedCloner, nix: nix::Nix, github: hubcaps::Github) -> MassRebuildWorker {
         return MassRebuildWorker{
             cloner: cloner,
             nix: nix,
             github: github,
-            tmp_root: tmp_root,
         };
     }
 
@@ -296,12 +294,12 @@ impl worker::SimpleWorker for MassRebuildWorker {
             update_labels(&issue, stdenvtagger.tags_to_add(),
                           stdenvtagger.tags_to_remove());
 
-            let mut rebuildTags = RebuildTagger::new();
+            let mut rebuild_tags = RebuildTagger::new();
             if let Some(attrs) = rebuildsniff.calculate_rebuild() {
-                rebuildTags.parse_attrs(attrs);
+                rebuild_tags.parse_attrs(attrs);
             }
-            update_labels(&issue, rebuildTags.tags_to_add(),
-                          rebuildTags.tags_to_remove());
+            update_labels(&issue, rebuild_tags.tags_to_add(),
+                          rebuild_tags.tags_to_remove());
 
             overall_status.set_with_description(
                 "^.^!",
@@ -315,7 +313,7 @@ impl worker::SimpleWorker for MassRebuildWorker {
             );
         }
 
-        return vec![];
+        return self.actions().done(&job);
     }
 }
 
@@ -448,10 +446,10 @@ pub fn update_labels(issue: &hubcaps::issues::IssueRef, add: Vec<String>, remove
         .collect();
     info!("Removing labels: {:?}", to_remove);
 
-    l.add(to_add);
+    l.add(to_add).expect("Failed to add tags");
 
     for label in to_remove {
-        l.remove(&label);
+        l.remove(&label).expect("Failed to remove tag");
     }
 }
 

@@ -4,20 +4,12 @@ extern crate env_logger;
 use std::collections::HashMap;
 use std::fs::File;
 use std::fs;
-use std::io::Read;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::path::Path;
 use std::path::PathBuf;
-use ofborg::checkout;
-use ofborg::message::massrebuildjob;
 use ofborg::nix;
 use std::io::Write;
-use ofborg::worker;
 use ofborg::evalchecker::EvalChecker;
-use ofborg::commitstatus::CommitStatus;
-use amqp::protocol::basic::{Deliver,BasicProperties};
-use hubcaps;
 
 pub struct OutPathDiff {
     path: PathBuf,

@@ -7,9 +7,7 @@ extern crate log;
 
 use std::env;
 use std::path::Path;
-use ofborg::worker::SimpleWorker;
 use ofborg::tasks;
-use ofborg::message;
 use ofborg::config;
 use ofborg::checkout;
 use ofborg::nix;
@@ -54,8 +52,7 @@ fn main() {
     let mrw = tasks::massrebuilder::MassRebuildWorker::new(
         cloner,
         nix,
-        cfg.github(),
-        cfg.checkout.root.clone()
+        cfg.github()
     );
     /*
     println!("{:?}", mrw.consumer(&message::massrebuildjob::MassRebuildJob{
