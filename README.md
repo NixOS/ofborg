@@ -24,6 +24,14 @@ Commands:
 @grahamcofborg eval
 ```
 
+Note: Every PR automatically evaluates when it is opened and when the
+commits change. There is no reason to run eval on a PR unless the
+evaluation has failed for weird reasons, or because master was broken
+before.
+
+---
+
+
 Multiple Commands:
 
 ```
