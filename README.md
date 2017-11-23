@@ -1,5 +1,12 @@
 # grahamcofborg
 
+## Guidelines
+
+1. make sure you've reviewed the code before you trigger it on a PR
+   that isn't your own
+2. be gentle, preferably don't run mass rebuilds / massive builds like
+   chromium on it
+
 ## Commands
 
 1. To trigger the bot, the comment _must_ start with a case
