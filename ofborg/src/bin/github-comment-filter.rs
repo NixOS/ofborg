@@ -39,12 +39,12 @@ fn main() {
     let mut channel = session.open_channel(2).unwrap();
 
     channel.basic_consume(
-        worker::new(tasks::buildfilter::BuildFilterWorker::new(
+        worker::new(tasks::githubcommentfilter::GitHubCommentWorker::new(
             cfg.acl(),
             cfg.github()
         )),
         "build-inputs",
-        format!("{}-build-filter", cfg.whoami()).as_ref(),
+        format!("{}-github-comment-filter", cfg.whoami()).as_ref(),
         false,
         false,
         false,
