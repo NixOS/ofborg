@@ -83,7 +83,6 @@ function runner($msg) {
     $ok_events = [
         'opened',
         'created',
-        'edited',
         'synchronize',
         'reopened',
     ];
