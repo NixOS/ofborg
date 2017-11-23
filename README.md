@@ -1,5 +1,53 @@
 # grahamcofborg
 
+## Commands
+
+1. To trigger the bot, the comment _must_ start with a case
+   insensitive version of `@GrahamcOfBorg`.
+2. To use multiple commands, insert a bit of whitespace and then your
+   new command.
+
+Commands:
+
+```
+@grahamcofborg build list of attrs
+```
+
+```
+@grahamcofborg eval
+```
+
+Multiple Commands:
+
+```
+@grahamcofborg build list of attrs
+@grahamcofborg eval
+```
+
+or even:
+
+```
+@grahamcofborg build list of attrs @grahamcofborg eval
+```
+
+This will _not_ work:
+
+```
+looks good to me!
+@grahamcofborg build list of attrs
+```
+
+Also this is bad:
+
+```
+@grahamcofborg build list of attrs
+looks good to me!
+```
+
+as it'll try to build `list` `of` `attrs` `looks` `good` `to` `me!`.
+
+# arch
+
 1. All github events go in to web/index.php, which sends the event to
    an exchange named for the full name of the repo (ex: nixos/nixpkgs)
    in lower case. The exchange is set to "fanout"
