@@ -2,7 +2,6 @@ use ofborg::message::{Pr,Repo};
 use ofborg::message::buildresult;
 use ofborg::worker;
 use serde_json;
-use amqp::protocol;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BuildJob {
@@ -40,11 +39,6 @@ impl Actions {
             system: self.system.clone(),
             output: vec![String::from("Merge failed")],
             success: false
-        };
-
-        let props =  protocol::basic::BasicProperties {
-            content_type: Some("application/json".to_owned()),
-            ..Default::default()
         };
 
         return vec![
