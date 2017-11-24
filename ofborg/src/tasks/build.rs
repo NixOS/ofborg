@@ -68,7 +68,7 @@ impl worker::SimpleWorker for BuildWorker {
             _ => "./default.nix"
         };
 
-        if buildfile == "./nixos/default.nix" && self.system != "x86_64-linux" {
+        if buildfile == "./nixos/release.nix" && self.system != "x86_64-linux" {
             // NixOS jobs get routed to all builders, even though darwin
             // cannot build them.
             return self.actions().nasty_hack_linux_only(&job);
