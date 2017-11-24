@@ -23,6 +23,17 @@ pub fn parse(text: &str) -> Option<Vec<Instruction>> {
             "build" => {
                 instructions.push(Instruction::Build(Subset::Nixpkgs, right.to_vec()))
             }
+            "test" => {
+                instructions.push(
+                    Instruction::Build(Subset::NixOS,
+                                       right
+                                       .into_iter()
+                                       .map(|attr| format!("tests.{}", attr))
+                                       .collect()
+                    )
+                );
+
+            }
             "eval" => {
                 instructions.push(Instruction::Eval)
             }
@@ -117,6 +128,16 @@ mod tests {
                    parse("@GrahamCOfBorg build foo bar
 
 baz"));
+    }
+
+    #[test]
+    fn test_comment() {
+        assert_eq!(Some(vec![Instruction::Build(Subset::NixOS, vec![
+            String::from("tests.foo"),
+            String::from("tests.bar"),
+            String::from("tests.baz")
+        ])]),
+                   parse("@GrahamCOfBorg test foo bar baz"));
     }
 
     #[test]

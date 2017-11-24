@@ -20,6 +20,20 @@ Commands:
 @grahamcofborg build list of attrs
 ```
 
+This will run `nix-build ./default.nix -A list -A of -A attrs` in
+the nixpkgs checkout.
+
+---
+
+```
+@grahamcofborg test list of tests
+```
+
+This will run `nix-build ./nixos/default.nix -A tests.list -A tests.of -A tests.attrs` in
+the nixpkgs checkout. Note: this will only run on x86_64-linux machines.
+
+---
+
 ```
 @grahamcofborg eval
 ```
