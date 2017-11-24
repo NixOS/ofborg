@@ -70,6 +70,7 @@ fn main() {
     }));
      */
 
+    channel.basic_prefetch(1);
     channel.basic_consume(
         worker::new(mrw),
         "mass-rebuild-check-jobs",
