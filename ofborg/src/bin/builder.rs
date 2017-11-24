@@ -16,7 +16,6 @@ use ofborg::config;
 use ofborg::checkout;
 use ofborg::worker;
 use ofborg::tasks;
-use ofborg::nix;
 
 
 fn main() {
@@ -48,7 +47,7 @@ fn main() {
     let mut channel = session.open_channel(2).unwrap();
 
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
-    let nix = nix::new(cfg.nix.system.clone(), cfg.nix.remote.clone());
+    let nix = cfg.nix();
 
     channel.basic_consume(
         worker::new(tasks::build::BuildWorker::new(cloner, nix, cfg.nix.system.clone())),

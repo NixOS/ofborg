@@ -10,7 +10,6 @@ use std::path::Path;
 use ofborg::tasks;
 use ofborg::config;
 use ofborg::checkout;
-use ofborg::nix;
 
 use ofborg::worker;
 use amqp::Session;
@@ -46,7 +45,7 @@ fn main() {
     let mut channel = session.open_channel(2).unwrap();
 
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
-    let nix = nix::new(cfg.nix.system.clone(), cfg.nix.remote.clone());
+    let nix = cfg.nix();
 
 
     let mrw = tasks::massrebuilder::MassRebuildWorker::new(

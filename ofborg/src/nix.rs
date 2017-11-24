@@ -9,21 +9,24 @@ use std::io::SeekFrom;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Nix {
     system: String,
-    remote: String
-}
-
-pub fn new(system: String, remote: String) -> Nix {
-    return Nix{
-        system: system,
-        remote: remote,
-    }
+    remote: String,
+    build_timeout: u16
 }
 
 impl Nix {
+    pub fn new(system: String, remote: String, build_timeout: u16) -> Nix {
+        return Nix{
+            system: system,
+            remote: remote,
+            build_timeout: build_timeout,
+        }
+    }
+
     pub fn with_system(&self, system: String) -> Nix {
         return Nix{
             system: system,
             remote: self.remote.clone(),
+            build_timeout: self.build_timeout,
         };
     }
 
@@ -58,6 +61,7 @@ impl Nix {
             .env("NIX_PATH", nixpath)
             .env("NIX_REMOTE", &self.remote)
             .args(&["--option", "restrict-eval", "true"])
+            .args(&["--option", "build-timeout", &format!("{}", self.build_timeout)])
             .args(&["--argstr", "system", &self.system])
             .args(args)
             .status()

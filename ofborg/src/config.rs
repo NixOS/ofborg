@@ -6,7 +6,7 @@ use hyper::Client;
 use hyper::net::HttpsConnector;
 use hyper_native_tls::NativeTlsClient;
 use hubcaps::{Credentials, Github};
-
+use nix::Nix;
 
 
 use ofborg::acl;
@@ -32,6 +32,7 @@ pub struct RabbitMQConfig {
 pub struct NixConfig {
     pub system: String,
     pub remote: String,
+    pub build_timeout_seconds: u16,
 }
 
 
@@ -75,6 +76,21 @@ impl Config {
             ),
             Credentials::Token(self.github.clone().unwrap().token)
         )
+    }
+
+    pub fn nix(&self) -> Nix {
+        if self.nix.build_timeout_seconds < 1200 {
+            error!("Note: {} is way too low for build_timeout_seconds!",
+                   self.nix.build_timeout_seconds
+            );
+            error!("Please set build_timeout_seconds to at least 1200");
+            panic!();
+        }
+
+        return Nix::new(self.nix.system.clone(),
+                        self.nix.remote.clone(),
+                        self.nix.build_timeout_seconds
+        );
     }
 }
 
