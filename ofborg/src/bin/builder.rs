@@ -49,6 +49,7 @@ fn main() {
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
     let nix = cfg.nix();
 
+    channel.basic_prefetch(1).unwrap();
     channel.basic_consume(
         worker::new(tasks::build::BuildWorker::new(cloner, nix, cfg.nix.system.clone())),
         format!("build-inputs-{}", cfg.nix.system.clone()).as_ref(),

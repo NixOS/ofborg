@@ -38,6 +38,7 @@ fn main() {
 
     let mut channel = session.open_channel(2).unwrap();
 
+    channel.basic_prefetch(1).unwrap();
     channel.basic_consume(
         worker::new(tasks::githubcommentfilter::GitHubCommentWorker::new(
             cfg.acl(),
