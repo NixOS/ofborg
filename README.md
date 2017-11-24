@@ -16,14 +16,7 @@
 
 Commands:
 
-```
-@grahamcofborg build list of attrs
-```
-
-This will run `nix-build ./default.nix -A list -A of -A attrs` in
-the nixpkgs checkout.
-
----
+### test (added: 2017-11-24)
 
 ```
 @grahamcofborg test list of tests
@@ -32,7 +25,7 @@ the nixpkgs checkout.
 This will run `nix-build ./nixos/default.nix -A tests.list -A tests.of -A tests.attrs` in
 the nixpkgs checkout. Note: this will only run on x86_64-linux machines.
 
----
+### eval
 
 ```
 @grahamcofborg eval
@@ -42,6 +35,15 @@ Note: Every PR automatically evaluates when it is opened and when the
 commits change. There is no reason to run eval on a PR unless the
 evaluation has failed for weird reasons, or because master was broken
 before.
+
+### build
+
+```
+@grahamcofborg build list of attrs
+```
+
+This will run `nix-build ./default.nix -A list -A of -A attrs` in
+the nixpkgs checkout.
 
 ---
 

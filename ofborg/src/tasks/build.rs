@@ -64,7 +64,7 @@ impl worker::SimpleWorker for BuildWorker {
         };
 
         let buildfile = match job.subset {
-            Some(commentparser::Subset::NixOS) => "./nixos/default.nix",
+            Some(commentparser::Subset::NixOS) => "./nixos/release.nix",
             _ => "./default.nix"
         };
 
