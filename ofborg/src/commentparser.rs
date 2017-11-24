@@ -72,7 +72,7 @@ mod tests {
     fn eval_and_build_comment() {
         assert_eq!(Some(vec![
             Instruction::Eval,
-            Instruction::Build(vec![
+            Instruction::Build(Subset::Nixpkgs, vec![
                 String::from("foo"),
             ])
         ]),
@@ -82,11 +82,11 @@ mod tests {
     #[test]
     fn build_and_eval_and_build_comment() {
         assert_eq!(Some(vec![
-            Instruction::Build(vec![
+            Instruction::Build(Subset::Nixpkgs, vec![
                 String::from("bar"),
             ]),
             Instruction::Eval,
-            Instruction::Build(vec![
+            Instruction::Build(Subset::Nixpkgs, vec![
                 String::from("foo"),
             ])
         ]),
@@ -99,7 +99,7 @@ mod tests {
     #[test]
     fn build_and_eval_comment() {
         assert_eq!(Some(vec![
-            Instruction::Build(vec![
+            Instruction::Build(Subset::Nixpkgs, vec![
                 String::from("foo"),
             ]),
             Instruction::Eval,
@@ -109,7 +109,7 @@ mod tests {
 
     #[test]
     fn build_comment() {
-        assert_eq!(Some(vec![Instruction::Build(vec![
+        assert_eq!(Some(vec![Instruction::Build(Subset::Nixpkgs, vec![
             String::from("foo"),
             String::from("bar"),
             String::from("baz")
@@ -121,7 +121,7 @@ baz"));
 
     #[test]
     fn build_comment_newlines() {
-        assert_eq!(Some(vec![Instruction::Build(vec![
+        assert_eq!(Some(vec![Instruction::Build(Subset::Nixpkgs, vec![
             String::from("foo"),
             String::from("bar"),
             String::from("baz")
@@ -131,7 +131,7 @@ baz"));
 
     #[test]
     fn build_comment_lower() {
-        assert_eq!(Some(vec![Instruction::Build(vec![
+        assert_eq!(Some(vec![Instruction::Build(Subset::Nixpkgs, vec![
             String::from("foo"),
             String::from("bar"),
             String::from("baz")
@@ -142,7 +142,7 @@ baz"));
 
     #[test]
     fn build_whitespace_disregarded() {
-        assert_eq!(Some(vec![Instruction::Build(vec![
+        assert_eq!(Some(vec![Instruction::Build(Subset::Nixpkgs, vec![
             String::from("foo"),
             String::from("bar"),
             String::from("baz")
@@ -163,7 +163,7 @@ baz"));
 
     #[test]
     fn build_comment_lower_package_case_retained() {
-        assert_eq!(Some(vec![Instruction::Build(vec![
+        assert_eq!(Some(vec![Instruction::Build(Subset::Nixpkgs, vec![
             String::from("foo"),
             String::from("bar"),
             String::from("baz.Baz")
