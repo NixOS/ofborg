@@ -27,6 +27,12 @@ impl Actions {
         ];
     }
 
+    pub fn nasty_hack_linux_only(&mut self, _job: &BuildJob) -> worker::Actions {
+        return vec![
+            worker::Action::Ack
+        ];
+    }
+
     pub fn merge_failed(&mut self, job: &BuildJob) -> worker::Actions {
         let msg = buildresult::BuildResult {
             repo: job.repo.clone(),

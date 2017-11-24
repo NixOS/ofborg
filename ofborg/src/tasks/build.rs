@@ -10,6 +10,7 @@ use std::io::BufRead;
 use ofborg::checkout;
 use ofborg::message::buildjob;
 use ofborg::nix;
+use ofborg::commentparser;
 
 use ofborg::worker;
 use amqp::protocol::basic::{Deliver,BasicProperties};
@@ -62,6 +63,17 @@ impl worker::SimpleWorker for BuildWorker {
             None => { String::from("origin/master") }
         };
 
+        let buildfile = match job.subset {
+            Some(commentparser::Subset::NixOS) => "./nixos/default.nix",
+            _ => "./default.nix"
+        };
+
+        if buildfile == "./nixos/default.nix" && self.system != "x86_64-linux" {
+            // NixOS jobs get routed to all builders, even though darwin
+            // cannot build them.
+            return self.actions().nasty_hack_linux_only(&job);
+        }
+
         let refpath = co.checkout_origin_ref(target_branch.as_ref()).unwrap();
         co.fetch_pr(job.pr.number).unwrap();
 
@@ -81,7 +93,7 @@ impl worker::SimpleWorker for BuildWorker {
         let success: bool;
         let reader: BufReader<File>;
         match self.nix.safely_build_attrs(refpath.as_ref(),
-                                          "./default.nix",
+                                          buildfile,
                                           job.attrs.clone()) {
             Ok(r) => {
                 success = true;
