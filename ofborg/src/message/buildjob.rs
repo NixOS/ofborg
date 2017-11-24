@@ -48,14 +48,11 @@ impl Actions {
         };
 
         return vec![
-            worker::Action::Publish(worker::QueueMsg{
-                exchange: Some("build-results".to_owned()),
-                routing_key: None,
-                mandatory: true,
-                immediate: false,
-                properties: Some(props),
-                content: serde_json::to_string(&msg).unwrap().into_bytes()
-            }),
+            worker::publish_serde_action(
+                Some("build-results".to_owned()),
+                None,
+                &msg
+            ),
             worker::Action::Ack
         ];
     }
@@ -69,21 +66,12 @@ impl Actions {
             success: success
         };
 
-        let props =  protocol::basic::BasicProperties {
-            content_type: Some("application/json".to_owned()),
-            ..Default::default()
-        };
-
-
         return vec![
-            worker::Action::Publish(worker::QueueMsg{
-                exchange: Some("build-results".to_owned()),
-                routing_key: None,
-                mandatory: true,
-                immediate: false,
-                properties: Some(props),
-                content: serde_json::to_string(&msg).unwrap().into_bytes()
-            }),
+            worker::publish_serde_action(
+                Some("build-results".to_owned()),
+                None,
+                &msg
+            ),
             worker::Action::Ack
         ];
     }

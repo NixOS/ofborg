@@ -2,7 +2,8 @@ use amqp::Basic;
 use amqp::{Consumer, Channel};
 use amqp::protocol::basic::{Deliver,BasicProperties};
 use std::marker::Send;
-
+use serde::Serialize;
+use serde_json;
 
 pub struct Worker<T: SimpleWorker> {
     internal: T
@@ -31,6 +32,23 @@ pub struct QueueMsg {
     pub content: Vec<u8>,
 }
 
+pub fn publish_serde_action<T: ?Sized>(exchange: Option<String>, routing_key: Option<String>, msg: &T) -> Action
+    where
+     T: Serialize {
+    let props = BasicProperties {
+        content_type: Some("application/json".to_owned()),
+        ..Default::default()
+    };
+
+    return Action::Publish(QueueMsg{
+        exchange: exchange,
+        routing_key: routing_key,
+        mandatory: true,
+        immediate: false,
+        properties: Some(props),
+        content: serde_json::to_string(&msg).unwrap().into_bytes()
+    });
+}
 
 pub trait SimpleWorker {
     type J;

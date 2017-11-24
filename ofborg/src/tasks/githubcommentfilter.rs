@@ -107,21 +107,11 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                             attrs: attrs,
                         };
 
-                        let props = BasicProperties {
-                            content_type: Some("application/json".to_owned()),
-                            ..Default::default()
-                        };
-
-                        response.push(
-                            worker::Action::Publish(worker::QueueMsg{
-                                exchange: Some("build-jobs".to_owned()),
-                                routing_key: None,
-                                mandatory: true,
-                                immediate: false,
-                                properties: Some(props),
-                                content: serde_json::to_string(&msg).unwrap().into_bytes()
-                            })
-                        );
+                        response.push(worker::publish_serde_action(
+                            Some("build-jobs".to_owned()),
+                            None,
+                            &msg
+                        ));
                     }
                     commentparser::Instruction::Eval => {
                         let msg = massrebuildjob::MassRebuildJob{
@@ -129,21 +119,11 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                             pr: pr_msg.clone(),
                         };
 
-                        let props = BasicProperties {
-                            content_type: Some("application/json".to_owned()),
-                            ..Default::default()
-                        };
-
-                        response.push(
-                            worker::Action::Publish(worker::QueueMsg{
-                                exchange: None,
-                                routing_key: Some("mass-rebuild-check-jobs".to_owned()),
-                                mandatory: true,
-                                immediate: false,
-                                properties: Some(props),
-                                content: serde_json::to_string(&msg).unwrap().into_bytes()
-                            })
-                        );
+                        response.push(worker::publish_serde_action(
+                            None,
+                            Some("mass-rebuild-check-jobs".to_owned()),
+                            &msg
+                        ));
                     }
 
                 }
