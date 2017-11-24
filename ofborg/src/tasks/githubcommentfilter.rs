@@ -99,7 +99,8 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                                 head_sha: pr.head.sha.clone(),
                                 target_branch: Some(pr.base.commit_ref.clone())
                             },
-                            attrs: attrs
+                            subset: Some(buildjob::Subset::Nixpkgs),
+                            attrs: attrs,
                         };
 
                         let props = BasicProperties {
