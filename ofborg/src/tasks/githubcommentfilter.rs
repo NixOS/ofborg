@@ -99,11 +99,11 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         if let Some(instructions) = instructions {
             for instruction in instructions {
                 match instruction {
-                    commentparser::Instruction::Build(attrs) => {
+                    commentparser::Instruction::Build(subset, attrs) => {
                         let msg = buildjob::BuildJob{
                             repo: repo_msg.clone(),
                             pr: pr_msg.clone(),
-                            subset: Some(buildjob::Subset::Nixpkgs),
+                            subset: Some(subset),
                             attrs: attrs,
                         };
 

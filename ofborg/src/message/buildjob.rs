@@ -1,5 +1,6 @@
 use ofborg::message::{Pr,Repo};
 use ofborg::message::buildresult;
+use ofborg::commentparser::Subset;
 use ofborg::worker;
 use serde_json;
 
@@ -9,12 +10,6 @@ pub struct BuildJob {
     pub pr: Pr,
     pub subset: Option<Subset>,
     pub attrs: Vec<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub enum Subset {
-    Nixpkgs,
-    NixOS,
 }
 
 pub fn from(data: &Vec<u8>) -> Result<BuildJob, serde_json::error::Error> {

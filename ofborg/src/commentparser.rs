@@ -21,7 +21,7 @@ pub fn parse(text: &str) -> Option<Vec<Instruction>> {
         let (left, right) = command.split_at(1);
         match left[0].as_ref() {
             "build" => {
-                instructions.push(Instruction::Build(right.to_vec()))
+                instructions.push(Instruction::Build(Subset::Nixpkgs, right.to_vec()))
             }
             "eval" => {
                 instructions.push(Instruction::Eval)
@@ -35,9 +35,15 @@ pub fn parse(text: &str) -> Option<Vec<Instruction>> {
 
 #[derive(PartialEq, Debug)]
 pub enum Instruction {
-    Build(Vec<String>),
+    Build(Subset, Vec<String>),
     Eval
 
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub enum Subset {
+    Nixpkgs,
+    NixOS,
 }
 
 #[cfg(test)]

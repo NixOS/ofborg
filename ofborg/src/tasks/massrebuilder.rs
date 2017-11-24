@@ -10,7 +10,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use ofborg::checkout;
 use ofborg::message::massrebuildjob;
-use ofborg::nix;
+use ofborg::nix::Nix;
 
 use ofborg::worker;
 use ofborg::tagger::{StdenvTagger,RebuildTagger};
@@ -22,12 +22,12 @@ use hubcaps;
 
 pub struct MassRebuildWorker {
     cloner: checkout::CachedCloner,
-    nix: nix::Nix,
+    nix: Nix,
     github: hubcaps::Github,
 }
 
 impl MassRebuildWorker {
-    pub fn new(cloner: checkout::CachedCloner, nix: nix::Nix, github: hubcaps::Github) -> MassRebuildWorker {
+    pub fn new(cloner: checkout::CachedCloner, nix: Nix, github: hubcaps::Github) -> MassRebuildWorker {
         return MassRebuildWorker{
             cloner: cloner,
             nix: nix,
@@ -330,7 +330,7 @@ pub enum System {
 
 #[derive(Debug, PartialEq)]
 struct Stdenvs {
-    nix: nix::Nix,
+    nix: Nix,
     co: PathBuf,
 
     linux_stdenv_before: Option<String>,
@@ -341,7 +341,7 @@ struct Stdenvs {
 }
 
 impl Stdenvs {
-    fn new(nix: nix::Nix, co: PathBuf) -> Stdenvs {
+    fn new(nix: Nix, co: PathBuf) -> Stdenvs {
         return Stdenvs {
             nix: nix,
             co: co,
@@ -496,7 +496,7 @@ mod tests {
 
     #[test]
     fn stdenv_checking() {
-        let nix = nix::new(String::from("x86_64-linux"), String::from("daemon"));
+        let nix = Nix::new(String::from("x86_64-linux"), String::from("daemon"), 1200);
         let mut stdenv = Stdenvs::new(nix.clone(), PathBuf::from("/nix/var/nix/profiles/per-user/root/channels/nixos/nixpkgs"));
         stdenv.identify(System::X8664Linux, StdenvFrom::Before);
         stdenv.identify(System::X8664Darwin, StdenvFrom::Before);
