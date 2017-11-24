@@ -27,8 +27,9 @@ impl Nix {
         };
     }
 
-    pub fn safely_build_attrs(&self, nixpkgs: &Path, attrs: Vec<String>) -> Result<File,File> {
-        let mut attrargs: Vec<String> = Vec::with_capacity(2 + (attrs.len() * 2));
+    pub fn safely_build_attrs(&self, nixpkgs: &Path, file: &str, attrs: Vec<String>) -> Result<File,File> {
+        let mut attrargs: Vec<String> = Vec::with_capacity(3 + (attrs.len() * 2));
+        attrargs.push(file.to_owned());
         attrargs.push(String::from("--no-out-link"));
         attrargs.push(String::from("--keep-going"));
         for attr in attrs {

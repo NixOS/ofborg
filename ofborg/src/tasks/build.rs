@@ -80,7 +80,9 @@ impl worker::SimpleWorker for BuildWorker {
 
         let success: bool;
         let reader: BufReader<File>;
-        match self.nix.safely_build_attrs(refpath.as_ref(), job.attrs.clone()) {
+        match self.nix.safely_build_attrs(refpath.as_ref(),
+                                          "./default.nix",
+                                          job.attrs.clone()) {
             Ok(r) => {
                 success = true;
                 reader = BufReader::new(r);
