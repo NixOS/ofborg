@@ -82,23 +82,27 @@ impl worker::SimpleWorker for GitHubCommentWorker {
 
         let pr = pr.unwrap();
 
+        let repo_msg = Repo {
+            clone_url: job.repository.clone_url.clone(),
+            full_name: job.repository.full_name.clone(),
+            owner: job.repository.owner.login.clone(),
+            name: job.repository.name.clone(),
+        };
+
+        let pr_msg = Pr {
+            number: job.issue.number.clone(),
+            head_sha: pr.head.sha.clone(),
+            target_branch: Some(pr.base.commit_ref.clone())
+        };
+
         let mut response: Vec<worker::Action> = vec![];
         if let Some(instructions) = instructions {
             for instruction in instructions {
                 match instruction {
                     commentparser::Instruction::Build(attrs) => {
                         let msg = buildjob::BuildJob{
-                            repo: Repo {
-                                clone_url: job.repository.clone_url.clone(),
-                                full_name: job.repository.full_name.clone(),
-                                owner: job.repository.owner.login.clone(),
-                                name: job.repository.name.clone(),
-                            },
-                            pr: Pr {
-                                number: job.issue.number.clone(),
-                                head_sha: pr.head.sha.clone(),
-                                target_branch: Some(pr.base.commit_ref.clone())
-                            },
+                            repo: repo_msg.clone(),
+                            pr: pr_msg.clone(),
                             subset: Some(buildjob::Subset::Nixpkgs),
                             attrs: attrs,
                         };
@@ -121,17 +125,8 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                     }
                     commentparser::Instruction::Eval => {
                         let msg = massrebuildjob::MassRebuildJob{
-                            repo: Repo {
-                                clone_url: job.repository.clone_url.clone(),
-                                full_name: job.repository.full_name.clone(),
-                                owner: job.repository.owner.login.clone(),
-                                name: job.repository.name.clone(),
-                            },
-                            pr: Pr {
-                                number: job.issue.number.clone(),
-                                head_sha: pr.head.sha.clone(),
-                                target_branch: Some(pr.base.commit_ref.clone()),
-                            },
+                            repo: repo_msg.clone(),
+                            pr: pr_msg.clone(),
                         };
 
                         let props = BasicProperties {
