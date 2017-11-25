@@ -163,7 +163,7 @@ impl worker::SimpleWorker for MassRebuildWorker {
 
         if !rebuildsniff.find_after() {
             overall_status.set_with_description(
-                format!("Failed to enumerate outputs after merging to ", &target_branch).as_ref(),
+                format!("Failed to enumerate outputs after merging to {}", &target_branch).as_ref(),
                 hubcaps::statuses::State::Failure
             );
             return self.actions().skip(&job);
