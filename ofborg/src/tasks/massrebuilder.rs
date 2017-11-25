@@ -109,7 +109,13 @@ impl worker::SimpleWorker for MassRebuildWorker {
             hubcaps::statuses::State::Pending
         );
 
-        rebuildsniff.find_before();
+        if !rebuildsniff.find_before() {
+            overall_status.set_with_description(
+                format!("Failed to enumerate outputs of {}", &target_branch).as_ref(),
+                hubcaps::statuses::State::Failure
+            );
+            return self.actions().skip(&job);
+        }
 
         overall_status.set_with_description(
             "Fetching PR",
@@ -155,7 +161,13 @@ impl worker::SimpleWorker for MassRebuildWorker {
             hubcaps::statuses::State::Pending
         );
 
-        rebuildsniff.find_after();
+        if !rebuildsniff.find_after() {
+            overall_status.set_with_description(
+                format!("Failed to enumerate outputs after merging to ", &target_branch).as_ref(),
+                hubcaps::statuses::State::Failure
+            );
+            return self.actions().skip(&job);
+        }
 
         println!("Got path: {:?}, building", refpath);
         overall_status.set_with_description(

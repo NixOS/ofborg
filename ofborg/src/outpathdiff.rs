@@ -52,31 +52,35 @@ impl OutPathDiff {
         return result;
     }
 
-    pub fn find_before(&mut self) {
+    pub fn find_before(&mut self) -> bool {
         let x = self.run();
         match x {
             Ok(f) => {
-                self.original = Some(self.parse(f))
+                self.original = Some(self.parse(f));
+                return true;
             }
             Err(_) => {
                 info!("Failed to find Before list");
+                return false;
             }
         }
     }
 
-    pub fn find_after(&mut self) {
+    pub fn find_after(&mut self) -> bool {
         if self.original == None {
             debug!("Before is None, not bothering with After");
-            return
+            return false;
         }
 
         let x = self.run();
         match x {
             Ok(f) => {
-                self.current = Some(self.parse(f))
+                self.current = Some(self.parse(f));
+                return true;
             }
             Err(_) => {
                 info!("Failed to find After list");
+                return false;
             }
         }
     }
