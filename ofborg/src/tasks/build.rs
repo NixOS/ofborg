@@ -20,14 +20,16 @@ pub struct BuildWorker {
     cloner: checkout::CachedCloner,
     nix: nix::Nix,
     system: String,
+    identity: String,
 }
 
 impl BuildWorker {
-    pub fn new(cloner: checkout::CachedCloner, nix: nix::Nix, system: String) -> BuildWorker {
+    pub fn new(cloner: checkout::CachedCloner, nix: nix::Nix, system: String, identity: String) -> BuildWorker {
         return BuildWorker{
             cloner: cloner,
             nix: nix,
             system: system,
+            identity: identity,
         };
     }
 
@@ -54,9 +56,10 @@ impl worker::SimpleWorker for BuildWorker {
     }
 
     fn consumer(&self, job: &buildjob::BuildJob) -> worker::Actions {
+        info!("Working on {}", job.pr.number);
         let project = self.cloner.project(job.repo.full_name.clone(), job.repo.clone_url.clone());
         let co = project.clone_for("builder".to_string(),
-                                   job.pr.number.to_string()).unwrap();
+                                   self.identity.clone()).unwrap();
 
         let target_branch = match job.pr.target_branch.clone() {
             Some(x) => { x }

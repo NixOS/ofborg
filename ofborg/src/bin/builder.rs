@@ -51,7 +51,12 @@ fn main() {
 
     channel.basic_prefetch(1).unwrap();
     channel.basic_consume(
-        worker::new(tasks::build::BuildWorker::new(cloner, nix, cfg.nix.system.clone())),
+        worker::new(tasks::build::BuildWorker::new(
+            cloner,
+            nix,
+            cfg.nix.system.clone(),
+            cfg.runner.identity.clone()
+        )),
         format!("build-inputs-{}", cfg.nix.system.clone()).as_ref(),
         format!("{}-builder", cfg.whoami()).as_ref(),
         false,
