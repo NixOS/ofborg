@@ -24,14 +24,16 @@ pub struct MassRebuildWorker {
     cloner: checkout::CachedCloner,
     nix: Nix,
     github: hubcaps::Github,
+    identity: String,
 }
 
 impl MassRebuildWorker {
-    pub fn new(cloner: checkout::CachedCloner, nix: Nix, github: hubcaps::Github) -> MassRebuildWorker {
+    pub fn new(cloner: checkout::CachedCloner, nix: Nix, github: hubcaps::Github, identity: String) -> MassRebuildWorker {
         return MassRebuildWorker{
             cloner: cloner,
             nix: nix,
             github: github,
+            identity: identity
         };
     }
 
@@ -75,8 +77,9 @@ impl worker::SimpleWorker for MassRebuildWorker {
 
         overall_status.set_with_description("Cloning project", hubcaps::statuses::State::Pending);
 
+        info!("Working on {}", job.pr.number);
         let co = project.clone_for("mr-est".to_string(),
-                                   job.pr.number.to_string()).unwrap();
+                                   self.identity.clone()).unwrap();
 
         let target_branch = match job.pr.target_branch.clone() {
             Some(x) => { x }

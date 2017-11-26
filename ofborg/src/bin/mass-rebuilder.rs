@@ -51,23 +51,10 @@ fn main() {
     let mrw = tasks::massrebuilder::MassRebuildWorker::new(
         cloner,
         nix,
-        cfg.github()
+        cfg.github(),
+        cfg.runner.identity.clone(),
+
     );
-    /*
-    println!("{:?}", mrw.consumer(&message::massrebuildjob::MassRebuildJob{
-        pr: ofborg::message::Pr {
-            head_sha: String::from("85589b80e81d5839cc91eb6be2cc3f7c041b760a"),
-            number: 30777,
-            target_branch: Some(String::from("master")),
-        },
-        repo: ofborg::message::Repo {
-            clone_url: String::from("https://github.com/NixOS/nixpkgs.git"),
-            full_name: String::from("NixOS/nixpkgs"),
-            owner: String::from("NixOS"),
-            name: String::from("nixpkgs"),
-        }
-    }));
-     */
 
     channel.basic_prefetch(1).unwrap();
     channel.basic_consume(
