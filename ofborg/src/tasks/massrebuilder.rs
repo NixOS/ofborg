@@ -63,6 +63,20 @@ impl worker::SimpleWorker for MassRebuildWorker {
         let gists = self.github.gists();
         let issue = repo.issue(job.pr.number);
 
+        match issue.get() {
+            Ok(iss) => {
+                if iss.state == "closed" {
+                    info!("Skipping {} because it is closed", job.pr.number);
+                    return self.actions().skip(&job);
+                }
+            }
+            Err(e) => {
+                info!("Error fetching {}!", job.pr.number);
+                info!("E: {:?}", e);
+                return self.actions().skip(&job);
+            }
+        }
+
         let mut overall_status = CommitStatus::new(
             repo.statuses(),
             job.pr.head_sha.clone(),
