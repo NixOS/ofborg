@@ -1,4 +1,4 @@
-with import <nixpkgs> {};
+with import ./../nix {};
 let kernel = buildPlatform.parsed.kernel.name;
     abi = buildPlatform.parsed.abi.name;
     advapi32_sys_0_2_0_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
