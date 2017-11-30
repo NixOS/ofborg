@@ -1,4 +1,4 @@
-{ nixpkgs ? import ./nix {} }:
-import ./nix/ofborg-carnix.nix {
-  inherit (nixpkgs) buildPlatform buildRustCrate fetchgit;
+{ pkgs ? import ./nix {} }:
+{
+  ofborg.rs = (pkgs.callPackage ./nix/ofborg-carnix.nix {}).ofborg_0_1_0;
 }
