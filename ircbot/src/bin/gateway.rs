@@ -2,7 +2,7 @@
 extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
-
+extern crate ircbot;
 extern crate irc;
 extern crate amqp;
 extern crate env_logger;
@@ -21,7 +21,8 @@ use amqp::Channel;
 use amqp::Session;
 use amqp::Table;
 
-mod config;
+
+use ircbot::config;
 
 use std::thread;
 use std::env;
