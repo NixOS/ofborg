@@ -4,3 +4,10 @@ version = "0.1.0"
 authors = ["Graham Christensen <graham@grahamc.com>"]
 
 [dependencies]
+log = "0.3.8"
+env_logger = "0.4.3"
+irc = "0.12.5"
+amqp = { git = "https://github.com/grahamc/rust-amqp.git" }
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
