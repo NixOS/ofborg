@@ -161,7 +161,7 @@ $ cargo build
 cargo build
 ```
 
-then copy config.example.json to config.json and edit its vars. Set
+then copy example.config.json to config.json and edit its vars. Set
 `nix.remote` to an empty string if you're not using the daemon.
 
 Run
