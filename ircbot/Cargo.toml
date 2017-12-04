@@ -11,3 +11,4 @@ amqp = { git = "https://github.com/grahamc/rust-amqp.git" }
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
+toml = "0.4"

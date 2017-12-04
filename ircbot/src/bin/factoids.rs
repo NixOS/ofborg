@@ -38,6 +38,8 @@ fn main() {
     }
 
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
+    let factoids = cfg.factoids().factoids;
+    println!("{:?}", factoids.get("str1"));
 
     let mut session = Session::open_url(&cfg.rabbitmq.as_uri()).unwrap();
     println!("Connected to rabbitmq");
@@ -52,15 +54,16 @@ fn main() {
                        "".as_ref(), false, Table::new()).unwrap();
 
     let consumer_name = channel.basic_consume(
-        |chan: &mut Channel, _deliver: Deliver, _headers: BasicProperties, body: Vec<u8>| {
+        move |chan: &mut Channel, _deliver: Deliver, _headers: BasicProperties, body: Vec<u8>| {
             debug!("Got a message");
             let msg: Result<Message, serde_json::Error> = serde_json::from_slice(&body);
             if let Ok(msg) = msg {
-                if msg.body.trim() == "!cloudfront" {
-                    let msg = serde_json::to_string(&Message{
+                let trigger = msg.body.trim();
+                if let Some(response) = factoids.get(trigger) {
+                    let resp = Some(Message{
                         target: msg.target.clone(),
-                        body: "https://gist.github.com/grahamc/df1bb806eb3552650d03eef7036a72ba".to_owned(),
-                    }).unwrap();
+                        body: response.clone(),
+                    });
 
                     chan.basic_publish(
                         "".to_owned(),
@@ -71,7 +74,7 @@ fn main() {
                             content_type: Some("application/json".to_owned()),
                             ..Default::default()
                         },
-                        msg.into_bytes()
+                        serde_json::to_string(&resp).unwrap().into_bytes()
                     ).expect("Failed to publish message");
                 } else {
                     debug!("Message didn't match: {:?}", msg);

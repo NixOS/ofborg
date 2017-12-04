@@ -89,9 +89,11 @@ fn main() {
 
     reader.for_each_incoming(|message| {
         match message.command {
-            Command::PRIVMSG(ref target, ref msg) => {
+            Command::PRIVMSG(ref _target, ref msg) => {
                 let msg = serde_json::to_string(&Message{
-                    target: target.clone(),
+                    target: message.response_target()
+                        .expect("a response target for a privmsg")
+                        .to_owned(),
                     body: msg.clone(),
                 }).unwrap();
 
