@@ -13,7 +13,6 @@ in {
   ofborg.rs = stripDeps (pkgs.callPackage ./nix/ofborg-carnix.nix {}).ofborg_0_1_0;
   ircbot = stripDeps (pkgs.callPackage ./nix/ircbot-carnix.nix {}).ircbot_0_1_0;
 
-  # /nix/store/a4xfsgh5bwh5w4m9y1j40ry4dq892gl4-ofborg/
   ofborg.php = pkgs.runCommand
     "ofborg"
     {

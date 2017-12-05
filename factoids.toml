@@ -1,3 +1,4 @@
 [factoids]
+"!factoids" = "Have a helpful Nix factoid? Send a PR! https://github.com/grahamc/ofborg/blob/master/factoids.toml"
 "!cloudfront" = "https://gist.github.com/grahamc/df1bb806eb3552650d03eef7036a72ba"
 "!which channel" = "https://gist.github.com/grahamc/c60578c6e6928043d29a427361634df6#which-channel-is-right-for-me"
