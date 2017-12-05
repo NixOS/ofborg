@@ -278,22 +278,12 @@ impl worker::SimpleWorker for MassRebuildWorker {
                          }
                          Err(mut out) => {
                              state = hubcaps::statuses::State::Failure;
-
-                             let mut files = HashMap::new();
-                             files.insert(check.name(),
-                                          hubcaps::gists::Content {
-                                              filename: Some(check.name()),
-                                              content: file_to_str(&mut out),
-                                          }
+                             gist_url = make_gist(
+                                 &gists,
+                                 check.name(),
+                                 Some(format!("{:?}", state)),
+                                 file_to_str(&mut out),
                              );
-
-                             gist_url = Some(gists.create(
-                                 &hubcaps::gists::GistOptions {
-                                     description: Some(format!("{:?}", state)),
-                                     public: Some(true),
-                                     files: files,
-                                 }
-                             ).expect("Failed to create gist!").html_url);
                          }
                      }
 
@@ -454,6 +444,23 @@ impl Stdenvs {
     }
 }
 
+fn make_gist<'a>(gists: &hubcaps::gists::Gists<'a>, name: String, description: Option<String>, contents: String) -> Option<String> {
+    let mut files = HashMap::new();
+    files.insert(name.clone(),
+                 hubcaps::gists::Content {
+                     filename: Some(name.clone()),
+                     content: contents,
+                 }
+    );
+
+    return Some(gists.create(
+        &hubcaps::gists::GistOptions {
+            description: description,
+            public: Some(true),
+            files: files,
+        }
+    ).expect("Failed to create gist!").html_url);
+}
 
 pub fn update_labels(issue: &hubcaps::issues::IssueRef, add: Vec<String>, remove: Vec<String>) {
     let l = issue.labels();
