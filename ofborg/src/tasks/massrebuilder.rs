@@ -437,7 +437,7 @@ impl Stdenvs {
                 String::from("-A"),
                 String::from("stdenv"),
             ],
-            false
+            true
         );
 
         println!("{:?}", result);
