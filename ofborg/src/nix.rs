@@ -40,17 +40,26 @@ impl Nix {
             attrargs.push(attr);
         }
 
-        return self.safely("nix-build", nixpkgs, attrargs);
+        return self.safely("nix-build", nixpkgs, attrargs, true);
     }
 
-    pub fn safely(&self, cmd: &str, nixpkgs: &Path, args: Vec<String>) -> Result<File,File> {
+    pub fn safely(&self, cmd: &str, nixpkgs: &Path, args: Vec<String>, keep_stdout: bool) -> Result<File,File> {
         let mut nixpath = OsString::new();
         nixpath.push("nixpkgs=");
         nixpath.push(nixpkgs.as_os_str());
 
-        let stdout = tempfile().expect("Fetching a stdout tempfile");
-        let stderr = stdout.try_clone().expect("Cloning stdout for stderr");
+        let stderr = tempfile().expect("Fetching a stderr tempfile");
         let mut reader = stderr.try_clone().expect("Cloning stderr to the reader");
+
+        let stdout: Stdio;
+
+        if keep_stdout {
+            let stdout_fd = stderr.try_clone().expect("Cloning stderr for stdout");
+            stdout = Stdio::from(stdout_fd);
+        } else {
+            stdout = Stdio::null();
+        }
+
 
         let status = Command::new(cmd)
             .env_clear()

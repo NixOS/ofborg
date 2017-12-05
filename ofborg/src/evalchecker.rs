@@ -28,7 +28,7 @@ impl EvalChecker {
     }
 
     pub fn execute(&self, path: &Path) -> Result<File, File> {
-        self.nix.safely(&self.cmd, path, self.args.clone())
+        self.nix.safely(&self.cmd, path, self.args.clone(), false)
     }
 
     pub fn cli_cmd(&self) -> String {
