@@ -11,4 +11,5 @@ let
   '';
 in {
   ofborg.rs = stripDeps (pkgs.callPackage ./nix/ofborg-carnix.nix {}).ofborg_0_1_0;
+  ircbot = stripDeps (pkgs.callPackage ./nix/ircbot-carnix.nix {}).ircbot_0_1_0;
 }
