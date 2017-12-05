@@ -9,7 +9,6 @@ use std::io::BufReader;
 use std::path::PathBuf;
 use ofborg::nix;
 use std::io::Write;
-use ofborg::evalchecker::EvalChecker;
 
 pub struct OutPathDiff {
     path: PathBuf,
@@ -66,21 +65,21 @@ impl OutPathDiff {
         }
     }
 
-    pub fn find_after(&mut self) -> bool {
+    pub fn find_after(&mut self) -> Result<bool, File> {
         if self.original == None {
             debug!("Before is None, not bothering with After");
-            return false;
+            return Ok(false);
         }
 
         let x = self.run();
         match x {
             Ok(f) => {
                 self.current = Some(self.parse(f));
-                return true;
+                return Ok(true);
             }
-            Err(_) => {
+            Err(e) => {
                 info!("Failed to find After list");
-                return false;
+                return Err(e);
             }
         }
     }
@@ -131,18 +130,18 @@ impl OutPathDiff {
     }
 
     fn execute(&self) -> Result<File, File>{
-        let checker = EvalChecker::new("out-paths",
-                                       "nix-env",
-                                       vec![
-                                           String::from("-f"),
-                                           String::from(".gc-of-borg-out-list.nix"),
-                                           String::from("-qaP"),
-                                           String::from("--no-name"),
-                                           String::from("--out-path"),
-                                           String::from("--show-trace"),
-                                       ],
-                                       self.nix.clone()
-        );
-        checker.execute(&self.path)
+        self.nix.safely(
+            "nix-env",
+            &self.path,
+            vec![
+                String::from("-f"),
+                String::from(".gc-of-borg-out-list.nix"),
+                String::from("-qaP"),
+                String::from("--no-name"),
+                String::from("--out-path"),
+                String::from("--show-trace"),
+            ],
+            true
+        )
     }
 }

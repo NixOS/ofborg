@@ -178,7 +178,13 @@ impl worker::SimpleWorker for MassRebuildWorker {
             hubcaps::statuses::State::Pending
         );
 
-        if !rebuildsniff.find_after() {
+        if let Err(mut output) = rebuildsniff.find_after() {
+            overall_status.set_url(make_gist(
+                &gists,
+                "Output path comparison".to_owned(),
+                Some("".to_owned()),
+                file_to_str(&mut output),
+            ));
             overall_status.set_with_description(
                 format!("Failed to enumerate outputs after merging to {}", &target_branch).as_ref(),
                 hubcaps::statuses::State::Failure
