@@ -1,8 +1,19 @@
+{ checkMeta ? false }:
 let
   lib = import ./lib;
   hydraJobs = import ./pkgs/top-level/release.nix
     # Compromise: accuracy vs. resources needed for evaluation.
-    { supportedSystems = [ "x86_64-linux" "x86_64-darwin" ]; };
+    {
+      supportedSystems = [ "x86_64-linux" "x86_64-darwin" ];
+      nixpkgsArgs = {
+        config = {
+          allowBroken = true;
+          allowUnfree = true;
+          inHydra = true;
+          checkMeta = checkMeta;
+        };
+      };
+    };
   recurseIntoAttrs = attrs: attrs // { recurseForDerivations = true; };
 
   # hydraJobs leaves recurseForDerivations as empty attrmaps;

@@ -11,8 +11,7 @@ use ofborg::nix;
 use std::io::Write;
 
 pub struct OutPathDiff {
-    path: PathBuf,
-    nix: nix::Nix,
+    calculator: OutPaths,
     pub original: Option<HashMap<String, String>>,
     pub current: Option<HashMap<String, String>>,
 }
@@ -20,8 +19,7 @@ pub struct OutPathDiff {
 impl OutPathDiff {
     pub fn new(nix: nix::Nix, path: PathBuf) -> OutPathDiff {
         OutPathDiff {
-            nix: nix,
-            path: path,
+            calculator: OutPaths::new(nix, path, false),
             original: None,
             current: None,
         }
@@ -106,6 +104,30 @@ impl OutPathDiff {
         return None;
     }
 
+    fn run(&mut self) -> Result<File, File> {
+        self.calculator.find()
+    }
+}
+
+pub struct OutPaths {
+    path: PathBuf,
+    nix: nix::Nix,
+    check_meta: bool,
+}
+
+impl OutPaths    {
+    pub fn new(nix: nix::Nix, path: PathBuf, check_meta: bool) -> OutPaths    {
+        OutPaths {
+            nix: nix,
+            path: path,
+            check_meta: check_meta,
+        }
+    }
+
+    pub fn find(&self) -> Result<File, File> {
+        self.run()
+    }
+
     fn run(&self) -> Result<File, File> {
         self.place_nix();
         let ret = self.execute();
@@ -115,31 +137,40 @@ impl OutPathDiff {
 
     fn place_nix(&self) {
         let mut file = File::create(self.nix_path()).expect("Failed to create nix out path check");
-        file.write_all(include_str!("rebuild-amount.nix").as_bytes()).expect("");
+        file.write_all(include_str!("outpaths.nix").as_bytes()).expect("Failed to place outpaths.nix");
     }
 
     fn remove_nix(&self) {
-        fs::remove_file(self.nix_path()).expect(":)");
+        fs::remove_file(self.nix_path()).expect("Failed to delete outpaths.nix");
     }
 
     fn nix_path(&self) -> PathBuf {
         let mut dest = self.path.clone();
-        dest.push(".gc-of-borg-out-list.nix");
+        dest.push(".gc-of-borg-outpaths.nix");
 
         dest
     }
 
-    fn execute(&self) -> Result<File, File>{
+    fn execute(&self) -> Result<File, File> {
+        let check_meta: String;
+
+        if self.check_meta {
+            check_meta = String::from("true");
+        } else {
+            check_meta = String::from("false");
+        }
+
         self.nix.safely(
             "nix-env",
             &self.path,
             vec![
                 String::from("-f"),
-                String::from(".gc-of-borg-out-list.nix"),
+                String::from(".gc-of-borg-outpaths.nix"),
                 String::from("-qaP"),
                 String::from("--no-name"),
                 String::from("--out-path"),
                 String::from("--show-trace"),
+                String::from("--arg"), String::from("checkMeta"), check_meta,
             ],
             true
         )

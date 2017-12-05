@@ -14,7 +14,7 @@ use ofborg::nix::Nix;
 
 use ofborg::worker;
 use ofborg::tagger::{StdenvTagger,RebuildTagger};
-use ofborg::outpathdiff::OutPathDiff;
+use ofborg::outpathdiff::{OutPaths, OutPathDiff};
 use ofborg::evalchecker::EvalChecker;
 use ofborg::commitstatus::CommitStatus;
 use amqp::protocol::basic::{Deliver,BasicProperties};
@@ -262,7 +262,7 @@ impl worker::SimpleWorker for MassRebuildWorker {
             ),
         ];
 
-        let eval_results: bool = eval_checks.into_iter()
+        let mut eval_results: bool = eval_checks.into_iter()
             .map(|check|
                  {
                      let mut status = CommitStatus::new(
@@ -305,6 +305,46 @@ impl worker::SimpleWorker for MassRebuildWorker {
                  }
             )
             .all(|status| status == Ok(()));
+
+        if eval_results {
+            let mut status = CommitStatus::new(
+                repo.statuses(),
+                job.pr.head_sha.clone(),
+                String::from("Meta Field Checks"),
+                String::from("config.nix: checkMeta = true"),
+                None
+            );
+
+            status.set(hubcaps::statuses::State::Pending);
+
+            let state: hubcaps::statuses::State;
+            let gist_url: Option<String>;
+
+            let checker = OutPaths::new(
+                self.nix.clone(),
+                PathBuf::from(&refpath),
+                true
+            );
+            match checker.find() {
+                Ok(_) => {
+                    state = hubcaps::statuses::State::Success;
+                    gist_url = None;
+                }
+                Err(mut out) => {
+                    eval_results = false;
+                    state = hubcaps::statuses::State::Failure;
+                    gist_url = make_gist(
+                        &gists,
+                        String::from("Meta Check"),
+                        Some(format!("{:?}", state)),
+                        file_to_str(&mut out),
+                    );
+                }
+            }
+
+            status.set_url(gist_url);
+            status.set(state.clone());
+        }
 
         if eval_results {
             overall_status.set_with_description(
