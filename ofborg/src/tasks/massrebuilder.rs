@@ -270,35 +270,35 @@ impl worker::SimpleWorker for MassRebuildWorker {
                      status.set(hubcaps::statuses::State::Pending);
 
                      let state: hubcaps::statuses::State;
-                     let mut out: File;
+                     let gist_url: Option<String>;
                      match check.execute(Path::new(&refpath)) {
-                         Ok(o) => {
-                             out = o;
+                         Ok(_) => {
                              state = hubcaps::statuses::State::Success;
+                             gist_url = None;
                          }
-                         Err(o) => {
-                             out = o;
+                         Err(mut out) => {
                              state = hubcaps::statuses::State::Failure;
+
+                             let mut files = HashMap::new();
+                             files.insert(check.name(),
+                                          hubcaps::gists::Content {
+                                              filename: Some(check.name()),
+                                              content: file_to_str(&mut out),
+                                          }
+                             );
+
+                             gist_url = Some(gists.create(
+                                 &hubcaps::gists::GistOptions {
+                                     description: Some(format!("{:?}", state)),
+                                     public: Some(true),
+                                     files: files,
+                                 }
+                             ).expect("Failed to create gist!").html_url);
                          }
                      }
 
-                     let mut files = HashMap::new();
-                     files.insert(check.name(),
-                                  hubcaps::gists::Content {
-                                      filename: Some(check.name()),
-                                      content: file_to_str(&mut out),
-                                  }
-                     );
 
-                     let gist_url = gists.create(
-                         &hubcaps::gists::GistOptions {
-                             description: Some(format!("{:?}", state)),
-                             public: Some(true),
-                             files: files,
-                         }
-                     ).expect("Failed to create gist!").html_url;
-
-                     status.set_url(Some(gist_url));
+                     status.set_url(gist_url);
                      status.set(state.clone());
 
                      if state == hubcaps::statuses::State::Success {
