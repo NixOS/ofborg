@@ -23,7 +23,6 @@ in import (hostpkgs.stdenv.mkDerivation {
       name = "mkRustCrate-rebased.patch";
       sha256 = "09808bwcd3d5j2mnlzxq60g53rd07af7in1yfmpxvmi30sw4hi9b";
     })
-
   ];
 
   moveToOut = ''
