@@ -19,7 +19,6 @@ let
     ];
 
     # HISTFILE = "${src}/.bash_hist";
-    passthru.rustEnv = rustEnv;
   };
 
   rustEnv = stdenv.mkDerivation rec {
@@ -36,7 +35,8 @@ let
     ];
 
     HISTFILE = "${toString ./.}/.bash_hist";
+    passthru.phpEnv = phpEnv;
   };
 
 
-in phpEnv
+in rustEnv
