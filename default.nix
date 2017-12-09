@@ -13,10 +13,14 @@ in {
   ofborg.rs = let
       build = (pkgs.callPackage ./nix/ofborg-carnix.nix {})
         .ofborg_0_1_0.override {
-          crateOverrides = {
-            buildDependencies = pkgs.lib.optionals
-              pkgs.stdenv.isDarwin
-              [ pkgs.darwin.apple_sdk.frameworks.Security ];
+          crateOverrides = pkgs.defaultCrateOverrides //
+          {
+            ofborg = attrs: {
+              buildInputs =
+                  pkgs.lib.optionals
+                    pkgs.stdenv.isDarwin
+                    [ pkgs.darwin.apple_sdk.frameworks.Security ];
+            };
           };
         };
     in stripDeps build;
