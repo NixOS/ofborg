@@ -10,7 +10,16 @@ let
     chmod -R a-w $out
   '';
 in {
-  ofborg.rs = stripDeps (pkgs.callPackage ./nix/ofborg-carnix.nix {}).ofborg_0_1_0;
+  ofborg.rs = let
+      build = (pkgs.callPackage ./nix/ofborg-carnix.nix {})
+        .ofborg_0_1_0.override {
+          crateOverrides = {
+            buildDependencies = pkgs.lib.optionals
+              pkgs.stdenv.isDarwin
+              [ pkgs.darwin.apple_sdk.frameworks.Security ];
+          };
+        };
+    in stripDeps build;
   ircbot = stripDeps (pkgs.callPackage ./nix/ircbot-carnix.nix {}).ircbot_0_1_0;
 
   ofborg.php = pkgs.runCommand
