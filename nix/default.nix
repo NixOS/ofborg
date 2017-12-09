@@ -21,7 +21,7 @@ in import (hostpkgs.stdenv.mkDerivation {
       # with master merged in so it applies cleanly.
       url = "https://github.com/NixOS/nixpkgs/compare/master...grahamc:P-E-Meunier-mkRustCrate-rebased.patch";
       name = "mkRustCrate-rebased.patch";
-      sha256 = "09808bwcd3d5j2mnlzxq60g53rd07af7in1yfmpxvmi30sw4hi9b";
+      sha256 = "0w3w226axr282ranbzxymqshl4irxh5xx3sv1rrwvfv616j6ysqj";
     })
   ];
 
