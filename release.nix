@@ -51,9 +51,22 @@ let
   x8664LinuxOnly = path:
      (attrForSystem "x86_64-linux" path);
 
-in merge [
-  (attrsForAllSystems [ "ofborg" "rs" ])
+  jobs = merge [
+    (attrsForAllSystems [ "ofborg" "rs" ])
 
-  (x8664LinuxOnly [ "ofborg" "php" ])
-  (x8664LinuxOnly [ "ircbot" ])
-]
+    (x8664LinuxOnly [ "ofborg" "php" ])
+    (x8664LinuxOnly [ "ircbot" ])
+  ];
+in jobs // {
+  release = pkgs.releaseTools.aggregate {
+    name = "release";
+    meta.description = "Release-critical builds for OfBorg infrastructure";
+    constituents = [
+      jobs.ofborg.rs.x86_64-linux
+      jobs.ofborg.rs.x86_64-darwin
+      # jobs.ofborg.rs.aarch64-linux
+      jobs.ofborg.php.x86_64-linux
+      jobs.ircbot.x86_64-linux
+    ];
+  };
+}
