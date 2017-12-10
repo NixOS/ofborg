@@ -25,8 +25,6 @@ let
     name = "gh-event-forwarder";
     buildInputs = with pkgs; [
       nix-prefetch-git
-      #php
-      #phpPackages.composer
       rust.rustc
       rust.cargo
       carnix
