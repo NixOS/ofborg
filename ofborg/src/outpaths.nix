@@ -1,16 +1,29 @@
-{ checkMeta ? false }:
+{ checkMeta }:
 let
   lib = import ./lib;
   hydraJobs = import ./pkgs/top-level/release.nix
     # Compromise: accuracy vs. resources needed for evaluation.
     {
-      supportedSystems = [ "x86_64-linux" "x86_64-darwin" ];
+      supportedSystems = [
+        "aarch64-linux"
+        "i686-linux"
+        "x86_64-linux"
+        "x86_64-darwin"
+      ];
       nixpkgsArgs = {
         config = {
           allowBroken = true;
           allowUnfree = true;
-          inHydra = true;
+          allowInsecurePredicate = x: true;
           checkMeta = checkMeta;
+
+          # See https://github.com/NixOS/nixpkgs/pull/32365
+          handleEvalIssue = reason: errormsg:
+            if reason == "unknown-meta"
+              then (builtins.trace (abort errormsg) true)
+              else (builtins.trace errormsg true);
+
+          inHydra = true;
         };
       };
     };
