@@ -16,7 +16,7 @@ let
           allowBroken = true;
           allowUnfree = true;
           allowInsecurePredicate = x: true;
-          checkMeta = checkMeta;
+          checkMeta = false; # checkMeta; see #32365
 
           # See https://github.com/NixOS/nixpkgs/pull/32365
           handleEvalIssue = reason: errormsg:
