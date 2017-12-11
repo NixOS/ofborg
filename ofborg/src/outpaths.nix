@@ -5,8 +5,9 @@ let
     # Compromise: accuracy vs. resources needed for evaluation.
     {
       supportedSystems = [
-        "aarch64-linux"
-        "i686-linux"
+        # Not ready to evaluate these archs, see #32365
+        # "aarch64-linux"
+        # "i686-linux"
         "x86_64-linux"
         "x86_64-darwin"
       ];
