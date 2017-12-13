@@ -194,7 +194,7 @@ impl worker::SimpleWorker for MassRebuildWorker {
 
         println!("Got path: {:?}, building", refpath);
         overall_status.set_with_description(
-            "Begining Evaluations",
+            "Beginning Evaluations",
             hubcaps::statuses::State::Pending
         );
 
