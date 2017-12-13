@@ -20,7 +20,7 @@ let
 
           handleEvalIssue = reason: errormsg:
             if reason == "unknown-meta"
-              then builtins.trace errormsg true
+              then abort errormsg
               else true;
 
           inHydra = true;
