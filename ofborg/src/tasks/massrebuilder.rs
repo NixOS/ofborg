@@ -310,7 +310,7 @@ impl worker::SimpleWorker for MassRebuildWorker {
             let mut status = CommitStatus::new(
                 repo.statuses(),
                 job.pr.head_sha.clone(),
-                String::from("Meta Field Checks"),
+                String::from("grahamcofborg-eval-check-meta"),
                 String::from("config.nix: checkMeta = true"),
                 None
             );
