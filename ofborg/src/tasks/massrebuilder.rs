@@ -306,12 +306,11 @@ impl worker::SimpleWorker for MassRebuildWorker {
             )
             .all(|status| status == Ok(()));
 
-        /*
         if eval_results {
             let mut status = CommitStatus::new(
                 repo.statuses(),
                 job.pr.head_sha.clone(),
-                String::from("Meta Field Checks"),
+                String::from("grahamcofborg-eval-check-meta"),
                 String::from("config.nix: checkMeta = true"),
                 None
             );
@@ -346,7 +345,6 @@ impl worker::SimpleWorker for MassRebuildWorker {
             status.set_url(gist_url);
             status.set(state.clone());
         }
-             */
 
         if eval_results {
             overall_status.set_with_description(

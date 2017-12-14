@@ -90,6 +90,8 @@ impl RebuildTagger {
             match attr.rsplit(".").next() {
                 Some("x86_64-darwin") => { counter_darwin += 1; }
                 Some("x86_64-linux") => { counter_linux += 1; }
+                Some("aarch64-linux") => { }
+                Some("i686-linux") => { }
                 Some(arch) => { info!("Unknown arch: {:?}", arch); }
                 None => { info!("Cannot grok attr: {:?}", attr); }
             }
