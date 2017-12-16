@@ -3,7 +3,6 @@ use std::path::Path;
 use std::fs::File;
 use std::io::Read;
 
-use ircbot::factoids::Factoids;
 use irc::client::prelude::Config as IrcConfig;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -13,7 +12,6 @@ pub struct Config {
     password: String,
     channels: Vec<String>,
     pub rabbitmq: RabbitMQConfig,
-    factoid_toml: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -37,10 +35,6 @@ impl RabbitMQConfig {
 }
 
 impl Config {
-    pub fn factoids(&self) -> Factoids {
-        Factoids::load(&Path::new(&self.factoid_toml))
-    }
-
     pub fn irc_config(&self) -> IrcConfig {
         IrcConfig {
             nickname: Some(self.nickname.clone()),

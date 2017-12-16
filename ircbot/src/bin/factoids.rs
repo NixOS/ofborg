@@ -10,13 +10,14 @@ extern crate env_logger;
 #[macro_use]
 extern crate log;
 
+use ircbot::factoids::Factoids;
 use amqp::protocol::basic::Deliver;
 use amqp::protocol::basic::BasicProperties;
 use amqp::Basic;
 use amqp::Channel;
 use amqp::Session;
 use amqp::Table;
-
+use std::path::Path;
 
 use ircbot::config;
 
@@ -38,7 +39,8 @@ fn main() {
     }
 
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
-    let factoids = cfg.factoids().factoids;
+    let factoids_file = env::args().nth(2).unwrap();
+    let factoids = Factoids::load(&Path::new(&factoids_file)).factoids;
     println!("{:?}", factoids.get("str1"));
 
     let mut session = Session::open_url(&cfg.rabbitmq.as_uri()).unwrap();
