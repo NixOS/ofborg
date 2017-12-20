@@ -69,6 +69,7 @@ impl Nix {
             .env("HOME", "/homeless-shelter")
             .env("NIX_PATH", nixpath)
             .env("NIX_REMOTE", &self.remote)
+            .args(&["--show-trace"])
             .args(&["--option", "restrict-eval", "true"])
             .args(&["--option", "build-timeout", &format!("{}", self.build_timeout)])
             .args(&["--argstr", "system", &self.system])

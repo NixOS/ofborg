@@ -169,7 +169,6 @@ impl OutPaths    {
                 String::from("-qaP"),
                 String::from("--no-name"),
                 String::from("--out-path"),
-                String::from("--show-trace"),
                 String::from("--arg"), String::from("checkMeta"), check_meta,
             ],
             true
