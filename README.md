@@ -77,6 +77,21 @@ looks good to me!
 
 as it'll try to build `list` `of` `attrs` `looks` `good` `to` `me!`.
 
+
+# Why did my build fail?
+
+
+Builds are run like:
+
+> HOME=/homeless-shelter NIX_PATH=nixpkgs=$(pwd) nix-build ./default.nix \
+> --no-out-link --keep-going -A hello \
+> --option restrict-eval true \
+> --option build-timeout 1800 \
+> --argstr system thesystem
+
+
+---
+
 # arch
 
 1. All github events go in to web/index.php, which sends the event to

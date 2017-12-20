@@ -2,6 +2,7 @@
 "!factoids" = "Have a helpful Nix factoid? Send a PR! https://github.com/grahamc/ofborg/blob/released/factoids.toml"
 "!cloudfront" = "https://gist.github.com/grahamc/df1bb806eb3552650d03eef7036a72ba"
 "!which channel" = "https://gist.github.com/grahamc/c60578c6e6928043d29a427361634df6#which-channel-is-right-for-me"
+"!pills" = "https://nixos.org/nixos/nix-pills"
 "!stuck" = "https://howoldis.herokuapp.com/"
 "!doesanyoneuse" = "Don't ask if anyone uses software xyz, just ask your specific question. This helps solve your problem quicker, and allows people who haven't used xyz but may still be able to help you to do so."
 "!library" = "Don't install libraries through nix-env or systemPackages. See https://nixos.wiki/wiki/FAQ#I_installed_a_library_but_my_compiler_is_not_finding_it._Why.3F for details."
