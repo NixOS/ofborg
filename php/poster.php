@@ -76,13 +76,7 @@ function reply_to_issue($body, $output, $success, $system) {
 
 
 function outrunner($msg) {
-    try {
-        return runner($msg);
-    } catch (GHE\ExecException $e) {
-        var_dump($e->getMessage());
-        var_dump($e->getCode());
-        var_dump($e->getOutput());
-    }
+    return runner($msg);
 }
 
 

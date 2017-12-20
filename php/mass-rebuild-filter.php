@@ -21,11 +21,6 @@ echo "hi\n";
 function outrunner($msg) {
     try {
         runner($msg);
-    } catch (\GHE\ExecException $e) {
-        var_dump($msg);
-        var_dump($e->getMessage());
-        var_dump($e->getCode());
-        var_dump($e->getOutput());
     } catch (\PhpAmqpLib\Exception\AMQPProtocolChannelException $e) {
         echo "Channel exception:\n";
         var_dump($e);
