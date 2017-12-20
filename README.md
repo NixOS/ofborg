@@ -78,16 +78,36 @@ looks good to me!
 as it'll try to build `list` `of` `attrs` `looks` `good` `to` `me!`.
 
 
-# Why did my build fail?
-
+# How does OfBorg call nix-build?
 
 Builds are run like:
 
-> HOME=/homeless-shelter NIX_PATH=nixpkgs=$(pwd) nix-build ./default.nix \
-> --no-out-link --keep-going -A hello \
-> --option restrict-eval true \
-> --option build-timeout 1800 \
+> HOME=/homeless-shelter NIX_PATH=nixpkgs=$(pwd) nix-build ./default.nix
+> --no-out-link --keep-going -A hello
+> --option restrict-eval true
+> --option build-timeout 1800
 > --argstr system thesystem
+> --show-trace
+
+# How does OfBorg call nix-instantiate?
+
+NixOS evals are run like:
+
+> HOME=/homeless-shelter NIX_PATH=nixpkgs=$(pwd) nix-instantiate ./nixos/release.nix
+> -A manual
+> --option restrict-eval true
+> --option build-timeout 1800
+> --argstr system thesystem
+> --show-trace
+
+Nixpkgs evals are run like:
+
+> HOME=/homeless-shelter NIX_PATH=nixpkgs=$(pwd) nix-instantiate ./pkgs/top-level/release.nix
+> -A manual
+> --option restrict-eval true
+> --option build-timeout 1800
+> --argstr system thesystem
+> --show-trace
 
 
 ---
