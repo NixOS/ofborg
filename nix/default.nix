@@ -15,14 +15,6 @@ in import (hostpkgs.stdenv.mkDerivation {
   };
 
   patches = [
-    (fetchurl {
-      # As of 2017-22-29 21:30:00 EST:
-      # The URL is https://github.com/NixOS/nixpkgs/pull/31150 but
-      # with master merged in so it applies cleanly.
-      url = "https://github.com/NixOS/nixpkgs/compare/master...grahamc:P-E-Meunier-mkRustCrate-rebased.patch";
-      name = "mkRustCrate-rebased.patch";
-      sha256 = "0w3w226axr282ranbzxymqshl4irxh5xx3sv1rrwvfv616j6ysqj";
-    })
   ];
 
   moveToOut = ''
