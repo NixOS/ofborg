@@ -126,11 +126,19 @@ impl worker::SimpleWorker for MassRebuildWorker {
             hubcaps::statuses::State::Pending
         );
 
-        if !rebuildsniff.find_before() {
+        if let Err(mut output) = rebuildsniff.find_before() {
+            overall_status.set_url(make_gist(
+                &gists,
+                "Output path comparison".to_owned(),
+                Some("".to_owned()),
+                file_to_str(&mut output),
+            ));
+
             overall_status.set_with_description(
-                format!("Failed to enumerate outputs of {}", &target_branch).as_ref(),
+                format!("Target branch {} doesn't evaluate!", &target_branch).as_ref(),
                 hubcaps::statuses::State::Failure
             );
+
             return self.actions().skip(&job);
         }
 
@@ -292,7 +300,6 @@ impl worker::SimpleWorker for MassRebuildWorker {
                              );
                          }
                      }
-
 
                      status.set_url(gist_url);
                      status.set(state.clone());

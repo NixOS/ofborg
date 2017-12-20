@@ -49,16 +49,16 @@ impl OutPathDiff {
         return result;
     }
 
-    pub fn find_before(&mut self) -> bool {
+    pub fn find_before(&mut self) -> Result<bool, File> {
         let x = self.run();
         match x {
             Ok(f) => {
                 self.original = Some(self.parse(f));
-                return true;
+                return Ok(true);
             }
-            Err(_) => {
+            Err(e) => {
                 info!("Failed to find Before list");
-                return false;
+                return Err(e);
             }
         }
     }
