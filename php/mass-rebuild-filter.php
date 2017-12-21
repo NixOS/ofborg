@@ -31,6 +31,21 @@ function runner($msg) {
     echo "Msg Sha: " . md5($msg->body) . "\n";
     $in = json_decode($msg->body);
 
+    try {
+        $etype = \GHE\EventClassifier::classifyEvent($in);
+
+        if ($etype != "pull_request") {
+            echo "Skipping event type: $etype\n";
+            $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag']);
+            return true;
+        }
+    } catch (\GHE\EventClassifierUnknownException $e) {
+        echo "Skipping unknown event type\n";
+        print_r($in);
+        $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag']);
+        return true;
+    }
+
     if (!\GHE\ACL::isRepoEligible($in->repository->full_name)) {
         echo "Repo not authorized (" . $in->repository->full_name . ")\n";
         $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag']);
