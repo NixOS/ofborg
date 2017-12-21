@@ -133,10 +133,12 @@ try {
 
     echo "ok";
 } catch (DumpableException $e) {
+    trigger_error(print_r($e, true), E_USER_WARNING);
     header("HTTP/1.1 400 Eh", true, 400);
     var_dump($e);
     echo ob_get_clean();
 } catch (\Exception $e) {
+    trigger_error(print_r($e, true), E_USER_WARNING);
     header("HTTP/1.1 400 Meh", true, 400);
     var_dump(get_class($e));
     echo ob_get_clean();
