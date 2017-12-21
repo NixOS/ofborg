@@ -29,18 +29,8 @@ function payload() {
         } else {
             return $input;
         }
-    case 'application/x-www-form-urlencoded':
-        if (!isset($_POST)) {
-            throw new InvalidPayloadException('_POST undefined');
-        }
-
-        if (!isset($_POST['payload'])) {
-            throw new InvalidPayloadException('payload not set in _POST');
-        }
-
-        return $_POST['payload'];
     default:
-        throw new InvalidPayloadException('Unsupported content type: ' . $_SERVER['HTTP_CONTENT_TYPE']);
+        throw new InvalidPayloadException('Unsupported content type: ' . $_SERVER['CONTENT_TYPE']);
     }
 }
 
@@ -143,11 +133,13 @@ try {
 
     echo "ok";
 } catch (DumpableException $e) {
-    header($_SERVER["SERVER_PROTOCOL"]." 400 Eh", true, 400);
+    trigger_error(print_r($e, true), E_USER_WARNING);
+    header("HTTP/1.1 400 Eh", true, 400);
     var_dump($e);
     echo ob_get_clean();
 } catch (\Exception $e) {
-    header($_SERVER["SERVER_PROTOCOL"]." 400 Meh", true, 400);
+    trigger_error(print_r($e, true), E_USER_WARNING);
+    header("HTTP/1.1 400 Meh", true, 400);
     var_dump(get_class($e));
     echo ob_get_clean();
 }
