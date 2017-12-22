@@ -9,7 +9,10 @@
 
 ## Commands
 
-1. To trigger the bot, the comment _must_ start with a case
+The comment parser is line-based, so comments can be interleaved with
+instructions.
+
+1. To trigger the bot, the line _must_ start with a case
    insensitive version of `@GrahamcOfBorg`.
 2. To use multiple commands, insert a bit of whitespace and then your
    new command.
@@ -61,21 +64,25 @@ or even:
 @grahamcofborg build list of attrs @grahamcofborg eval
 ```
 
-This will _not_ work:
+This will also work:
 
 ```
 looks good to me!
 @grahamcofborg build list of attrs
 ```
 
-Also this is bad:
+And this is fine:
 
 ```
 @grahamcofborg build list of attrs
 looks good to me!
 ```
 
-as it'll try to build `list` `of` `attrs` `looks` `good` `to` `me!`.
+This is will build `list`, `of`, `attrs`, `looks`, `good`, `to`, `me!`:
+
+```
+@grahamcofborg build list of attrs looks good to me!
+```
 
 
 # How does OfBorg call nix-build?
