@@ -36,11 +36,11 @@ let kernel = buildPlatform.parsed.kernel.name;
       crateBin = [ {  name = "aho-corasick-dot"; } ];
       inherit dependencies buildDependencies features;
     };
-    aho_corasick_0_6_4_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    aho_corasick_0_6_3_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
       crateName = "aho-corasick";
-      version = "0.6.4";
+      version = "0.6.3";
       authors = [ "Andrew Gallant <jamslam@gmail.com>" ];
-      sha256 = "189v919mp6rzzgjp1khpn4zlq8ls81gh43x1lmc8kbkagdlpq888";
+      sha256 = "1cpqzf6acj8lm06z3f1cg41wn6c2n9l3v49nh0dvimv4055qib6k";
       libName = "aho_corasick";
       crateBin = [ {  name = "aho-corasick-dot"; } ];
       inherit dependencies buildDependencies features;
@@ -58,8 +58,8 @@ let kernel = buildPlatform.parsed.kernel.name;
       authors = [ "Andrii Dmytrenko <andrey@reevoo.com>" ];
       src = fetchgit {
          url = "https://github.com/grahamc/rust-amqp.git";
-         rev = "6911cae4e9267419d228dd765c9b3a5eada80739";
-         sha256 = "0cfk87xl3fpfp5f7x76qfszvnsj1g6wff29naz6fd2ni3cjxvnd0";
+         rev = "1216885c84f7c94a205a8e41519684e7df0e0f35";
+         sha256 = "0xmdhi8xiphrahs0mfjfamsxqglbzcxgm5h2xqhmlrbn5n1d479p";
       };
       inherit dependencies buildDependencies features;
     };
@@ -70,11 +70,11 @@ let kernel = buildPlatform.parsed.kernel.name;
       sha256 = "1x2wgaw603jcjwsfvc8s2rpaqjv0aqj8mvws2ahhkvfnwkdf7icw";
       inherit dependencies buildDependencies features;
     };
-    backtrace_0_3_4_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    backtrace_0_3_3_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
       crateName = "backtrace";
-      version = "0.3.4";
+      version = "0.3.3";
       authors = [ "Alex Crichton <alex@alexcrichton.com>" "The Rust Project Developers" ];
-      sha256 = "1caba8w3rqd5ghr88ghyz5wgkf81dgx18bj1llkax6qmianc6gk7";
+      sha256 = "0invfdxkj85v8zyrjs3amfxjdk2a36x8irq7wq7kny6q49hh8y0z";
       inherit dependencies buildDependencies features;
     };
     backtrace_sys_0_1_16_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
@@ -120,11 +120,11 @@ let kernel = buildPlatform.parsed.kernel.name;
       sha256 = "0zsr6b0m0yl5c0yy92nq7srfpczd1dx1xqcx3rlm5fbl8si9clqx";
       inherit dependencies buildDependencies features;
     };
-    byteorder_1_2_1_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    byteorder_1_1_0_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
       crateName = "byteorder";
-      version = "1.2.1";
+      version = "1.1.0";
       authors = [ "Andrew Gallant <jamslam@gmail.com>" ];
-      sha256 = "1wsxnqcscg4gchdmgdbwc78lw2qx2i6bnjd564xq7h7qc4fp2157";
+      sha256 = "1i2n0161jm00zvzh4bncgv9zrwa6ydbxdn5j4bx0wwn7rvi9zycp";
       inherit dependencies buildDependencies features;
     };
     cc_1_0_3_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
@@ -209,18 +209,11 @@ let kernel = buildPlatform.parsed.kernel.name;
       sha256 = "1xxbzd8cjlpzsb9fsih7mdnndhzrvykj0w77yg90qc85az1xwy5z";
       inherit dependencies buildDependencies features;
     };
-    foreign_types_0_3_2_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    foreign_types_0_2_0_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
       crateName = "foreign-types";
-      version = "0.3.2";
+      version = "0.2.0";
       authors = [ "Steven Fackler <sfackler@gmail.com>" ];
-      sha256 = "105n8sp2djb1s5lzrw04p7ss3dchr5qa3canmynx396nh3vwm2p8";
-      inherit dependencies buildDependencies features;
-    };
-    foreign_types_shared_0_1_1_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
-      crateName = "foreign-types-shared";
-      version = "0.1.1";
-      authors = [ "Steven Fackler <sfackler@gmail.com>" ];
-      sha256 = "0b6cnvqbflws8dxywk4589vgbz80049lz4x1g9dfy4s1ppd3g4z5";
+      sha256 = "1sznwg2py4xi7hyrx0gg1sirlwgh87wsanvjx3zb475g6c4139jh";
       inherit dependencies buildDependencies features;
     };
     fs2_0_4_2_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
@@ -306,32 +299,25 @@ let kernel = buildPlatform.parsed.kernel.name;
       sha256 = "1zkrdzsqzzc7509kd7nngdwrp461glm2g09kqpzaqksp82frjdvy";
       inherit dependencies buildDependencies features;
     };
-    lazy_static_1_0_0_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    lazy_static_0_2_9_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
       crateName = "lazy_static";
-      version = "1.0.0";
+      version = "0.2.9";
       authors = [ "Marvin Löbel <loebel.marvin@gmail.com>" ];
-      sha256 = "0wfvqyr2nvx2mbsrscg5y7gfa9skhb8p72ayanl8vl49pw24v4fh";
+      sha256 = "08ldzr5292y3hvi6l6v8l4i6v95lm1aysmnfln65h10sqrfh6iw7";
       inherit dependencies buildDependencies features;
     };
-    libc_0_2_34_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    libc_0_2_33_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
       crateName = "libc";
-      version = "0.2.34";
+      version = "0.2.33";
       authors = [ "The Rust Project Developers" ];
-      sha256 = "11jmqdxmv0ka10ay0l8nzx0nl7s2lc3dbrnh1mgbr2grzwdyxi2s";
+      sha256 = "1l7synziccnvarsq2kk22vps720ih6chmn016bhr2bq54hblbnl1";
       inherit dependencies buildDependencies features;
     };
-    log_0_3_9_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    log_0_3_8_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
       crateName = "log";
-      version = "0.3.9";
+      version = "0.3.8";
       authors = [ "The Rust Project Developers" ];
-      sha256 = "19i9pwp7lhaqgzangcpw00kc3zsgcqcx84crv07xgz3v7d3kvfa2";
-      inherit dependencies buildDependencies features;
-    };
-    log_0_4_0_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
-      crateName = "log";
-      version = "0.4.0";
-      authors = [ "The Rust Project Developers" ];
-      sha256 = "0d6m7c1cr6sj3kk47801zyjgnzyl94yh2ra9gxc3waljza7wvx92";
+      sha256 = "1c43z4z85sxrsgir4s1hi84558ab5ic7jrn5qgmsiqcv90vvn006";
       inherit dependencies buildDependencies features;
     };
     matches_0_1_6_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
@@ -356,11 +342,11 @@ let kernel = buildPlatform.parsed.kernel.name;
       sha256 = "0x73jghamvxxq5fsw9wb0shk5m6qp3q6fsf0nibn0i6bbqkw91s8";
       inherit dependencies buildDependencies features;
     };
-    memchr_2_0_1_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    memchr_1_0_2_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
       crateName = "memchr";
-      version = "2.0.1";
+      version = "1.0.2";
       authors = [ "Andrew Gallant <jamslam@gmail.com>" "bluss" ];
-      sha256 = "0ls2y47rjwapjdax6bp974gdp06ggm1v8d1h69wyydmh1nhgm5gr";
+      sha256 = "0dfb8ifl9nrc9kzgd5z91q6qg87sh285q1ih7xgrsglmqfav9lg7";
       inherit dependencies buildDependencies features;
     };
     mime_0_2_6_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
@@ -377,11 +363,11 @@ let kernel = buildPlatform.parsed.kernel.name;
       sha256 = "0q5y5i96mfpjbhx8y7w9rdq65mksw67m60bw4xqlybc8y6jkr99v";
       inherit dependencies buildDependencies features;
     };
-    num_traits_0_1_41_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    num_traits_0_1_40_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
       crateName = "num-traits";
-      version = "0.1.41";
+      version = "0.1.40";
       authors = [ "The Rust Project Developers" ];
-      sha256 = "134gv890n1gv8v0jys55k0940gqp2hibgf1fs8q9jmyk2xp1jp9m";
+      sha256 = "1fr8ghp4i97q3agki54i0hpmqxv3s65i2mqd1pinc7w7arc3fplw";
       inherit dependencies buildDependencies features;
     };
     num_cpus_1_7_0_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
@@ -398,19 +384,19 @@ let kernel = buildPlatform.parsed.kernel.name;
       src = ./../ofborg;
       inherit dependencies buildDependencies features;
     };
-    openssl_0_9_23_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    openssl_0_9_20_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
       crateName = "openssl";
-      version = "0.9.23";
+      version = "0.9.20";
       authors = [ "Steven Fackler <sfackler@gmail.com>" ];
-      sha256 = "1s773jsg94j1f2n87y6csqmy19pbh3f048vzrrimm7hhk9a20xsm";
+      sha256 = "0dbj6k6z828c3sqbxidw5zfval29k8dlsr8qn8fizhc1alli18gx";
       build = "build.rs";
       inherit dependencies buildDependencies features;
     };
-    openssl_sys_0_9_23_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    openssl_sys_0_9_20_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
       crateName = "openssl-sys";
-      version = "0.9.23";
+      version = "0.9.20";
       authors = [ "Alex Crichton <alex@alexcrichton.com>" "Steven Fackler <sfackler@gmail.com>" ];
-      sha256 = "1n56v5h23jrfnkpl6fj3qq6w1xfvkng807hmb8mdcxrbf7aln7s2";
+      sha256 = "05q6qagvy7lim9vkq2v00vpm34j1dq4xy9pchs7fb6yy803vx24m";
       build = "build.rs";
       inherit dependencies buildDependencies features;
     };
@@ -443,11 +429,11 @@ let kernel = buildPlatform.parsed.kernel.name;
       sha256 = "15d7c3myn968dzjs0a2pgv58hzdavxnq6swgj032lw2v966ir4xv";
       inherit dependencies buildDependencies features;
     };
-    redox_syscall_0_1_32_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    redox_syscall_0_1_31_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
       crateName = "redox_syscall";
-      version = "0.1.32";
+      version = "0.1.31";
       authors = [ "Jeremy Soller <jackpot51@gmail.com>" ];
-      sha256 = "1axxj8x6ngh6npkzqc5h216fajkcyrdxdgb7m2f0n5xfclbk47fv";
+      sha256 = "0kipd9qslzin4fgj4jrxv6yz5l3l71gnbd7fq1jhk2j7f2sq33j4";
       libName = "syscall";
       inherit dependencies buildDependencies features;
     };
@@ -458,11 +444,11 @@ let kernel = buildPlatform.parsed.kernel.name;
       sha256 = "0y4s8ghhx6sgzb35irwivm3w0l2hhqhmdcd2px9hirqnkagal9l6";
       inherit dependencies buildDependencies features;
     };
-    regex_0_2_3_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    regex_0_2_2_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
       crateName = "regex";
-      version = "0.2.3";
+      version = "0.2.2";
       authors = [ "The Rust Project Developers" ];
-      sha256 = "11a4ysci7qn336990wr20hsr2420f22hh28zcf0a90hfi3kx430z";
+      sha256 = "1f1zrrynfylg0vcfyfp60bybq4rp5g1yk2k7lc7fyz7mmc7k2qr7";
       inherit dependencies buildDependencies features;
     };
     regex_syntax_0_3_9_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
@@ -493,11 +479,11 @@ let kernel = buildPlatform.parsed.kernel.name;
       sha256 = "058m251q202n479ip1h6s91yw3plg66vsk5mpaflssn6rs5hijdm";
       inherit dependencies buildDependencies features;
     };
-    schannel_0_1_9_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    schannel_0_1_8_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
       crateName = "schannel";
-      version = "0.1.9";
+      version = "0.1.8";
       authors = [ "Steven Fackler <sfackler@gmail.com>" "Steffen Butzer <steffen.butzer@outlook.com>" ];
-      sha256 = "0gcbcq9sj1c1qkncwadp3azfnzkn0115dycjmbw00zcj4jdl35a0";
+      sha256 = "01vgljs175gl2rdjdnys5da2lv98xfl3ir1csvpw4hgv3xirhx3q";
       build = "build.rs";
       inherit dependencies buildDependencies features;
     };
@@ -525,33 +511,33 @@ let kernel = buildPlatform.parsed.kernel.name;
       build = "build.rs";
       inherit dependencies buildDependencies features;
     };
-    serde_1_0_25_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    serde_1_0_19_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
       crateName = "serde";
-      version = "1.0.25";
+      version = "1.0.19";
       authors = [ "Erick Tryzelaar <erick.tryzelaar@gmail.com>" "David Tolnay <dtolnay@gmail.com>" ];
-      sha256 = "00m469i7m68y5ghr027yi0sgvj4chldlwdddznvxwzqb88q1v01k";
+      sha256 = "0dfhkkbrpr0vr1b2hhbddizb8bq4phi5ck0jhy3yx31bc2byb1l1";
       inherit dependencies buildDependencies features;
     };
-    serde_derive_1_0_25_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    serde_derive_1_0_19_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
       crateName = "serde_derive";
-      version = "1.0.25";
+      version = "1.0.19";
       authors = [ "Erick Tryzelaar <erick.tryzelaar@gmail.com>" "David Tolnay <dtolnay@gmail.com>" ];
-      sha256 = "1pkd3p4hjkviip8z6dnd4yzfjiwzyyyixfx2v0d7mzqh3kin6wna";
+      sha256 = "1fbr1zi25fgwy49mvpjq8g611mnv3vcd4n0mgca2lfdsp5n2nw5v";
       procMacro = true;
       inherit dependencies buildDependencies features;
     };
-    serde_derive_internals_0_18_1_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    serde_derive_internals_0_17_0_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
       crateName = "serde_derive_internals";
-      version = "0.18.1";
+      version = "0.17.0";
       authors = [ "Erick Tryzelaar <erick.tryzelaar@gmail.com>" "David Tolnay <dtolnay@gmail.com>" ];
-      sha256 = "18jpyns48vw2y8y12iwg25bghjzzcsj245i3af6xmlvxavmzgx3d";
+      sha256 = "1g1j3v6pj9wbcz3v3w4smjpwrcdwjicmf6yd5cbai04as9iwhw74";
       inherit dependencies buildDependencies features;
     };
-    serde_json_1_0_8_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    serde_json_1_0_6_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
       crateName = "serde_json";
-      version = "1.0.8";
+      version = "1.0.6";
       authors = [ "Erick Tryzelaar <erick.tryzelaar@gmail.com>" "David Tolnay <dtolnay@gmail.com>" ];
-      sha256 = "06ly6fn1ybajfzjv7wyfx0zpl6ypz38smc21x5jicvxkrwhv98z6";
+      sha256 = "1kacyc59splwbg8gr7qs32pp9smgy1khq0ggnv07yxhs7h355vjz";
       inherit dependencies buildDependencies features;
     };
     syn_0_11_11_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
@@ -596,11 +582,11 @@ let kernel = buildPlatform.parsed.kernel.name;
       sha256 = "19p0zrs24rdwjvpi10jig5ms3sxj00pv8shkr9cpddri8cdghqp7";
       inherit dependencies buildDependencies features;
     };
-    thread_local_0_3_5_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    thread_local_0_3_4_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
       crateName = "thread_local";
-      version = "0.3.5";
+      version = "0.3.4";
       authors = [ "Amanieu d'Antras <amanieu@gmail.com>" ];
-      sha256 = "0mkp0sp91aqsk7brgygai4igv751r1754rsxn37mig3ag5rx8np6";
+      sha256 = "1y6cwyhhx2nkz4b3dziwhqdvgq830z8wjp32b40pjd8r0hxqv2jr";
       inherit dependencies buildDependencies features;
     };
     time_0_1_38_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
@@ -730,22 +716,22 @@ rec {
     dependencies = [ memchr_0_1_11 ];
   };
   memchr_0_1_11_features."default".from_aho_corasick_0_5_3__default = true;
-  aho_corasick_0_6_4 = aho_corasick_0_6_4_ rec {
-    dependencies = [ memchr_2_0_1 ];
+  aho_corasick_0_6_3 = aho_corasick_0_6_3_ rec {
+    dependencies = [ memchr_1_0_2 ];
   };
-  memchr_2_0_1_features."default".from_aho_corasick_0_6_4__default = true;
+  memchr_1_0_2_features."default".from_aho_corasick_0_6_3__default = true;
   amq_proto_0_1_0 = amq_proto_0_1_0_ rec {
-    dependencies = [ bit_vec_0_4_4 byteorder_0_5_3 enum_primitive_0_1_1 env_logger_0_3_5 error_chain_0_10_0 log_0_3_9 ];
+    dependencies = [ bit_vec_0_4_4 byteorder_0_5_3 enum_primitive_0_1_1 env_logger_0_3_5 error_chain_0_10_0 log_0_3_8 ];
   };
   bit_vec_0_4_4_features."default".from_amq_proto_0_1_0__default = true;
   byteorder_0_5_3_features."default".from_amq_proto_0_1_0__default = true;
   enum_primitive_0_1_1_features."default".from_amq_proto_0_1_0__default = true;
   env_logger_0_3_5_features."default".from_amq_proto_0_1_0__default = true;
   error_chain_0_10_0_features."default".from_amq_proto_0_1_0__default = true;
-  log_0_3_9_features."default".from_amq_proto_0_1_0__default = true;
+  log_0_3_8_features."default".from_amq_proto_0_1_0__default = true;
   amqp_0_1_0 = amqp_0_1_0_ rec {
-    dependencies = [ amq_proto_0_1_0 env_logger_0_3_5 log_0_3_9 openssl_0_9_23 url_1_6_0 ]
-      ++ (if lib.lists.any (x: x == "openssl") features then [openssl_0_9_23] else []);
+    dependencies = [ amq_proto_0_1_0 env_logger_0_3_5 log_0_3_8 openssl_0_9_20 url_1_6_0 ]
+      ++ (if lib.lists.any (x: x == "openssl") features then [openssl_0_9_20] else []);
     features = mkFeatures amqp_0_1_0_features;
   };
   amqp_0_1_0_features."".self = true;
@@ -753,56 +739,56 @@ rec {
   amqp_0_1_0_features."openssl".self_tls = hasFeature (amqp_0_1_0_features."tls" or {});
   amq_proto_0_1_0_features."default".from_amqp_0_1_0__default = true;
   env_logger_0_3_5_features."default".from_amqp_0_1_0__default = true;
-  log_0_3_9_features."default".from_amqp_0_1_0__default = true;
-  openssl_0_9_23_features."default".from_amqp_0_1_0__default = true;
+  log_0_3_8_features."default".from_amqp_0_1_0__default = true;
+  openssl_0_9_20_features."default".from_amqp_0_1_0__default = true;
   url_1_6_0_features."default".from_amqp_0_1_0__default = true;
   antidote_1_0_0 = antidote_1_0_0_ rec {};
-  backtrace_0_3_4 = backtrace_0_3_4_ rec {
+  backtrace_0_3_3 = backtrace_0_3_3_ rec {
     dependencies = [ cfg_if_0_1_2 rustc_demangle_0_1_5 ]
-      ++ (if (kernel == "linux" || kernel == "darwin") && !(kernel == "fuchsia") && !(kernel == "emscripten") && !(kernel == "darwin") && !(kernel == "ios") then [ backtrace_sys_0_1_16 ]
+      ++ (if (kernel == "linux" || kernel == "darwin") && !(kernel == "emscripten") && !(kernel == "darwin") && !(kernel == "ios") then [ backtrace_sys_0_1_16 ]
       ++ (if lib.lists.any (x: x == "backtrace-sys") features then [backtrace_sys_0_1_16] else []) else [])
-      ++ (if (kernel == "linux" || kernel == "darwin") then [ libc_0_2_34 ] else [])
+      ++ (if (kernel == "linux" || kernel == "darwin") then [ libc_0_2_33 ] else [])
       ++ (if kernel == "windows" then [ dbghelp_sys_0_2_0 kernel32_sys_0_2_2 winapi_0_2_8 ]
       ++ (if lib.lists.any (x: x == "dbghelp-sys") features then [dbghelp_sys_0_2_0] else [])      ++ (if lib.lists.any (x: x == "kernel32-sys") features then [kernel32_sys_0_2_2] else [])      ++ (if lib.lists.any (x: x == "winapi") features then [winapi_0_2_8] else []) else []);
-    features = mkFeatures backtrace_0_3_4_features;
+    features = mkFeatures backtrace_0_3_3_features;
   };
-  backtrace_0_3_4_features."".self = true;
-  backtrace_0_3_4_features."kernel32-sys".self_dbghelp = hasFeature (backtrace_0_3_4_features."dbghelp" or {});
-  backtrace_0_3_4_features."winapi".self_dbghelp = hasFeature (backtrace_0_3_4_features."dbghelp" or {});
-  backtrace_0_3_4_features."dbghelp-sys".self_dbghelp = hasFeature (backtrace_0_3_4_features."dbghelp" or {});
-  backtrace_0_3_4_features."libunwind".self_default = hasDefault backtrace_0_3_4_features;
-  backtrace_0_3_4_features."libbacktrace".self_default = hasDefault backtrace_0_3_4_features;
-  backtrace_0_3_4_features."coresymbolication".self_default = hasDefault backtrace_0_3_4_features;
-  backtrace_0_3_4_features."dladdr".self_default = hasDefault backtrace_0_3_4_features;
-  backtrace_0_3_4_features."dbghelp".self_default = hasDefault backtrace_0_3_4_features;
-  backtrace_0_3_4_features."addr2line".self_gimli-symbolize = hasFeature (backtrace_0_3_4_features."gimli-symbolize" or {});
-  backtrace_0_3_4_features."findshlibs".self_gimli-symbolize = hasFeature (backtrace_0_3_4_features."gimli-symbolize" or {});
-  backtrace_0_3_4_features."backtrace-sys".self_libbacktrace = hasFeature (backtrace_0_3_4_features."libbacktrace" or {});
-  backtrace_0_3_4_features."rustc-serialize".self_serialize-rustc = hasFeature (backtrace_0_3_4_features."serialize-rustc" or {});
-  backtrace_0_3_4_features."serde".self_serialize-serde = hasFeature (backtrace_0_3_4_features."serialize-serde" or {});
-  backtrace_0_3_4_features."serde_derive".self_serialize-serde = hasFeature (backtrace_0_3_4_features."serialize-serde" or {});
-  addr2line_0_0_0_features."default".from_backtrace_0_3_4__default = true;
-  cfg_if_0_1_2_features."default".from_backtrace_0_3_4__default = true;
-  cpp_demangle_0_0_0_features."default".from_backtrace_0_3_4__default = false;
-  findshlibs_0_0_0_features."default".from_backtrace_0_3_4__default = true;
-  rustc_demangle_0_1_5_features."default".from_backtrace_0_3_4__default = true;
-  rustc_serialize_0_0_0_features."default".from_backtrace_0_3_4__default = true;
-  serde_0_0_0_features."default".from_backtrace_0_3_4__default = true;
-  serde_derive_0_0_0_features."default".from_backtrace_0_3_4__default = true;
-  backtrace_sys_0_1_16_features."default".from_backtrace_0_3_4__default = true;
-  libc_0_2_34_features."default".from_backtrace_0_3_4__default = true;
-  dbghelp_sys_0_2_0_features."default".from_backtrace_0_3_4__default = true;
-  kernel32_sys_0_2_2_features."default".from_backtrace_0_3_4__default = true;
-  winapi_0_2_8_features."default".from_backtrace_0_3_4__default = true;
+  backtrace_0_3_3_features."".self = true;
+  backtrace_0_3_3_features."kernel32-sys".self_dbghelp = hasFeature (backtrace_0_3_3_features."dbghelp" or {});
+  backtrace_0_3_3_features."winapi".self_dbghelp = hasFeature (backtrace_0_3_3_features."dbghelp" or {});
+  backtrace_0_3_3_features."dbghelp-sys".self_dbghelp = hasFeature (backtrace_0_3_3_features."dbghelp" or {});
+  backtrace_0_3_3_features."libunwind".self_default = hasDefault backtrace_0_3_3_features;
+  backtrace_0_3_3_features."libbacktrace".self_default = hasDefault backtrace_0_3_3_features;
+  backtrace_0_3_3_features."coresymbolication".self_default = hasDefault backtrace_0_3_3_features;
+  backtrace_0_3_3_features."dladdr".self_default = hasDefault backtrace_0_3_3_features;
+  backtrace_0_3_3_features."dbghelp".self_default = hasDefault backtrace_0_3_3_features;
+  backtrace_0_3_3_features."addr2line".self_gimli-symbolize = hasFeature (backtrace_0_3_3_features."gimli-symbolize" or {});
+  backtrace_0_3_3_features."findshlibs".self_gimli-symbolize = hasFeature (backtrace_0_3_3_features."gimli-symbolize" or {});
+  backtrace_0_3_3_features."backtrace-sys".self_libbacktrace = hasFeature (backtrace_0_3_3_features."libbacktrace" or {});
+  backtrace_0_3_3_features."rustc-serialize".self_serialize-rustc = hasFeature (backtrace_0_3_3_features."serialize-rustc" or {});
+  backtrace_0_3_3_features."serde".self_serialize-serde = hasFeature (backtrace_0_3_3_features."serialize-serde" or {});
+  backtrace_0_3_3_features."serde_derive".self_serialize-serde = hasFeature (backtrace_0_3_3_features."serialize-serde" or {});
+  addr2line_0_0_0_features."default".from_backtrace_0_3_3__default = true;
+  cfg_if_0_1_2_features."default".from_backtrace_0_3_3__default = true;
+  cpp_demangle_0_0_0_features."default".from_backtrace_0_3_3__default = false;
+  findshlibs_0_0_0_features."default".from_backtrace_0_3_3__default = true;
+  rustc_demangle_0_1_5_features."default".from_backtrace_0_3_3__default = true;
+  rustc_serialize_0_0_0_features."default".from_backtrace_0_3_3__default = true;
+  serde_0_0_0_features."default".from_backtrace_0_3_3__default = true;
+  serde_derive_0_0_0_features."default".from_backtrace_0_3_3__default = true;
+  backtrace_sys_0_1_16_features."default".from_backtrace_0_3_3__default = true;
+  libc_0_2_33_features."default".from_backtrace_0_3_3__default = true;
+  dbghelp_sys_0_2_0_features."default".from_backtrace_0_3_3__default = true;
+  kernel32_sys_0_2_2_features."default".from_backtrace_0_3_3__default = true;
+  winapi_0_2_8_features."default".from_backtrace_0_3_3__default = true;
   backtrace_sys_0_1_16 = backtrace_sys_0_1_16_ rec {
-    dependencies = [ libc_0_2_34 ];
+    dependencies = [ libc_0_2_33 ];
     buildDependencies = [ cc_1_0_3 ];
   };
-  libc_0_2_34_features."default".from_backtrace_sys_0_1_16__default = true;
+  libc_0_2_33_features."default".from_backtrace_sys_0_1_16__default = true;
   base64_0_6_0 = base64_0_6_0_ rec {
-    dependencies = [ byteorder_1_2_1 safemem_0_2_0 ];
+    dependencies = [ byteorder_1_1_0 safemem_0_2_0 ];
   };
-  byteorder_1_2_1_features."default".from_base64_0_6_0__default = true;
+  byteorder_1_1_0_features."default".from_base64_0_6_0__default = true;
   safemem_0_2_0_features."default".from_base64_0_6_0__default = true;
   bit_vec_0_4_4 = bit_vec_0_4_4_ rec {
     features = mkFeatures bit_vec_0_4_4_features;
@@ -817,10 +803,10 @@ rec {
     features = mkFeatures byteorder_0_5_3_features;
   };
   byteorder_0_5_3_features."std".self_default = hasDefault byteorder_0_5_3_features;
-  byteorder_1_2_1 = byteorder_1_2_1_ rec {
-    features = mkFeatures byteorder_1_2_1_features;
+  byteorder_1_1_0 = byteorder_1_1_0_ rec {
+    features = mkFeatures byteorder_1_1_0_features;
   };
-  byteorder_1_2_1_features."std".self_default = hasDefault byteorder_1_2_1_features;
+  byteorder_1_1_0_features."std".self_default = hasDefault byteorder_1_1_0_features;
   cc_1_0_3 = cc_1_0_3_ rec {
     dependencies = [];
     features = mkFeatures cc_1_0_3_features;
@@ -829,14 +815,14 @@ rec {
   rayon_0_0_0_features."default".from_cc_1_0_3__default = true;
   cfg_if_0_1_2 = cfg_if_0_1_2_ rec {};
   core_foundation_0_2_3 = core_foundation_0_2_3_ rec {
-    dependencies = [ core_foundation_sys_0_2_3 libc_0_2_34 ];
+    dependencies = [ core_foundation_sys_0_2_3 libc_0_2_33 ];
   };
   core_foundation_sys_0_2_3_features."default".from_core_foundation_0_2_3__default = true;
-  libc_0_2_34_features."default".from_core_foundation_0_2_3__default = true;
+  libc_0_2_33_features."default".from_core_foundation_0_2_3__default = true;
   core_foundation_sys_0_2_3 = core_foundation_sys_0_2_3_ rec {
-    dependencies = [ libc_0_2_34 ];
+    dependencies = [ libc_0_2_33 ];
   };
-  libc_0_2_34_features."default".from_core_foundation_sys_0_2_3__default = true;
+  libc_0_2_33_features."default".from_core_foundation_sys_0_2_3__default = true;
   crypt32_sys_0_2_0 = crypt32_sys_0_2_0_ rec {
     dependencies = [ winapi_0_2_8 ];
     buildDependencies = [ winapi_build_0_1_1 ];
@@ -849,46 +835,42 @@ rec {
   winapi_0_2_8_features."default".from_dbghelp_sys_0_2_0__default = true;
   dtoa_0_4_2 = dtoa_0_4_2_ rec {};
   enum_primitive_0_1_1 = enum_primitive_0_1_1_ rec {
-    dependencies = [ num_traits_0_1_41 ];
+    dependencies = [ num_traits_0_1_40 ];
   };
-  num_traits_0_1_41_features."default".from_enum_primitive_0_1_1__default = false;
+  num_traits_0_1_40_features."default".from_enum_primitive_0_1_1__default = false;
   env_logger_0_3_5 = env_logger_0_3_5_ rec {
-    dependencies = [ log_0_3_9 regex_0_1_80 ]
+    dependencies = [ log_0_3_8 regex_0_1_80 ]
       ++ (if lib.lists.any (x: x == "regex") features then [regex_0_1_80] else []);
     features = mkFeatures env_logger_0_3_5_features;
   };
   env_logger_0_3_5_features."".self = true;
   env_logger_0_3_5_features."regex".self_default = hasDefault env_logger_0_3_5_features;
-  log_0_3_9_features."default".from_env_logger_0_3_5__default = true;
+  log_0_3_8_features."default".from_env_logger_0_3_5__default = true;
   regex_0_1_80_features."default".from_env_logger_0_3_5__default = true;
   env_logger_0_4_3 = env_logger_0_4_3_ rec {
-    dependencies = [ log_0_3_9 regex_0_2_3 ]
-      ++ (if lib.lists.any (x: x == "regex") features then [regex_0_2_3] else []);
+    dependencies = [ log_0_3_8 regex_0_2_2 ]
+      ++ (if lib.lists.any (x: x == "regex") features then [regex_0_2_2] else []);
     features = mkFeatures env_logger_0_4_3_features;
   };
   env_logger_0_4_3_features."".self = true;
   env_logger_0_4_3_features."regex".self_default = hasDefault env_logger_0_4_3_features;
-  log_0_3_9_features."default".from_env_logger_0_4_3__default = true;
-  regex_0_2_3_features."default".from_env_logger_0_4_3__default = true;
+  log_0_3_8_features."default".from_env_logger_0_4_3__default = true;
+  regex_0_2_2_features."default".from_env_logger_0_4_3__default = true;
   error_chain_0_10_0 = error_chain_0_10_0_ rec {
-    dependencies = [ backtrace_0_3_4 ]
-      ++ (if lib.lists.any (x: x == "backtrace") features then [backtrace_0_3_4] else []);
+    dependencies = [ backtrace_0_3_3 ]
+      ++ (if lib.lists.any (x: x == "backtrace") features then [backtrace_0_3_3] else []);
     features = mkFeatures error_chain_0_10_0_features;
   };
   error_chain_0_10_0_features."".self = true;
   error_chain_0_10_0_features."backtrace".self_default = hasDefault error_chain_0_10_0_features;
   error_chain_0_10_0_features."example_generated".self_default = hasDefault error_chain_0_10_0_features;
-  backtrace_0_3_4_features."default".from_error_chain_0_10_0__default = true;
-  foreign_types_0_3_2 = foreign_types_0_3_2_ rec {
-    dependencies = [ foreign_types_shared_0_1_1 ];
-  };
-  foreign_types_shared_0_1_1_features."default".from_foreign_types_0_3_2__default = true;
-  foreign_types_shared_0_1_1 = foreign_types_shared_0_1_1_ rec {};
+  backtrace_0_3_3_features."default".from_error_chain_0_10_0__default = true;
+  foreign_types_0_2_0 = foreign_types_0_2_0_ rec {};
   fs2_0_4_2 = fs2_0_4_2_ rec {
-    dependencies = (if (kernel == "linux" || kernel == "darwin") then [ libc_0_2_34 ] else [])
+    dependencies = (if (kernel == "linux" || kernel == "darwin") then [ libc_0_2_33 ] else [])
       ++ (if kernel == "windows" then [ kernel32_sys_0_2_2 winapi_0_2_8 ] else []);
   };
-  libc_0_2_34_features."default".from_fs2_0_4_2__default = true;
+  libc_0_2_33_features."default".from_fs2_0_4_2__default = true;
   kernel32_sys_0_2_2_features."default".from_fs2_0_4_2__default = true;
   winapi_0_2_8_features."default".from_fs2_0_4_2__default = true;
   fuchsia_zircon_0_2_1 = fuchsia_zircon_0_2_1_ rec {
@@ -904,24 +886,24 @@ rec {
   };
   httparse_1_2_3_features."std".self_default = hasDefault httparse_1_2_3_features;
   hubcaps_0_3_16 = hubcaps_0_3_16_ rec {
-    dependencies = [ error_chain_0_10_0 hyper_0_10_13 log_0_3_9 serde_1_0_25 serde_derive_1_0_25 serde_json_1_0_8 url_1_6_0 ];
+    dependencies = [ error_chain_0_10_0 hyper_0_10_13 log_0_3_8 serde_1_0_19 serde_derive_1_0_19 serde_json_1_0_6 url_1_6_0 ];
   };
   error_chain_0_10_0_features."default".from_hubcaps_0_3_16__default = true;
   hyper_0_10_13_features."default".from_hubcaps_0_3_16__default = true;
-  log_0_3_9_features."default".from_hubcaps_0_3_16__default = true;
-  serde_1_0_25_features."default".from_hubcaps_0_3_16__default = true;
-  serde_derive_1_0_25_features."default".from_hubcaps_0_3_16__default = true;
-  serde_json_1_0_8_features."default".from_hubcaps_0_3_16__default = true;
+  log_0_3_8_features."default".from_hubcaps_0_3_16__default = true;
+  serde_1_0_19_features."default".from_hubcaps_0_3_16__default = true;
+  serde_derive_1_0_19_features."default".from_hubcaps_0_3_16__default = true;
+  serde_json_1_0_6_features."default".from_hubcaps_0_3_16__default = true;
   url_1_6_0_features."default".from_hubcaps_0_3_16__default = true;
   hyper_0_10_13 = hyper_0_10_13_ rec {
-    dependencies = [ base64_0_6_0 httparse_1_2_3 language_tags_0_2_2 log_0_3_9 mime_0_2_6 num_cpus_1_7_0 time_0_1_38 traitobject_0_1_0 typeable_0_1_2 unicase_1_4_2 url_1_6_0 ];
+    dependencies = [ base64_0_6_0 httparse_1_2_3 language_tags_0_2_2 log_0_3_8 mime_0_2_6 num_cpus_1_7_0 time_0_1_38 traitobject_0_1_0 typeable_0_1_2 unicase_1_4_2 url_1_6_0 ];
     features = mkFeatures hyper_0_10_13_features;
   };
   hyper_0_10_13_features."".self = true;
   base64_0_6_0_features."default".from_hyper_0_10_13__default = true;
   httparse_1_2_3_features."default".from_hyper_0_10_13__default = true;
   language_tags_0_2_2_features."default".from_hyper_0_10_13__default = true;
-  log_0_3_9_features."default".from_hyper_0_10_13__default = true;
+  log_0_3_8_features."default".from_hyper_0_10_13__default = true;
   mime_0_2_6_features."default".from_hyper_0_10_13__default = true;
   num_cpus_1_7_0_features."default".from_hyper_0_10_13__default = true;
   time_0_1_38_features."default".from_hyper_0_10_13__default = true;
@@ -958,88 +940,64 @@ rec {
   language_tags_0_2_2_features."heapsize_plugin".self_heap_size = hasFeature (language_tags_0_2_2_features."heap_size" or {});
   heapsize_0_0_0_features."default".from_language_tags_0_2_2__default = true;
   heapsize_plugin_0_0_0_features."default".from_language_tags_0_2_2__default = true;
-  lazy_static_1_0_0 = lazy_static_1_0_0_ rec {
+  lazy_static_0_2_9 = lazy_static_0_2_9_ rec {
     dependencies = [];
-    features = mkFeatures lazy_static_1_0_0_features;
+    features = mkFeatures lazy_static_0_2_9_features;
   };
-  lazy_static_1_0_0_features."compiletest_rs".self_compiletest = hasFeature (lazy_static_1_0_0_features."compiletest" or {});
-  lazy_static_1_0_0_features."nightly".self_spin_no_std = hasFeature (lazy_static_1_0_0_features."spin_no_std" or {});
-  lazy_static_1_0_0_features."spin".self_spin_no_std = hasFeature (lazy_static_1_0_0_features."spin_no_std" or {});
-  compiletest_rs_0_0_0_features."default".from_lazy_static_1_0_0__default = true;
-  spin_0_0_0_features."default".from_lazy_static_1_0_0__default = true;
-  libc_0_2_34 = libc_0_2_34_ rec {
-    features = mkFeatures libc_0_2_34_features;
+  lazy_static_0_2_9_features."nightly".self_spin_no_std = hasFeature (lazy_static_0_2_9_features."spin_no_std" or {});
+  lazy_static_0_2_9_features."spin".self_spin_no_std = hasFeature (lazy_static_0_2_9_features."spin_no_std" or {});
+  spin_0_0_0_features."default".from_lazy_static_0_2_9__default = true;
+  libc_0_2_33 = libc_0_2_33_ rec {
+    features = mkFeatures libc_0_2_33_features;
   };
-  libc_0_2_34_features."use_std".self_default = hasDefault libc_0_2_34_features;
-  log_0_3_9 = log_0_3_9_ rec {
-    dependencies = [];
-    features = mkFeatures log_0_3_9_features;
+  libc_0_2_33_features."use_std".self_default = hasDefault libc_0_2_33_features;
+  log_0_3_8 = log_0_3_8_ rec {
+    features = mkFeatures log_0_3_8_features;
   };
-  log_0_3_9_features."use_std".self_default = hasDefault log_0_3_9_features;
-  log_0_0_0_features."max_level_debug".from_log_0_3_9__max_level_debug = hasFeature (log_0_3_9_features."max_level_debug" or {});
-  log_0_0_0_features."max_level_error".from_log_0_3_9__max_level_error = hasFeature (log_0_3_9_features."max_level_error" or {});
-  log_0_0_0_features."max_level_info".from_log_0_3_9__max_level_info = hasFeature (log_0_3_9_features."max_level_info" or {});
-  log_0_0_0_features."max_level_off".from_log_0_3_9__max_level_off = hasFeature (log_0_3_9_features."max_level_off" or {});
-  log_0_0_0_features."max_level_trace".from_log_0_3_9__max_level_trace = hasFeature (log_0_3_9_features."max_level_trace" or {});
-  log_0_0_0_features."max_level_warn".from_log_0_3_9__max_level_warn = hasFeature (log_0_3_9_features."max_level_warn" or {});
-  log_0_0_0_features."release_max_level_debug".from_log_0_3_9__release_max_level_debug = hasFeature (log_0_3_9_features."release_max_level_debug" or {});
-  log_0_0_0_features."release_max_level_error".from_log_0_3_9__release_max_level_error = hasFeature (log_0_3_9_features."release_max_level_error" or {});
-  log_0_0_0_features."release_max_level_info".from_log_0_3_9__release_max_level_info = hasFeature (log_0_3_9_features."release_max_level_info" or {});
-  log_0_0_0_features."release_max_level_off".from_log_0_3_9__release_max_level_off = hasFeature (log_0_3_9_features."release_max_level_off" or {});
-  log_0_0_0_features."release_max_level_trace".from_log_0_3_9__release_max_level_trace = hasFeature (log_0_3_9_features."release_max_level_trace" or {});
-  log_0_0_0_features."release_max_level_warn".from_log_0_3_9__release_max_level_warn = hasFeature (log_0_3_9_features."release_max_level_warn" or {});
-  log_0_0_0_features."std".from_log_0_3_9__use_std = hasFeature (log_0_3_9_features."use_std" or {});
-  log_0_0_0_features."default".from_log_0_3_9__default = true;
-  log_0_4_0 = log_0_4_0_ rec {
-    dependencies = [ cfg_if_0_1_2 ];
-    features = mkFeatures log_0_4_0_features;
-  };
-  log_0_4_0_features."".self = true;
-  cfg_if_0_1_2_features."default".from_log_0_4_0__default = true;
-  serde_0_0_0_features."default".from_log_0_4_0__default = false;
+  log_0_3_8_features."use_std".self_default = hasDefault log_0_3_8_features;
   matches_0_1_6 = matches_0_1_6_ rec {};
   md5_0_3_6 = md5_0_3_6_ rec {};
   memchr_0_1_11 = memchr_0_1_11_ rec {
-    dependencies = [ libc_0_2_34 ];
+    dependencies = [ libc_0_2_33 ];
   };
-  libc_0_2_34_features."default".from_memchr_0_1_11__default = true;
-  memchr_2_0_1 = memchr_2_0_1_ rec {
-    dependencies = [ libc_0_2_34 ]
-      ++ (if lib.lists.any (x: x == "libc") features then [libc_0_2_34] else []);
-    features = mkFeatures memchr_2_0_1_features;
+  libc_0_2_33_features."default".from_memchr_0_1_11__default = true;
+  memchr_1_0_2 = memchr_1_0_2_ rec {
+    dependencies = [ libc_0_2_33 ]
+      ++ (if lib.lists.any (x: x == "libc") features then [libc_0_2_33] else []);
+    features = mkFeatures memchr_1_0_2_features;
   };
-  memchr_2_0_1_features."".self = true;
-  memchr_2_0_1_features."use_std".self_default = hasDefault memchr_2_0_1_features;
-  memchr_2_0_1_features."libc".self_default = hasDefault memchr_2_0_1_features;
-  memchr_2_0_1_features."libc".self_use_std = hasFeature (memchr_2_0_1_features."use_std" or {});
-  libc_0_2_34_features."use_std".from_memchr_2_0_1__use_std = hasFeature (memchr_2_0_1_features."use_std" or {});
-  libc_0_2_34_features."default".from_memchr_2_0_1__default = false;
+  memchr_1_0_2_features."".self = true;
+  memchr_1_0_2_features."use_std".self_default = hasDefault memchr_1_0_2_features;
+  memchr_1_0_2_features."libc".self_default = hasDefault memchr_1_0_2_features;
+  memchr_1_0_2_features."libc".self_use_std = hasFeature (memchr_1_0_2_features."use_std" or {});
+  libc_0_2_33_features."use_std".from_memchr_1_0_2__use_std = hasFeature (memchr_1_0_2_features."use_std" or {});
+  libc_0_2_33_features."default".from_memchr_1_0_2__default = false;
   mime_0_2_6 = mime_0_2_6_ rec {
-    dependencies = [ log_0_3_9 ];
+    dependencies = [ log_0_3_8 ];
     features = mkFeatures mime_0_2_6_features;
   };
   mime_0_2_6_features."heapsize".self_heap_size = hasFeature (mime_0_2_6_features."heap_size" or {});
   heapsize_0_0_0_features."default".from_mime_0_2_6__default = true;
-  log_0_3_9_features."default".from_mime_0_2_6__default = true;
+  log_0_3_8_features."default".from_mime_0_2_6__default = true;
   serde_0_0_0_features."default".from_mime_0_2_6__default = true;
   native_tls_0_1_4 = native_tls_0_1_4_ rec {
-    dependencies = (if !(kernel == "windows" || kernel == "darwin") then [ openssl_0_9_23 ] else [])
+    dependencies = (if !(kernel == "windows" || kernel == "darwin") then [ openssl_0_9_20 ] else [])
       ++ (if kernel == "darwin" then [ security_framework_0_1_16 security_framework_sys_0_1_16 tempdir_0_3_5 ] else [])
-      ++ (if kernel == "windows" then [ schannel_0_1_9 ] else []);
+      ++ (if kernel == "windows" then [ schannel_0_1_8 ] else []);
   };
-  openssl_0_9_23_features."default".from_native_tls_0_1_4__default = true;
+  openssl_0_9_20_features."default".from_native_tls_0_1_4__default = true;
   security_framework_0_1_16_features."OSX_10_8".from_native_tls_0_1_4 = true;
   security_framework_0_1_16_features."default".from_native_tls_0_1_4__default = true;
   security_framework_sys_0_1_16_features."default".from_native_tls_0_1_4__default = true;
   tempdir_0_3_5_features."default".from_native_tls_0_1_4__default = true;
-  schannel_0_1_9_features."default".from_native_tls_0_1_4__default = true;
-  num_traits_0_1_41 = num_traits_0_1_41_ rec {};
+  schannel_0_1_8_features."default".from_native_tls_0_1_4__default = true;
+  num_traits_0_1_40 = num_traits_0_1_40_ rec {};
   num_cpus_1_7_0 = num_cpus_1_7_0_ rec {
-    dependencies = [ libc_0_2_34 ];
+    dependencies = [ libc_0_2_33 ];
   };
-  libc_0_2_34_features."default".from_num_cpus_1_7_0__default = true;
+  libc_0_2_33_features."default".from_num_cpus_1_7_0__default = true;
   ofborg_0_1_0 = ofborg_0_1_0_ rec {
-    dependencies = [ amqp_0_1_0 env_logger_0_4_3 fs2_0_4_2 hubcaps_0_3_16 hyper_0_10_13 hyper_native_tls_0_2_4 log_0_3_9 md5_0_3_6 serde_1_0_25 serde_derive_1_0_25 serde_json_1_0_8 tempfile_2_2_0 ];
+    dependencies = [ amqp_0_1_0 env_logger_0_4_3 fs2_0_4_2 hubcaps_0_3_16 hyper_0_10_13 hyper_native_tls_0_2_4 log_0_3_8 md5_0_3_6 serde_1_0_19 serde_derive_1_0_19 serde_json_1_0_6 tempfile_2_2_0 ];
   };
   amqp_0_1_0_features."default".from_ofborg_0_1_0__default = true;
   env_logger_0_4_3_features."default".from_ofborg_0_1_0__default = true;
@@ -1047,40 +1005,40 @@ rec {
   hubcaps_0_3_16_features."default".from_ofborg_0_1_0__default = true;
   hyper_0_10_13_features."default".from_ofborg_0_1_0__default = true;
   hyper_native_tls_0_2_4_features."default".from_ofborg_0_1_0__default = true;
-  log_0_3_9_features."default".from_ofborg_0_1_0__default = true;
+  log_0_3_8_features."default".from_ofborg_0_1_0__default = true;
   md5_0_3_6_features."default".from_ofborg_0_1_0__default = true;
-  serde_1_0_25_features."default".from_ofborg_0_1_0__default = true;
-  serde_derive_1_0_25_features."default".from_ofborg_0_1_0__default = true;
-  serde_json_1_0_8_features."default".from_ofborg_0_1_0__default = true;
+  serde_1_0_19_features."default".from_ofborg_0_1_0__default = true;
+  serde_derive_1_0_19_features."default".from_ofborg_0_1_0__default = true;
+  serde_json_1_0_6_features."default".from_ofborg_0_1_0__default = true;
   tempfile_2_2_0_features."default".from_ofborg_0_1_0__default = true;
-  openssl_0_9_23 = openssl_0_9_23_ rec {
-    dependencies = [ bitflags_0_9_1 foreign_types_0_3_2 lazy_static_1_0_0 libc_0_2_34 openssl_sys_0_9_23 ];
-    features = mkFeatures openssl_0_9_23_features;
+  openssl_0_9_20 = openssl_0_9_20_ rec {
+    dependencies = [ bitflags_0_9_1 foreign_types_0_2_0 lazy_static_0_2_9 libc_0_2_33 openssl_sys_0_9_20 ];
+    features = mkFeatures openssl_0_9_20_features;
   };
-  openssl_0_9_23_features."".self = true;
-  bitflags_0_9_1_features."default".from_openssl_0_9_23__default = true;
-  foreign_types_0_3_2_features."default".from_openssl_0_9_23__default = true;
-  lazy_static_1_0_0_features."default".from_openssl_0_9_23__default = true;
-  libc_0_2_34_features."default".from_openssl_0_9_23__default = true;
-  openssl_sys_0_9_23_features."default".from_openssl_0_9_23__default = true;
-  openssl_sys_0_9_23 = openssl_sys_0_9_23_ rec {
-    dependencies = [ libc_0_2_34 ]
+  openssl_0_9_20_features."".self = true;
+  bitflags_0_9_1_features."default".from_openssl_0_9_20__default = true;
+  foreign_types_0_2_0_features."default".from_openssl_0_9_20__default = true;
+  lazy_static_0_2_9_features."default".from_openssl_0_9_20__default = true;
+  libc_0_2_33_features."default".from_openssl_0_9_20__default = true;
+  openssl_sys_0_9_20_features."default".from_openssl_0_9_20__default = true;
+  openssl_sys_0_9_20 = openssl_sys_0_9_20_ rec {
+    dependencies = [ libc_0_2_33 ]
       ++ (if abi == "msvc" then [] else []);
     buildDependencies = [ cc_1_0_3 pkg_config_0_3_9 ];
   };
-  libc_0_2_34_features."default".from_openssl_sys_0_9_23__default = true;
+  libc_0_2_33_features."default".from_openssl_sys_0_9_20__default = true;
   percent_encoding_1_0_1 = percent_encoding_1_0_1_ rec {};
   pkg_config_0_3_9 = pkg_config_0_3_9_ rec {};
   quote_0_3_15 = quote_0_3_15_ rec {};
   rand_0_3_18 = rand_0_3_18_ rec {
-    dependencies = [ libc_0_2_34 ]
+    dependencies = [ libc_0_2_33 ]
       ++ (if kernel == "fuchsia" then [ fuchsia_zircon_0_2_1 ] else []);
     features = mkFeatures rand_0_3_18_features;
   };
   rand_0_3_18_features."i128_support".self_nightly = hasFeature (rand_0_3_18_features."nightly" or {});
-  libc_0_2_34_features."default".from_rand_0_3_18__default = true;
+  libc_0_2_33_features."default".from_rand_0_3_18__default = true;
   fuchsia_zircon_0_2_1_features."default".from_rand_0_3_18__default = true;
-  redox_syscall_0_1_32 = redox_syscall_0_1_32_ rec {};
+  redox_syscall_0_1_31 = redox_syscall_0_1_31_ rec {};
   regex_0_1_80 = regex_0_1_80_ rec {
     dependencies = [ aho_corasick_0_5_3 memchr_0_1_11 regex_syntax_0_3_9 thread_local_0_2_7 utf8_ranges_0_1_3 ];
     features = mkFeatures regex_0_1_80_features;
@@ -1092,38 +1050,38 @@ rec {
   simd_0_0_0_features."default".from_regex_0_1_80__default = true;
   thread_local_0_2_7_features."default".from_regex_0_1_80__default = true;
   utf8_ranges_0_1_3_features."default".from_regex_0_1_80__default = true;
-  regex_0_2_3 = regex_0_2_3_ rec {
-    dependencies = [ aho_corasick_0_6_4 memchr_2_0_1 regex_syntax_0_4_1 thread_local_0_3_5 utf8_ranges_1_0_0 ];
-    features = mkFeatures regex_0_2_3_features;
+  regex_0_2_2 = regex_0_2_2_ rec {
+    dependencies = [ aho_corasick_0_6_3 memchr_1_0_2 regex_syntax_0_4_1 thread_local_0_3_4 utf8_ranges_1_0_0 ];
+    features = mkFeatures regex_0_2_2_features;
   };
-  regex_0_2_3_features."simd".self_simd-accel = hasFeature (regex_0_2_3_features."simd-accel" or {});
-  aho_corasick_0_6_4_features."default".from_regex_0_2_3__default = true;
-  memchr_2_0_1_features."default".from_regex_0_2_3__default = true;
-  regex_syntax_0_4_1_features."default".from_regex_0_2_3__default = true;
-  simd_0_0_0_features."default".from_regex_0_2_3__default = true;
-  thread_local_0_3_5_features."default".from_regex_0_2_3__default = true;
-  utf8_ranges_1_0_0_features."default".from_regex_0_2_3__default = true;
+  regex_0_2_2_features."simd".self_simd-accel = hasFeature (regex_0_2_2_features."simd-accel" or {});
+  aho_corasick_0_6_3_features."default".from_regex_0_2_2__default = true;
+  memchr_1_0_2_features."default".from_regex_0_2_2__default = true;
+  regex_syntax_0_4_1_features."default".from_regex_0_2_2__default = true;
+  simd_0_0_0_features."default".from_regex_0_2_2__default = true;
+  thread_local_0_3_4_features."default".from_regex_0_2_2__default = true;
+  utf8_ranges_1_0_0_features."default".from_regex_0_2_2__default = true;
   regex_syntax_0_3_9 = regex_syntax_0_3_9_ rec {};
   regex_syntax_0_4_1 = regex_syntax_0_4_1_ rec {};
   rustc_demangle_0_1_5 = rustc_demangle_0_1_5_ rec {};
   safemem_0_2_0 = safemem_0_2_0_ rec {};
-  schannel_0_1_9 = schannel_0_1_9_ rec {
-    dependencies = [ advapi32_sys_0_2_0 crypt32_sys_0_2_0 kernel32_sys_0_2_2 lazy_static_1_0_0 secur32_sys_0_2_0 winapi_0_2_8 ];
+  schannel_0_1_8 = schannel_0_1_8_ rec {
+    dependencies = [ advapi32_sys_0_2_0 crypt32_sys_0_2_0 kernel32_sys_0_2_2 lazy_static_0_2_9 secur32_sys_0_2_0 winapi_0_2_8 ];
     buildDependencies = [ winapi_build_0_1_1 ];
   };
-  advapi32_sys_0_2_0_features."default".from_schannel_0_1_9__default = true;
-  crypt32_sys_0_2_0_features."default".from_schannel_0_1_9__default = true;
-  kernel32_sys_0_2_2_features."default".from_schannel_0_1_9__default = true;
-  lazy_static_1_0_0_features."default".from_schannel_0_1_9__default = true;
-  secur32_sys_0_2_0_features."default".from_schannel_0_1_9__default = true;
-  winapi_0_2_8_features."default".from_schannel_0_1_9__default = true;
+  advapi32_sys_0_2_0_features."default".from_schannel_0_1_8__default = true;
+  crypt32_sys_0_2_0_features."default".from_schannel_0_1_8__default = true;
+  kernel32_sys_0_2_2_features."default".from_schannel_0_1_8__default = true;
+  lazy_static_0_2_9_features."default".from_schannel_0_1_8__default = true;
+  secur32_sys_0_2_0_features."default".from_schannel_0_1_8__default = true;
+  winapi_0_2_8_features."default".from_schannel_0_1_8__default = true;
   secur32_sys_0_2_0 = secur32_sys_0_2_0_ rec {
     dependencies = [ winapi_0_2_8 ];
     buildDependencies = [ winapi_build_0_1_1 ];
   };
   winapi_0_2_8_features."default".from_secur32_sys_0_2_0__default = true;
   security_framework_0_1_16 = security_framework_0_1_16_ rec {
-    dependencies = [ core_foundation_0_2_3 core_foundation_sys_0_2_3 libc_0_2_34 security_framework_sys_0_1_16 ];
+    dependencies = [ core_foundation_0_2_3 core_foundation_sys_0_2_3 libc_0_2_33 security_framework_sys_0_1_16 ];
     features = mkFeatures security_framework_0_1_16_features;
   };
   security_framework_0_1_16_features."OSX_10_9".self_OSX_10_10 = hasFeature (security_framework_0_1_16_features."OSX_10_10" or {});
@@ -1132,7 +1090,7 @@ rec {
   security_framework_0_1_16_features."OSX_10_8".self_OSX_10_9 = hasFeature (security_framework_0_1_16_features."OSX_10_9" or {});
   core_foundation_0_2_3_features."default".from_security_framework_0_1_16__default = true;
   core_foundation_sys_0_2_3_features."default".from_security_framework_0_1_16__default = true;
-  libc_0_2_34_features."default".from_security_framework_0_1_16__default = true;
+  libc_0_2_33_features."default".from_security_framework_0_1_16__default = true;
   security_framework_sys_0_1_16_features."OSX_10_10".from_security_framework_0_1_16__OSX_10_10 = hasFeature (security_framework_0_1_16_features."OSX_10_10" or {});
   security_framework_sys_0_1_16_features."OSX_10_11".from_security_framework_0_1_16__OSX_10_11 = hasFeature (security_framework_0_1_16_features."OSX_10_11" or {});
   security_framework_sys_0_1_16_features."OSX_10_11".from_security_framework_0_1_16__OSX_10_12 = hasFeature (security_framework_0_1_16_features."OSX_10_12" or {});
@@ -1140,7 +1098,7 @@ rec {
   security_framework_sys_0_1_16_features."OSX_10_9".from_security_framework_0_1_16__OSX_10_9 = hasFeature (security_framework_0_1_16_features."OSX_10_9" or {});
   security_framework_sys_0_1_16_features."default".from_security_framework_0_1_16__default = true;
   security_framework_sys_0_1_16 = security_framework_sys_0_1_16_ rec {
-    dependencies = [ core_foundation_sys_0_2_3 libc_0_2_34 ];
+    dependencies = [ core_foundation_sys_0_2_3 libc_0_2_33 ];
     features = mkFeatures security_framework_sys_0_1_16_features;
   };
   security_framework_sys_0_1_16_features."OSX_10_9".self_OSX_10_10 = hasFeature (security_framework_sys_0_1_16_features."OSX_10_10" or {});
@@ -1148,41 +1106,39 @@ rec {
   security_framework_sys_0_1_16_features."OSX_10_11".self_OSX_10_12 = hasFeature (security_framework_sys_0_1_16_features."OSX_10_12" or {});
   security_framework_sys_0_1_16_features."OSX_10_8".self_OSX_10_9 = hasFeature (security_framework_sys_0_1_16_features."OSX_10_9" or {});
   core_foundation_sys_0_2_3_features."default".from_security_framework_sys_0_1_16__default = true;
-  libc_0_2_34_features."default".from_security_framework_sys_0_1_16__default = true;
-  serde_1_0_25 = serde_1_0_25_ rec {
+  libc_0_2_33_features."default".from_security_framework_sys_0_1_16__default = true;
+  serde_1_0_19 = serde_1_0_19_ rec {
     dependencies = [];
-    features = mkFeatures serde_1_0_25_features;
+    features = mkFeatures serde_1_0_19_features;
   };
-  serde_1_0_25_features."unstable".self_alloc = hasFeature (serde_1_0_25_features."alloc" or {});
-  serde_1_0_25_features."std".self_default = hasDefault serde_1_0_25_features;
-  serde_1_0_25_features."serde_derive".self_derive = hasFeature (serde_1_0_25_features."derive" or {});
-  serde_1_0_25_features."serde_derive".self_playground = hasFeature (serde_1_0_25_features."playground" or {});
-  serde_derive_0_0_0_features."default".from_serde_1_0_25__default = true;
-  serde_derive_1_0_25 = serde_derive_1_0_25_ rec {
-    dependencies = [ quote_0_3_15 serde_derive_internals_0_18_1 syn_0_11_11 ];
-    features = mkFeatures serde_derive_1_0_25_features;
+  serde_1_0_19_features."unstable".self_alloc = hasFeature (serde_1_0_19_features."alloc" or {});
+  serde_1_0_19_features."std".self_default = hasDefault serde_1_0_19_features;
+  serde_1_0_19_features."serde_derive".self_derive = hasFeature (serde_1_0_19_features."derive" or {});
+  serde_1_0_19_features."serde_derive".self_playground = hasFeature (serde_1_0_19_features."playground" or {});
+  serde_derive_0_0_0_features."default".from_serde_1_0_19__default = true;
+  serde_derive_1_0_19 = serde_derive_1_0_19_ rec {
+    dependencies = [ quote_0_3_15 serde_derive_internals_0_17_0 syn_0_11_11 ];
   };
-  serde_derive_1_0_25_features."".self = true;
-  quote_0_3_15_features."default".from_serde_derive_1_0_25__default = true;
-  serde_derive_internals_0_18_1_features."default".from_serde_derive_1_0_25__default = false;
-  syn_0_11_11_features."visit".from_serde_derive_1_0_25 = true;
-  syn_0_11_11_features."default".from_serde_derive_1_0_25__default = true;
-  serde_derive_internals_0_18_1 = serde_derive_internals_0_18_1_ rec {
+  quote_0_3_15_features."default".from_serde_derive_1_0_19__default = true;
+  serde_derive_internals_0_17_0_features."default".from_serde_derive_1_0_19__default = false;
+  syn_0_11_11_features."visit".from_serde_derive_1_0_19 = true;
+  syn_0_11_11_features."default".from_serde_derive_1_0_19__default = true;
+  serde_derive_internals_0_17_0 = serde_derive_internals_0_17_0_ rec {
     dependencies = [ syn_0_11_11 synom_0_11_3 ];
   };
-  syn_0_11_11_features."parsing".from_serde_derive_internals_0_18_1 = true;
-  syn_0_11_11_features."default".from_serde_derive_internals_0_18_1__default = false;
-  synom_0_11_3_features."default".from_serde_derive_internals_0_18_1__default = true;
-  serde_json_1_0_8 = serde_json_1_0_8_ rec {
-    dependencies = [ dtoa_0_4_2 itoa_0_3_4 num_traits_0_1_41 serde_1_0_25 ];
-    features = mkFeatures serde_json_1_0_8_features;
+  syn_0_11_11_features."parsing".from_serde_derive_internals_0_17_0 = true;
+  syn_0_11_11_features."default".from_serde_derive_internals_0_17_0__default = false;
+  synom_0_11_3_features."default".from_serde_derive_internals_0_17_0__default = true;
+  serde_json_1_0_6 = serde_json_1_0_6_ rec {
+    dependencies = [ dtoa_0_4_2 itoa_0_3_4 num_traits_0_1_40 serde_1_0_19 ];
+    features = mkFeatures serde_json_1_0_6_features;
   };
-  serde_json_1_0_8_features."linked-hash-map".self_preserve_order = hasFeature (serde_json_1_0_8_features."preserve_order" or {});
-  dtoa_0_4_2_features."default".from_serde_json_1_0_8__default = true;
-  itoa_0_3_4_features."default".from_serde_json_1_0_8__default = true;
-  linked_hash_map_0_0_0_features."default".from_serde_json_1_0_8__default = true;
-  num_traits_0_1_41_features."default".from_serde_json_1_0_8__default = true;
-  serde_1_0_25_features."default".from_serde_json_1_0_8__default = true;
+  serde_json_1_0_6_features."linked-hash-map".self_preserve_order = hasFeature (serde_json_1_0_6_features."preserve_order" or {});
+  dtoa_0_4_2_features."default".from_serde_json_1_0_6__default = true;
+  itoa_0_3_4_features."default".from_serde_json_1_0_6__default = true;
+  linked_hash_map_0_0_0_features."default".from_serde_json_1_0_6__default = true;
+  num_traits_0_1_40_features."default".from_serde_json_1_0_6__default = true;
+  serde_1_0_19_features."default".from_serde_json_1_0_6__default = true;
   syn_0_11_11 = syn_0_11_11_ rec {
     dependencies = [ quote_0_3_15 synom_0_11_3 unicode_xid_0_0_4 ]
       ++ (if lib.lists.any (x: x == "quote") features then [quote_0_3_15] else [])      ++ (if lib.lists.any (x: x == "synom") features then [synom_0_11_3] else [])      ++ (if lib.lists.any (x: x == "unicode-xid") features then [unicode_xid_0_0_4] else []);
@@ -1207,37 +1163,37 @@ rec {
   rand_0_3_18_features."default".from_tempdir_0_3_5__default = true;
   tempfile_2_2_0 = tempfile_2_2_0_ rec {
     dependencies = [ rand_0_3_18 ]
-      ++ (if kernel == "redox" then [ redox_syscall_0_1_32 ] else [])
-      ++ (if (kernel == "linux" || kernel == "darwin") then [ libc_0_2_34 ] else [])
+      ++ (if kernel == "redox" then [ redox_syscall_0_1_31 ] else [])
+      ++ (if (kernel == "linux" || kernel == "darwin") then [ libc_0_2_33 ] else [])
       ++ (if kernel == "windows" then [ kernel32_sys_0_2_2 winapi_0_2_8 ] else []);
   };
   rand_0_3_18_features."default".from_tempfile_2_2_0__default = true;
-  redox_syscall_0_1_32_features."default".from_tempfile_2_2_0__default = true;
-  libc_0_2_34_features."default".from_tempfile_2_2_0__default = true;
+  redox_syscall_0_1_31_features."default".from_tempfile_2_2_0__default = true;
+  libc_0_2_33_features."default".from_tempfile_2_2_0__default = true;
   kernel32_sys_0_2_2_features."default".from_tempfile_2_2_0__default = true;
   winapi_0_2_8_features."default".from_tempfile_2_2_0__default = true;
   thread_id_2_0_0 = thread_id_2_0_0_ rec {
-    dependencies = [ kernel32_sys_0_2_2 libc_0_2_34 ];
+    dependencies = [ kernel32_sys_0_2_2 libc_0_2_33 ];
   };
   kernel32_sys_0_2_2_features."default".from_thread_id_2_0_0__default = true;
-  libc_0_2_34_features."default".from_thread_id_2_0_0__default = true;
+  libc_0_2_33_features."default".from_thread_id_2_0_0__default = true;
   thread_local_0_2_7 = thread_local_0_2_7_ rec {
     dependencies = [ thread_id_2_0_0 ];
   };
   thread_id_2_0_0_features."default".from_thread_local_0_2_7__default = true;
-  thread_local_0_3_5 = thread_local_0_3_5_ rec {
-    dependencies = [ lazy_static_1_0_0 unreachable_1_0_0 ];
+  thread_local_0_3_4 = thread_local_0_3_4_ rec {
+    dependencies = [ lazy_static_0_2_9 unreachable_1_0_0 ];
   };
-  lazy_static_1_0_0_features."default".from_thread_local_0_3_5__default = true;
-  unreachable_1_0_0_features."default".from_thread_local_0_3_5__default = true;
+  lazy_static_0_2_9_features."default".from_thread_local_0_3_4__default = true;
+  unreachable_1_0_0_features."default".from_thread_local_0_3_4__default = true;
   time_0_1_38 = time_0_1_38_ rec {
-    dependencies = [ libc_0_2_34 ]
-      ++ (if kernel == "redox" then [ redox_syscall_0_1_32 ] else [])
+    dependencies = [ libc_0_2_33 ]
+      ++ (if kernel == "redox" then [ redox_syscall_0_1_31 ] else [])
       ++ (if kernel == "windows" then [ kernel32_sys_0_2_2 winapi_0_2_8 ] else []);
   };
-  libc_0_2_34_features."default".from_time_0_1_38__default = true;
+  libc_0_2_33_features."default".from_time_0_1_38__default = true;
   rustc_serialize_0_0_0_features."default".from_time_0_1_38__default = true;
-  redox_syscall_0_1_32_features."default".from_time_0_1_38__default = true;
+  redox_syscall_0_1_31_features."default".from_time_0_1_38__default = true;
   kernel32_sys_0_2_2_features."default".from_time_0_1_38__default = true;
   winapi_0_2_8_features."default".from_time_0_1_38__default = true;
   traitobject_0_1_0 = traitobject_0_1_0_ rec {};
