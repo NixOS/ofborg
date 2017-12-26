@@ -30,7 +30,7 @@ let
       carnix
       openssl.dev
       pkgconfig
-    ];
+    ] ++ (lib.optional stdenv.isDarwin pkgs.darwin.Security);
 
     HISTFILE = "${toString ./.}/.bash_hist";
     passthru.phpEnv = phpEnv;
