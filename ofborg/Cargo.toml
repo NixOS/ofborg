@@ -7,6 +7,7 @@ authors = ["Graham Christensen <graham@grahamc.com>"]
 log = "0.3.8"
 env_logger = "0.4.3"
 amqp = { git = "https://github.com/grahamc/rust-amqp.git" }
+# amqp = { path = "./rust-amqp" }
 md5 = "0.3.5"
 fs2 = "0.4.2"
 serde = "1.0"
