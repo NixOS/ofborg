@@ -9,3 +9,4 @@
 "!-A" = "You'll usually want to use nix-env -i with -A. It's faster and more precise. See https://nixos.wiki/wiki/FAQ#Why_not_use_nix-env_-i_foo.3F for details."
 "!tofu" = "To get a sha256 hash of a new source, you can use the Trust On First Use model: use probably-wrong hash (for example: 0000000000000000000000000000000000000000000000000000) then replace it with the correct hash Nix expected."
 "!unfree" = "You cannot install your unfree software? See https://nixos.wiki/wiki/FAQ#How_can_I_install_a_proprietary_or_unfree_package.3F"
+"!notfound" = "nix-env -qaP does not show the package you are looking for but you are sure it should be there? Check out https://nixos.wiki/wiki/FAQ#I_cannot_find_.24package_when_running_nix-env_-qaP_even_with_channels_configured" 
