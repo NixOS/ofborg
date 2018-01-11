@@ -28,8 +28,15 @@ use std::thread;
 use std::env;
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Message {
+struct MessageToIRC {
     target: String,
+    body: String
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct MessageFromIRC {
+    from: String,
+    sender: String,
     body: String
 }
 
@@ -72,7 +79,7 @@ fn main() {
     thread::spawn(move || {
         let consumer_name = readchan.basic_consume(
             move |_channel: &mut Channel, _deliver: Deliver, _headers: BasicProperties, body: Vec<u8>| {
-                let msg: Result<Message, serde_json::Error> = serde_json::from_slice(&body);
+                let msg: Result<MessageToIRC, serde_json::Error> = serde_json::from_slice(&body);
                 if let Ok(msg) = msg {
                     server.send_privmsg(&msg.target, &msg.body).unwrap();
                 }
@@ -90,9 +97,12 @@ fn main() {
     reader.for_each_incoming(|message| {
         match message.command {
             Command::PRIVMSG(ref _target, ref msg) => {
-                let msg = serde_json::to_string(&Message{
-                    target: message.response_target()
+                let msg = serde_json::to_string(&MessageFromIRC{
+                    from: message.response_target()
                         .expect("a response target for a privmsg")
+                        .to_owned(),
+                    sender: message.source_nickname()
+                        .expect("a source nickname for a privmsg")
                         .to_owned(),
                     body: msg.clone(),
                 }).unwrap();

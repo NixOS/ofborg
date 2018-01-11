@@ -24,8 +24,15 @@ use ircbot::config;
 use std::env;
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Message {
+struct MessageToIRC {
     target: String,
+    body: String
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct MessageFromIRC {
+    from: String,
+    sender: String,
     body: String
 }
 
@@ -58,12 +65,12 @@ fn main() {
     let consumer_name = channel.basic_consume(
         move |chan: &mut Channel, _deliver: Deliver, _headers: BasicProperties, body: Vec<u8>| {
             debug!("Got a message");
-            let msg: Result<Message, serde_json::Error> = serde_json::from_slice(&body);
+            let msg: Result<MessageFromIRC, serde_json::Error> = serde_json::from_slice(&body);
             if let Ok(msg) = msg {
                 let trigger = msg.body.trim();
                 if let Some(response) = factoids.get(trigger) {
-                    let resp = Some(Message{
-                        target: msg.target.clone(),
+                    let resp = Some(MessageToIRC{
+                        target: msg.from.clone(),
                         body: response.clone(),
                     });
 
