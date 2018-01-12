@@ -31,6 +31,7 @@ pub mod commitstatus;
 pub mod outpathdiff;
 pub mod tagger;
 pub mod asynccmd;
+pub mod notifyworker;
 
 pub mod ofborg {
     pub use asynccmd;
