@@ -10,11 +10,8 @@ pub struct NotifyWorker<T: SimpleNotifyWorker> {
 
 pub trait SimpleNotifyWorker {
     type J;
-    type N;
 
-    fn consumer(&self, job: &Self::J, notifier: &Self::N);
-
-    fn notifier(&self, channel: &NotificationReceiver) -> &Self::N;
+    fn consumer(&self, job: &Self::J, notifier: &mut NotificationReceiver);
 
     fn msg_to_job(&self, method: &Deliver, headers: &BasicProperties,
                   body: &Vec<u8>) -> Result<Self::J, String>;
@@ -80,13 +77,12 @@ impl <T: SimpleNotifyWorker + Send> Consumer for NotifyWorker<T> {
                        method: Deliver,
                        headers: BasicProperties,
                        body: Vec<u8>) {
-        let receiver = ChannelNotificationReceiver::new(
+        let mut receiver = ChannelNotificationReceiver::new(
             channel,
             method.delivery_tag
         );
-        let notifier = self.internal.notifier(&receiver);
 
         let job = self.internal.msg_to_job(&method, &headers, &body).unwrap();
-        self.internal.consumer(&job, &notifier);
+        self.internal.consumer(&job, &mut receiver);
     }
 }
