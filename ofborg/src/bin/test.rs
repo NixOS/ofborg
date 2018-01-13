@@ -44,7 +44,7 @@ impl TestWorker {
         };
     }
 
-    pub fn tick(event: str) -> worker::Action {
+    pub fn tick(&self, event: &str) -> worker::Action {
         worker::Action::Publish(worker::QueueMsg{
             exchange: Some(String::from("stats")),
             routing_key: None,
@@ -55,7 +55,7 @@ impl TestWorker {
         })
     }
 
-    pub fn say_hi() -> worker::Action {
+    pub fn say_hi(&self) -> worker::Action {
         worker::Action::Publish(worker::QueueMsg{
             exchange: None,
             routing_key: Some(String::from("test-notify-worker")),
