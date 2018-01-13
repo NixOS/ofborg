@@ -31,7 +31,6 @@ use ofborg::commentparser;
 
 use amqp::protocol::basic::{Deliver,BasicProperties};
 
-
 pub struct TestWorker {
     system: String,
     identity: String,
@@ -43,6 +42,28 @@ impl TestWorker {
             system: system,
             identity: identity,
         };
+    }
+
+    pub fn tick(event: str) -> worker::Action {
+        worker::Action::Publish(worker::QueueMsg{
+            exchange: Some(String::from("stats")),
+            routing_key: None,
+            content: String::from(event).into_bytes(),
+            immediate: false,
+            mandatory: false,
+            properties: None,
+        })
+    }
+
+    pub fn say_hi() -> worker::Action {
+        worker::Action::Publish(worker::QueueMsg{
+            exchange: None,
+            routing_key: Some(String::from("test-notify-worker")),
+            content: String::from("hi").into_bytes(),
+            immediate: false,
+            mandatory: false,
+            properties: None,
+        })
     }
 }
 
@@ -58,16 +79,12 @@ impl notifyworker::SimpleNotifyWorker for TestWorker {
     fn consumer(&self, job: &String, notifier: &mut notifyworker::NotificationReceiver) {
         info!("Working on {}", job);
 
+        notifier.tell(self.tick("started-work"));
         for i in 1..100 {
-            notifier.tell(worker::Action::Publish(worker::QueueMsg{
-                exchange: None,
-                routing_key: Some(String::from("test-notify-worker")),
-                content: String::from("hi").into_bytes(),
-                immediate: false,
-                mandatory: false,
-                properties: None,
-            }));
+            notifier.tell(self.say_hi());
         }
+        notifier.tell(self.tick("finished-work-success"));
+        notifier.tell(self.tick("finished-work-failed"));
 
         notifier.tell(worker::Action::Ack);
     }
