@@ -31,7 +31,7 @@ impl PlasticHeartbeatWorker {
 impl worker::SimpleWorker for PlasticHeartbeatWorker {
     type J = plasticheartbeat::PlasticHeartbeat;
 
-    fn msg_to_job(&self, _: &Deliver, _: &BasicProperties,
+    fn msg_to_job(&mut self, _: &Deliver, _: &BasicProperties,
                   body: &Vec<u8>) -> Result<Self::J, String> {
         return match plasticheartbeat::from(body) {
             Ok(e) => { Ok(e) }
@@ -42,7 +42,7 @@ impl worker::SimpleWorker for PlasticHeartbeatWorker {
         }
     }
 
-    fn consumer(&self, _job: &plasticheartbeat::PlasticHeartbeat) -> worker::Actions {
+    fn consumer(&mut self, _job: &plasticheartbeat::PlasticHeartbeat) -> worker::Actions {
         thread::sleep(time::Duration::from_secs(5));
 
         return vec![

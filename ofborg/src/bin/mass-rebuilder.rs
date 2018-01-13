@@ -11,6 +11,7 @@ use ofborg::tasks;
 use ofborg::config;
 use ofborg::checkout;
 
+use ofborg::stats;
 use ofborg::worker;
 use amqp::Session;
 use amqp::Table;
@@ -47,13 +48,14 @@ fn main() {
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
     let nix = cfg.nix();
 
+    let events = stats::RabbitMQ::new(session.open_channel(3).unwrap());
 
     let mrw = tasks::massrebuilder::MassRebuildWorker::new(
         cloner,
         nix,
         cfg.github(),
         cfg.runner.identity.clone(),
-
+        events
     );
 
     channel.basic_prefetch(1).unwrap();

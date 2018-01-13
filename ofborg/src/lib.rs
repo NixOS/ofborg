@@ -25,6 +25,7 @@ pub mod message;
 pub mod tasks;
 pub mod evalchecker;
 pub mod nix;
+pub mod stats;
 pub mod ghevent;
 pub mod commentparser;
 pub mod commitstatus;
@@ -35,6 +36,7 @@ pub mod notifyworker;
 
 pub mod ofborg {
     pub use asynccmd;
+    pub use stats;
     pub use config;
     pub use checkout;
     pub use locks;

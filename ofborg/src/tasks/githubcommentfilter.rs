@@ -29,7 +29,7 @@ impl GitHubCommentWorker {
 impl worker::SimpleWorker for GitHubCommentWorker {
     type J = ghevent::IssueComment;
 
-    fn msg_to_job(&self, _: &Deliver, _: &BasicProperties,
+    fn msg_to_job(&mut self, _: &Deliver, _: &BasicProperties,
                   body: &Vec<u8>) -> Result<Self::J, String> {
         return match serde_json::from_slice(body) {
             Ok(e) => { Ok(e) }
@@ -40,7 +40,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         }
     }
 
-    fn consumer(&self, job: &ghevent::IssueComment) -> worker::Actions {
+    fn consumer(&mut self, job: &ghevent::IssueComment) -> worker::Actions {
         let instructions = commentparser::parse(&job.comment.body);
         if instructions == None {
             return vec![

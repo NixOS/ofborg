@@ -12,6 +12,7 @@ use ofborg::checkout;
 use ofborg::message::massrebuildjob;
 use ofborg::nix::Nix;
 
+use ofborg::stats;
 use ofborg::worker;
 use ofborg::tagger::{StdenvTagger,RebuildTagger};
 use ofborg::outpathdiff::{OutPaths, OutPathDiff};
@@ -20,20 +21,22 @@ use ofborg::commitstatus::CommitStatus;
 use amqp::protocol::basic::{Deliver,BasicProperties};
 use hubcaps;
 
-pub struct MassRebuildWorker {
+pub struct MassRebuildWorker<E> {
     cloner: checkout::CachedCloner,
     nix: Nix,
     github: hubcaps::Github,
     identity: String,
+    events: E,
 }
 
-impl MassRebuildWorker {
-    pub fn new(cloner: checkout::CachedCloner, nix: Nix, github: hubcaps::Github, identity: String) -> MassRebuildWorker {
+impl<E: stats::SysEvents> MassRebuildWorker<E> {
+    pub fn new(cloner: checkout::CachedCloner, nix: Nix, github: hubcaps::Github, identity: String, events: E) -> MassRebuildWorker<E> {
         return MassRebuildWorker{
             cloner: cloner,
             nix: nix,
             github: github,
-            identity: identity
+            identity: identity,
+            events: events,
         };
     }
 
@@ -43,21 +46,26 @@ impl MassRebuildWorker {
     }
 }
 
-impl worker::SimpleWorker for MassRebuildWorker {
+impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
     type J = massrebuildjob::MassRebuildJob;
 
-    fn msg_to_job(&self, _: &Deliver, _: &BasicProperties,
+    fn msg_to_job(&mut self, _: &Deliver, _: &BasicProperties,
                   body: &Vec<u8>) -> Result<Self::J, String> {
+        self.events.tick("job-received");
         return match massrebuildjob::from(body) {
-            Ok(e) => { Ok(e) }
+            Ok(e) => {
+                self.events.tick("job-decode-success");
+                Ok(e)
+            }
             Err(e) => {
+                self.events.tick("job-decode-failure");
                 println!("{:?}", String::from_utf8(body.clone()));
                 panic!("{:?}", e);
             }
         }
     }
 
-    fn consumer(&self, job: &massrebuildjob::MassRebuildJob) -> worker::Actions {
+    fn consumer(&mut self, job: &massrebuildjob::MassRebuildJob) -> worker::Actions {
         let repo = self.github
             .repo(job.repo.owner.clone(), job.repo.name.clone());
         let gists = self.github.gists();

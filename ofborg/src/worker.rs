@@ -53,9 +53,9 @@ pub fn publish_serde_action<T: ?Sized>(exchange: Option<String>, routing_key: Op
 pub trait SimpleWorker {
     type J;
 
-    fn consumer(&self, job: &Self::J) -> Actions;
+    fn consumer(&mut self, job: &Self::J) -> Actions;
 
-    fn msg_to_job(&self, method: &Deliver, headers: &BasicProperties,
+    fn msg_to_job(&mut self, method: &Deliver, headers: &BasicProperties,
                   body: &Vec<u8>) -> Result<Self::J, String>;
 }
 
