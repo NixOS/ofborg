@@ -74,11 +74,13 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
         match issue.get() {
             Ok(iss) => {
                 if iss.state == "closed" {
+                    self.events.tick("issue-already-closed");
                     info!("Skipping {} because it is closed", job.pr.number);
                     return self.actions().skip(&job);
                 }
             }
             Err(e) => {
+                self.events.tick("issue-fetch-failed");
                 info!("Error fetching {}!", job.pr.number);
                 info!("E: {:?}", e);
                 return self.actions().skip(&job);
