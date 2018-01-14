@@ -10,6 +10,7 @@ use std::io::BufRead;
 use ofborg::checkout;
 use ofborg::message::buildjob;
 use ofborg::nix;
+use ofborg::cmdlog;
 use ofborg::commentparser;
 
 use ofborg::worker;
@@ -21,15 +22,17 @@ pub struct BuildWorker {
     nix: nix::Nix,
     system: String,
     identity: String,
+    build_logger: Box<cmdlog::Logger + Send>,
 }
 
 impl BuildWorker {
-    pub fn new(cloner: checkout::CachedCloner, nix: nix::Nix, system: String, identity: String) -> BuildWorker {
+    pub fn new(cloner: checkout::CachedCloner, nix: nix::Nix, system: String, identity: String, build_logger: Box<cmdlog::Logger + Send>) -> BuildWorker {
         return BuildWorker{
             cloner: cloner,
             nix: nix,
             system: system,
             identity: identity,
+            build_logger: build_logger,
         };
     }
 

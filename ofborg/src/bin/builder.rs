@@ -12,6 +12,7 @@ use amqp::Basic;
 use amqp::Session;
 use amqp::Table;
 
+use ofborg::cmdlog;
 use ofborg::config;
 use ofborg::checkout;
 use ofborg::worker;
@@ -49,13 +50,24 @@ fn main() {
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
     let nix = cfg.nix();
 
+    let build_logger: Box<cmdlog::Logger + Send>;
+
+    if cfg.feedback.full_logs {
+        build_logger = Box::new(cmdlog::RabbitMQLogger::new(
+            session.open_channel(3).unwrap()
+        ));
+    } else {
+        build_logger = Box::new(cmdlog::NullLogger::new())
+    };
+
     channel.basic_prefetch(1).unwrap();
     channel.basic_consume(
         worker::new(tasks::build::BuildWorker::new(
             cloner,
             nix,
             cfg.nix.system.clone(),
-            cfg.runner.identity.clone()
+            cfg.runner.identity.clone(),
+            build_logger,
         )),
         format!("build-inputs-{}", cfg.nix.system.clone()).as_ref(),
         format!("{}-builder", cfg.whoami()).as_ref(),

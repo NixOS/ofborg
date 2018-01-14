@@ -30,9 +30,11 @@ pub mod commentparser;
 pub mod commitstatus;
 pub mod outpathdiff;
 pub mod tagger;
+pub mod cmdlog;
 
 
 pub mod ofborg {
+    pub use cmdlog;
     pub use config;
     pub use checkout;
     pub use locks;
