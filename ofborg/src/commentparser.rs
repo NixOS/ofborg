@@ -46,7 +46,7 @@ pub fn parse_line(text: &str) -> Option<Vec<Instruction>> {
                     Instruction::Build(Subset::NixOS,
                                        right
                                        .into_iter()
-                                       .map(|attr| format!("tests.{}", attr))
+                                       .map(|attr| format!("tests.{}.x86_64-linux", attr))
                                        .collect()
                     )
                 );
