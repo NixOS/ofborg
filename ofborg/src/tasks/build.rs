@@ -71,6 +71,8 @@ impl worker::SimpleWorker for BuildWorker {
             _ => "./default.nix"
         };
 
+        // Note: Don't change the system limiter until the system isn't
+        // hardcoded to x86_64-linux in the githubcommentfilter
         if buildfile == "./nixos/release.nix" && self.system != "x86_64-linux" {
             // NixOS jobs get routed to all builders, even though darwin
             // cannot build them.
