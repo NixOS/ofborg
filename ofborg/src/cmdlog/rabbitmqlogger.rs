@@ -14,4 +14,5 @@ impl RabbitMQLogger {
 }
 
 impl Logger for RabbitMQLogger {
+    fn build_output(&mut self, _: &str) {}
 }

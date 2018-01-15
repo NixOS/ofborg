@@ -10,4 +10,5 @@ impl NullLogger {
 }
 
 impl Logger for NullLogger {
+    fn build_output(&mut self, _: &str) {}
 }

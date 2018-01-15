@@ -1,26 +1,18 @@
 extern crate amqp;
 extern crate env_logger;
-use std::process::Stdio;
 
 use std::collections::LinkedList;
 
-use std::sync::{Arc, Mutex, MutexGuard};
-use std::fs::File;
-use std::io::BufReader;
-use std::io::BufRead;
-
-use std::thread;
-use std::sync::mpsc::channel;
 
 use ofborg::checkout;
 use ofborg::message::buildjob;
 use ofborg::nix;
 use ofborg::cmdlog;
 use ofborg::commentparser;
+use ofborg::asynccmd::AsyncCmd;
 
 use ofborg::worker;
 use amqp::protocol::basic::{Deliver,BasicProperties};
-
 
 pub struct BuildWorker {
     cloner: checkout::CachedCloner,
@@ -103,80 +95,28 @@ impl worker::SimpleWorker for BuildWorker {
         println!("Got path: {:?}, building", refpath);
 
 
-        let mut child = self.nix.safely_build_attrs_cmd(refpath.as_ref(),
-                                                        buildfile,
-                                                        job.attrs.clone())
-            .stdin(Stdio::null())
-            .stderr(Stdio::piped())
-            .stdout(Stdio::piped())
-            .spawn()
-            .unwrap();
+        let cmd = self.nix.safely_build_attrs_cmd(
+            refpath.as_ref(),
+            buildfile,
+            job.attrs.clone()
+        );
+        let acmd = AsyncCmd::new(cmd);
+        let mut spawned = acmd.spawn();
 
-        let (tx, rx) = channel();
+        let mut l10: LinkedList<String> = LinkedList::new();
+        for line in spawned.lines().recv() {
+            println!("> {:?}", line);
 
-        let stderrh = {
-            let stderrsrc = child.stderr.take().unwrap();
-            let stderrlogdest = tx.clone();
-            thread::spawn(move|| {
-                let readfrom = BufReader::new(stderrsrc);
-                for line in readfrom.lines() {
-                    stderrlogdest.send(line).unwrap();
-                }
-            })
-        };
+            self.build_logger.build_output(&line);
 
-        let stdouth = {
-            let stdoutsrc = child.stdout.take().unwrap();
-            let stdoutlogdest = tx.clone();
-            thread::spawn(move|| {
-                let readfrom = BufReader::new(stdoutsrc);
-                for line in readfrom.lines() {
-                    stdoutlogdest.send(line).unwrap();
-                }
-            })
-        };
+            if l10.len() >= 10 {
+                l10.pop_front();
+            }
+            l10.push_back(line);
+        }
+        let success = spawned.wait().success();
 
-        let mut l10: Arc<Mutex<LinkedList<String>>> = Arc::new(Mutex::new(LinkedList::new()));
-
-        let linehandler = {
-            let mut l10 = l10.clone();
-            thread::spawn(move|| {
-                let l10x = l10.lock().unwrap();
-                let mut l10writer = l10x;
-                for line in rx.recv() {
-                    if let Ok(line) = line {
-                        println!("> {:?}", line);
-
-                        if l10writer.len() >= 10 {
-                            l10writer.pop_front();
-                        }
-                        l10writer.push_back(line);
-                    } else {
-                        break;
-                    }
-                }
-            })
-        };
-
-        stderrh.join().unwrap();
-        stdouth.join().unwrap();
-
-        let success = child.wait()
-            .expect("should have been run")
-            .success();
-        linehandler.join().unwrap();
-
-        println!("ok built ({:?}), building", success);
-
-        // println!("Lines: {:?}", l10);
-
-        let l10x: Mutex<LinkedList<String>> = Arc::try_unwrap(l10).expect("all threads should be dead");
-        /*
-        let mut l10y: MutexGuard<Option<LinkedList<String>>> = l10x.lock().unwrap();
-        let mut l10z: LinkedList<String> = l10y.take().unwrap();
-        let last10lines: Vec<String> = l10z.into_iter().collect::<Vec<String>>();
-         */
-        let last10lines: Vec<String> = l10x.lock().unwrap().split_off(0).into_iter().collect::<Vec<String>>();
+        let last10lines: Vec<String> = l10.into_iter().collect::<Vec<String>>();
 
         return self.actions().build_finished(
             &job,
