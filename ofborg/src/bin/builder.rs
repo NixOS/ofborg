@@ -56,12 +56,41 @@ fn main() {
     let build_logger: Box<cmdlog::Logger + Send>;
 
     if cfg.feedback.full_logs {
-        build_logger = Box::new(cmdlog::RabbitMQLogger::new(
+        let mut l = cmdlog::RabbitMQLogger::new(
             session.open_channel(3).unwrap()
-        ));
+        );
+        l.setup();
+        build_logger = Box::new(l);
     } else {
-        build_logger = Box::new(cmdlog::NullLogger::new())
-    };
+        build_logger = Box::new(cmdlog::NullLogger::new());
+    }
+
+    let mut worker = tasks::build::BuildWorker::new(
+        cloner,
+        nix,
+        cfg.nix.system.clone(),
+        cfg.runner.identity.clone(),
+        build_logger,
+    );
+    println!("{:?}", worker.consumer(
+        &message::buildjob::BuildJob{
+            attrs: vec!["hello".to_owned()],
+            pr: message::Pr{
+                head_sha: "1f7a53ad34d06e56e277c82d5c0a24cc96a373b9".to_owned(),
+                number: 33691,
+                target_branch: Some("master".to_owned()),
+            },
+            repo: message::Repo{
+                clone_url: "https://github.com/NixOS/nixpkgs.git".to_owned(),
+                full_name: "NixOS/nixpkgs".to_owned(),
+                name: "nixpkgs".to_owned(),
+                owner: "NixOS".to_owned(),
+            },
+            subset: None,
+        }
+    ));
+    panic!("..");
+
 
     channel.basic_prefetch(1).unwrap();
     channel.basic_consume(
