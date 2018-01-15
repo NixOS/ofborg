@@ -57,7 +57,7 @@ impl worker::SimpleWorker for MassRebuildWorker {
         }
     }
 
-    fn consumer(&self, job: &massrebuildjob::MassRebuildJob) -> worker::Actions {
+    fn consumer(&mut self, job: &massrebuildjob::MassRebuildJob) -> worker::Actions {
         let repo = self.github
             .repo(job.repo.owner.clone(), job.repo.name.clone());
         let gists = self.github.gists();

@@ -55,7 +55,7 @@ impl worker::SimpleWorker for BuildWorker {
         }
     }
 
-    fn consumer(&self, job: &buildjob::BuildJob) -> worker::Actions {
+    fn consumer(&mut self, job: &buildjob::BuildJob) -> worker::Actions {
         info!("Working on {}", job.pr.number);
         let project = self.cloner.project(job.repo.full_name.clone(), job.repo.clone_url.clone());
         let co = project.clone_for("builder".to_string(),

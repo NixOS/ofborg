@@ -40,7 +40,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         }
     }
 
-    fn consumer(&self, job: &ghevent::IssueComment) -> worker::Actions {
+    fn consumer(&mut self, job: &ghevent::IssueComment) -> worker::Actions {
         let instructions = commentparser::parse(&job.comment.body);
         if instructions == None {
             return vec![
