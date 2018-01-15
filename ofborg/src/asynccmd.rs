@@ -29,7 +29,10 @@ fn reader_tx<R: 'static + Read + Send>(read: R, tx: Sender<String>) -> thread::J
     thread::spawn(move|| {
         for line in read.lines() {
             if let Ok(line) = line {
+                // println!("sending: {:?}", line);
                 tx.send(line).expect("Failed to send log line");
+            } else {
+                println!("Got in reader tx's else: {:?}", line);
             }
         }
     })

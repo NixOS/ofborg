@@ -104,9 +104,7 @@ impl worker::SimpleWorker for BuildWorker {
         let mut spawned = acmd.spawn();
 
         let mut l10: LinkedList<String> = LinkedList::new();
-        for line in spawned.lines().recv() {
-            println!("> {:?}", line);
-
+        for line in spawned.lines().iter() {
             self.build_logger.build_output(&line);
 
             if l10.len() >= 10 {
@@ -114,6 +112,7 @@ impl worker::SimpleWorker for BuildWorker {
             }
             l10.push_back(line);
         }
+
         let success = spawned.wait().success();
 
         let last10lines: Vec<String> = l10.into_iter().collect::<Vec<String>>();

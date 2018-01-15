@@ -17,6 +17,9 @@ use ofborg::config;
 use ofborg::checkout;
 use ofborg::worker;
 use ofborg::tasks;
+use ofborg::message;
+
+use ofborg::worker::SimpleWorker;
 
 
 fn main() {
