@@ -1,11 +1,16 @@
 extern crate amqp;
 extern crate env_logger;
+use std::process::Stdio;
 
 use std::collections::LinkedList;
 
+use std::sync::{Arc, Mutex, MutexGuard};
 use std::fs::File;
 use std::io::BufReader;
 use std::io::BufRead;
+
+use std::thread;
+use std::sync::mpsc::channel;
 
 use ofborg::checkout;
 use ofborg::message::buildjob;
@@ -98,45 +103,80 @@ impl worker::SimpleWorker for BuildWorker {
         println!("Got path: {:?}, building", refpath);
 
 
-        let success: bool;
-        let reader: BufReader<File>;
-        match self.nix.safely_build_attrs(refpath.as_ref(),
-                                          buildfile,
-                                          job.attrs.clone()) {
-            Ok(r) => {
-                success = true;
-                reader = BufReader::new(r);
-            }
-            Err(r) => {
-                success = false;
-                reader = BufReader::new(r);
-            }
-        }
+        let mut child = self.nix.safely_build_attrs_cmd(refpath.as_ref(),
+                                                        buildfile,
+                                                        job.attrs.clone())
+            .stdin(Stdio::null())
+            .stderr(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+
+        let (tx, rx) = channel();
+
+        let stderrh = {
+            let stderrsrc = child.stderr.take().unwrap();
+            let stderrlogdest = tx.clone();
+            thread::spawn(move|| {
+                let readfrom = BufReader::new(stderrsrc);
+                for line in readfrom.lines() {
+                    stderrlogdest.send(line).unwrap();
+                }
+            })
+        };
+
+        let stdouth = {
+            let stdoutsrc = child.stdout.take().unwrap();
+            let stdoutlogdest = tx.clone();
+            thread::spawn(move|| {
+                let readfrom = BufReader::new(stdoutsrc);
+                for line in readfrom.lines() {
+                    stdoutlogdest.send(line).unwrap();
+                }
+            })
+        };
+
+        let mut l10: Arc<Mutex<LinkedList<String>>> = Arc::new(Mutex::new(LinkedList::new()));
+
+        let linehandler = {
+            let mut l10 = l10.clone();
+            thread::spawn(move|| {
+                let l10x = l10.lock().unwrap();
+                let mut l10writer = l10x;
+                for line in rx.recv() {
+                    if let Ok(line) = line {
+                        println!("> {:?}", line);
+
+                        if l10writer.len() >= 10 {
+                            l10writer.pop_front();
+                        }
+                        l10writer.push_back(line);
+                    } else {
+                        break;
+                    }
+                }
+            })
+        };
+
+        stderrh.join().unwrap();
+        stdouth.join().unwrap();
+
+        let success = child.wait()
+            .expect("should have been run")
+            .success();
+        linehandler.join().unwrap();
+
         println!("ok built ({:?}), building", success);
 
-        let l10 = reader.lines().fold(LinkedList::new(),
+        // println!("Lines: {:?}", l10);
 
-                                      |mut coll, line|
-                                      {
-                                          match line {
-                                              Ok(e) => { coll.push_back(e); }
-                                              Err(wtf) => {
-                                                  println!("Got err in lines: {:?}", wtf);
-                                                  coll.push_back(String::from("<line omitted due to error>"));
-                                              }
-                                          }
-
-                                          if coll.len() == 11 {
-                                              coll.pop_front();
-                                          }
-
-                                          return coll
-                                      }
-        );
-        println!("Lines: {:?}", l10);
-
-        let last10lines = l10.into_iter().collect::<Vec<_>>();
-
+        let l10x: Mutex<LinkedList<String>> = Arc::try_unwrap(l10).expect("all threads should be dead");
+        /*
+        let mut l10y: MutexGuard<Option<LinkedList<String>>> = l10x.lock().unwrap();
+        let mut l10z: LinkedList<String> = l10y.take().unwrap();
+        let last10lines: Vec<String> = l10z.into_iter().collect::<Vec<String>>();
+         */
+        let last10lines: Vec<String> = l10x.lock().unwrap().split_off(0).into_iter().collect::<Vec<String>>();
 
         return self.actions().build_finished(
             &job,
