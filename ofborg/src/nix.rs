@@ -41,7 +41,6 @@ impl Nix {
         attrargs.push(file.to_owned());
         attrargs.push(String::from("--no-out-link"));
         attrargs.push(String::from("--keep-going"));
-        attrargs.push(String::from("--check"));
         for attr in attrs {
             attrargs.push(String::from("-A"));
             attrargs.push(attr);
