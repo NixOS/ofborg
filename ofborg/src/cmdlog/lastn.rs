@@ -22,7 +22,7 @@ impl LastNLogger {
 
 impl Logger for LastNLogger {
     fn build_output(&mut self, line: &str) {
-        if self.buffer.len() >= 10 {
+        if self.buffer.len() >= self.max {
             self.buffer.pop_front();
         }
 
