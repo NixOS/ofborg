@@ -55,14 +55,23 @@ fn main() {
 
     let build_logger: Box<cmdlog::Logger + Send>;
 
-    if cfg.feedback.full_logs {
-        let mut l = cmdlog::RabbitMQLogger::new(
-            session.open_channel(3).unwrap()
-        );
-        l.setup();
-        build_logger = Box::new(l);
-    } else {
-        build_logger = Box::new(cmdlog::NullLogger::new());
+    match cfg.feedback.full_logs {
+        Some(true) => {
+            let mut l = cmdlog::RabbitMQLogger::new(
+                session.open_channel(3).unwrap()
+            );
+            l.setup();
+            build_logger = Box::new(l);
+        }
+        e => {
+            if e == None {
+                warn!("Please define feedback.full_logs in your configuration to true or false!");
+                warn!("feedback.full_logs when true will cause the full build log to be sent back to the server, and be viewable by everyone.");
+            }
+
+            build_logger = Box::new(cmdlog::NullLogger::new());
+
+        }
     }
 
     let mut worker = tasks::build::BuildWorker::new(
