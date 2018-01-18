@@ -1,16 +1,13 @@
 extern crate amqp;
 extern crate env_logger;
 
-use std::collections::LinkedList;
-
-
 use ofborg::checkout;
 use ofborg::message::buildjob;
 use ofborg::nix;
 use ofborg::cmdlog;
 use ofborg::commentparser;
 use ofborg::asynccmd::AsyncCmd;
-
+use cmdlog::Logger;
 use ofborg::worker;
 use amqp::protocol::basic::{Deliver,BasicProperties};
 
@@ -103,19 +100,15 @@ impl worker::SimpleWorker for BuildWorker {
         let acmd = AsyncCmd::new(cmd);
         let mut spawned = acmd.spawn();
 
-        let mut l10: LinkedList<String> = LinkedList::new();
+        let mut snippet_log = cmdlog::LastNLogger::new(10);
         for line in spawned.lines().iter() {
             self.build_logger.build_output(&line);
-
-            if l10.len() >= 10 {
-                l10.pop_front();
-            }
-            l10.push_back(line);
+            snippet_log.build_output(&line);
         }
 
         let success = spawned.wait().success();
 
-        let last10lines: Vec<String> = l10.into_iter().collect::<Vec<String>>();
+        let last10lines: Vec<String> = snippet_log.lines().into_iter().collect::<Vec<String>>();
 
         return self.actions().build_finished(
             &job,
