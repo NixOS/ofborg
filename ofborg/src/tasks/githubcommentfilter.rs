@@ -40,7 +40,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         }
     }
 
-    fn consumer(&self, job: &ghevent::IssueComment) -> worker::Actions {
+    fn consumer(&mut self, job: &ghevent::IssueComment) -> worker::Actions {
         let instructions = commentparser::parse(&job.comment.body);
         if instructions == None {
             return vec![
@@ -105,6 +105,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                             pr: pr_msg.clone(),
                             subset: Some(subset),
                             attrs: attrs,
+                            logs: Some(("logs".to_owned(), "build.log".to_owned())),
                         };
 
                         response.push(worker::publish_serde_action(

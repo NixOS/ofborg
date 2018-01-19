@@ -42,7 +42,7 @@ impl worker::SimpleWorker for PlasticHeartbeatWorker {
         }
     }
 
-    fn consumer(&self, _job: &plasticheartbeat::PlasticHeartbeat) -> worker::Actions {
+    fn consumer(&mut self, _job: &plasticheartbeat::PlasticHeartbeat) -> worker::Actions {
         thread::sleep(time::Duration::from_secs(5));
 
         return vec![

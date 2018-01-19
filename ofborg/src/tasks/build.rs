@@ -1,35 +1,32 @@
 extern crate amqp;
 extern crate env_logger;
 
-use std::collections::LinkedList;
-
-use std::fs::File;
-use std::io::BufReader;
-use std::io::BufRead;
-
 use ofborg::checkout;
 use ofborg::message::buildjob;
 use ofborg::nix;
+use ofborg::cmdlog;
 use ofborg::commentparser;
-
+use ofborg::asynccmd::AsyncCmd;
+use cmdlog::Logger;
 use ofborg::worker;
 use amqp::protocol::basic::{Deliver,BasicProperties};
-
 
 pub struct BuildWorker {
     cloner: checkout::CachedCloner,
     nix: nix::Nix,
     system: String,
     identity: String,
+    build_logger: Box<cmdlog::Logger + Send>,
 }
 
 impl BuildWorker {
-    pub fn new(cloner: checkout::CachedCloner, nix: nix::Nix, system: String, identity: String) -> BuildWorker {
+    pub fn new(cloner: checkout::CachedCloner, nix: nix::Nix, system: String, identity: String, build_logger: Box<cmdlog::Logger + Send>) -> BuildWorker {
         return BuildWorker{
             cloner: cloner,
             nix: nix,
             system: system,
             identity: identity,
+            build_logger: build_logger,
         };
     }
 
@@ -55,7 +52,7 @@ impl worker::SimpleWorker for BuildWorker {
         }
     }
 
-    fn consumer(&self, job: &buildjob::BuildJob) -> worker::Actions {
+    fn consumer(&mut self, job: &buildjob::BuildJob) -> worker::Actions {
         info!("Working on {}", job.pr.number);
         let project = self.cloner.project(job.repo.full_name.clone(), job.repo.clone_url.clone());
         let co = project.clone_for("builder".to_string(),
@@ -94,46 +91,23 @@ impl worker::SimpleWorker for BuildWorker {
 
         println!("Got path: {:?}, building", refpath);
 
-
-        let success: bool;
-        let reader: BufReader<File>;
-        match self.nix.safely_build_attrs(refpath.as_ref(),
-                                          buildfile,
-                                          job.attrs.clone()) {
-            Ok(r) => {
-                success = true;
-                reader = BufReader::new(r);
-            }
-            Err(r) => {
-                success = false;
-                reader = BufReader::new(r);
-            }
-        }
-        println!("ok built ({:?}), building", success);
-
-        let l10 = reader.lines().fold(LinkedList::new(),
-
-                                      |mut coll, line|
-                                      {
-                                          match line {
-                                              Ok(e) => { coll.push_back(e); }
-                                              Err(wtf) => {
-                                                  println!("Got err in lines: {:?}", wtf);
-                                                  coll.push_back(String::from("<line omitted due to error>"));
-                                              }
-                                          }
-
-                                          if coll.len() == 11 {
-                                              coll.pop_front();
-                                          }
-
-                                          return coll
-                                      }
+        let cmd = self.nix.safely_build_attrs_cmd(
+            refpath.as_ref(),
+            buildfile,
+            job.attrs.clone()
         );
-        println!("Lines: {:?}", l10);
+        let acmd = AsyncCmd::new(cmd);
+        let mut spawned = acmd.spawn();
 
-        let last10lines = l10.into_iter().collect::<Vec<_>>();
+        let mut snippet_log = cmdlog::LastNLogger::new(10);
+        for line in spawned.lines().iter() {
+            self.build_logger.build_output(&line);
+            snippet_log.build_output(&line);
+        }
 
+        let success = spawned.wait().success();
+
+        let last10lines: Vec<String> = snippet_log.lines().into_iter().collect::<Vec<String>>();
 
         return self.actions().build_finished(
             &job,
