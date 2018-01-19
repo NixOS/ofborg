@@ -91,7 +91,6 @@ impl worker::SimpleWorker for BuildWorker {
 
         println!("Got path: {:?}, building", refpath);
 
-
         let cmd = self.nix.safely_build_attrs_cmd(
             refpath.as_ref(),
             buildfile,
