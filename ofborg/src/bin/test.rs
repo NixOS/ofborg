@@ -6,28 +6,14 @@ extern crate env_logger;
 extern crate log;
 
 use std::env;
-use std::{thread, time};
-use std::path::Path;
 use amqp::Basic;
 use amqp::Session;
 use amqp::Table;
 
 use ofborg::config;
-use ofborg::checkout;
 use ofborg::worker;
 use ofborg::notifyworker;
 use ofborg::tasks;
-
-
-use std::collections::LinkedList;
-
-use std::fs::File;
-use std::io::BufReader;
-use std::io::BufRead;
-
-use ofborg::message::buildjob;
-use ofborg::nix;
-use ofborg::commentparser;
 
 use amqp::protocol::basic::{Deliver,BasicProperties};
 
@@ -43,27 +29,43 @@ impl TestWorker {
             identity: identity,
         };
     }
+}
 
-    pub fn tick(&self, event: &str) -> worker::Action {
-        worker::Action::Publish(worker::QueueMsg{
+pub struct TestWorkerActions<'a> {
+    receiver: &'a mut notifyworker::NotificationReceiver
+}
+
+impl<'a> TestWorkerActions<'a> {
+    pub fn new(receiver: &'a mut notifyworker::NotificationReceiver) -> TestWorkerActions {
+        TestWorkerActions {
+            receiver: receiver,
+        }
+    }
+
+    pub fn tick(&mut self, event: &str) {
+        self.receiver.tell(worker::Action::Publish(worker::QueueMsg{
             exchange: Some(String::from("stats")),
             routing_key: None,
             content: String::from(event).into_bytes(),
             immediate: false,
             mandatory: false,
             properties: None,
-        })
+        }));
     }
 
-    pub fn say_hi(&self) -> worker::Action {
-        worker::Action::Publish(worker::QueueMsg{
+    pub fn say_hi(&mut self) {
+        self.receiver.tell(worker::Action::Publish(worker::QueueMsg{
             exchange: None,
             routing_key: Some(String::from("test-notify-worker")),
             content: String::from("hi").into_bytes(),
             immediate: false,
             mandatory: false,
             properties: None,
-        })
+        }));
+    }
+
+    pub fn ack(&mut self) {
+        self.receiver.tell(worker::Action::Ack);
     }
 }
 
@@ -77,16 +79,18 @@ impl notifyworker::SimpleNotifyWorker for TestWorker {
     }
 
     fn consumer(&self, job: &String, notifier: &mut notifyworker::NotificationReceiver) {
+        let mut actions = TestWorkerActions::new(notifier);
+
         info!("Working on {}", job);
 
-        notifier.tell(self.tick("started-work"));
+        actions.tick("started-work");
         for i in 1..100 {
-            notifier.tell(self.say_hi());
+            actions.say_hi();
         }
-        notifier.tell(self.tick("finished-work-success"));
-        notifier.tell(self.tick("finished-work-failed"));
+        actions.tick("finished-work-success");
+        actions.tick("finished-work-failed");
 
-        notifier.tell(worker::Action::Ack);
+        actions.ack();
     }
 }
 
