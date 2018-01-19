@@ -42,6 +42,7 @@ pub mod ofborg {
     pub use locks;
     pub use clone;
     pub use worker;
+    pub use notifyworker;
     pub use message;
     pub use tasks;
     pub use evalchecker;

@@ -14,7 +14,7 @@ use amqp::Table;
 
 use ofborg::config;
 use ofborg::checkout;
-use ofborg::worker;
+use ofborg::notifyworker;
 use ofborg::tasks;
 
 
@@ -51,7 +51,7 @@ fn main() {
 
     channel.basic_prefetch(1).unwrap();
     channel.basic_consume(
-        worker::new(tasks::build::BuildWorker::new(
+        notifyworker::new(tasks::build::BuildWorker::new(
             cloner,
             nix,
             cfg.nix.system.clone(),
