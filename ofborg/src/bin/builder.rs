@@ -96,6 +96,7 @@ fn main() {
                 owner: "NixOS".to_owned(),
             },
             subset: None,
+            logs: Some(("logs".to_owned(), "build.log".to_owned()))
         }
     ));
     panic!("..");
