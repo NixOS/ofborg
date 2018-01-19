@@ -81,35 +81,10 @@ fn main() {
         cfg.runner.identity.clone(),
         build_logger,
     );
-    println!("{:?}", worker.consumer(
-        &message::buildjob::BuildJob{
-            attrs: vec!["hello".to_owned()],
-            pr: message::Pr{
-                head_sha: "1f7a53ad34d06e56e277c82d5c0a24cc96a373b9".to_owned(),
-                number: 33691,
-                target_branch: Some("master".to_owned()),
-            },
-            repo: message::Repo{
-                clone_url: "https://github.com/NixOS/nixpkgs.git".to_owned(),
-                full_name: "NixOS/nixpkgs".to_owned(),
-                name: "nixpkgs".to_owned(),
-                owner: "NixOS".to_owned(),
-            },
-            subset: None,
-        }
-    ));
-    panic!("..");
-
 
     channel.basic_prefetch(1).unwrap();
     channel.basic_consume(
-        worker::new(tasks::build::BuildWorker::new(
-            cloner,
-            nix,
-            cfg.nix.system.clone(),
-            cfg.runner.identity.clone(),
-            build_logger,
-        )),
+        worker::new(worker),
         format!("build-inputs-{}", cfg.nix.system.clone()).as_ref(),
         format!("{}-builder", cfg.whoami()).as_ref(),
         false,
