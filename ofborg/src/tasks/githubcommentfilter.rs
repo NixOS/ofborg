@@ -105,6 +105,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                             pr: pr_msg.clone(),
                             subset: Some(subset),
                             attrs: attrs,
+                            logs: Some(("logs".to_owned(), "build.log".to_owned()))
                         };
 
                         response.push(worker::publish_serde_action(
