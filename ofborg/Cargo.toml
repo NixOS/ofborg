@@ -9,6 +9,7 @@ env_logger = "0.4.3"
 # amqp = { path = "./rust-amqp/" } # for testing patches
 amqp = { git = "https://github.com/grahamc/rust-amqp.git" }
 md5 = "0.3.5"
+uuid = { version = "0.4", features = ["v4"] }
 fs2 = "0.4.2"
 serde = "1.0"
 serde_derive = "1.0"

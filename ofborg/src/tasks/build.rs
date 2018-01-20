@@ -1,5 +1,8 @@
 extern crate amqp;
+extern crate uuid;
 extern crate env_logger;
+
+use uuid::Uuid;
 
 use std::collections::VecDeque;
 use std::slice::Iter;
@@ -48,16 +51,18 @@ struct JobActions<'a, 'b> {
     receiver: &'a mut notifyworker::NotificationReceiver,
     job: &'b buildjob::BuildJob,
     line_counter: u64,
+    attempt_id: String,
 }
 
 impl<'a, 'b> JobActions<'a, 'b> {
     fn new(system: &str, identity: &str, job: &'b buildjob::BuildJob, receiver: &'a mut notifyworker::NotificationReceiver) -> JobActions<'a, 'b> {
         return JobActions {
             system: system.to_owned(),
-            identity: system.to_owned(),
+            identity: identity.to_owned(),
             receiver: receiver,
             job: job,
             line_counter: 0,
+            attempt_id: format!("{}", Uuid::new_v4()),
         };
     }
 
@@ -87,12 +92,29 @@ impl<'a, 'b> JobActions<'a, 'b> {
         self.tell(worker::Action::Ack);
     }
 
+    pub fn log_started(&mut self) {
+        self.line_counter += 1;
+
+        let msg = buildlogmsg::BuildLogStart {
+            identity: self.identity.clone(),
+            system: self.system.clone(),
+            attempt_id: self.attempt_id.clone(),
+        };
+
+        self.tell(worker::publish_serde_action(
+            Some("logs".to_owned()),
+            Some("build.log".to_owned()),
+            &msg
+        ));
+    }
+
     pub fn log_line(&mut self, line: &str) {
         self.line_counter += 1;
 
         let msg = buildlogmsg::BuildLogMsg {
             identity: self.identity.clone(),
             system: self.system.clone(),
+            attempt_id: self.attempt_id.clone(),
             line_number: self.line_counter,
             output: line.to_owned(),
         };
@@ -194,6 +216,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             job.attrs.clone()
         );
 
+        actions.log_started();
         let acmd = AsyncCmd::new(cmd);
         let mut spawned = acmd.spawn();
 

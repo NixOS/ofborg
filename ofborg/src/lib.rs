@@ -14,6 +14,7 @@ extern crate tempfile;
 extern crate amqp;
 extern crate fs2;
 extern crate md5;
+extern crate uuid;
 
 pub mod acl;
 pub mod checkout;
