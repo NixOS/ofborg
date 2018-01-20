@@ -23,7 +23,7 @@ pub struct Config {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FeedbackConfig {
-    pub full_logs: bool,
+    pub full_logs: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

@@ -49,13 +49,27 @@ fn main() {
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
     let nix = cfg.nix();
 
+    let full_logs: bool = match cfg.feedback.full_logs {
+        Some(true) => true,
+        None => {
+            warn!("Please define feedback.full_logs in your configuration to true or false!");
+            warn!("feedback.full_logs when true will cause the full build log to be sent back to the server, and be viewable by everyone.");
+            warn!("I strongly encourage everybody turn this on!");
+            false
+        }
+        _ => {
+            false
+        }
+    };
+
     channel.basic_prefetch(1).unwrap();
     channel.basic_consume(
         notifyworker::new(tasks::build::BuildWorker::new(
             cloner,
             nix,
             cfg.nix.system.clone(),
-            cfg.runner.identity.clone()
+            cfg.runner.identity.clone(),
+            full_logs,
         )),
         format!("build-inputs-{}", cfg.nix.system.clone()).as_ref(),
         format!("{}-builder", cfg.whoami()).as_ref(),
