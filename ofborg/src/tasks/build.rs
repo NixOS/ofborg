@@ -230,7 +230,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
 
         let mut snippet_log = VecDeque::with_capacity(10);
 
-        if self.full_logs {
+        if !self.full_logs {
             actions.log_line("Full logs are disabled on this builder.");
         }
 
@@ -301,7 +301,8 @@ mod tests {
             cloner,
             nix,
             "x86_64-linux".to_owned(),
-            "cargo-test-build".to_owned()
+            "cargo-test-build".to_owned(),
+            true
         );
 
         return worker;
@@ -361,6 +362,7 @@ mod tests {
                 owner: "ofborg-test".to_owned(),
             },
             subset: None,
+            logs: Some((String::from("logs"), String::from("build.log"))),
         };
 
         let mut dummyreceiver = notifyworker::DummyNotificationReceiver::new();
