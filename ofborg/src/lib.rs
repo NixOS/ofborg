@@ -30,9 +30,10 @@ pub mod commentparser;
 pub mod commitstatus;
 pub mod outpathdiff;
 pub mod tagger;
-
+pub mod asynccmd;
 
 pub mod ofborg {
+    pub use asynccmd;
     pub use config;
     pub use checkout;
     pub use locks;
