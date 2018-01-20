@@ -5,10 +5,6 @@ extern crate env_logger;
 use uuid::Uuid;
 
 use std::collections::VecDeque;
-use std::slice::Iter;
-use std::fs::File;
-use std::io::BufReader;
-use std::io::BufRead;
 
 use ofborg::asynccmd::AsyncCmd;
 use ofborg::checkout;
@@ -208,8 +204,6 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         println!("Got path: {:?}, building", refpath);
 
 
-        let success: bool;
-        let reader: BufReader<File>;
         let cmd = self.nix.safely_build_attrs_cmd(
             refpath.as_ref(),
             buildfile,
