@@ -2,9 +2,6 @@ extern crate ofborg;
 extern crate amqp;
 extern crate env_logger;
 
-#[macro_use]
-extern crate log;
-
 use std::env;
 use std::path::Path;
 use ofborg::tasks;
@@ -20,14 +17,7 @@ use amqp::Basic;
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
 
-
-    if let Err(_) = env::var("RUST_LOG") {
-        env::set_var("RUST_LOG", "info");
-        env_logger::init().unwrap();
-        info!("Defaulting RUST_LOG environment variable to info");
-    } else {
-        env_logger::init().unwrap();
-    }
+    ofborg::setup_log();
 
     println!("Hello, world!");
 

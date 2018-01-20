@@ -15,6 +15,9 @@ extern crate amqp;
 extern crate fs2;
 extern crate md5;
 extern crate uuid;
+extern crate env_logger;
+
+use std::env;
 
 pub mod acl;
 pub mod checkout;
@@ -54,4 +57,16 @@ pub mod ofborg {
     pub use commentparser;
     pub use outpathdiff;
     pub use tagger;
+
+
+}
+
+pub fn setup_log() {
+    if let Err(_) = env::var("RUST_LOG") {
+        env::set_var("RUST_LOG", "info");
+        env_logger::init().unwrap();
+        info!("Defaulting RUST_LOG environment variable to info");
+    } else {
+        env_logger::init().unwrap();
+    }
 }
