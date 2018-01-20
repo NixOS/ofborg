@@ -21,6 +21,24 @@ pub trait NotificationReceiver {
     fn tell(&mut self, action: Action);
 }
 
+pub struct DummyNotificationReceiver {
+    pub actions: Vec<Action>
+}
+
+impl DummyNotificationReceiver {
+    pub fn new() -> DummyNotificationReceiver {
+        DummyNotificationReceiver {
+            actions: vec![],
+        }
+    }
+}
+
+impl NotificationReceiver for DummyNotificationReceiver  {
+    fn tell(&mut self, action: Action) {
+        self.actions.push(action);
+    }
+}
+
 pub struct ChannelNotificationReceiver<'a> {
     channel: &'a mut Channel,
     delivery_tag: u64,

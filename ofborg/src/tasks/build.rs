@@ -210,3 +210,72 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         );
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::{Path,PathBuf};
+    use ofborg::message::{Pr,Repo};
+    use notifyworker::SimpleNotifyWorker;
+    use std::process::{Command, Stdio};
+
+    fn nix() -> nix::Nix {
+        nix::Nix::new("x86_64-linux".to_owned(), "daemon".to_owned(), 1800)
+    }
+
+    fn tpath(component: &str)-> PathBuf {
+        return Path::new(env!("CARGO_MANIFEST_DIR")).join(component);
+    }
+
+    fn make_pr_repo() -> String{
+        let output = Command::new("./make-pr.sh")
+            .current_dir(tpath("./test-srcs"))
+            .stderr(Stdio::null())
+            .stdout(Stdio::piped())
+            .output()
+            .expect("building the test PR failed");
+        let hash = String::from_utf8(output.stdout).expect("Should just be a hash");
+        return hash.trim().to_owned();
+    }
+
+    #[test]
+    pub fn test_simple_build() {
+        Command::new("rm")
+            .arg("-rf")
+            .arg(&tpath("./test-scratch"))
+            .status()
+            .expect("cleanup of test-scratch should work");
+
+        // pub fn new(cloner: checkout::CachedCloner, nix: nix::Nix, system: String, identity: String) -> BuildWorker {
+        let cloner = checkout::cached_cloner(&tpath("./test-scratch"));
+        let nix = nix();
+        let worker = BuildWorker::new(
+            cloner,
+            nix,
+            "x86_64-linux".to_owned(),
+            "cargo-test-build".to_owned()
+        );
+
+        let job = buildjob::BuildJob{
+            attrs: vec!["success".to_owned()],
+            pr: Pr{
+                head_sha: make_pr_repo(),
+                number: 1,
+                target_branch: Some("master".to_owned()),
+            },
+            repo: Repo{
+                clone_url: tpath("./test-srcs/bare-repo").to_str().unwrap().to_owned(),
+                full_name: "test-git".to_owned(),
+                name: "nixos".to_owned(),
+                owner: "ofborg-test".to_owned(),
+            },
+            subset: None,
+        };
+
+        let mut dummyreceiver = notifyworker::DummyNotificationReceiver::new();
+
+        worker.consumer(&job, &mut dummyreceiver);
+        panic!("{:?}", dummyreceiver.actions);
+    }
+}
