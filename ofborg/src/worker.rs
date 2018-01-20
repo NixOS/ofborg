@@ -4,6 +4,7 @@ use amqp::protocol::basic::{Deliver,BasicProperties};
 use std::marker::Send;
 use serde::Serialize;
 use serde_json;
+use std::cmp::PartialEq;
 
 pub struct Worker<T: SimpleWorker> {
     internal: T
@@ -14,7 +15,7 @@ pub struct Response {
 
 pub type Actions = Vec<Action>;
 
-#[derive(Debug)]
+#[derive(Debug,PartialEq)]
 pub enum Action {
     Ack,
     NackRequeue,
@@ -22,7 +23,7 @@ pub enum Action {
     Publish(QueueMsg),
 }
 
-#[derive(Debug)]
+#[derive(Debug,PartialEq)]
 pub struct QueueMsg {
     pub exchange: Option<String>,
     pub routing_key: Option<String>,

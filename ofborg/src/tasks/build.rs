@@ -2,7 +2,7 @@ extern crate amqp;
 extern crate env_logger;
 
 use std::collections::VecDeque;
-
+use std::slice::Iter;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::BufRead;
@@ -102,7 +102,6 @@ impl<'a, 'b> JobActions<'a, 'b> {
             Some("build.log".to_owned()),
             &msg
         ));
-        self.tell(worker::Action::Ack);
     }
 
     pub fn build_finished(&mut self, success: bool, lines: Vec<String>) {
@@ -233,6 +232,7 @@ mod tests {
     use ofborg::message::{Pr,Repo};
     use notifyworker::SimpleNotifyWorker;
     use std::process::{Command, Stdio};
+    use  std::vec::IntoIter;
 
     fn nix() -> nix::Nix {
         nix::Nix::new("x86_64-linux".to_owned(), "daemon".to_owned(), 1800)
@@ -240,6 +240,34 @@ mod tests {
 
     fn tpath(component: &str)-> PathBuf {
         return Path::new(env!("CARGO_MANIFEST_DIR")).join(component);
+    }
+
+    fn scratch_dir() -> PathBuf {
+        tpath("./test-scratch")
+    }
+
+    fn cleanup_scratch() {
+        Command::new("rm")
+            .arg("-rf")
+            .arg(&scratch_dir())
+            .status()
+            .expect("cleanup of test-scratch should work");
+    }
+
+    fn make_worker() -> BuildWorker {
+        cleanup_scratch();
+
+        // pub fn new(cloner: checkout::CachedCloner, nix: nix::Nix, system: String, identity: String) -> BuildWorker {
+        let cloner = checkout::cached_cloner(&scratch_dir());
+        let nix = nix();
+        let worker = BuildWorker::new(
+            cloner,
+            nix,
+            "x86_64-linux".to_owned(),
+            "cargo-test-build".to_owned()
+        );
+
+        return worker;
     }
 
     fn make_pr_repo() -> String{
@@ -253,23 +281,34 @@ mod tests {
         return hash.trim().to_owned();
     }
 
+    fn assert_contains_job(actions: &mut IntoIter<worker::Action>, text_to_match: &str) {
+        println!("\n\nSearching for {:?}", text_to_match);
+        actions.position(|job|
+                         match job {
+                             worker::Action::Publish(ref body) => {
+                                 let mystr = String::from_utf8(body.content.clone()).unwrap();
+                                 if mystr.contains(text_to_match) {
+                                     println!("    Matched: {:?}", mystr);
+                                     return true;
+                                 } else {
+                                     println!("    miss: {:?}", mystr);
+                                     return false;
+                                 }
+                             }
+                             e => {
+                                 println!("    notPublish: {:?}", e);
+                                 return false;
+                             }
+                         }
+        ).expect(
+            &format!("Actions should contain a job matching {:?}, after the previous check",
+                     text_to_match)
+        );
+    }
+
     #[test]
     pub fn test_simple_build() {
-        Command::new("rm")
-            .arg("-rf")
-            .arg(&tpath("./test-scratch"))
-            .status()
-            .expect("cleanup of test-scratch should work");
-
-        // pub fn new(cloner: checkout::CachedCloner, nix: nix::Nix, system: String, identity: String) -> BuildWorker {
-        let cloner = checkout::cached_cloner(&tpath("./test-scratch"));
-        let nix = nix();
-        let worker = BuildWorker::new(
-            cloner,
-            nix,
-            "x86_64-linux".to_owned(),
-            "cargo-test-build".to_owned()
-        );
+        let worker = make_worker();
 
         let job = buildjob::BuildJob{
             attrs: vec!["success".to_owned()],
@@ -291,8 +330,15 @@ mod tests {
 
         worker.consumer(&job, &mut dummyreceiver);
 
-        let actions = dummyreceiver.actions.iter();
+        println!("Total actions: {:?}", dummyreceiver.actions.len());
+        let mut actions = dummyreceiver.actions.into_iter();
 
-        println!("{:?}", actions);
+        assert_contains_job(&mut actions, "output\":\"hi");
+        assert_contains_job(&mut actions, "output\":\"1");
+        assert_contains_job(&mut actions, "output\":\"2");
+        assert_contains_job(&mut actions, "output\":\"3");
+        assert_contains_job(&mut actions, "output\":\"4");
+        assert_contains_job(&mut actions, "success\":true");
+        assert_eq!(actions.next(), Some(worker::Action::Ack));
     }
 }
