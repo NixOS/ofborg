@@ -14,7 +14,7 @@ use ofborg::acl;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
     pub runner: RunnerConfig,
-    pub feedback: FeedbackConfig,
+    pub feedback: Option<FeedbackConfig>,
     pub checkout: CheckoutConfig,
     pub nix: NixConfig,
     pub rabbitmq: RabbitMQConfig,
@@ -23,7 +23,7 @@ pub struct Config {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FeedbackConfig {
-    pub full_logs: Option<bool>,
+    pub full_logs: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
