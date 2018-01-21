@@ -5,7 +5,7 @@ use std::process::ExitStatus;
 use std::sync::mpsc::channel;
 use std::process::Command;
 use std::io::Read;
-use std::sync::mpsc::{Sender,Receiver};
+use std::sync::mpsc::{Sender, Receiver};
 use std::io::BufReader;
 use std::io::BufRead;
 use std::process::Child;
@@ -26,7 +26,7 @@ pub struct SpawnedAsyncCmd {
 fn reader_tx<R: 'static + Read + Send>(read: R, tx: Sender<String>) -> thread::JoinHandle<()> {
     let read = BufReader::new(read);
 
-    thread::spawn(move|| {
+    thread::spawn(move || {
         for line in read.lines() {
             if let Ok(line) = line {
                 // println!("sending: {:?}", line);
@@ -40,9 +40,7 @@ fn reader_tx<R: 'static + Read + Send>(read: R, tx: Sender<String>) -> thread::J
 
 impl AsyncCmd {
     pub fn new(cmd: Command) -> AsyncCmd {
-        AsyncCmd {
-            command: cmd,
-        }
+        AsyncCmd { command: cmd }
     }
 
     pub fn spawn(mut self) -> SpawnedAsyncCmd {
@@ -55,10 +53,8 @@ impl AsyncCmd {
 
         let (tx, rx) = channel();
 
-        let stderr_handler = reader_tx(child.stderr.take().unwrap(),
-                                       tx.clone());
-        let stdout_handler = reader_tx(child.stdout.take().unwrap(),
-                                       tx.clone());
+        let stderr_handler = reader_tx(child.stderr.take().unwrap(), tx.clone());
+        let stdout_handler = reader_tx(child.stdout.take().unwrap(), tx.clone());
 
         SpawnedAsyncCmd {
             stdout_handler: stdout_handler,

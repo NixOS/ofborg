@@ -7,27 +7,27 @@ pub trait SysEvents {
 }
 
 pub struct RabbitMQ {
-    channel: Channel
+    channel: Channel,
 }
 
 impl RabbitMQ {
     pub fn new(channel: Channel) -> RabbitMQ {
-        RabbitMQ {
-            channel: channel
-        }
+        RabbitMQ { channel: channel }
     }
 }
 
 impl SysEvents for RabbitMQ {
     fn tick(&mut self, name: &str) {
-        let props = BasicProperties{ ..Default::default()};
-        self.channel.basic_publish(
-            String::from("stats"),
-            "".to_owned(),
-            false,
-            false,
-            props,
-            String::from(name).into_bytes()
-        ).unwrap();
+        let props = BasicProperties { ..Default::default() };
+        self.channel
+            .basic_publish(
+                String::from("stats"),
+                "".to_owned(),
+                false,
+                false,
+                props,
+                String::from(name).into_bytes(),
+            )
+            .unwrap();
     }
 }

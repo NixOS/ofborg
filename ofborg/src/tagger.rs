@@ -33,7 +33,10 @@ impl StdenvTagger {
 
         for tag in &self.selected {
             if !self.possible.contains(&tag) {
-                panic!("Tried to add label {} but it isn't in the possible list!", tag);
+                panic!(
+                    "Tried to add label {} but it isn't in the possible list!",
+                    tag
+                );
             }
         }
     }
@@ -88,23 +91,38 @@ impl RebuildTagger {
 
         for attr in attrs {
             match attr.rsplit(".").next() {
-                Some("x86_64-darwin") => { counter_darwin += 1; }
-                Some("x86_64-linux") => { counter_linux += 1; }
-                Some("aarch64-linux") => { }
-                Some("i686-linux") => { }
-                Some(arch) => { info!("Unknown arch: {:?}", arch); }
-                None => { info!("Cannot grok attr: {:?}", attr); }
+                Some("x86_64-darwin") => {
+                    counter_darwin += 1;
+                }
+                Some("x86_64-linux") => {
+                    counter_linux += 1;
+                }
+                Some("aarch64-linux") => {}
+                Some("i686-linux") => {}
+                Some(arch) => {
+                    info!("Unknown arch: {:?}", arch);
+                }
+                None => {
+                    info!("Cannot grok attr: {:?}", attr);
+                }
             }
         }
 
-        self.selected = vec![
-            String::from(format!("10.rebuild-linux: {}", self.bucket(counter_linux))),
-            String::from(format!("10.rebuild-darwin: {}", self.bucket(counter_darwin))),
-        ];
+        self.selected =
+            vec![
+                String::from(format!("10.rebuild-linux: {}", self.bucket(counter_linux))),
+                String::from(format!(
+                    "10.rebuild-darwin: {}",
+                    self.bucket(counter_darwin)
+                )),
+            ];
 
         for tag in &self.selected {
             if !self.possible.contains(&tag) {
-                panic!("Tried to add label {} but it isn't in the possible list!", tag);
+                panic!(
+                    "Tried to add label {} but it isn't in the possible list!",
+                    tag
+                );
             }
         }
     }
@@ -123,7 +141,7 @@ impl RebuildTagger {
         return remove;
     }
 
-    fn bucket(&self, count: u64) -> &str{
+    fn bucket(&self, count: u64) -> &str {
         if count > 500 {
             return "501+";
         } else if count > 100 {

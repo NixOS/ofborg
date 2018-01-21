@@ -1,4 +1,4 @@
-use ofborg::message::{Pr,Repo};
+use ofborg::message::{Pr, Repo};
 use ofborg::worker;
 use serde_json;
 
@@ -13,20 +13,14 @@ pub struct MassRebuildJob {
     pub pr: Pr,
 }
 
-pub struct Actions {
-}
+pub struct Actions {}
 
 impl Actions {
     pub fn skip(&mut self, _job: &MassRebuildJob) -> worker::Actions {
-        return vec![
-            worker::Action::Ack
-        ];
+        return vec![worker::Action::Ack];
     }
 
     pub fn done(&mut self, _job: &MassRebuildJob) -> worker::Actions {
-        return vec![
-            worker::Action::Ack
-        ];
+        return vec![worker::Action::Ack];
     }
-
 }

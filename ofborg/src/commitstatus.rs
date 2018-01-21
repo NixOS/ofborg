@@ -11,8 +11,14 @@ pub struct CommitStatus<'a> {
     url: String,
 }
 
-impl <'a> CommitStatus<'a> {
-    pub fn new(api: hubcaps::statuses::Statuses<'a>, sha: String, context: String, description: String, url: Option<String>) -> CommitStatus<'a> {
+impl<'a> CommitStatus<'a> {
+    pub fn new(
+        api: hubcaps::statuses::Statuses<'a>,
+        sha: String,
+        context: String,
+        description: String,
+        url: Option<String>,
+    ) -> CommitStatus<'a> {
         let mut stat = CommitStatus {
             api: api,
             sha: sha,
@@ -23,7 +29,7 @@ impl <'a> CommitStatus<'a> {
 
         stat.set_url(url);
 
-        return stat
+        return stat;
     }
 
     pub fn set_url(&mut self, url: Option<String>) {
@@ -40,13 +46,15 @@ impl <'a> CommitStatus<'a> {
     }
 
     pub fn set(&self, state: hubcaps::statuses::State) {
-        self.api.create(
-            self.sha.as_ref(),
-            &hubcaps::statuses::StatusOptions::builder(state)
-                .context(self.context.clone())
-                .description(self.description.clone())
-                .target_url(self.url.clone())
-                .build()
-        ).expect("Failed to mark final status on commit");
+        self.api
+            .create(
+                self.sha.as_ref(),
+                &hubcaps::statuses::StatusOptions::builder(state)
+                    .context(self.context.clone())
+                    .description(self.description.clone())
+                    .target_url(self.url.clone())
+                    .build(),
+            )
+            .expect("Failed to mark final status on commit");
     }
 }

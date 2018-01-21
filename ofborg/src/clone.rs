@@ -1,12 +1,12 @@
 use std::path::PathBuf;
 use fs2::FileExt;
 use std::fs;
-use std::io::{Error,ErrorKind};
+use std::io::{Error, ErrorKind};
 use std::process::Command;
 use std::ffi::OsStr;
 
 pub struct Lock {
-    lock: Option<fs::File>
+    lock: Option<fs::File>,
 }
 
 impl Lock {
@@ -27,24 +27,22 @@ pub trait GitClonable {
 
         match fs::File::create(self.lock_path()) {
             Err(e) => {
-                warn!("Failed to create lock file {:?}: {}",
-                      self.lock_path(), e
-                );
+                warn!("Failed to create lock file {:?}: {}", self.lock_path(), e);
                 return Err(e);
             }
             Ok(lock) => {
                 match lock.lock_exclusive() {
                     Err(e) => {
-                        warn!("Failed to get exclusive lock on file {:?}: {}",
-                              self.lock_path(), e
+                        warn!(
+                            "Failed to get exclusive lock on file {:?}: {}",
+                            self.lock_path(),
+                            e
                         );
                         return Err(e);
                     }
                     Ok(_) => {
                         debug!("Got lock on {:?}", self.lock_path());
-                        return Ok(Lock{
-                            lock: Some(lock)
-                        });
+                        return Ok(Lock { lock: Some(lock) });
                     }
                 }
             }
@@ -56,14 +54,15 @@ pub trait GitClonable {
         let mut lock = self.lock()?;
 
         if self.clone_to().is_dir() {
-            debug!("Found dir at {:?}, initial clone is done",
-                   self.clone_to());
-            return Ok(())
+            debug!("Found dir at {:?}, initial clone is done", self.clone_to());
+            return Ok(());
         }
 
-        info!("Initial cloning of {} to {:?}",
-               self.clone_from(),
-               self.clone_to());
+        info!(
+            "Initial cloning of {} to {:?}",
+            self.clone_from(),
+            self.clone_to()
+        );
 
         let result = Command::new("git")
             .arg("clone")
@@ -75,7 +74,7 @@ pub trait GitClonable {
         lock.unlock();
 
         if result.success() {
-            return Ok(())
+            return Ok(());
         } else {
             return Err(Error::new(ErrorKind::Other, "Failed to clone"));
         }
@@ -94,7 +93,7 @@ pub trait GitClonable {
         lock.unlock();
 
         if result.success() {
-            return Ok(())
+            return Ok(());
         } else {
             return Err(Error::new(ErrorKind::Other, "Failed to fetch"));
         }
@@ -126,7 +125,7 @@ pub trait GitClonable {
 
         lock.unlock();
 
-        return Ok(())
+        return Ok(());
     }
 
     fn checkout(&self, git_ref: &OsStr) -> Result<(), Error> {
@@ -143,7 +142,7 @@ pub trait GitClonable {
         lock.unlock();
 
         if result.success() {
-            return Ok(())
+            return Ok(());
         } else {
             return Err(Error::new(ErrorKind::Other, "Failed to checkout"));
         }

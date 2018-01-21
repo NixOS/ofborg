@@ -1,4 +1,4 @@
-use ofborg::message::{Pr,Repo};
+use ofborg::message::{Pr, Repo};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BuildResult {
@@ -6,5 +6,5 @@ pub struct BuildResult {
     pub pr: Pr,
     pub system: String,
     pub output: Vec<String>,
-    pub success: bool
+    pub success: bool,
 }

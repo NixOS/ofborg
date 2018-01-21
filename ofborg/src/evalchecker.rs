@@ -10,12 +10,11 @@ pub struct EvalChecker {
     cmd: String,
     args: Vec<String>,
     nix: nix::Nix,
-
 }
 
 impl EvalChecker {
     pub fn new(name: &str, cmd: &str, args: Vec<String>, nix: nix::Nix) -> EvalChecker {
-        EvalChecker{
+        EvalChecker {
             name: name.to_owned(),
             cmd: cmd.to_owned(),
             args: args,

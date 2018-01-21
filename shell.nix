@@ -27,6 +27,7 @@ let
       nix-prefetch-git
       rust.rustc
       rust.cargo
+      rustfmt
       carnix
       openssl.dev
       pkgconfig

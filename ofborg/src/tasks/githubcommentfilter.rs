@@ -9,17 +9,17 @@ use hubcaps;
 use ofborg::message::{Repo, Pr, buildjob, massrebuildjob};
 use ofborg::worker;
 use ofborg::commentparser;
-use amqp::protocol::basic::{Deliver,BasicProperties};
+use amqp::protocol::basic::{Deliver, BasicProperties};
 
 
 pub struct GitHubCommentWorker {
     acl: acl::ACL,
-    github: hubcaps::Github
+    github: hubcaps::Github,
 }
 
 impl GitHubCommentWorker {
     pub fn new(acl: acl::ACL, github: hubcaps::Github) -> GitHubCommentWorker {
-        return GitHubCommentWorker{
+        return GitHubCommentWorker {
             acl: acl,
             github: github,
         };
@@ -29,33 +29,42 @@ impl GitHubCommentWorker {
 impl worker::SimpleWorker for GitHubCommentWorker {
     type J = ghevent::IssueComment;
 
-    fn msg_to_job(&mut self, _: &Deliver, _: &BasicProperties,
-                  body: &Vec<u8>) -> Result<Self::J, String> {
+    fn msg_to_job(
+        &mut self,
+        _: &Deliver,
+        _: &BasicProperties,
+        body: &Vec<u8>,
+    ) -> Result<Self::J, String> {
         return match serde_json::from_slice(body) {
-            Ok(e) => { Ok(e) }
+            Ok(e) => Ok(e),
             Err(e) => {
-                println!("Failed to deserialize IsssueComment: {:?}", String::from_utf8(body.clone()));
+                println!(
+                    "Failed to deserialize IsssueComment: {:?}",
+                    String::from_utf8(body.clone())
+                );
                 panic!("{:?}", e);
             }
-        }
+        };
     }
 
     fn consumer(&mut self, job: &ghevent::IssueComment) -> worker::Actions {
         let instructions = commentparser::parse(&job.comment.body);
         if instructions == None {
-            return vec![
-                worker::Action::Ack
-            ];
+            return vec![worker::Action::Ack];
         }
 
-        if !self.acl.can_build(&job.comment.user.login, &job.repository.full_name) {
-            println!("ACL prohibits {} from building {:?} for {}",
-                     job.comment.user.login,
-                     instructions,
-                     job.repository.full_name);
-            return vec![
-                worker::Action::Ack
-            ];
+        if !self.acl.can_build(
+            &job.comment.user.login,
+            &job.repository.full_name,
+        )
+        {
+            println!(
+                "ACL prohibits {} from building {:?} for {}",
+                job.comment.user.login,
+                instructions,
+                job.repository.full_name
+            );
+            return vec![worker::Action::Ack];
         }
 
         println!("Got job: {:?}", job);
@@ -64,20 +73,22 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         println!("Instructions: {:?}", instructions);
 
         let pr = self.github
-            .repo(job.repository.owner.login.clone(), job.repository.name.clone())
+            .repo(
+                job.repository.owner.login.clone(),
+                job.repository.name.clone(),
+            )
             .pulls()
             .get(job.issue.number)
             .get();
 
         if let Err(x) = pr {
-            info!("fetching PR {}#{} from GitHub yielded error {}",
-                  job.repository.full_name,
-                  job.issue.number,
-                  x
+            info!(
+                "fetching PR {}#{} from GitHub yielded error {}",
+                job.repository.full_name,
+                job.issue.number,
+                x
             );
-            return vec![
-                worker::Action::Ack
-            ];
+            return vec![worker::Action::Ack];
         }
 
         let pr = pr.unwrap();
@@ -92,7 +103,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         let pr_msg = Pr {
             number: job.issue.number.clone(),
             head_sha: pr.head.sha.clone(),
-            target_branch: Some(pr.base.commit_ref.clone())
+            target_branch: Some(pr.base.commit_ref.clone()),
         };
 
         let mut response: Vec<worker::Action> = vec![];
@@ -100,22 +111,22 @@ impl worker::SimpleWorker for GitHubCommentWorker {
             for instruction in instructions {
                 match instruction {
                     commentparser::Instruction::Build(subset, attrs) => {
-                        let msg = buildjob::BuildJob{
+                        let msg = buildjob::BuildJob {
                             repo: repo_msg.clone(),
                             pr: pr_msg.clone(),
                             subset: Some(subset),
                             attrs: attrs,
-                            logs: Some(("logs".to_owned(), "build.log".to_owned()))
+                            logs: Some(("logs".to_owned(), "build.log".to_owned())),
                         };
 
                         response.push(worker::publish_serde_action(
                             Some("build-jobs".to_owned()),
                             None,
-                            &msg
+                            &msg,
                         ));
                     }
                     commentparser::Instruction::Eval => {
-                        let msg = massrebuildjob::MassRebuildJob{
+                        let msg = massrebuildjob::MassRebuildJob {
                             repo: repo_msg.clone(),
                             pr: pr_msg.clone(),
                         };
@@ -123,7 +134,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                         response.push(worker::publish_serde_action(
                             None,
                             Some("mass-rebuild-check-jobs".to_owned()),
-                            &msg
+                            &msg,
                         ));
                     }
 

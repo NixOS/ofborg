@@ -16,7 +16,7 @@ use ofborg::commentparser;
 
 use ofborg::worker;
 use ofborg::notifyworker;
-use amqp::protocol::basic::{Deliver,BasicProperties};
+use amqp::protocol::basic::{Deliver, BasicProperties};
 
 
 pub struct BuildWorker {
@@ -28,8 +28,14 @@ pub struct BuildWorker {
 }
 
 impl BuildWorker {
-    pub fn new(cloner: checkout::CachedCloner, nix: nix::Nix, system: String, identity: String, full_logs: bool) -> BuildWorker {
-        return BuildWorker{
+    pub fn new(
+        cloner: checkout::CachedCloner,
+        nix: nix::Nix,
+        system: String,
+        identity: String,
+        full_logs: bool,
+    ) -> BuildWorker {
+        return BuildWorker {
             cloner: cloner,
             nix: nix,
             system: system,
@@ -38,7 +44,11 @@ impl BuildWorker {
         };
     }
 
-    fn actions<'a, 'b>(&self, job: &'b buildjob::BuildJob, receiver: &'a mut notifyworker::NotificationReceiver) -> JobActions<'a, 'b> {
+    fn actions<'a, 'b>(
+        &self,
+        job: &'b buildjob::BuildJob,
+        receiver: &'a mut notifyworker::NotificationReceiver,
+    ) -> JobActions<'a, 'b> {
         JobActions::new(&self.system, &self.identity, job, receiver)
     }
 }
@@ -55,8 +65,16 @@ struct JobActions<'a, 'b> {
 }
 
 impl<'a, 'b> JobActions<'a, 'b> {
-    fn new(system: &str, identity: &str, job: &'b buildjob::BuildJob, receiver: &'a mut notifyworker::NotificationReceiver) -> JobActions<'a, 'b> {
-        let (log_exchange, log_routing_key) = job.logs.clone().unwrap_or((String::from("logs"), String::from("build.log")));
+    fn new(
+        system: &str,
+        identity: &str,
+        job: &'b buildjob::BuildJob,
+        receiver: &'a mut notifyworker::NotificationReceiver,
+    ) -> JobActions<'a, 'b> {
+        let (log_exchange, log_routing_key) = job.logs.clone().unwrap_or((
+            String::from("logs"),
+            String::from("build.log"),
+        ));
 
         return JobActions {
             system: system.to_owned(),
@@ -85,13 +103,13 @@ impl<'a, 'b> JobActions<'a, 'b> {
             system: self.system.clone(),
             output: vec![String::from("Merge failed")],
 
-            success: false
+            success: false,
         };
 
         self.tell(worker::publish_serde_action(
             Some("build-results".to_owned()),
             None,
-            &msg
+            &msg,
         ));
         self.tell(worker::Action::Ack);
     }
@@ -111,7 +129,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
         self.tell(worker::publish_serde_action(
             log_exchange,
             log_routing_key,
-            &msg
+            &msg,
         ));
     }
 
@@ -132,7 +150,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
         self.tell(worker::publish_serde_action(
             log_exchange,
             log_routing_key,
-            &msg
+            &msg,
         ));
     }
 
@@ -142,13 +160,13 @@ impl<'a, 'b> JobActions<'a, 'b> {
             pr: self.job.pr.clone(),
             system: self.system.clone(),
             output: lines,
-            success: success
+            success: success,
         };
 
         self.tell(worker::publish_serde_action(
             Some("build-results".to_owned()),
             None,
-            &msg
+            &msg,
         ));
         self.tell(worker::Action::Ack);
     }
@@ -161,34 +179,46 @@ impl<'a, 'b> JobActions<'a, 'b> {
 impl notifyworker::SimpleNotifyWorker for BuildWorker {
     type J = buildjob::BuildJob;
 
-    fn msg_to_job(&self, _: &Deliver, _: &BasicProperties,
-                  body: &Vec<u8>) -> Result<Self::J, String> {
+    fn msg_to_job(
+        &self,
+        _: &Deliver,
+        _: &BasicProperties,
+        body: &Vec<u8>,
+    ) -> Result<Self::J, String> {
         println!("lmao I got a job?");
         return match buildjob::from(body) {
-            Ok(e) => { Ok(e) }
+            Ok(e) => Ok(e),
             Err(e) => {
                 println!("{:?}", String::from_utf8(body.clone()));
                 panic!("{:?}", e);
             }
-        }
+        };
     }
 
-    fn consumer(&self, job: &buildjob::BuildJob, notifier: &mut notifyworker::NotificationReceiver) {
+    fn consumer(
+        &self,
+        job: &buildjob::BuildJob,
+        notifier: &mut notifyworker::NotificationReceiver,
+    ) {
         let mut actions = self.actions(&job, notifier);
 
         info!("Working on {}", job.pr.number);
-        let project = self.cloner.project(job.repo.full_name.clone(), job.repo.clone_url.clone());
-        let co = project.clone_for("builder".to_string(),
-                                   self.identity.clone()).unwrap();
+        let project = self.cloner.project(
+            job.repo.full_name.clone(),
+            job.repo.clone_url.clone(),
+        );
+        let co = project
+            .clone_for("builder".to_string(), self.identity.clone())
+            .unwrap();
 
         let target_branch = match job.pr.target_branch.clone() {
-            Some(x) => { x }
-            None => { String::from("origin/master") }
+            Some(x) => x,
+            None => String::from("origin/master"),
         };
 
         let buildfile = match job.subset {
             Some(commentparser::Subset::NixOS) => "./nixos/release.nix",
-            _ => "./default.nix"
+            _ => "./default.nix",
         };
 
         // Note: Don't change the system limiter until the system isn't
@@ -221,7 +251,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         let cmd = self.nix.safely_build_attrs_cmd(
             refpath.as_ref(),
             buildfile,
-            job.attrs.clone()
+            job.attrs.clone(),
         );
 
         actions.log_started();
@@ -254,10 +284,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
 
         let last10lines: Vec<String> = snippet_log.into_iter().collect::<Vec<String>>();
 
-        actions.build_finished(
-            success,
-            last10lines.clone()
-        );
+        actions.build_finished(success, last10lines.clone());
     }
 }
 
@@ -265,17 +292,17 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::{Path,PathBuf};
-    use ofborg::message::{Pr,Repo};
+    use std::path::{Path, PathBuf};
+    use ofborg::message::{Pr, Repo};
     use notifyworker::SimpleNotifyWorker;
     use std::process::{Command, Stdio};
-    use  std::vec::IntoIter;
+    use std::vec::IntoIter;
 
     fn nix() -> nix::Nix {
         nix::Nix::new("x86_64-linux".to_owned(), "daemon".to_owned(), 1800)
     }
 
-    fn tpath(component: &str)-> PathBuf {
+    fn tpath(component: &str) -> PathBuf {
         return Path::new(env!("CARGO_MANIFEST_DIR")).join(component);
     }
 
@@ -294,7 +321,6 @@ mod tests {
     fn make_worker() -> BuildWorker {
         cleanup_scratch();
 
-        // pub fn new(cloner: checkout::CachedCloner, nix: nix::Nix, system: String, identity: String) -> BuildWorker {
         let cloner = checkout::cached_cloner(&scratch_dir());
         let nix = nix();
         let worker = BuildWorker::new(
@@ -302,13 +328,13 @@ mod tests {
             nix,
             "x86_64-linux".to_owned(),
             "cargo-test-build".to_owned(),
-            true
+            true,
         );
 
         return worker;
     }
 
-    fn make_pr_repo() -> String{
+    fn make_pr_repo() -> String {
         let output = Command::new("./make-pr.sh")
             .current_dir(tpath("./test-srcs"))
             .stderr(Stdio::null())
@@ -321,41 +347,41 @@ mod tests {
 
     fn assert_contains_job(actions: &mut IntoIter<worker::Action>, text_to_match: &str) {
         println!("\n\nSearching for {:?}", text_to_match);
-        actions.position(|job|
-                         match job {
-                             worker::Action::Publish(ref body) => {
-                                 let mystr = String::from_utf8(body.content.clone()).unwrap();
-                                 if mystr.contains(text_to_match) {
-                                     println!("    Matched: {:?}", mystr);
-                                     return true;
-                                 } else {
-                                     println!("    miss: {:?}", mystr);
-                                     return false;
-                                 }
-                             }
-                             e => {
-                                 println!("    notPublish: {:?}", e);
-                                 return false;
-                             }
-                         }
-        ).expect(
-            &format!("Actions should contain a job matching {:?}, after the previous check",
-                     text_to_match)
-        );
+        actions
+            .position(|job| match job {
+                worker::Action::Publish(ref body) => {
+                    let mystr = String::from_utf8(body.content.clone()).unwrap();
+                    if mystr.contains(text_to_match) {
+                        println!("    Matched: {:?}", mystr);
+                        return true;
+                    } else {
+                        println!("    miss: {:?}", mystr);
+                        return false;
+                    }
+                }
+                e => {
+                    println!("    notPublish: {:?}", e);
+                    return false;
+                }
+            })
+            .expect(&format!(
+                "Actions should contain a job matching {:?}, after the previous check",
+                text_to_match
+            ));
     }
 
     #[test]
     pub fn test_simple_build() {
         let worker = make_worker();
 
-        let job = buildjob::BuildJob{
+        let job = buildjob::BuildJob {
             attrs: vec!["success".to_owned()],
-            pr: Pr{
+            pr: Pr {
                 head_sha: make_pr_repo(),
                 number: 1,
                 target_branch: Some("master".to_owned()),
             },
-            repo: Repo{
+            repo: Repo {
                 clone_url: tpath("./test-srcs/bare-repo").to_str().unwrap().to_owned(),
                 full_name: "test-git".to_owned(),
                 name: "nixos".to_owned(),

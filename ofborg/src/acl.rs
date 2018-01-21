@@ -5,9 +5,7 @@ pub struct ACL {
 
 impl ACL {
     pub fn new(authorized_users: Vec<String>) -> ACL {
-        return ACL {
-            authorized_users: authorized_users,
-        }
+        return ACL { authorized_users: authorized_users };
     }
 
     pub fn can_build(&self, user: &str, repo: &str) -> bool {

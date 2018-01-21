@@ -24,6 +24,4 @@ pub struct Issue {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct PullRequest {
-
-}
+pub struct PullRequest {}

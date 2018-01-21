@@ -17,9 +17,15 @@ fn main() {
 
     let nix = cfg.nix();
 
-    match nix.safely_build_attrs(&Path::new("./"), "./default.nix", vec![String::from("hello"),]) {
-        Ok(mut out) => { print!("{}", file_to_str(&mut out)); }
-        Err(mut out) => { print!("{}", file_to_str(&mut out)) }
+    match nix.safely_build_attrs(
+        &Path::new("./"),
+        "./default.nix",
+        vec![String::from("hello")],
+    ) {
+        Ok(mut out) => {
+            print!("{}", file_to_str(&mut out));
+        }
+        Err(mut out) => print!("{}", file_to_str(&mut out)),
     }
 }
 

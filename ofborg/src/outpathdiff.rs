@@ -26,7 +26,7 @@ impl OutPathDiff {
     }
 
     fn parse(&self, f: File) -> HashMap<String, String> {
-        let mut result: HashMap<String,String>;
+        let mut result: HashMap<String, String>;
         result = HashMap::new();
 
         {
@@ -34,7 +34,7 @@ impl OutPathDiff {
                 .lines()
                 .filter_map(|line| match line {
                     Ok(line) => Some(line),
-                    Err(_) => None
+                    Err(_) => None,
                 })
                 .map(|x| {
                     let split: Vec<&str> = x.split_whitespace().collect();
@@ -43,7 +43,8 @@ impl OutPathDiff {
                     } else {
                         info!("Warning: not 2 word segments in {:?}", split);
                     }
-                }).count();
+                })
+                .count();
         }
 
         return result;
@@ -115,8 +116,8 @@ pub struct OutPaths {
     check_meta: bool,
 }
 
-impl OutPaths    {
-    pub fn new(nix: nix::Nix, path: PathBuf, check_meta: bool) -> OutPaths    {
+impl OutPaths {
+    pub fn new(nix: nix::Nix, path: PathBuf, check_meta: bool) -> OutPaths {
         OutPaths {
             nix: nix,
             path: path,
@@ -132,12 +133,13 @@ impl OutPaths    {
         self.place_nix();
         let ret = self.execute();
         self.remove_nix();
-        return ret
+        return ret;
     }
 
     fn place_nix(&self) {
         let mut file = File::create(self.nix_path()).expect("Failed to create nix out path check");
-        file.write_all(include_str!("outpaths.nix").as_bytes()).expect("Failed to place outpaths.nix");
+        file.write_all(include_str!("outpaths.nix").as_bytes())
+            .expect("Failed to place outpaths.nix");
     }
 
     fn remove_nix(&self) {
@@ -169,9 +171,11 @@ impl OutPaths    {
                 String::from("-qaP"),
                 String::from("--no-name"),
                 String::from("--out-path"),
-                String::from("--arg"), String::from("checkMeta"), check_meta,
+                String::from("--arg"),
+                String::from("checkMeta"),
+                check_meta,
             ],
-            true
+            true,
         )
     }
 }

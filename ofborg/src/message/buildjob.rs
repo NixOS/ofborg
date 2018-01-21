@@ -1,4 +1,4 @@
-use ofborg::message::{Pr,Repo};
+use ofborg::message::{Pr, Repo};
 use ofborg::message::buildresult;
 use ofborg::commentparser::Subset;
 use ofborg::worker;

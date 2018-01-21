@@ -39,19 +39,21 @@ fn main() {
     let mut channel = session.open_channel(2).unwrap();
 
     channel.basic_prefetch(1).unwrap();
-    channel.basic_consume(
-        worker::new(tasks::githubcommentfilter::GitHubCommentWorker::new(
-            cfg.acl(),
-            cfg.github()
-        )),
-        "build-inputs",
-        format!("{}-github-comment-filter", cfg.whoami()).as_ref(),
-        false,
-        false,
-        false,
-        false,
-        Table::new()
-    ).unwrap();
+    channel
+        .basic_consume(
+            worker::new(tasks::githubcommentfilter::GitHubCommentWorker::new(
+                cfg.acl(),
+                cfg.github(),
+            )),
+            "build-inputs",
+            format!("{}-github-comment-filter", cfg.whoami()).as_ref(),
+            false,
+            false,
+            false,
+            false,
+            Table::new(),
+        )
+        .unwrap();
 
     channel.start_consuming();
 

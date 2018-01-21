@@ -50,7 +50,7 @@ pub struct GithubConfig {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RunnerConfig {
     pub identity: String,
-    pub authorized_users: Option<Vec<String>>
+    pub authorized_users: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -64,48 +64,48 @@ impl Config {
     }
 
     pub fn acl(&self) -> acl::ACL {
-        return acl::ACL::new(
-            self.runner.authorized_users
-                .clone()
-                .expect("fetching config's runner.authorized_users")
-        );
+        return acl::ACL::new(self.runner.authorized_users.clone().expect(
+            "fetching config's runner.authorized_users",
+        ));
     }
 
     pub fn github(&self) -> Github {
         Github::new(
             "github.com/grahamc/ofborg",
             // tls configured hyper client
-            Client::with_connector(
-                HttpsConnector::new(
-                    NativeTlsClient::new().unwrap()
-                )
-            ),
-            Credentials::Token(self.github.clone().unwrap().token)
+            Client::with_connector(HttpsConnector::new(NativeTlsClient::new().unwrap())),
+            Credentials::Token(self.github.clone().unwrap().token),
         )
     }
 
     pub fn nix(&self) -> Nix {
         if self.nix.build_timeout_seconds < 1200 {
-            error!("Note: {} is way too low for build_timeout_seconds!",
-                   self.nix.build_timeout_seconds
+            error!(
+                "Note: {} is way too low for build_timeout_seconds!",
+                self.nix.build_timeout_seconds
             );
             error!("Please set build_timeout_seconds to at least 1200");
             panic!();
         }
 
-        return Nix::new(self.nix.system.clone(),
-                        self.nix.remote.clone(),
-                        self.nix.build_timeout_seconds
+        return Nix::new(
+            self.nix.system.clone(),
+            self.nix.remote.clone(),
+            self.nix.build_timeout_seconds,
         );
     }
 }
 
 
 impl RabbitMQConfig {
-    pub fn as_uri(&self) -> String{
-        return format!("{}://{}:{}@{}//",
-                       if self.ssl { "amqps" } else { "amqp" },
-                       self.username, self.password, self.host);
+    pub fn as_uri(&self) -> String {
+        return format!(
+            "{}://{}:{}@{}//",
+            if self.ssl { "amqps" } else { "amqp" },
+            self.username,
+            self.password,
+            self.host
+        );
     }
 }
 

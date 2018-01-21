@@ -45,20 +45,22 @@ fn main() {
         nix,
         cfg.github(),
         cfg.runner.identity.clone(),
-        events
+        events,
     );
 
     channel.basic_prefetch(1).unwrap();
-    channel.basic_consume(
-        worker::new(mrw),
-        "mass-rebuild-check-jobs",
-        format!("{}-mass-rebuild-checker", cfg.whoami()).as_ref(),
-        false,
-        false,
-        false,
-        false,
-        Table::new()
-    ).unwrap();
+    channel
+        .basic_consume(
+            worker::new(mrw),
+            "mass-rebuild-check-jobs",
+            format!("{}-mass-rebuild-checker", cfg.whoami()).as_ref(),
+            false,
+            false,
+            false,
+            false,
+            Table::new(),
+        )
+        .unwrap();
 
     channel.start_consuming();
 
