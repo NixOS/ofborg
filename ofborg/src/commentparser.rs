@@ -37,7 +37,13 @@ pub fn parse_line(text: &str) -> Option<Vec<Instruction>> {
     for command in commands {
         let (left, right) = command.split_at(1);
         match left[0].as_ref() {
-            "build" => instructions.push(Instruction::Build(Subset::Nixpkgs, right.to_vec())),
+            "build" => {
+                let attrs = right.to_vec();
+
+                if attrs.len() > 0 {
+                    instructions.push(Instruction::Build(Subset::Nixpkgs, attrs));
+                }
+            }
             "test" => {
                 instructions.push(Instruction::Build(
                     Subset::NixOS,
@@ -92,6 +98,11 @@ mod tests {
     #[test]
     fn bogus_comment() {
         assert_eq!(None, parse(":) :) :) @grahamcofborg build hi"));
+    }
+
+    #[test]
+    fn bogus_build_comment_empty_list() {
+        assert_eq!(None, parse("@grahamcofborg build"));
     }
 
     #[test]

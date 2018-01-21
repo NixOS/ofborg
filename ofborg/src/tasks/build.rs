@@ -402,7 +402,8 @@ mod tests {
                 owner: "ofborg-test".to_owned(),
             },
             subset: None,
-            logs: Some((String::from("logs"), String::from("build.log"))),
+            logs: Some((Some(String::from("logs")), Some(String::from("build.log")))),
+            statusreport: Some((Some(String::from("build-results")), None)),
         };
 
         let mut dummyreceiver = notifyworker::DummyNotificationReceiver::new();
