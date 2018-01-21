@@ -60,8 +60,8 @@ struct JobActions<'a, 'b> {
     job: &'b buildjob::BuildJob,
     line_counter: u64,
     attempt_id: String,
-    log_exchange: String,
-    log_routing_key: String,
+    log_exchange: Option<String>,
+    log_routing_key: Option<String>,
 }
 
 impl<'a, 'b> JobActions<'a, 'b> {
@@ -72,8 +72,8 @@ impl<'a, 'b> JobActions<'a, 'b> {
         receiver: &'a mut notifyworker::NotificationReceiver,
     ) -> JobActions<'a, 'b> {
         let (log_exchange, log_routing_key) = job.logs.clone().unwrap_or((
-            String::from("logs"),
-            String::from("build.log"),
+            Some(String::from("logs")),
+            Some(String::from("build.log")),
         ));
 
         return JobActions {
@@ -123,8 +123,8 @@ impl<'a, 'b> JobActions<'a, 'b> {
             attempt_id: self.attempt_id.clone(),
         };
 
-        let log_exchange = Some(self.log_exchange.clone());
-        let log_routing_key = Some(self.log_routing_key.clone());
+        let log_exchange = self.log_exchange.clone();
+        let log_routing_key = self.log_routing_key.clone();
 
         self.tell(worker::publish_serde_action(
             log_exchange,
@@ -144,8 +144,8 @@ impl<'a, 'b> JobActions<'a, 'b> {
             output: line.to_owned(),
         };
 
-        let log_exchange = Some(self.log_exchange.clone());
-        let log_routing_key = Some(self.log_routing_key.clone());
+        let log_exchange = self.log_exchange.clone();
+        let log_routing_key = self.log_routing_key.clone();
 
         self.tell(worker::publish_serde_action(
             log_exchange,
