@@ -111,12 +111,17 @@ impl worker::SimpleWorker for GitHubCommentWorker {
             for instruction in instructions {
                 match instruction {
                     commentparser::Instruction::Build(subset, attrs) => {
+                        let logbackrk = format!(
+                            "{}.{}",
+                            job.repository.full_name.clone(),
+                            job.issue.number.clone()
+                        );
                         let msg = buildjob::BuildJob {
                             repo: repo_msg.clone(),
                             pr: pr_msg.clone(),
                             subset: Some(subset),
                             attrs: attrs,
-                            logs: Some(("logs".to_owned(), "build.log".to_owned())),
+                            logs: Some(("logs".to_owned(), logbackrk)),
                         };
 
                         response.push(worker::publish_serde_action(
