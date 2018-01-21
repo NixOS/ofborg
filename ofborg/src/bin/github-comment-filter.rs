@@ -20,7 +20,8 @@ use ofborg::tasks;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
-    env_logger::init();
+    ofborg::setup_log();
+
     println!("Hello, world!");
 
 

@@ -68,9 +68,10 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
             }
             Err(e) => {
                 self.events.tick("job-decode-failure");
-                println!(
-                    "Failed to decode message: {:?}",
-                    String::from_utf8(body.clone())
+                error!(
+                    "Failed to decode message: {:?}, Err: {:?}",
+                    String::from_utf8(body.clone()),
+                    e
                 );
                 Err("Failed to decode message".to_owned())
             }

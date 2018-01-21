@@ -1,4 +1,3 @@
-use ofborg::message::{Pr, Repo};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BuildLogMsg {

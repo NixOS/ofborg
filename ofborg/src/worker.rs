@@ -4,7 +4,6 @@ use amqp::protocol::basic::{Deliver, BasicProperties};
 use std::marker::Send;
 use serde::Serialize;
 use serde_json;
-use std::cmp::PartialEq;
 
 pub struct Worker<T: SimpleWorker> {
     internal: T,
