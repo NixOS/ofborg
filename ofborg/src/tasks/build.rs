@@ -62,6 +62,8 @@ struct JobActions<'a, 'b> {
     attempt_id: String,
     log_exchange: Option<String>,
     log_routing_key: Option<String>,
+    result_exchange: Option<String>,
+    result_routing_key: Option<String>,
 }
 
 impl<'a, 'b> JobActions<'a, 'b> {
@@ -76,6 +78,12 @@ impl<'a, 'b> JobActions<'a, 'b> {
             Some(String::from("build.log")),
         ));
 
+        let (result_exchange, result_routing_key) =
+            job.statusreport.clone().unwrap_or((
+                Some(String::from("build-results")),
+                None,
+            ));
+
         return JobActions {
             system: system.to_owned(),
             identity: identity.to_owned(),
@@ -85,6 +93,8 @@ impl<'a, 'b> JobActions<'a, 'b> {
             attempt_id: format!("{}", Uuid::new_v4()),
             log_exchange: log_exchange,
             log_routing_key: log_routing_key,
+            result_exchange: result_exchange,
+            result_routing_key: result_routing_key,
         };
     }
 
@@ -106,9 +116,13 @@ impl<'a, 'b> JobActions<'a, 'b> {
             success: false,
         };
 
+        let result_exchange = self.result_exchange.clone();
+        let result_routing_key = self.result_routing_key.clone();
+
+
         self.tell(worker::publish_serde_action(
-            Some("build-results".to_owned()),
-            None,
+            result_exchange,
+            result_routing_key,
             &msg,
         ));
         self.tell(worker::Action::Ack);

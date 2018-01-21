@@ -9,6 +9,7 @@ pub struct BuildJob {
     pub subset: Option<Subset>,
     pub attrs: Vec<String>,
     pub logs: Option<(Option<String>, Option<String>)>, // (Exchange, Routing Key)
+    pub statusreport: Option<(Option<String>, Option<String>)>, // (Exchange, Routing Key)
 }
 
 pub fn from(data: &Vec<u8>) -> Result<BuildJob, serde_json::error::Error> {

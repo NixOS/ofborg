@@ -122,6 +122,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                             subset: Some(subset),
                             attrs: attrs,
                             logs: Some((Some("logs".to_owned()), Some(logbackrk.to_lowercase()))),
+                            statusreport: Some((Some("build-results".to_owned()), None)),
                         };
 
                         response.push(worker::publish_serde_action(
