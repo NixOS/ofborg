@@ -47,7 +47,7 @@ pub struct ChannelNotificationReceiver<'a> {
 }
 
 impl<'a> ChannelNotificationReceiver<'a> {
-    fn new(channel: &'a mut Channel, delivery_tag: u64) -> ChannelNotificationReceiver<'a> {
+    pub fn new(channel: &'a mut Channel, delivery_tag: u64) -> ChannelNotificationReceiver<'a> {
         return ChannelNotificationReceiver {
             channel: channel,
             delivery_tag: delivery_tag,

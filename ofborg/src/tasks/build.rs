@@ -53,7 +53,7 @@ impl BuildWorker {
     }
 }
 
-struct JobActions<'a, 'b> {
+pub struct JobActions<'a, 'b> {
     system: String,
     identity: String,
     receiver: &'a mut notifyworker::NotificationReceiver,
@@ -67,7 +67,7 @@ struct JobActions<'a, 'b> {
 }
 
 impl<'a, 'b> JobActions<'a, 'b> {
-    fn new(
+    pub fn new(
         system: &str,
         identity: &str,
         job: &'b buildjob::BuildJob,
@@ -402,7 +402,10 @@ mod tests {
                 owner: "ofborg-test".to_owned(),
             },
             subset: None,
-            logs: Some((Some(String::from("logs")), Some(String::from("build.log")))),
+            logs: Some((
+                Some(String::from("logs")),
+                Some(String::from("build.log")),
+            )),
             statusreport: Some((Some(String::from("build-results")), None)),
         };
 
