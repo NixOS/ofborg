@@ -10,6 +10,7 @@ extern crate hubcaps;
 extern crate hyper;
 extern crate hyper_native_tls;
 
+extern crate lru_cache;
 extern crate tempfile;
 extern crate amqp;
 extern crate fs2;
@@ -37,6 +38,7 @@ pub mod outpathdiff;
 pub mod tagger;
 pub mod asynccmd;
 pub mod notifyworker;
+pub mod writetoline;
 
 pub mod ofborg {
     pub use asynccmd;
@@ -57,6 +59,7 @@ pub mod ofborg {
     pub use commentparser;
     pub use outpathdiff;
     pub use tagger;
+    pub use writetoline;
 
 
 }

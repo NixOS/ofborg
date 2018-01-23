@@ -19,6 +19,7 @@ pub struct Config {
     pub nix: NixConfig,
     pub rabbitmq: RabbitMQConfig,
     pub github: Option<GithubConfig>,
+    pub log_storage: Option<LogStorage>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -41,10 +42,14 @@ pub struct NixConfig {
     pub build_timeout_seconds: u16,
 }
 
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GithubConfig {
     pub token: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct LogStorage {
+    pub path: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

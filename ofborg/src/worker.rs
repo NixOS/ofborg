@@ -81,11 +81,15 @@ impl<T: SimpleWorker + Send> Consumer for Worker<T> {
         headers: BasicProperties,
         body: Vec<u8>,
     ) {
+        let job = self.internal.msg_to_job(&method, &headers, &body);
 
+        if let Err(e) = job {
+            error!("Error decoding job: {:?}", e);
+            channel.basic_ack(method.delivery_tag, false).unwrap();
+            return;
+        }
 
-
-        let job = self.internal.msg_to_job(&method, &headers, &body).unwrap();
-        for action in self.internal.consumer(&job) {
+        for action in self.internal.consumer(&job.unwrap()) {
             match action {
                 Action::Ack => {
                     channel.basic_ack(method.delivery_tag, false).unwrap();

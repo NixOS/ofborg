@@ -129,8 +129,6 @@ impl<'a, 'b> JobActions<'a, 'b> {
     }
 
     pub fn log_started(&mut self) {
-        self.line_counter += 1;
-
         let msg = buildlogmsg::BuildLogStart {
             identity: self.identity.clone(),
             system: self.system.clone(),
