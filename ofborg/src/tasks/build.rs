@@ -315,6 +315,7 @@ mod tests {
     use notifyworker::SimpleNotifyWorker;
     use std::process::{Command, Stdio};
     use std::vec::IntoIter;
+    use ofborg::test_scratch::TestScratch;
 
     fn nix() -> nix::Nix {
         nix::Nix::new("x86_64-linux".to_owned(), "daemon".to_owned(), 1800)
@@ -324,22 +325,8 @@ mod tests {
         return Path::new(env!("CARGO_MANIFEST_DIR")).join(component);
     }
 
-    fn scratch_dir() -> PathBuf {
-        tpath("./test-scratch")
-    }
-
-    fn cleanup_scratch() {
-        Command::new("rm")
-            .arg("-rf")
-            .arg(&scratch_dir())
-            .status()
-            .expect("cleanup of test-scratch should work");
-    }
-
-    fn make_worker() -> BuildWorker {
-        cleanup_scratch();
-
-        let cloner = checkout::cached_cloner(&scratch_dir());
+    fn make_worker(path: &Path) -> BuildWorker {
+        let cloner = checkout::cached_cloner(path);
         let nix = nix();
         let worker = BuildWorker::new(
             cloner,
@@ -352,9 +339,11 @@ mod tests {
         return worker;
     }
 
-    fn make_pr_repo() -> String {
+    fn make_pr_repo(bare: &Path, co: &Path) -> String {
         let output = Command::new("./make-pr.sh")
             .current_dir(tpath("./test-srcs"))
+            .arg(bare)
+            .arg(co)
             .stderr(Stdio::null())
             .stdout(Stdio::piped())
             .output()
@@ -390,17 +379,23 @@ mod tests {
 
     #[test]
     pub fn test_simple_build() {
-        let worker = make_worker();
+        let p = TestScratch::new_dir("build-simple-build-working");
+        let bare_repo = TestScratch::new_dir("build-simple-build-bare");
+        let co_repo = TestScratch::new_dir("build-simple-build-co");
+
+        let head_sha = make_pr_repo(&bare_repo.path(), &co_repo.path());
+        let worker = make_worker(&p.path());
+
 
         let job = buildjob::BuildJob {
             attrs: vec!["success".to_owned()],
             pr: Pr {
-                head_sha: make_pr_repo(),
+                head_sha: head_sha,
                 number: 1,
                 target_branch: Some("master".to_owned()),
             },
             repo: Repo {
-                clone_url: tpath("./test-srcs/bare-repo").to_str().unwrap().to_owned(),
+                clone_url: bare_repo.path().to_str().unwrap().to_owned(),
                 full_name: "test-git".to_owned(),
                 name: "nixos".to_owned(),
                 owner: "ofborg-test".to_owned(),

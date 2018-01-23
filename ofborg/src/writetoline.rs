@@ -37,37 +37,19 @@ pub fn write_to_line(rw: &mut File, line: usize, data: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::process::Command;
     use std::path::Path;
-    use std::path::PathBuf;
     use std::fs::File;
     use std::io::Read;
     use std::fs::OpenOptions;
+    use ofborg::test_scratch::TestScratch;
 
-    fn tpath(component: &str) -> PathBuf {
-        return Path::new(env!("CARGO_MANIFEST_DIR")).join(component);
-    }
-
-    fn scratch_file(name: &str) -> PathBuf {
-        tpath(&format!("./scratch-write-to-line-{}", name))
-    }
-
-    fn cleanup_scratch(name: &str) {
-        Command::new("rm")
-            .arg("-f")
-            .arg(&scratch_file(name))
-            .status()
-            .expect("cleanup of scratch_dir should work");
-    }
-
-    fn testfile(name: &str) -> File {
-        cleanup_scratch(&name);
+    fn testfile(path: &Path) -> File {
         OpenOptions::new()
             .read(true)
             .write(true)
             .truncate(true)
             .create(true)
-            .open(scratch_file(&name))
+            .open(path)
             .expect("failed to open scratch file")
     }
 
@@ -83,7 +65,8 @@ mod tests {
 
     #[test]
     fn test_writer_line_ordered() {
-        let mut f = testfile("ordered");
+        let p = TestScratch::new_file("writetoline-ordered");
+        let mut f = testfile(&p.path());
 
         assert_file_content(&mut f, "");
         write_to_line(&mut f, 0, "hello");
@@ -96,7 +79,8 @@ mod tests {
 
     #[test]
     fn test_writer_line_unordered() {
-        let mut f = testfile("unordered");
+        let p = TestScratch::new_file("writetoline-unordered");
+        let mut f = testfile(&p.path());
 
         assert_file_content(&mut f, "");
         write_to_line(&mut f, 2, ":)");
@@ -112,7 +96,8 @@ mod tests {
 
     #[test]
     fn test_writer_line_unordered_long() {
-        let mut f = testfile("unordered-long");
+        let p = TestScratch::new_file("writetoline-unordered-long");
+        let mut f = testfile(&p.path());
 
         assert_file_content(&mut f, "");
         write_to_line(
@@ -149,7 +134,8 @@ mod tests {
 
     #[test]
     fn test_writer_line_unordered_longish() {
-        let mut f = testfile("unordered-longish");
+        let p = TestScratch::new_file("writetoline-unordered-longish");
+        let mut f = testfile(&p.path());
 
         assert_file_content(&mut f, "");
         write_to_line(&mut f, 2, "hello");
@@ -164,7 +150,8 @@ mod tests {
 
     #[test]
     fn test_writer_line_middle() {
-        let mut f = testfile("middle");
+        let p = TestScratch::new_file("writetoline-middle");
+        let mut f = testfile(&p.path());
 
         assert_file_content(&mut f, "");
         write_to_line(&mut f, 5, "hello");

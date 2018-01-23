@@ -163,31 +163,13 @@ impl worker::SimpleWorker for LogMessageCollector {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::process::Command;
     use std::io::Read;
-    use std::path::Path;
+    use std::path::PathBuf;
     use ofborg::worker::SimpleWorker;
+    use ofborg::test_scratch::TestScratch;
 
-    fn tpath(component: &str) -> PathBuf {
-        return Path::new(env!("CARGO_MANIFEST_DIR")).join(component);
-    }
-
-    fn scratch_dir(name: &str) -> PathBuf {
-        tpath(&format!("./test-message-log-scratch-{}", name))
-    }
-
-    fn cleanup_scratch(name: &str) {
-        Command::new("rm")
-            .arg("-rf")
-            .arg(&scratch_dir(name))
-            .status()
-            .expect("cleanup of scratch_dir should work");
-    }
-
-    fn make_worker(name: &str) -> LogMessageCollector {
-        cleanup_scratch(name);
-
-        LogMessageCollector::new(scratch_dir(name), 3)
+    fn make_worker(path: PathBuf) -> LogMessageCollector {
+        LogMessageCollector::new(path, 3)
     }
 
     fn make_from(id: &str) -> LogFrom {
@@ -199,12 +181,14 @@ mod tests {
 
     #[test]
     fn test_handle_for() {
+        let p = TestScratch::new_dir("log-message-collector-handle_for");
+
         let a = make_from("a.foo/123");
         let b = make_from("b.foo/123");
         let c = make_from("c.foo/123");
         let d = make_from("d.foo/123");
 
-        let mut worker = make_worker("handle_for");
+        let mut worker = make_worker(p.path());
         assert!(worker.handle_for(&a).is_ok());
         assert!(worker.handle_for(&b).is_ok());
         assert!(worker.handle_for(&c).is_ok());
@@ -214,7 +198,8 @@ mod tests {
 
     #[test]
     fn test_path_for() {
-        let worker = make_worker("path_for");
+        let p = TestScratch::new_dir("log-message-collector-path_for");
+        let worker = make_worker(p.path());
 
         let path = worker
             .path_for(&LogFrom {
@@ -224,13 +209,14 @@ mod tests {
             .expect("the path should be valid");
 
 
-        assert!(path.starts_with(scratch_dir("path_for")));
+        assert!(path.starts_with(p.path()));
         assert!(path.ends_with("my-routing-key/my-attempt-id"));
     }
 
     #[test]
     fn test_path_for_malicious() {
-        let worker = make_worker("for_malicious");
+        let p = TestScratch::new_dir("log-message-collector-for_malicious");
+        let worker = make_worker(p.path());
 
         let path = worker.path_for(&LogFrom {
             attempt_id: String::from("./../../"),
@@ -260,7 +246,9 @@ mod tests {
 
     #[test]
     fn test_open_log() {
-        let worker = make_worker("open-log");
+        let p = TestScratch::new_dir("log-message-collector-open_log");
+        let worker = make_worker(p.path());
+
         assert!(
             worker
                 .open_log(worker.path_for(&make_from("a")).unwrap())
@@ -286,8 +274,10 @@ mod tests {
             },
         };
 
+        let p = TestScratch::new_dir("log-message-collector-path_for");
+
         {
-            let mut worker = make_worker("simple-build");
+            let mut worker = make_worker(p.path());
             assert_eq!(vec![worker::Action::Ack], worker.consumer(&job));
 
             job.message.line_number = 5;
@@ -301,19 +291,17 @@ mod tests {
             assert_eq!(vec![worker::Action::Ack], worker.consumer(&job));
         }
 
-        let root = scratch_dir("simple-build");
-
-        let mut p = root.clone();
+        let mut pr = p.path();
         let mut s = String::new();
-        p.push("routing-key-foo/attempt-id-foo");
-        File::open(p).unwrap().read_to_string(&mut s).unwrap();
+        pr.push("routing-key-foo/attempt-id-foo");
+        File::open(pr).unwrap().read_to_string(&mut s).unwrap();
         assert_eq!(&s, "line-1\n\n\n\nline-5\n");
 
 
-        let mut p = root.clone();
+        let mut pr = p.path();
         let mut s = String::new();
-        p.push("routing-key-foo/my-other-attempt");
-        File::open(p).unwrap().read_to_string(&mut s).unwrap();
+        pr.push("routing-key-foo/my-other-attempt");
+        File::open(pr).unwrap().read_to_string(&mut s).unwrap();
         assert_eq!(&s, "\n\nline-3\n");
     }
 }

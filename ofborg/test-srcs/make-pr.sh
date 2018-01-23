@@ -1,26 +1,27 @@
 #!/bin/sh
 
 set -eux
+set -o pipefail
 
+bare=$1
+co=$2
 
 (
-    rm -rf bare-repo repo-co
-
-    git init --bare bare-repo
-    git clone ./bare-repo ./repo-co
+    git init --bare "$bare"
+    git clone "$bare" "$co"
 
 
     (
-        cp build/* repo-co/
-        cd repo-co
+        cp build/* "$co/"
+        cd  "$co/"
         git add .
         git commit --no-gpg-sign -m "initial repo commit"
         git push origin master
     )
 
     (
-        cp build-pr/* repo-co/
-        cd repo-co
+        cp build-pr/*  "$co/"
+        cd "$co/"
         git checkout -b my-cool-pr
         git add .
         git commit --no-gpg-sign -m "check out this cool PR"
@@ -30,6 +31,6 @@ set -eux
 ) >&2
 
 (
-    cd repo-co
+    cd  "$co/"
     git rev-parse HEAD
 )

@@ -1,6 +1,4 @@
 target
 rust-amqp
 test-scratch
-scratch-*
 *.bk
-test-message-log-scratch/

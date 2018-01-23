@@ -39,6 +39,7 @@ pub mod tagger;
 pub mod asynccmd;
 pub mod notifyworker;
 pub mod writetoline;
+pub mod test_scratch;
 
 pub mod ofborg {
     pub use asynccmd;
@@ -60,6 +61,7 @@ pub mod ofborg {
     pub use outpathdiff;
     pub use tagger;
     pub use writetoline;
+    pub use test_scratch;
 
 
 }
