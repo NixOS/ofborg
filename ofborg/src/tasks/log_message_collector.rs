@@ -6,9 +6,6 @@ use serde_json;
 use std::fs;
 use std::fs::{OpenOptions, File};
 use std::path::{Component, PathBuf};
-use std::cmp::{Eq, PartialEq};
-use std::hash::Hash;
-use std::io::Read;
 
 use ofborg::writetoline;
 use ofborg::message::buildlogmsg::BuildLogMsg;
@@ -104,7 +101,7 @@ impl LogMessageCollector {
 
     fn open_log(&self, path: PathBuf) -> Result<File, String> {
         let dir = path.parent().unwrap();
-        fs::create_dir_all(dir);
+        fs::create_dir_all(dir).unwrap();
 
         let attempt = OpenOptions::new()
             .append(true)
@@ -167,6 +164,7 @@ impl worker::SimpleWorker for LogMessageCollector {
 mod tests {
     use super::*;
     use std::process::Command;
+    use std::io::Read;
     use std::path::Path;
     use ofborg::worker::SimpleWorker;
 
@@ -262,7 +260,7 @@ mod tests {
 
     #[test]
     fn test_open_log() {
-        let mut worker = make_worker("open-log");
+        let worker = make_worker("open-log");
         assert!(
             worker
                 .open_log(worker.path_for(&make_from("a")).unwrap())
@@ -308,14 +306,14 @@ mod tests {
         let mut p = root.clone();
         let mut s = String::new();
         p.push("routing-key-foo/attempt-id-foo");
-        File::open(p).unwrap().read_to_string(&mut s);
+        File::open(p).unwrap().read_to_string(&mut s).unwrap();
         assert_eq!(&s, "line-1\n\n\n\nline-5\n");
 
 
         let mut p = root.clone();
         let mut s = String::new();
         p.push("routing-key-foo/my-other-attempt");
-        File::open(p).unwrap().read_to_string(&mut s);
+        File::open(p).unwrap().read_to_string(&mut s).unwrap();
         assert_eq!(&s, "\n\nline-3\n");
     }
 }

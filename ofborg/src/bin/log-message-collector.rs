@@ -3,14 +3,10 @@ extern crate amqp;
 extern crate env_logger;
 
 use std::env;
-use std::time::Duration;
-use std::thread;
 use std::path::PathBuf;
 
 use amqp::Session;
 use amqp::Table;
-
-use ofborg::message::{Pr, Repo};
 
 use ofborg::config;
 use ofborg::worker;

@@ -4,32 +4,27 @@ use std::io::Write;
 use std::io::Seek;
 use std::io::SeekFrom;
 use std::fs::File;
-use std::io::Read;
 
 pub fn write_to_line(rw: &mut File, line: usize, data: &str) {
 
     rw.seek(SeekFrom::Start(0)).unwrap();
 
-    let mut writeout: String = String::new();
-
-    {
-        let reader = BufReader::new(rw.try_clone().unwrap());
-        let mut lines: Vec<String> = reader
-            .lines()
-            .map(|line| match line {
-                Ok(s) => s,
-                Err(e) => format!("UTF-8 Decode err: {:?}", e),
-            })
-            .collect();
-        while lines.len() <= line {
-            lines.push("".to_owned());
-        }
-
-        lines.remove(line);
-        lines.insert(line, data.to_owned());
-
-        writeout = lines.join("\n");
+    let reader = BufReader::new(rw.try_clone().unwrap());
+    let mut lines: Vec<String> = reader
+        .lines()
+        .map(|line| match line {
+            Ok(s) => s,
+            Err(e) => format!("UTF-8 Decode err: {:?}", e),
+        })
+        .collect();
+    while lines.len() <= line {
+        lines.push("".to_owned());
     }
+
+    lines.remove(line);
+    lines.insert(line, data.to_owned());
+
+    let writeout = lines.join("\n");
 
     rw.set_len(0).unwrap();
     rw.seek(SeekFrom::Start(0)).unwrap();

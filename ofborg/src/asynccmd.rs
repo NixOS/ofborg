@@ -12,7 +12,6 @@ use std::io::BufRead;
 use std::io;
 use std::process::Child;
 use std::thread::JoinHandle;
-use std::cmp::{Eq, PartialEq};
 
 pub struct AsyncCmd {
     command: Command,

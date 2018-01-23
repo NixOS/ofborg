@@ -5,7 +5,6 @@ extern crate env_logger;
 use uuid::Uuid;
 
 use std::collections::VecDeque;
-use std::sync::mpsc::Receiver;
 use ofborg::asynccmd::AsyncCmd;
 use ofborg::checkout;
 use ofborg::message::buildjob;
@@ -16,8 +15,6 @@ use ofborg::commentparser;
 
 use ofborg::worker;
 use ofborg::notifyworker;
-use std::thread;
-use std::thread::JoinHandle;
 use amqp::protocol::basic::{Deliver, BasicProperties};
 
 
