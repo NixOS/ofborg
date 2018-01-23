@@ -189,13 +189,15 @@ mod tests {
 
     #[test]
     fn basic_interpolation_test() {
-
-        let mut  cmd = Command::new("/bin/sh");
+        let mut  cmd = Command::new("stdbuf");
+        cmd.arg("-o0");
+        cmd.arg("-e0");
+        cmd.arg("bash");
         cmd.arg("-c");
 
         // The sleep 0's are to introduce delay between output to help
         // make it more predictably received in the right order
-        cmd.arg("echo stdout; sleep 0; echo stderr >&2; sleep 0; echo stdout2; sleep 0; echo stderr2 >&2");
+        cmd.arg("echo stdout; sleep 0.1; echo stderr >&2; sleep 0.1; echo stdout2; sleep 0.1; echo stderr2 >&2");
         let acmd = AsyncCmd::new(cmd);
 
         let mut spawned = acmd.spawn();
