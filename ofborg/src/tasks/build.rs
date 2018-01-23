@@ -5,7 +5,7 @@ extern crate env_logger;
 use uuid::Uuid;
 
 use std::collections::VecDeque;
-
+use std::sync::mpsc::Receiver;
 use ofborg::asynccmd::AsyncCmd;
 use ofborg::checkout;
 use ofborg::message::buildjob;
@@ -16,6 +16,8 @@ use ofborg::commentparser;
 
 use ofborg::worker;
 use ofborg::notifyworker;
+use std::thread;
+use std::thread::JoinHandle;
 use amqp::protocol::basic::{Deliver, BasicProperties};
 
 
@@ -272,6 +274,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
 
         let mut snippet_log = VecDeque::with_capacity(10);
 
+
         if !self.full_logs {
             actions.log_line("Full logs are disabled on this builder.");
         }
@@ -281,7 +284,6 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
                 actions.log_line(&line);
             }
 
-
             if snippet_log.len() >= 10 {
                 snippet_log.pop_front();
             }
@@ -289,7 +291,14 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             snippet_log.push_back(line.to_owned());
         }
 
-        let success = spawned.wait().success();
+
+        let success = match spawned.wait() {
+            Ok(Some(Ok(status))) => status.success(),
+            e => {
+                println!("Failed on the interior command: {:?}", e);
+                false
+            }
+        };
 
         println!("ok built ({:?}), building", success);
         println!("Lines: {:?}", snippet_log);
