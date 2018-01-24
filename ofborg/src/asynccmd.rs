@@ -40,12 +40,16 @@ fn reader_tx<R: 'static + Read + Send>(read: R, tx: Sender<String>) -> thread::J
 
     thread::spawn(move || {
         for line in read.lines() {
-            if let Ok(line) = line {
-                if let Err(e) = tx.send(line) {
-                    error!("Failed to send log line: {:?}", e);
+            let to_send: String = match line {
+                Ok(line) => line,
+                Err(e) => {
+                    error!("Error reading data in reader_tx: {:?}", e);
+                    "Non-UTF8 data omitted from the log.".to_owned()
                 }
-            } else {
-                error!("Got in reader tx's else: {:?}", line);
+            };
+
+            if let Err(e) = tx.send(to_send) {
+                error!("Failed to send log line: {:?}", e);
             }
         }
     })
@@ -125,8 +129,8 @@ impl AsyncCmd {
                         info!("interior status: {:?}", interior_result);
 
                         match interior_result {
-                            WaitResult::Thread(_) => {
-                                // Don't think there is anything special to do here
+                            WaitResult::Thread(t) => {
+                                debug!("thread result: {:?}", t);
                             }
                             WaitResult::Process(t) => {
                                 return_status = Some(t);
@@ -172,6 +176,8 @@ impl SpawnedAsyncCmd {
 mod tests {
     use super::AsyncCmd;
     use std::process::Command;
+    use std::ffi::{OsStr,OsString};
+    use std::os::unix::ffi::OsStrExt;
 
     #[test]
     fn basic_echo_test() {
@@ -240,5 +246,27 @@ mod tests {
         let child_result = child_result_opt.expect("Thread should have properly properly returned the child's status");
         let exit_status = child_result.expect("The child should have no problem exiting");
         assert_eq!(true, exit_status.success());
+    }
+
+    #[test]
+    fn bad_utf8_test() {
+        let mut echos = OsString::from("echo hi; echo ");
+        echos.push(OsStr::from_bytes(&[0xffu8]));
+        echos.push("; echo there;");
+
+        let mut  cmd = Command::new("/bin/sh");
+        cmd.arg("-c");
+        cmd.arg(echos);
+        let acmd = AsyncCmd::new(cmd);
+
+        let mut spawned = acmd.spawn();
+        let lines: Vec<String> = spawned.lines().into_iter().collect();
+        assert_eq!(lines, vec![
+            "hi",
+            "Non-UTF8 data omitted from the log.",
+            "there",
+        ]);
+        let ret = spawned.wait().unwrap().unwrap().unwrap().success();
+        assert_eq!(true, ret);
     }
 }
