@@ -7,7 +7,7 @@ in {
     builder = nix.shell;
     args = [
       "-c"
-      "for i in `seq 1 10000; do echo $i; sleep 0; done; echo ${toString builtins.currentTime} > $out" ];
+      "for i in `seq 1 10000`; do echo $i; sleep 0; done; echo ${toString builtins.currentTime} > $out" ];
   };
 
   failed = derivation {
