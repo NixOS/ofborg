@@ -174,9 +174,13 @@ impl<'a, 'b> JobActions<'a, 'b> {
             success: success,
         };
 
+        let result_exchange = self.result_exchange.clone();
+        let result_routing_key = self.result_routing_key.clone();
+
+
         self.tell(worker::publish_serde_action(
-            Some("build-results".to_owned()),
-            None,
+            result_exchange,
+            result_routing_key,
             &msg,
         ));
         self.tell(worker::Action::Ack);
