@@ -53,8 +53,8 @@ fn main() {
         actions.log_started();
 
         for i in 1..51 {
-            actions.log_line(&format!("Simulated log line #{:?}/50", i));
-            thread::sleep(Duration::from_secs(1))
+            actions.log_line(&format!("Bogus message  #{:?}/50", i));
+            thread::sleep(Duration::from_secs(3))
         }
 
         thread::sleep(Duration::from_secs(10))

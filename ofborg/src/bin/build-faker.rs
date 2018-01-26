@@ -54,7 +54,7 @@ fn main() {
 
     let pr_msg = Pr {
         number: 42,
-        head_sha: "5d0a172338d08001787b4e0e59f0e08978764fc1".to_owned(),
+        head_sha: "6dd9f0265d52b946dd13daf996f30b64e4edb446".to_owned(),
         target_branch: Some("scratch".to_owned()),
     };
 
@@ -72,10 +72,10 @@ fn main() {
     {
         let mut recv = notifyworker::ChannelNotificationReceiver::new(&mut channel, 0);
 
-        for i in 1..10 {
+        for i in 1..2 {
             recv.tell(worker::publish_serde_action(
                 None,
-                Some("build-inputs-x86_64-linux".to_owned()),
+                Some("build-inputs-x86_64-darwin".to_owned()),
                 &msg,
             ));
         }
