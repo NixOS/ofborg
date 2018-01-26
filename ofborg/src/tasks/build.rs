@@ -282,9 +282,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
 
         for line in spawned.lines().iter() {
             if self.full_logs {
-                println!("Sending a log line ");
                 actions.log_line(&line);
-                println!("Sent the line ");
             }
 
             if snippet_log.len() >= 10 {
@@ -293,8 +291,6 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
 
             snippet_log.push_back(line.to_owned());
         }
-        println!("Done sending log messages =)");
-
 
         let success = match spawned.wait() {
             Ok(Some(Ok(status))) => status.success(),
