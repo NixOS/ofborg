@@ -47,7 +47,7 @@ where
     return Action::Publish(QueueMsg {
         exchange: exchange,
         routing_key: routing_key,
-        mandatory: true,
+        mandatory: false,
         immediate: false,
         properties: Some(props),
         content: serde_json::to_string(&msg).unwrap().into_bytes(),
