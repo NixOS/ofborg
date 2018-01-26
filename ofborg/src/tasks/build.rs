@@ -310,6 +310,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         let last10lines: Vec<String> = snippet_log.into_iter().collect::<Vec<String>>();
 
         actions.build_finished(success, last10lines.clone());
+        println!("Done!");
     }
 }
 

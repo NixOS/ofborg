@@ -75,7 +75,7 @@ fn main() {
         for i in 1..10 {
             recv.tell(worker::publish_serde_action(
                 None,
-                Some("build-inputs-x86_64-darwin".to_owned()),
+                Some("build-inputs-x86_64-linux".to_owned()),
                 &msg,
             ));
         }
