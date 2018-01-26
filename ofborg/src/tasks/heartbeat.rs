@@ -19,7 +19,7 @@ impl PlasticHeartbeatWorker {
         return worker::QueueMsg {
             exchange: None,
             routing_key: Some(self.queue_name.clone()),
-            mandatory: true,
+            mandatory: false,
             immediate: false,
             properties: None,
             content: serde_json::to_string(&plasticheartbeat::PlasticHeartbeat {})
