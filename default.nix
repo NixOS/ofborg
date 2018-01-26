@@ -7,7 +7,7 @@ in {
     builder = nix.shell;
     args = [
       "-c"
-      "i=0; while [ $i -lt 1000 ]; do i=$((i + 1)); echo $i; x=0; while [ $x -lt 5000 ]; do x=$((x + 1)); done; done; echo ${toString builtins.currentTime} > $out" ];
+      "i=0; while [ $i -lt 1000000 ]; do i=$((i + 1)); echo $i; x=0; done; echo ${toString builtins.currentTime} > $out" ];
   };
 
   failed = derivation {
