@@ -18,9 +18,9 @@ if (!isset($_SERVER['REQUEST_URI']) || empty($_SERVER['REQUEST_URI'])) {
     abrt("uri missing");
 }
 
-$reqd = $_SERVER['REQUEST_URI'];
-$req = realpath("$root/$reqd");
-$serve_root = "https://logs.nix.gsc.io/$reqd";
+$reqd = substr($_SERVER['REQUEST_URI'], strlen("/logs/"));
+$req = realpath("$root/logs/$reqd");
+$serve_root = "https://logs.nix.gsc.io/logfile/$reqd";
 
 if ($req === false) {
     abrt("absent");
