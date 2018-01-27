@@ -63,12 +63,14 @@ function reply_to_issue($body, $output, $success, $system) {
     echo $output;
     echo "\n\n";
 
+    $fullloglink = strtolower("https://logs.nix.gsc.io/?key=$owner/$repo.$num");
+
     $client->api('pull_request')->reviews()->create(
         $owner,
         $repo,
         $num,
         array(
-            'body' => "$passfail for system: $system\n\n```\n$output\n```",
+            'body' => "$passfail for system: $system\n\n```\n$output\n```\nFull log: $fullloglink\n",
             'event' => $event,
             'commit_id' => $sha,
         ));
