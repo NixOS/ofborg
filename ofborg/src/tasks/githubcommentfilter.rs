@@ -53,11 +53,25 @@ impl worker::SimpleWorker for GitHubCommentWorker {
             return vec![worker::Action::Ack];
         }
 
-        if !self.acl.can_build(
+        let build_destinations: Vec<(Option<String>,Option<String>)>;
+
+        if self.acl.can_build_unrestricted(
+            &job.comment.user.login,
+            &job.repository.full_name,
+        ) {
+            build_destinations = vec![
+                (Some("build-jobs".to_owned()), None)
+            ];
+        } else if self.acl.can_build_restricted(
             &job.comment.user.login,
             &job.repository.full_name,
         )
         {
+            build_destinations = vec![
+                (None, Some("build-inputs-x86_64-linux".to_owned())),
+                (None, Some("build-inputs-aarch64-linux".to_owned())),
+            ];
+        } else {
             println!(
                 "ACL prohibits {} from building {:?} for {}",
                 job.comment.user.login,
@@ -125,11 +139,13 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                             statusreport: Some((Some("build-results".to_owned()), None)),
                         };
 
-                        response.push(worker::publish_serde_action(
-                            Some("build-jobs".to_owned()),
-                            None,
-                            &msg,
-                        ));
+                        for (exch, rk) in build_destinations.clone() {
+                            response.push(worker::publish_serde_action(
+                                exch,
+                                rk,
+                                &msg,
+                            ));
+                        }
                     }
                     commentparser::Instruction::Eval => {
                         let msg = massrebuildjob::MassRebuildJob {

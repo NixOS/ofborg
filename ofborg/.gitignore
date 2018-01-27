@@ -2,3 +2,4 @@ target
 rust-amqp
 test-scratch
 *.bk
+rust-amq-proto
