@@ -55,7 +55,8 @@ pub struct LogStorage {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RunnerConfig {
     pub identity: String,
-    pub authorized_users: Option<Vec<String>>,
+    pub trusted_users: Option<Vec<String>>,
+    pub known_users: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -69,9 +70,14 @@ impl Config {
     }
 
     pub fn acl(&self) -> acl::ACL {
-        return acl::ACL::new(self.runner.authorized_users.clone().expect(
-            "fetching config's runner.authorized_users",
-        ));
+        return acl::ACL::new(
+            self.runner.trusted_users.clone().expect(
+                "fetching config's runner.trusted_users",
+            ),
+            self.runner.known_users.clone().expect(
+                "fetching config's runner.known_users",
+            ),
+        );
     }
 
     pub fn github(&self) -> Github {
