@@ -144,6 +144,17 @@ Run
 ```
 
 
+Note the config.public.json for the public pieces of how I run ofborg,
+which is merged with config.known-users.json and a third private
+config file of credentials. These files contain some special keys like
+
+ - known users
+ - authorized users
+ - log storage
+
+they are only used in the backend processing tasks, and there is no
+need for them on builders. However, to update the list in
+config.known-users.json, run `./scripts/update-known-users.sh`.
 
 ## old php stuff...
 

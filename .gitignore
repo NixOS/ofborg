@@ -4,6 +4,9 @@ vendor
 test.php
 config.json
 .bash_hist
-/config*
+config.private.json
+config.prod.json
+config.local.json
+config.*irc*.json
 result
 target

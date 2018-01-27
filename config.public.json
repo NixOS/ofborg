@@ -1,0 +1,50 @@
+{
+    "feedback": {
+        "full_logs": true
+    },
+    "log_storage": {
+        "path": "/var/lib/nginx/ofborg/logs/"
+    },
+    "runner": {
+        "trusted_users": [
+            "7c6f434c",
+            "adisbladis",
+            "andir",
+            "ankhers",
+            "aneeshusa",
+            "aszlig",
+            "copumpkin",
+            "disassembler",
+            "domenkozar",
+            "fpletz",
+            "fridh",
+            "garbas",
+            "globin",
+            "grahamc",
+            "jb55",
+            "joachifm",
+            "jtojnar",
+            "lheckemann",
+            "lnl7",
+            "mic92",
+            "nequissimus",
+            "orivej",
+            "peti",
+            "rbvermaa",
+            "shlevy",
+            "srhb",
+            "veprbl",
+            "vcunat",
+            "yegortimoshenko",
+            "zimbatm"
+        ]
+    },
+    "checkout": {
+        "root": "/var/lib/gc-of-borg/.nix-test-rs"
+    },
+    "nix": {
+        "system": "x86_64-linux",
+        "remote": "daemon",
+        "build_timeout_seconds": 3600
+    }
+}
