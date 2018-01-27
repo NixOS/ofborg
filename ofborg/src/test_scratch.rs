@@ -1,9 +1,9 @@
 use std::fs;
-use std::path::{Path,PathBuf};
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 pub struct TestScratch {
-    root: PathBuf
+    root: PathBuf,
 }
 
 impl TestScratch {
@@ -34,7 +34,6 @@ impl TestScratch {
     pub fn path(&self) -> PathBuf {
         self.root.clone()
     }
-
 }
 
 impl Drop for TestScratch {

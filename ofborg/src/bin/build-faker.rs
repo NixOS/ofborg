@@ -19,7 +19,7 @@ use ofborg::commentparser;
 use ofborg::message::buildjob;
 
 
-use ofborg::message::{Pr,Repo};
+use ofborg::message::{Pr, Repo};
 use ofborg::tasks;
 
 
@@ -64,7 +64,7 @@ fn main() {
         repo: repo_msg.clone(),
         pr: pr_msg.clone(),
         subset: Some(commentparser::Subset::Nixpkgs),
-        attrs: vec![ "success".to_owned() ],
+        attrs: vec!["success".to_owned()],
         logs: Some((Some("logs".to_owned()), Some(logbackrk.to_lowercase()))),
         statusreport: Some((None, Some("scratch".to_owned()))),
     };
