@@ -15,14 +15,14 @@ function fetch_users() {
         | jq 'map(.login | ascii_downcase)'
 }
 
-echo '[]' > "$accumulator"
+cp ./config.extra-known-users.json "$accumulator"
 
 page=0
 while true; do
     page=$((page + 1))
     fetch_users "$page" > "$scratch"
 
-    jq -s '.[0] + .[1]' "$accumulator" "$scratch" > "$result"
+    jq -s '.[0] + .[1] | sort' "$accumulator" "$scratch" > "$result"
     mv "$result" "$accumulator"
 
     if [ $(jq -r 'length' "$scratch") -eq 0 ]; then
