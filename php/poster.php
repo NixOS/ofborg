@@ -71,10 +71,10 @@ function reply_to_issue($body, $output, $success, $system) {
         $num,
         array(
             'body' =>
-              "<details><summary>$passfail for system: $system</summary><p>\n\n".
-              "[Full log]($fullloglink)\n".
-              "```\n$output\n```\n".
-              "</p></details>",
+            "$passfail on $system [(full log)]($fullloglink)\n\n".
+            "<details><summary>Partial log (click to expand)</summary><p>\n\n".
+            "```\n$output\n```\n".
+            "</p></details>\n\n",
             'event' => $event,
             'commit_id' => $sha,
         ));
