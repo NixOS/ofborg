@@ -86,7 +86,7 @@ function outrunner($msg) {
 }
 
 
-$consumerTag = 'consumer' . getmypid();
+$consumerTag = 'poster-' . getmypid();
 $channel->basic_consume($queueName, $consumerTag, false, false, false, false, 'outrunner');
 while(count($channel->callbacks)) {
     $channel->wait();
