@@ -1,5 +1,8 @@
 <?php
 
+ini_set("display_errors", 0);
+error_reporting(-1);
+
 ob_start();
 
 require_once __DIR__ . '/../config.php';
@@ -11,6 +14,25 @@ class InvalidSignatureException extends DumpableException {}
 class InvalidEventTypeException extends DumpableException {}
 class ValidationFailureException extends DumpableException {}
 class ExecutionFailureException extends DumpableException {}
+
+function retry_rabbitmq_conn() {
+    $maximum_time = 25;
+    $delay = 1;
+    $timeout = 0.5;
+
+    for ($i = 0.0; $i < $maximum_time; $i += ($timeout + $delay)) {
+        try {
+            return rabbitmq_conn($timeout);
+        } catch (ErrorException $e) {
+            trigger_error(print_r($e, true), E_USER_WARNING);
+        }
+        sleep($delay);
+    }
+    trigger_error("Failed to connect to RabbitMQ", E_USER_WARNING);
+    echo "rabbit failure";
+    exit(1);
+}
+
 
 function payload() {
     if (!isset($_SERVER)) {
@@ -117,7 +139,7 @@ try {
     $name = strtolower($input->repository->full_name);
     $eventtype = event_type();
 
-    $connection = rabbitmq_conn();
+    $connection = retry_rabbitmq_conn();
     $channel = $connection->channel();
 
     $dec = $channel->exchange_declare('github-events', 'topic', false, true, false);

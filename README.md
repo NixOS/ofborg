@@ -158,6 +158,9 @@ config.known-users.json, run `./scripts/update-known-users.sh`.
 
 ## old php stuff...
 
+Only Graham needs to do this, since I run the only remaining PHP
+components.
+
 ```php
 <?php
 
@@ -165,26 +168,25 @@ require_once __DIR__ . '/vendor/autoload.php';
 use PhpAmqpLib\Connection\AMQPSSLConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 
-define("NIX_SYSTEM", "x86_64-linux");
-define("WORKING_DIR", "/home/grahamc/.nix-test");
-
-function rabbitmq_conn() {
+function rabbitmq_conn($timeout = 3) {
+    $host = 'events.nix.gsc.io';
     $connection = new AMQPSSLConnection(
-        'events.nix.gsc.io', 5671,
-        eventsuser, eventspasswordd, '/', array(
+        $host, 5671,
+        'eventsuser, eventspassword, '/',
+        array(
             'verify_peer' => true,
             'verify_peer_name' => true,
-            'peer_name' => 'events.nix.gsc.io',
+            'peer_name' => $host,
             'verify_depth' => 10,
-            'ca_file' => '/etc/ssl/certs/ca-certificates.crt'
+            'ca_file' => '/etc/ssl/certs/ca-certificates.crt',
+        ), array(
+            'connection_timeout' => $timeout,
         )
     );
 
     return $connection;
 }
 
-/*
-# Only leader machines (ie: graham's) need this:
 function gh_client() {
     $client = new \Github\Client();
     $client->authenticate('githubusername',
@@ -193,5 +195,5 @@ function gh_client() {
 
     return $client;
 }
-*/
+
 ```
