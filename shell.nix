@@ -31,6 +31,7 @@ let
       carnix
       openssl.dev
       pkgconfig
+      git
     ] ++ (lib.optional stdenv.isDarwin pkgs.darwin.Security);
 
     HISTFILE = "${toString ./.}/.bash_hist";
