@@ -20,16 +20,8 @@ fn main() {
 
     let mut session = Session::open_url(&cfg.rabbitmq.as_uri()).unwrap();
     println!("Connected to rabbitmq");
-    {
-        println!("About to open channel #1");
-        let hbchan = session.open_channel(1).unwrap();
 
-        println!("Opened channel #1");
-
-        tasks::heartbeat::start_on_channel(hbchan, cfg.whoami());
-    }
-
-    let mut channel = session.open_channel(2).unwrap();
+    let mut channel = session.open_channel(1).unwrap();
 
     let queue_name = channel
         .queue_declare(

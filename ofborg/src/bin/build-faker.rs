@@ -18,10 +18,7 @@ use ofborg::notifyworker::NotificationReceiver;
 use ofborg::commentparser;
 use ofborg::message::buildjob;
 
-
 use ofborg::message::{Pr, Repo};
-use ofborg::tasks;
-
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
@@ -32,18 +29,9 @@ fn main() {
 
     let mut session = Session::open_url(&cfg.rabbitmq.as_uri()).unwrap();
     println!("Connected to rabbitmq");
-    {
-        println!("About to open channel #1");
-        let hbchan = session.open_channel(1).unwrap();
-
-        println!("Opened channel #1");
-
-        tasks::heartbeat::start_on_channel(hbchan, cfg.whoami());
-    }
 
 
-    let mut channel = session.open_channel(2).unwrap();
-
+    let mut channel = session.open_channel(1).unwrap();
 
     let repo_msg = Repo {
         clone_url: "https://github.com/nixos/ofborg.git".to_owned(),
@@ -72,7 +60,7 @@ fn main() {
     {
         let mut recv = notifyworker::ChannelNotificationReceiver::new(&mut channel, 0);
 
-        for i in 1..2 {
+        for _i in 1..2 {
             recv.tell(worker::publish_serde_action(
                 None,
                 Some("build-inputs-x86_64-darwin".to_owned()),
