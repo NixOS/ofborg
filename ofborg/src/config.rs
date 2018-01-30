@@ -27,7 +27,7 @@ pub struct FeedbackConfig {
     pub full_logs: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RabbitMQConfig {
     pub ssl: bool,
     pub host: String,
@@ -106,7 +106,6 @@ impl Config {
         );
     }
 }
-
 
 impl RabbitMQConfig {
     pub fn as_uri(&self) -> String {
