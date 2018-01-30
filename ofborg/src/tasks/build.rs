@@ -191,6 +191,20 @@ impl<'a, 'b> JobActions<'a, 'b> {
     }
 }
 
+fn strip_x8664linux_arch_suffix(attr: &str) -> &str {
+    if !attr.starts_with("tests.") {
+        return attr;
+    }
+
+    if !attr.ends_with(".x86_64-linux") {
+        return attr;
+    }
+
+    let trim_at = attr.len() - 13;
+
+    return &attr[0..trim_at];
+}
+
 impl notifyworker::SimpleNotifyWorker for BuildWorker {
     type J = buildjob::BuildJob;
 
@@ -236,11 +250,18 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             _ => "./default.nix",
         };
 
-        // Note: Don't change the system limiter until the system isn't
-        // hardcoded to x86_64-linux in the githubcommentfilter
-        if buildfile == "./nixos/release.nix" && self.system != "x86_64-linux" {
-            // NixOS jobs get routed to all builders, even though darwin
-            // cannot build them.
+        let attrs = match job.subset {
+            Some(commentparser::Subset::NixOS) => {
+                job.attrs
+                    .clone()
+                    .into_iter()
+                    .map(|attr| strip_x8664linux_arch_suffix(&attr).to_owned())
+                    .collect()
+            }
+            _ => job.attrs.clone(),
+        };
+
+        if buildfile == "./nixos/release.nix" && self.system == "x86_64-darwin" {
             actions.nasty_hack_linux_only();
             return;
         }
@@ -266,7 +287,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         let cmd = self.nix.safely_build_attrs_cmd(
             refpath.as_ref(),
             buildfile,
-            job.attrs.clone(),
+            attrs,
         );
 
         actions.log_started();
@@ -426,5 +447,22 @@ mod tests {
         assert_contains_job(&mut actions, "output\":\"4");
         assert_contains_job(&mut actions, "success\":true");
         assert_eq!(actions.next(), Some(worker::Action::Ack));
+    }
+
+    #[test]
+    fn test_strip_x8664linux_arch_suffix() {
+        assert_eq!(strip_x8664linux_arch_suffix(""), "");
+        assert_eq!(
+            strip_x8664linux_arch_suffix("tests.foo.bar"),
+            "tests.foo.bar"
+        );
+        assert_eq!(
+            strip_x8664linux_arch_suffix("foo.bar.x86_64-linux"),
+            "foo.bar.x86_64-linux"
+        );
+        assert_eq!(
+            strip_x8664linux_arch_suffix("tests.foo.bar.x86_64-linux"),
+            "tests.foo.bar"
+        );
     }
 }
