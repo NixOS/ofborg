@@ -119,6 +119,13 @@ impl Nix {
             ],
         );
         command.args(&["--argstr", "system", &self.system]);
+        command.args(
+            &[
+                "--arg",
+                "supportedSystems",
+                &format!("[\"{}\"]", &self.system),
+            ],
+        );
         command.args(args);
 
         return command;

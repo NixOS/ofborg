@@ -30,7 +30,7 @@ dependencies = [
 [[package]]
 name = "amqp"
 version = "0.1.0"
-source = "git+https://github.com/grahamc/rust-amqp.git#f35e2c17de69038c4593621346b4ec6d64cfeaf4"
+source = "git+https://github.com/grahamc/rust-amqp.git#b3eae6b0b8458d32134581c53a918e6e52c7c329"
 dependencies = [
  "amq-proto 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
