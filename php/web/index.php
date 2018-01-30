@@ -129,7 +129,7 @@ try {
     }
 
     if (!isset($input->repository)) {
-        throw new\ExecutionFailureException('Dataset does not have a repository');
+        throw new ExecutionFailureException('Dataset does not have a repository');
     }
 
     if (!isset($input->repository->full_name)) {
