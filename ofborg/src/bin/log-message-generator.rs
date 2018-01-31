@@ -6,7 +6,6 @@ use std::env;
 use std::time::Duration;
 use std::thread;
 
-use amqp::Session;
 use ofborg::message::{Pr, Repo};
 
 use ofborg::config;
@@ -14,13 +13,12 @@ use ofborg::notifyworker;
 use ofborg::tasks::build;
 use ofborg::message::buildjob;
 use ofborg::easyamqp;
-use ofborg::easyamqp::TypedWrappers;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
     ofborg::setup_log();
 
-    let mut session = Session::open_url(&cfg.rabbitmq.as_uri()).unwrap();
+    let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
     println!("Connected to rabbitmq");
 
     println!("About to open channel #1");
