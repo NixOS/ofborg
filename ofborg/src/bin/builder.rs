@@ -57,8 +57,8 @@ fn main() {
                 consumer_tag: format!("{}-builder", cfg.whoami()),
                 no_local: false,
                 no_ack: false,
+                no_wait: false,
                 exclusive: false,
-                nowait: false,
                 arguments: None
             },
         )
