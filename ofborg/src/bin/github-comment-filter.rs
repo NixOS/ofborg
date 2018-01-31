@@ -16,6 +16,8 @@ use amqp::Table;
 use ofborg::config;
 use ofborg::worker;
 use ofborg::tasks;
+use ofborg::easyamqp;
+use ofborg::easyamqp::TypedWrappers;
 
 
 fn main() {
@@ -25,7 +27,7 @@ fn main() {
     println!("Hello, world!");
 
 
-    let mut session = Session::open_url(&cfg.rabbitmq.as_uri()).unwrap();
+    let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
     println!("Connected to rabbitmq");
 
     let mut channel = session.open_channel(1).unwrap();

@@ -13,6 +13,8 @@ use ofborg::config;
 use ofborg::notifyworker;
 use ofborg::tasks::build;
 use ofborg::message::buildjob;
+use ofborg::easyamqp;
+use ofborg::easyamqp::TypedWrappers;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());

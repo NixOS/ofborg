@@ -13,6 +13,8 @@ use ofborg::worker;
 use amqp::Session;
 use amqp::Table;
 use amqp::Basic;
+use ofborg::easyamqp;
+use ofborg::easyamqp::TypedWrappers;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
