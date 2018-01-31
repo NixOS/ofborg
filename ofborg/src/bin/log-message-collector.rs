@@ -47,7 +47,7 @@ fn main() {
         .unwrap();
 
 
-        channel
+    channel
         .consume(
             worker::new(tasks::log_message_collector::LogMessageCollector::new(
                 PathBuf::from(cfg.log_storage.clone().unwrap().path),
@@ -60,7 +60,7 @@ fn main() {
                 no_ack: false,
                 no_wait: false,
                 exclusive: false,
-                arguments: None
+                arguments: None,
             },
         )
         .unwrap();

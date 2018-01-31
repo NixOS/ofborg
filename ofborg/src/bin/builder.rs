@@ -26,9 +26,7 @@ fn main() {
     let nix = cfg.nix();
 
     let full_logs: bool = match &cfg.feedback {
-        &Some(ref feedback) => {
-            feedback.full_logs
-        }
+        &Some(ref feedback) => feedback.full_logs,
         &None => {
             warn!("Please define feedback.full_logs in your configuration to true or false!");
             warn!("feedback.full_logs when true will cause the full build log to be sent back");
@@ -59,7 +57,7 @@ fn main() {
                 no_ack: false,
                 no_wait: false,
                 exclusive: false,
-                arguments: None
+                arguments: None,
             },
         )
         .unwrap();

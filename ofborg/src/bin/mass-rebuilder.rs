@@ -51,7 +51,7 @@ fn main() {
                 no_ack: false,
                 no_wait: false,
                 exclusive: false,
-                arguments: None
+                arguments: None,
             },
         )
         .unwrap();

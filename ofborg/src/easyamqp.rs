@@ -153,8 +153,7 @@ pub struct ExchangeConfig {
     arguments: Option<amqp::Table>,
 }
 
-pub fn session_from_config(config: &RabbitMQConfig)
-                           -> Result<amqp::Session, amqp::AMQPError> {
+pub fn session_from_config(config: &RabbitMQConfig) -> Result<amqp::Session, amqp::AMQPError> {
     let scheme = if config.ssl {
         amqp::AMQPScheme::AMQPS
     } else {
@@ -165,36 +164,36 @@ pub fn session_from_config(config: &RabbitMQConfig)
     //  properties.insert("identity".to_owned(), amqp::TableEntry::LongString(identity.to_owned()));
     properties.insert(
         "ofborg_version".to_owned(),
-        amqp::TableEntry::LongString(ofborg::VERSION.to_owned())
+        amqp::TableEntry::LongString(ofborg::VERSION.to_owned()),
     );
 
-    amqp::Session::new(
-        amqp::Options{
-            host: config.host.clone(),
-            login: config.username.clone(),
-            password: config.password.clone(),
-            scheme: scheme,
-            properties: properties,
-            .. amqp::Options::default()
-        }
-    )
+    amqp::Session::new(amqp::Options {
+        host: config.host.clone(),
+        login: config.username.clone(),
+        password: config.password.clone(),
+        scheme: scheme,
+        properties: properties,
+        ..amqp::Options::default()
+    })
 }
 
 pub trait TypedWrappers {
-    fn consume<T>(&mut self, callback: T, config: ConsumeConfig)
-                  -> Result<String, amqp::AMQPError>
-        where T: amqp::Consumer + 'static;
+    fn consume<T>(&mut self, callback: T, config: ConsumeConfig) -> Result<String, amqp::AMQPError>
+    where
+        T: amqp::Consumer + 'static;
 
-    fn declare_exchange<T>(&mut self, config: ExchangeConfig)
-                  -> Result<amqp::protocol::exchange::DeclareOk, amqp::AMQPError>
-        where T: amqp::Consumer + 'static;
-
+    fn declare_exchange<T>(
+        &mut self,
+        config: ExchangeConfig,
+    ) -> Result<amqp::protocol::exchange::DeclareOk, amqp::AMQPError>
+    where
+        T: amqp::Consumer + 'static;
 }
 
 impl TypedWrappers for amqp::Channel {
-    fn consume<T>(&mut self, callback: T, config: ConsumeConfig)
-                  -> Result<String, amqp::AMQPError>
-        where T: amqp::Consumer + 'static
+    fn consume<T>(&mut self, callback: T, config: ConsumeConfig) -> Result<String, amqp::AMQPError>
+    where
+        T: amqp::Consumer + 'static,
     {
         self.basic_consume(
             callback,
@@ -208,9 +207,12 @@ impl TypedWrappers for amqp::Channel {
         )
     }
 
-    fn declare_exchange<T>(&mut self, config: ExchangeConfig)
-                  -> Result<amqp::protocol::exchange::DeclareOk, amqp::AMQPError>
-        where T: amqp::Consumer + 'static
+    fn declare_exchange<T>(
+        &mut self,
+        config: ExchangeConfig,
+    ) -> Result<amqp::protocol::exchange::DeclareOk, amqp::AMQPError>
+    where
+        T: amqp::Consumer + 'static,
     {
         self.exchange_declare(
             config.exchange,
@@ -220,8 +222,7 @@ impl TypedWrappers for amqp::Channel {
             config.auto_delete,
             config.internal,
             config.nowait,
-            config.arguments.unwrap_or(amqp::Table::new())
+            config.arguments.unwrap_or(amqp::Table::new()),
         )
     }
-
 }
