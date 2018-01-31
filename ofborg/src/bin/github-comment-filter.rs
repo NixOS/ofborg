@@ -10,12 +10,12 @@ extern crate hyper_native_tls;
 use std::env;
 
 use amqp::Basic;
-use amqp::Session;
-use amqp::Table;
 
 use ofborg::config;
 use ofborg::worker;
 use ofborg::tasks;
+use ofborg::easyamqp;
+use ofborg::easyamqp::TypedWrappers;
 
 
 fn main() {
@@ -25,25 +25,27 @@ fn main() {
     println!("Hello, world!");
 
 
-    let mut session = Session::open_url(&cfg.rabbitmq.as_uri()).unwrap();
+    let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
     println!("Connected to rabbitmq");
 
     let mut channel = session.open_channel(1).unwrap();
 
     channel.basic_prefetch(1).unwrap();
     channel
-        .basic_consume(
+        .consume(
             worker::new(tasks::githubcommentfilter::GitHubCommentWorker::new(
                 cfg.acl(),
                 cfg.github(),
             )),
-            "build-inputs",
-            format!("{}-github-comment-filter", cfg.whoami()).as_ref(),
-            false,
-            false,
-            false,
-            false,
-            Table::new(),
+            easyamqp::ConsumeConfig {
+                queue: "build-inputs".to_owned(),
+                consumer_tag: format!("{}-github-comment-filter", cfg.whoami()),
+                no_local: false,
+                no_ack: false,
+                no_wait: false,
+                exclusive: false,
+                arguments: None,
+            },
         )
         .unwrap();
 

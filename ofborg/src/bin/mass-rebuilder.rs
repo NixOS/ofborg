@@ -10,9 +10,9 @@ use ofborg::checkout;
 
 use ofborg::stats;
 use ofborg::worker;
-use amqp::Session;
-use amqp::Table;
 use amqp::Basic;
+use ofborg::easyamqp;
+use ofborg::easyamqp::TypedWrappers;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
@@ -22,7 +22,7 @@ fn main() {
     println!("Hello, world!");
 
 
-    let mut session = Session::open_url(&cfg.rabbitmq.as_uri()).unwrap();
+    let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
     println!("Connected to rabbitmq");
 
     let mut channel = session.open_channel(1).unwrap();
@@ -42,15 +42,17 @@ fn main() {
 
     channel.basic_prefetch(1).unwrap();
     channel
-        .basic_consume(
+        .consume(
             worker::new(mrw),
-            "mass-rebuild-check-jobs",
-            format!("{}-mass-rebuild-checker", cfg.whoami()).as_ref(),
-            false,
-            false,
-            false,
-            false,
-            Table::new(),
+            easyamqp::ConsumeConfig {
+                queue: "mass-rebuild-check-jobs".to_owned(),
+                consumer_tag: format!("{}-mass-rebuild-checker", cfg.whoami()),
+                no_local: false,
+                no_ack: false,
+                no_wait: false,
+                exclusive: false,
+                arguments: None,
+            },
         )
         .unwrap();
 

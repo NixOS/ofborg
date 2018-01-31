@@ -49,8 +49,8 @@ let kernel = buildPlatform.parsed.kernel.name;
       authors = [ "Andrii Dmytrenko <andrey@reevoo.com>" ];
       src = fetchgit {
          url = "https://github.com/grahamc/rust-amqp.git";
-         rev = "b3eae6b0b8458d32134581c53a918e6e52c7c329";
-         sha256 = "01bma6ig0c7gvrj9b4jj3h977vg1mij9a9hzvvp6an06d74zfk4w";
+         rev = "f9aec2f40aef69a459f26003ce47048f8e2a08d1";
+         sha256 = "09k6fl7l0rcwilnckdfv3smiv1ilrwi1jxmrrkjwbrj64lky3jdy";
       };
       inherit dependencies buildDependencies features;
     };

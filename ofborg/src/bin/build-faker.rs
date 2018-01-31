@@ -9,15 +9,13 @@ extern crate hyper_native_tls;
 
 use std::env;
 
-use amqp::Session;
-
 use ofborg::config;
 use ofborg::worker;
 use ofborg::notifyworker;
 use ofborg::notifyworker::NotificationReceiver;
 use ofborg::commentparser;
 use ofborg::message::buildjob;
-
+use ofborg::easyamqp;
 use ofborg::message::{Pr, Repo};
 
 fn main() {
@@ -27,7 +25,7 @@ fn main() {
     println!("Hello, world!");
 
 
-    let mut session = Session::open_url(&cfg.rabbitmq.as_uri()).unwrap();
+    let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
     println!("Connected to rabbitmq");
 
 

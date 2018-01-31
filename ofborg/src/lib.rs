@@ -40,6 +40,7 @@ pub mod asynccmd;
 pub mod notifyworker;
 pub mod writetoline;
 pub mod test_scratch;
+pub mod easyamqp;
 
 pub mod ofborg {
     pub use asynccmd;
@@ -62,8 +63,9 @@ pub mod ofborg {
     pub use tagger;
     pub use writetoline;
     pub use test_scratch;
+    pub use easyamqp;
 
-
+    pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 }
 
 pub fn setup_log() {

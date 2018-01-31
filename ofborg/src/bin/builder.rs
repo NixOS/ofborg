@@ -9,13 +9,12 @@ use std::env;
 
 use std::path::Path;
 use amqp::Basic;
-use amqp::Session;
-use amqp::Table;
-
 use ofborg::config;
 use ofborg::checkout;
 use ofborg::notifyworker;
 use ofborg::tasks;
+use ofborg::easyamqp;
+use ofborg::easyamqp::TypedWrappers;
 
 
 fn main() {
@@ -23,36 +22,27 @@ fn main() {
 
     ofborg::setup_log();
 
-    println!("Hello, world!");
-
-
-    let mut session = Session::open_url(&cfg.rabbitmq.as_uri()).unwrap();
-    println!("Connected to rabbitmq");
-
-    let mut channel = session.open_channel(1).unwrap();
-
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
     let nix = cfg.nix();
 
-
-
-    let full_logs: bool;
-    match &cfg.feedback {
-        &Some(ref feedback) => {
-            full_logs = feedback.full_logs;
-        }
+    let full_logs: bool = match &cfg.feedback {
+        &Some(ref feedback) => feedback.full_logs,
         &None => {
             warn!("Please define feedback.full_logs in your configuration to true or false!");
             warn!("feedback.full_logs when true will cause the full build log to be sent back");
             warn!("to the server, and be viewable by everyone.");
             warn!("I strongly encourage everybody turn this on!");
-            full_logs = false;
+            false
         }
-    }
+    };
 
+
+    let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
+    let mut channel = session.open_channel(1).unwrap();
     channel.basic_prefetch(1).unwrap();
+
     channel
-        .basic_consume(
+        .consume(
             notifyworker::new(tasks::build::BuildWorker::new(
                 cloner,
                 nix,
@@ -60,20 +50,19 @@ fn main() {
                 cfg.runner.identity.clone(),
                 full_logs,
             )),
-            format!("build-inputs-{}", cfg.nix.system.clone()).as_ref(),
-            format!("{}-builder", cfg.whoami()).as_ref(),
-            false,
-            false,
-            false,
-            false,
-            Table::new(),
+            easyamqp::ConsumeConfig {
+                queue: format!("build-inputs-{}", cfg.nix.system.clone()),
+                consumer_tag: format!("{}-builder", cfg.whoami()),
+                no_local: false,
+                no_ack: false,
+                no_wait: false,
+                exclusive: false,
+                arguments: None,
+            },
         )
         .unwrap();
 
     channel.start_consuming();
-
-    println!("Finished consuming?");
-
     channel.close(200, "Bye").unwrap();
     println!("Closed the channel");
     session.close(200, "Good Bye");
