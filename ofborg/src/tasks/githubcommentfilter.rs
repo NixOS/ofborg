@@ -53,15 +53,14 @@ impl worker::SimpleWorker for GitHubCommentWorker {
             return vec![worker::Action::Ack];
         }
 
-        let build_destinations: Vec<(Option<String>,Option<String>)>;
+        let build_destinations: Vec<(Option<String>, Option<String>)>;
 
         if self.acl.can_build_unrestricted(
             &job.comment.user.login,
             &job.repository.full_name,
-        ) {
-            build_destinations = vec![
-                (Some("build-jobs".to_owned()), None)
-            ];
+        )
+        {
+            build_destinations = vec![(Some("build-jobs".to_owned()), None)];
         } else if self.acl.can_build_restricted(
             &job.comment.user.login,
             &job.repository.full_name,
@@ -140,11 +139,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                         };
 
                         for (exch, rk) in build_destinations.clone() {
-                            response.push(worker::publish_serde_action(
-                                exch,
-                                rk,
-                                &msg,
-                            ));
+                            response.push(worker::publish_serde_action(exch, rk, &msg));
                         }
                     }
                     commentparser::Instruction::Eval => {
