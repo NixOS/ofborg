@@ -11,6 +11,7 @@ pub struct Nix {
     system: String,
     remote: String,
     build_timeout: u16,
+    limit_supported_systems: bool,
 }
 
 impl Nix {
@@ -19,6 +20,7 @@ impl Nix {
             system: system,
             remote: remote,
             build_timeout: build_timeout,
+            limit_supported_systems: true,
         };
     }
 
@@ -27,6 +29,25 @@ impl Nix {
             system: system,
             remote: self.remote.clone(),
             build_timeout: self.build_timeout,
+            limit_supported_systems: self.limit_supported_systems,
+        };
+    }
+
+    pub fn with_limited_supported_systems(&self) -> Nix {
+        return Nix {
+            system: self.system.clone(),
+            remote: self.remote.clone(),
+            build_timeout: self.build_timeout,
+            limit_supported_systems: true,
+        };
+    }
+
+    pub fn without_limited_supported_systems(&self) -> Nix {
+        return Nix {
+            system: self.system.clone(),
+            remote: self.remote.clone(),
+            build_timeout: self.build_timeout,
+            limit_supported_systems: false,
         };
     }
 
@@ -119,13 +140,17 @@ impl Nix {
             ],
         );
         command.args(&["--argstr", "system", &self.system]);
-        command.args(
-            &[
-                "--arg",
-                "supportedSystems",
-                &format!("[\"{}\"]", &self.system),
-            ],
-        );
+
+        if self.limit_supported_systems {
+            command.args(
+                &[
+                    "--arg",
+                    "supportedSystems",
+                    &format!("[\"{}\"]", &self.system),
+                ],
+            );
+        }
+
         command.args(args);
 
         return command;

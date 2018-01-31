@@ -39,7 +39,7 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
     ) -> MassRebuildWorker<E> {
         return MassRebuildWorker {
             cloner: cloner,
-            nix: nix,
+            nix: nix.without_limited_supported_systems(),
             github: github,
             identity: identity,
             events: events,
