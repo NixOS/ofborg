@@ -111,7 +111,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             pr: self.job.pr.clone(),
             system: self.system.clone(),
             output: vec![String::from("Merge failed")],
-
+            attempt_id: Some(self.attempt_id.clone()),
             success: false,
         };
 
@@ -171,6 +171,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             pr: self.job.pr.clone(),
             system: self.system.clone(),
             output: lines,
+            attempt_id: Some(self.attempt_id.clone()),
             success: success,
         };
 
