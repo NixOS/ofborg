@@ -161,20 +161,29 @@ pub fn session_from_config(config: &RabbitMQConfig) -> Result<amqp::Session, amq
     };
 
     let mut properties = amqp::Table::new();
-    //  properties.insert("identity".to_owned(), amqp::TableEntry::LongString(identity.to_owned()));
     properties.insert(
         "ofborg_version".to_owned(),
         amqp::TableEntry::LongString(ofborg::VERSION.to_owned()),
     );
 
-    amqp::Session::new(amqp::Options {
+    let options = amqp::Options {
         host: config.host.clone(),
+        port: match scheme {
+            amqp::AMQPScheme::AMQPS => 5671,
+            amqp::AMQPScheme::AMQP => 5672,
+        },
+        vhost: "/".to_owned(),
         login: config.username.clone(),
         password: config.password.clone(),
         scheme: scheme,
         properties: properties,
         ..amqp::Options::default()
-    })
+    };
+
+    let session = try!(amqp::Session::new(options));
+
+    info!("Connected to {}", &config.host);
+    return Ok(session);
 }
 
 pub trait TypedWrappers {
