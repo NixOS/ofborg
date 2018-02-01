@@ -67,7 +67,7 @@ fn main() {
                 cfg.github(),
             )),
             easyamqp::ConsumeConfig {
-                queue: "build-inputs".to_owned(),
+                queue: "build-results".to_owned(),
                 consumer_tag: format!("{}-github-comment-poster", cfg.whoami()),
                 no_local: false,
                 no_ack: false,

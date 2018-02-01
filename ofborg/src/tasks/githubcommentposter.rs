@@ -31,11 +31,11 @@ impl worker::SimpleWorker for GitHubCommentPoster {
         return match serde_json::from_slice(body) {
             Ok(e) => Ok(e),
             Err(e) => {
-                println!(
-                    "Failed to deserialize BuildResult: {:?}",
-                    String::from_utf8(body.clone())
-                );
-                panic!("{:?}", e);
+                Err(format!(
+                    "Failed to deserialize BuildResult: {:?}, err: {:}",
+                    String::from_utf8_lossy(&body.clone()),
+                    e
+                ))
             }
         };
     }
