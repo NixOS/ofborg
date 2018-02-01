@@ -149,7 +149,7 @@ impl worker::SimpleWorker for LogMessageCollector {
     }
 
     fn consumer(&mut self, job: &LogMessage) -> worker::Actions {
-        let mut handle = self.handle_for(&job.from).unwrap();
+        let handle = self.handle_for(&job.from).unwrap();
 
         handle.write_to_line((job.message.line_number - 1) as usize, &job.message.output);
 

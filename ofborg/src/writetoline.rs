@@ -39,8 +39,6 @@ impl LineWriter {
     }
 
     pub fn write_to_line(&mut self, line: usize, data: &str) {
-        let buffer_len = self.buffer.len();
-
         let original_len = self.buffer.len();
         while self.buffer.len() <= line {
             self.buffer.push("".to_owned());
@@ -58,7 +56,7 @@ impl LineWriter {
             self.file
                 .write_all(self.buffer.join("\n").as_bytes())
                 .unwrap();
-            self.file.write("\n".as_bytes());
+            self.file.write("\n".as_bytes()).unwrap();
         } else {
             // println!("taking the append option");
             // println!("Writing {:?} to line {}", data, line);
@@ -74,13 +72,13 @@ impl LineWriter {
             // end
             // println!("selected buffer: {:?}", to_write);
             self.file.write(to_write.as_bytes()).unwrap();
-            self.file.write("\n".as_bytes());
+            self.file.write("\n".as_bytes()).unwrap();
         }
 
         self.last_line = line;
     }
 
-    pub fn inner(mut self) -> File {
+    pub fn inner(self) -> File {
         self.file
     }
 }
@@ -336,7 +334,7 @@ mod tests {
     #[test]
     fn bench_lots_of_ordered_lines() {
         let p = TestScratch::new_file("bench-ordered-lines");
-        let mut f = testfile(&p.path());
+        let f = testfile(&p.path());
         let mut writer = LineWriter::new(f);
 
         let timer = Instant::now();
@@ -351,7 +349,7 @@ mod tests {
     #[test]
     fn bench_lots_of_reversed_lines() {
         let p = TestScratch::new_file("bench-reversed-lines");
-        let mut f = testfile(&p.path());
+        let f = testfile(&p.path());
         let mut writer = LineWriter::new(f);
 
         let timer = Instant::now();
