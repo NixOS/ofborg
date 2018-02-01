@@ -7,7 +7,7 @@ use std::fs;
 use std::fs::{OpenOptions, File};
 use std::path::{Component, PathBuf};
 
-use ofborg::writetoline;
+use ofborg::writetoline::LineWriter;
 use ofborg::message::buildlogmsg::BuildLogMsg;
 use ofborg::worker;
 use amqp::protocol::basic::{Deliver, BasicProperties};
@@ -19,7 +19,7 @@ pub struct LogFrom {
 }
 
 pub struct LogMessageCollector {
-    handles: LruCache<LogFrom, File>,
+    handles: LruCache<LogFrom, LineWriter>,
     log_root: PathBuf,
 }
 
@@ -58,15 +58,16 @@ impl LogMessageCollector {
         };
     }
 
-    pub fn handle_for(&mut self, from: &LogFrom) -> Result<&mut File, String> {
+    pub fn handle_for(&mut self, from: &LogFrom) -> Result<&mut LineWriter, String> {
         if self.handles.contains_key(&from) {
             return Ok(self.handles.get_mut(&from).expect(
                 "handles just contained the key",
             ));
         } else {
             let logpath = self.path_for(&from)?;
-            let handle = self.open_log(logpath)?;
-            self.handles.insert(from.clone(), handle);
+            let fp = self.open_log(logpath)?;
+            let writer = LineWriter::new(fp);
+            self.handles.insert(from.clone(), writer);
             if let Some(handle) = self.handles.get_mut(&from) {
                 return Ok(handle);
             } else {
@@ -150,11 +151,7 @@ impl worker::SimpleWorker for LogMessageCollector {
     fn consumer(&mut self, job: &LogMessage) -> worker::Actions {
         let mut handle = self.handle_for(&job.from).unwrap();
 
-        writetoline::write_to_line(
-            &mut handle,
-            (job.message.line_number - 1) as usize,
-            &job.message.output,
-        );
+        handle.write_to_line((job.message.line_number - 1) as usize, &job.message.output);
 
         return vec![worker::Action::Ack];
     }
