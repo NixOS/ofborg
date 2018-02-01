@@ -84,7 +84,6 @@ pub struct BindQueueConfig {
     /// queue if K = R.
     pub routing_key: Option<String>,
 
-
     /// If set, the server will not respond to the method. The client
     /// should not wait for a reply method. If the server could not
     /// complete the method it will raise a channel or connection
@@ -357,8 +356,7 @@ impl TypedWrappers for amqp::Channel {
     fn declare_exchange(
         &mut self,
         config: ExchangeConfig,
-    ) -> Result<amqp::protocol::exchange::DeclareOk, amqp::AMQPError>
-    {
+    ) -> Result<amqp::protocol::exchange::DeclareOk, amqp::AMQPError> {
         self.exchange_declare(
             config.exchange,
             config.exchange_type.into(),
@@ -375,8 +373,7 @@ impl TypedWrappers for amqp::Channel {
     fn declare_queue(
         &mut self,
         config: QueueConfig,
-    ) -> Result<amqp::protocol::queue::DeclareOk, amqp::AMQPError>
-    {
+    ) -> Result<amqp::protocol::queue::DeclareOk, amqp::AMQPError> {
         self.queue_declare(
             config.queue,
             config.passive,
@@ -391,8 +388,7 @@ impl TypedWrappers for amqp::Channel {
     fn bind_queue(
         &mut self,
         config: BindQueueConfig,
-    ) -> Result<amqp::protocol::queue::BindOk, amqp::AMQPError>
-    {
+    ) -> Result<amqp::protocol::queue::BindOk, amqp::AMQPError> {
         self.queue_bind(
             config.queue,
             config.exchange,
