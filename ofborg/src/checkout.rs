@@ -147,6 +147,26 @@ impl CachedProjectCo {
             return Err(Error::new(ErrorKind::Other, "Failed to merge"));
         }
     }
+
+    pub fn commit_messages_from_head(&self, commit: &str) -> Result<String, Error> {
+        let mut lock = self.lock()?;
+
+        let result = Command::new("git")
+            .arg("log")
+            .arg("--format=format:%s")
+            .arg(format!("HEAD..{}", commit))
+            .current_dir(self.clone_to())
+            .output()?;
+
+        lock.unlock();
+
+        if result.status.success() {
+            return Ok(String::from_utf8_lossy(&result.stdout).to_lowercase());
+        } else {
+            return Err(Error::new(ErrorKind::Other,
+                                  String::from_utf8_lossy(&result.stderr).to_lowercase()));
+        }
+    }
 }
 
 impl clone::GitClonable for CachedProjectCo {

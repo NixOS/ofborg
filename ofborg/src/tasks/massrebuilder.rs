@@ -182,6 +182,10 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
             return self.actions().skip(&job);
         }
 
+        let possibly_touched_packages = parse_commit_messages(
+            &co.commit_messages_from_head(&job.pr.head_sha).unwrap_or("".to_owned())
+        );
+
         overall_status.set_with_description("Merging PR", hubcaps::statuses::State::Pending);
 
         if let Err(_) = co.merge_commit(job.pr.head_sha.as_ref()) {
@@ -357,9 +361,21 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
 
             let checker = OutPaths::new(self.nix.clone(), PathBuf::from(&refpath), true);
             match checker.find() {
-                Ok(_) => {
+                Ok(pkgs) => {
                     state = hubcaps::statuses::State::Success;
                     gist_url = None;
+
+                    let mut try_build: Vec<String> = pkgs
+                        .keys()
+                        .map(|pkgarch| pkgarch.package.clone())
+                        .filter(|pkg| {
+                            possibly_touched_packages.contains(&pkg)
+                        })
+                        .collect();
+                    try_build.sort();
+                    try_build.dedup();
+
+                    println!("try to build: {:?}", try_build);
                 }
                 Err(mut out) => {
                     eval_results = false;
@@ -619,6 +635,24 @@ fn file_to_str(f: &mut File) -> String {
     return String::from(String::from_utf8_lossy(&buffer));
 }
 
+fn parse_commit_messages(messages: &str) -> Vec<String> {
+    messages
+        .lines()
+        .filter_map(|line| {
+            // Convert "foo: some notes" in to "foo"
+            let parts: Vec<&str> = line.splitn(2, ":").collect();
+            if parts.len() == 2 {
+                Some(parts[0])
+            } else {
+                None
+            }
+        })
+        .flat_map(|line| { let pkgs: Vec<&str> = line.split(",").collect(); pkgs })
+        .map(|line| line.trim().to_owned())
+
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -639,5 +673,37 @@ mod tests {
         stdenv.identify(System::X8664Darwin, StdenvFrom::After);
 
         assert!(stdenv.are_same());
+    }
+
+    #[test]
+    fn test_parse_commit_messages() {
+        let expect: Vec<&str> = vec![
+            "firefox{-esr", // don't support such fancy syntax
+            "}", // Don't support such fancy syntax
+            "firefox",
+            "buildkite-agent",
+            "python.pkgs.ptyprocess",
+            "python.pkgs.ptyprocess",
+            "android-studio-preview",
+            "foo",
+            "bar",
+        ];
+        assert_eq!(
+            parse_commit_messages("
+              firefox{-esr,}: fix failing build due to the google-api-key
+              Merge pull request #34483 from andir/dovecot-cve-2017-15132
+              firefox: enable official branding
+              Merge pull request #34442 from rnhmjoj/virtual
+              buildkite-agent: enable building on darwin
+              python.pkgs.ptyprocess: 0.5 -> 0.5.2
+              python.pkgs.ptyprocess: move expression
+              Merge pull request #34465 from steveeJ/steveej-attempt-qtile-bump-0.10.7
+              android-studio-preview: 3.1.0.8 -> 3.1.0.9
+              Merge pull request #34188 from dotlambda/home-assistant
+              Merge pull request #34414 from dotlambda/postfix
+              foo,bar: something here: yeah
+            "),
+            expect
+        );
     }
 }
