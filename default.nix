@@ -12,7 +12,7 @@ let
 in {
   ofborg.rs = let
       build = (pkgs.callPackage ./nix/ofborg-carnix.nix {})
-        .ofborg_0_1_0.override {
+        .ofborg_0_1_1.override {
           crateOverrides = pkgs.defaultCrateOverrides //
           {
             ofborg = attrs: {
