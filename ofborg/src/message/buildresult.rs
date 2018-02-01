@@ -6,5 +6,6 @@ pub struct BuildResult {
     pub pr: Pr,
     pub system: String,
     pub output: Vec<String>,
+    pub attempt_id: Option<String>,
     pub success: bool,
 }

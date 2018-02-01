@@ -378,9 +378,9 @@ let kernel = buildPlatform.parsed.kernel.name;
       sha256 = "1y6qnd9r8ga6y8mvlabdrr73nc8cshjjlzbvnanzyj9b8zzkfwk2";
       inherit dependencies buildDependencies features;
     };
-    ofborg_0_1_0_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    ofborg_0_1_1_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
       crateName = "ofborg";
-      version = "0.1.0";
+      version = "0.1.1";
       authors = [ "Graham Christensen <graham@grahamc.com>" ];
       src = ./../ofborg;
       inherit dependencies buildDependencies features;
@@ -1048,24 +1048,24 @@ rec {
     dependencies = [ libc_0_2_36 ];
   };
   libc_0_2_36_features."default".from_num_cpus_1_8_0__default = true;
-  ofborg_0_1_0 = ofborg_0_1_0_ rec {
+  ofborg_0_1_1 = ofborg_0_1_1_ rec {
     dependencies = [ amqp_0_1_0 env_logger_0_4_3 fs2_0_4_3 hubcaps_0_3_16 hyper_0_10_13 hyper_native_tls_0_2_4 log_0_3_8 lru_cache_0_1_1 md5_0_3_6 serde_1_0_27 serde_derive_1_0_27 serde_json_1_0_9 tempfile_2_2_0 uuid_0_4_0 ];
   };
-  amqp_0_1_0_features."default".from_ofborg_0_1_0__default = true;
-  env_logger_0_4_3_features."default".from_ofborg_0_1_0__default = true;
-  fs2_0_4_3_features."default".from_ofborg_0_1_0__default = true;
-  hubcaps_0_3_16_features."default".from_ofborg_0_1_0__default = true;
-  hyper_0_10_13_features."default".from_ofborg_0_1_0__default = true;
-  hyper_native_tls_0_2_4_features."default".from_ofborg_0_1_0__default = true;
-  log_0_3_8_features."default".from_ofborg_0_1_0__default = true;
-  lru_cache_0_1_1_features."default".from_ofborg_0_1_0__default = true;
-  md5_0_3_6_features."default".from_ofborg_0_1_0__default = true;
-  serde_1_0_27_features."default".from_ofborg_0_1_0__default = true;
-  serde_derive_1_0_27_features."default".from_ofborg_0_1_0__default = true;
-  serde_json_1_0_9_features."default".from_ofborg_0_1_0__default = true;
-  tempfile_2_2_0_features."default".from_ofborg_0_1_0__default = true;
-  uuid_0_4_0_features."v4".from_ofborg_0_1_0 = true;
-  uuid_0_4_0_features."default".from_ofborg_0_1_0__default = true;
+  amqp_0_1_0_features."default".from_ofborg_0_1_1__default = true;
+  env_logger_0_4_3_features."default".from_ofborg_0_1_1__default = true;
+  fs2_0_4_3_features."default".from_ofborg_0_1_1__default = true;
+  hubcaps_0_3_16_features."default".from_ofborg_0_1_1__default = true;
+  hyper_0_10_13_features."default".from_ofborg_0_1_1__default = true;
+  hyper_native_tls_0_2_4_features."default".from_ofborg_0_1_1__default = true;
+  log_0_3_8_features."default".from_ofborg_0_1_1__default = true;
+  lru_cache_0_1_1_features."default".from_ofborg_0_1_1__default = true;
+  md5_0_3_6_features."default".from_ofborg_0_1_1__default = true;
+  serde_1_0_27_features."default".from_ofborg_0_1_1__default = true;
+  serde_derive_1_0_27_features."default".from_ofborg_0_1_1__default = true;
+  serde_json_1_0_9_features."default".from_ofborg_0_1_1__default = true;
+  tempfile_2_2_0_features."default".from_ofborg_0_1_1__default = true;
+  uuid_0_4_0_features."v4".from_ofborg_0_1_1 = true;
+  uuid_0_4_0_features."default".from_ofborg_0_1_1__default = true;
   openssl_0_9_23 = openssl_0_9_23_ rec {
     dependencies = [ bitflags_0_9_1 foreign_types_0_3_2 lazy_static_1_0_0 libc_0_2_36 openssl_sys_0_9_24 ];
     features = mkFeatures openssl_0_9_23_features;
