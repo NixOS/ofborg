@@ -1,4 +1,5 @@
 use ofborg::tasks;
+use ofborg::outpathdiff::PackageArch;
 
 pub struct StdenvTagger {
     possible: Vec<String>,
@@ -85,25 +86,22 @@ impl RebuildTagger {
         return t;
     }
 
-    pub fn parse_attrs(&mut self, attrs: Vec<String>) {
+    pub fn parse_attrs(&mut self, attrs: Vec<PackageArch>) {
         let mut counter_darwin = 0;
         let mut counter_linux = 0;
 
         for attr in attrs {
-            match attr.rsplit(".").next() {
-                Some("x86_64-darwin") => {
+            match attr.architecture.as_ref() {
+                "x86_64-darwin" => {
                     counter_darwin += 1;
                 }
-                Some("x86_64-linux") => {
+                "x86_64-linux" => {
                     counter_linux += 1;
                 }
-                Some("aarch64-linux") => {}
-                Some("i686-linux") => {}
-                Some(arch) => {
+                "aarch64-linux" => {}
+                "i686-linux" => {}
+                arch => {
                     info!("Unknown arch: {:?}", arch);
-                }
-                None => {
-                    info!("Cannot grok attr: {:?}", attr);
                 }
             }
         }
