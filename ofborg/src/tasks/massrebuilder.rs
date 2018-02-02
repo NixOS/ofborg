@@ -9,15 +9,17 @@ use std::io::BufReader;
 use std::path::Path;
 use std::path::PathBuf;
 use ofborg::checkout;
-use ofborg::message::massrebuildjob;
+use ofborg::message::{massrebuildjob, buildjob};
 use ofborg::nix::Nix;
 
+use ofborg::acl::ACL;
 use ofborg::stats;
 use ofborg::worker;
 use ofborg::tagger::{StdenvTagger, RebuildTagger};
 use ofborg::outpathdiff::{OutPaths, OutPathDiff};
 use ofborg::evalchecker::EvalChecker;
 use ofborg::commitstatus::CommitStatus;
+use ofborg::commentparser::Subset;
 use amqp::protocol::basic::{Deliver, BasicProperties};
 use hubcaps;
 
@@ -25,6 +27,7 @@ pub struct MassRebuildWorker<E> {
     cloner: checkout::CachedCloner,
     nix: Nix,
     github: hubcaps::Github,
+    acl: ACL,
     identity: String,
     events: E,
 }
@@ -34,6 +37,7 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
         cloner: checkout::CachedCloner,
         nix: Nix,
         github: hubcaps::Github,
+        acl: ACL,
         identity: String,
         events: E,
     ) -> MassRebuildWorker<E> {
@@ -41,6 +45,7 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
             cloner: cloner,
             nix: nix.without_limited_supported_systems(),
             github: github,
+            acl: acl,
             identity: identity,
             events: events,
         };
@@ -86,6 +91,8 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
         let gists = self.github.gists();
         let issue = repo.issue(job.pr.number);
 
+        let auto_schedule_build_archs: Option<Vec<buildjob::ExchangeQueue>>;
+
         match issue.get() {
             Ok(iss) => {
                 if iss.state == "closed" {
@@ -93,6 +100,11 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
                     info!("Skipping {} because it is closed", job.pr.number);
                     return self.actions().skip(&job);
                 }
+
+                auto_schedule_build_archs = Some(self.acl.build_job_destinations_for_user_repo(
+                    &iss.user.login,
+                    &job.repo.full_name,
+                ));
             }
             Err(e) => {
                 self.events.tick("issue-fetch-failed");
@@ -345,6 +357,9 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
             })
             .all(|status| status == Ok(()));
 
+
+        let mut response: worker::Actions = vec![];
+
         if eval_results {
             let mut status = CommitStatus::new(
                 repo.statuses(),
@@ -375,7 +390,17 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
                     try_build.sort();
                     try_build.dedup();
 
-                    println!("try to build: {:?}", try_build);
+                    let msg = buildjob::BuildJob::new(
+                        job.repo.clone(),
+                        job.pr.clone(),
+                        Subset::Nixpkgs,
+                        try_build,
+                        None,
+                        None,
+                    );
+                    for (dest, rk) in auto_schedule_build_archs.unwrap_or(vec![]) {
+                        response.push(worker::publish_serde_action(dest, rk, &msg));
+                    }
                 }
                 Err(mut out) => {
                     eval_results = false;
@@ -428,7 +453,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
             );
         }
 
-        return self.actions().done(&job);
+        return self.actions().done(&job, response);
     }
 }
 

@@ -12,6 +12,20 @@ impl ACL {
         };
     }
 
+    pub fn build_job_destinations_for_user_repo(&self, user: &str, repo: &str)
+                                            -> Vec<(Option<String>, Option<String>)> {
+        if self.can_build_unrestricted(user, repo) {
+            vec![(Some("build-jobs".to_owned()), None)]
+        } else if self.can_build_restricted(user, repo) {
+            vec![
+                (None, Some("build-inputs-x86_64-linux".to_owned())),
+                (None, Some("build-inputs-aarch64-linux".to_owned())),
+            ]
+        } else {
+            vec![]
+        }
+    }
+
     pub fn can_build_restricted(&self, user: &str, repo: &str) -> bool {
         if repo.to_lowercase() != "nixos/nixpkgs" {
             return false;
