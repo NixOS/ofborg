@@ -1,10 +1,11 @@
-use std::path::Path;
+use std::env;
 use std::ffi::OsString;
-use std::process::{Command, Stdio};
-use tempfile::tempfile;
 use std::fs::File;
 use std::io::Seek;
 use std::io::SeekFrom;
+use std::path::Path;
+use std::process::{Command, Stdio};
+use tempfile::tempfile;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Nix {
@@ -130,6 +131,10 @@ impl Nix {
         command.env("HOME", "/homeless-shelter");
         command.env("NIX_PATH", nixpath);
         command.env("NIX_REMOTE", &self.remote);
+
+        let path = env::var("PATH").unwrap();
+        command.env("PATH", path);
+
         command.args(&["--show-trace"]);
         command.args(&["--option", "restrict-eval", "true"]);
         command.args(
@@ -267,6 +272,40 @@ mod tests {
     use std::io::BufRead;
     use std::path::PathBuf;
     use std::env;
+
+    #[test]
+    fn safe_command_environment() {
+        let nix = nix();
+
+        let ret: Result<File, File> = nix.run(nix.safe_command(
+            "./environment.sh",
+            build_path().as_path(),
+            vec![],
+        ), true);
+
+        assert_run(
+            ret,
+            Expect::Pass,
+            vec!["HOME=/homeless-shelter", "NIX_PATH=nixpkgs=", "NIX_REMOTE=", "PATH="],
+        );
+    }
+
+    #[test]
+    fn safe_command_options() {
+        let nix = nix();
+
+        let ret: Result<File, File> = nix.run(nix.safe_command(
+            "echo",
+            build_path().as_path(),
+            vec![],
+        ), true);
+
+        assert_run(
+            ret,
+            Expect::Pass,
+            vec!["--option restrict-eval true", "--option build-timeout 1800"],
+        );
+    }
 
     #[test]
     fn safely_build_attrs_success() {
