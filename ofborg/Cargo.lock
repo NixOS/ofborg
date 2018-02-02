@@ -210,7 +210,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "hubcaps"
 version = "0.3.16"
-source = "git+https://github.com/grahamc/hubcaps.git#3ddb700e6b51d7ffc2edd3b001987b4fa124d0e2"
+source = "git+https://github.com/grahamc/hubcaps.git#451cf178af44995b07ac24ebc514b71c1574485a"
 dependencies = [
  "error-chain 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.10.13 (registry+https://github.com/rust-lang/crates.io-index)",
