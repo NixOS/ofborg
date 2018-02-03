@@ -51,6 +51,12 @@
             "pkgs/development/interpreters/ruby",
             "pkgs/development/ruby-modules"
         ],
+        "6.topic: haskell": [
+            "pkgs/development/compilers/ghc",
+            "pkgs/development/tools/haskell",
+            "pkgs/development/haskell-modules",    
+            "pkgs/top-level/haskell-packages.nix"
+        ],
         "6.topic: erlang": [
             "doc/languages-frameworks/beam.xml",
             "pkgs/development/beam-modules/",
