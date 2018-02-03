@@ -230,8 +230,8 @@ let kernel = buildPlatform.parsed.kernel.name;
       authors = [ "softprops <d.tangren@gmail.com>" ];
       src = fetchgit {
          url = "https://github.com/grahamc/hubcaps.git";
-         rev = "3ddb700e6b51d7ffc2edd3b001987b4fa124d0e2";
-         sha256 = "1ivh9jjcjnbm5fsbr0w4wa1wmka6hsq0zjh148f9hs3q93hspr71";
+         rev = "451cf178af44995b07ac24ebc514b71c1574485a";
+         sha256 = "0hp7fx7y96mc6cwcg9yv1dzk438yzizx3mmp6njk7als8fg6pfa3";
       };
       inherit dependencies buildDependencies features;
     };
