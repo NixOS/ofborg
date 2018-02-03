@@ -41,21 +41,18 @@
         ]
     },
     "tag_paths": {
-        "6.topic: python": [
-            "pkgs/top-level/python-packages.nix",
-            "pkgs/development/interpreters/python",
-            "pkgs/development/python-modules",
-            "doc/languages-frameworks/python.md"
+        "6.topic: darwin": [
+            "pkgs/top-level/darwin-packages.nix",
+            "pkgs/stdenv/darwin",
         ],
-        "6.topic: ruby": [
-            "pkgs/development/interpreters/ruby",
-            "pkgs/development/ruby-modules"
-        ],
-        "6.topic: haskell": [
-            "pkgs/development/compilers/ghc",
-            "pkgs/development/tools/haskell",
-            "pkgs/development/haskell-modules",    
-            "pkgs/top-level/haskell-packages.nix"
+        "6.topic: emacs": [
+            "nixos/modules/services/editors/emacs.nix",
+            "nixos/modules/services/editors/emacs.xml",
+            "nixos/tests/emacs-daemon.nix",
+            "pkgs/applications/editors/emacs-modes",
+            "pkgs/applications/editors/emacs",
+            "pkgs/build-support/emacs",
+            "pkgs/top-level/emacs-packages.nix",
         ],
         "6.topic: erlang": [
             "doc/languages-frameworks/beam.xml",
@@ -66,8 +63,83 @@
             "pkgs/development/tools/build-managers/rebar3/",
             "pkgs/development/tools/erlang/",
             "pkgs/development/tools/elixir/",
-            "pkgs/top-level/beam-packages.nix"
-        ]
+            "pkgs/top-level/beam-packages.nix",
+        ],
+        "6.topic: fetch": [
+            "pkgs/build-support/fetch",
+        ],
+        "6.topic: gnome3": [
+            "pkgs/desktops/gnome-3",
+        ],
+        "6.topic: golang": [
+            "pkgs/development/compilers/go",
+            "pkgs/development/go-modules",
+            "doc/languages-frameworks/go.xml",
+        ],
+        "6.topic: haskell": [
+            "pkgs/development/compilers/ghc",
+            "pkgs/development/tools/haskell",
+            "pkgs/development/haskell-modules",
+            "pkgs/top-level/haskell-packages.nix",
+            "doc/languages-frameworks/haskell.md",
+        ],
+        "6.topic: kernel": [
+            "pkgs/build-support/linux/kernel",
+        ],
+        "6.topic: nixos": [
+            "nixos",
+        ],
+        "6.topic: policy discussion": [
+            ".github",
+        ],
+        "6.topic: printing": [
+            "pkgs/misc/cups",
+        ],
+        "6.topic: python": [
+            "pkgs/top-level/python-packages.nix",
+            "pkgs/development/interpreters/python",
+            "pkgs/development/python-modules",
+            "doc/languages-frameworks/python.md",
+        ],
+        "6.topic: qt/kde": [
+            "pkgs/applications/kde",
+            "pkgs/desktops/plasma-5",
+            "pkgs/development/libraries/kde-frameworks",
+            "pkgs/development/libraries/qt-5",
+            "doc/languages-frameworks/qt.xml",
+        ],
+        "6.topic: ruby": [
+            "pkgs/development/interpreters/ruby",
+            "pkgs/development/ruby-modules",
+            "doc/languages-frameworks/ruby.xml",
+        ],
+        "6.topic: rust": [
+            "pkgs/development/compilers/rust",
+            "pkgs/build-support/rust",
+            "doc/languages-frameworks/rust.md",
+        ],
+        "6.topic: steam": [
+            "pkgs/games/steam",
+        ],
+        "6.topic: vim": [
+            "pkgs/applications/editors/vim",
+            "doc/languages-frameworks/vim.md",
+        ],
+        "6.topic: xfce": [
+            "pkgs/desktops/xfce",
+        ],
+        "8.has: changelog": [
+            "doc/manual/release-notes/",
+        ],
+        "8.has: documentation": [
+            "doc",
+            "nixos/doc",
+        ],
+        "8.has: module (update)": [
+            "nixos/modules",
+        ],
+
+
     },
     "checkout": {
         "root": "/var/lib/gc-of-borg/.nix-test-rs"
