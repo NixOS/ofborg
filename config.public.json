@@ -40,6 +40,18 @@
             "zimbatm"
         ]
     },
+    "tag_paths": {
+        "6.topic: python": [
+            "pkgs/top-level/python-packages.nix",
+            "pkgs/development/interpreters/python",
+            "pkgs/development/python-modules",
+            "doc/languages-frameworks/python.md"
+        ],
+        "6.topic: ruby": [
+            "pkgs/development/interpreters/ruby",
+            "pkgs/development/ruby-modules"
+        ]
+    },
     "checkout": {
         "root": "/var/lib/gc-of-borg/.nix-test-rs"
     },

@@ -39,6 +39,7 @@ fn main() {
         cfg.acl(),
         cfg.runner.identity.clone(),
         events,
+        cfg.tag_paths.clone().unwrap(),
     );
 
     channel.basic_prefetch(1).unwrap();
