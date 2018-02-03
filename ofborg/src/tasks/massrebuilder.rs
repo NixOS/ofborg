@@ -194,9 +194,10 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
             return self.actions().skip(&job);
         }
 
-        let possibly_touched_packages = parse_commit_messages(
-            co.commit_messages_from_head(&job.pr.head_sha).unwrap_or(vec!["".to_owned()])
-        );
+        let possibly_touched_packages =
+            parse_commit_messages(co.commit_messages_from_head(&job.pr.head_sha).unwrap_or(
+                vec!["".to_owned()],
+            ));
 
         overall_status.set_with_description("Merging PR", hubcaps::statuses::State::Pending);
 
@@ -380,12 +381,9 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
                     state = hubcaps::statuses::State::Success;
                     gist_url = None;
 
-                    let mut try_build: Vec<String> = pkgs
-                        .keys()
+                    let mut try_build: Vec<String> = pkgs.keys()
                         .map(|pkgarch| pkgarch.package.clone())
-                        .filter(|pkg| {
-                            possibly_touched_packages.contains(&pkg)
-                        })
+                        .filter(|pkg| possibly_touched_packages.contains(&pkg))
                         .collect();
                     try_build.sort();
                     try_build.dedup();
@@ -678,9 +676,11 @@ fn parse_commit_messages(messages: Vec<String>) -> Vec<String> {
                 None
             }
         })
-        .flat_map(|line| { let pkgs: Vec<&str> = line.split(",").collect(); pkgs })
+        .flat_map(|line| {
+            let pkgs: Vec<&str> = line.split(",").collect();
+            pkgs
+        })
         .map(|line| line.trim().to_owned())
-
         .collect()
 }
 
@@ -720,7 +720,8 @@ mod tests {
             "bar",
         ];
         assert_eq!(
-            parse_commit_messages("
+            parse_commit_messages(
+                "
               firefox{-esr,}: fix failing build due to the google-api-key
               Merge pull request #34483 from andir/dovecot-cve-2017-15132
               firefox: enable official branding
@@ -733,7 +734,11 @@ mod tests {
               Merge pull request #34188 from dotlambda/home-assistant
               Merge pull request #34414 from dotlambda/postfix
               foo,bar: something here: yeah
-            ".lines().map(|l| l.to_owned()).collect()),
+            "
+                    .lines()
+                    .map(|l| l.to_owned())
+                    .collect(),
+            ),
             expect
         );
     }

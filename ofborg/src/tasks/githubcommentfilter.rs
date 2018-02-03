@@ -113,7 +113,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                             subset,
                             attrs,
                             None,
-                            None
+                            None,
                         );
 
                         for (exch, rk) in build_destinations.clone() {

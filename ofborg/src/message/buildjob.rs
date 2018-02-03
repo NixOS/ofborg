@@ -17,12 +17,14 @@ type Exchange = String;
 type RoutingKey = String;
 
 impl BuildJob {
-    pub fn new(repo: Repo,
-               pr: Pr,
-               subset: Subset,
-               attrs: Vec<String>,
-               logs: Option<ExchangeQueue>,
-               statusreport: Option<ExchangeQueue>) -> BuildJob {
+    pub fn new(
+        repo: Repo,
+        pr: Pr,
+        subset: Subset,
+        attrs: Vec<String>,
+        logs: Option<ExchangeQueue>,
+        statusreport: Option<ExchangeQueue>,
+    ) -> BuildJob {
 
         let logbackrk = format!(
             "{}.{}",
@@ -36,7 +38,9 @@ impl BuildJob {
             subset: Some(subset),
             attrs: attrs,
             logs: Some(logs.unwrap_or((Some("logs".to_owned()), Some(logbackrk)))),
-            statusreport: Some(statusreport.unwrap_or((Some("build-results".to_owned()), None))),
+            statusreport: Some(statusreport.unwrap_or(
+                (Some("build-results".to_owned()), None),
+            )),
         }
     }
 }

@@ -12,8 +12,11 @@ impl ACL {
         };
     }
 
-    pub fn build_job_destinations_for_user_repo(&self, user: &str, repo: &str)
-                                            -> Vec<(Option<String>, Option<String>)> {
+    pub fn build_job_destinations_for_user_repo(
+        &self,
+        user: &str,
+        repo: &str,
+    ) -> Vec<(Option<String>, Option<String>)> {
         if self.can_build_unrestricted(user, repo) {
             vec![(Some("build-jobs".to_owned()), None)]
         } else if self.can_build_restricted(user, repo) {

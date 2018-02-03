@@ -166,11 +166,13 @@ impl CachedProjectCo {
                 String::from_utf8_lossy(&result.stdout)
                     .lines()
                     .map(|l| l.to_owned())
-                    .collect()
+                    .collect(),
             );
         } else {
-            return Err(Error::new(ErrorKind::Other,
-                                  String::from_utf8_lossy(&result.stderr).to_lowercase()));
+            return Err(Error::new(
+                ErrorKind::Other,
+                String::from_utf8_lossy(&result.stderr).to_lowercase(),
+            ));
         }
     }
 }
@@ -259,15 +261,17 @@ mod tests {
 
         let cloner = cached_cloner(&workingdir.path());
         let project = cloner.project("commit-msg-list".to_owned(), bare.string());
-        let working_co = project.clone_for("testing-commit-msgs".to_owned(), "123".to_owned()).expect("clone should work");
+        let working_co = project
+            .clone_for("testing-commit-msgs".to_owned(), "123".to_owned())
+            .expect("clone should work");
         working_co.checkout_origin_ref(OsStr::new("master"));
 
-        let expect: Vec<String> = vec![
-            "check out this cool PR".to_owned()
-        ];
+        let expect: Vec<String> = vec!["check out this cool PR".to_owned()];
 
         assert_eq!(
-            working_co.commit_messages_from_head(&hash).expect("fetching messages should work"),
+            working_co.commit_messages_from_head(&hash).expect(
+                "fetching messages should work",
+            ),
             expect
         );
     }

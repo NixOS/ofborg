@@ -277,16 +277,21 @@ mod tests {
     fn safe_command_environment() {
         let nix = nix();
 
-        let ret: Result<File, File> = nix.run(nix.safe_command(
-            "./environment.sh",
-            build_path().as_path(),
-            vec![],
-        ), true);
+        let ret: Result<File, File> =
+            nix.run(
+                nix.safe_command("./environment.sh", build_path().as_path(), vec![]),
+                true,
+            );
 
         assert_run(
             ret,
             Expect::Pass,
-            vec!["HOME=/homeless-shelter", "NIX_PATH=nixpkgs=", "NIX_REMOTE=", "PATH="],
+            vec![
+                "HOME=/homeless-shelter",
+                "NIX_PATH=nixpkgs=",
+                "NIX_REMOTE=",
+                "PATH=",
+            ],
         );
     }
 
@@ -294,11 +299,10 @@ mod tests {
     fn safe_command_options() {
         let nix = nix();
 
-        let ret: Result<File, File> = nix.run(nix.safe_command(
-            "echo",
-            build_path().as_path(),
-            vec![],
-        ), true);
+        let ret: Result<File, File> = nix.run(
+            nix.safe_command("echo", build_path().as_path(), vec![]),
+            true,
+        );
 
         assert_run(
             ret,
