@@ -118,7 +118,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
                     return self.actions().skip(&job);
                 }
 
-                if iss.title.to_lowercase().contains("wip") {
+                if issue_is_wip(&iss) {
                     auto_schedule_build_archs = vec![];
                 } else {
                     auto_schedule_build_archs = self.acl.build_job_destinations_for_user_repo(
@@ -768,4 +768,30 @@ mod tests {
             expect
         );
     }
+}
+
+fn issue_is_wip(issue: &hubcaps::issues::Issue) -> bool {
+    if indicates_wip(&issue.title) {
+        return true;
+    }
+
+    issue.labels.iter().any(|label| indicates_wip(&label.name))
+}
+
+fn indicates_wip(text: &str) -> bool {
+    let text = text.to_lowercase();
+
+    if text.contains("wip") {
+        return true;
+    }
+
+    if text.contains("work in progress") {
+        return true;
+    }
+
+    if text.contains("work-in-progress") {
+        return true;
+    }
+
+    return false;
 }
