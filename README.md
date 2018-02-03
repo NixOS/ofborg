@@ -9,17 +9,23 @@
 
 ## Automatic Building
 
-Users who are _trusted_ (see: ./config.public.json) will have their
-PRs automatically trigger builds if their commits follow the
-well-defined format of Nixpkgs. Example messages and the builds:
+Users who are _trusted_ (see: ./config.public.json) or _known_ (see:
+./config.known-users.json) will have their PRs automatically trigger
+builds if their commits follow the well-defined format of Nixpkgs.
+Example messages and the builds:
 
 |Message|Automatic Build|
 |-|-|
 |`vim: 1.0.0 -> 2.0.0`|`vim`|
-|`python3Packages.requests,python2Packages.requests: 1.0.0 -> 2.0.0`|`python3Packages.requests`, `python2Packages.requests`|
+|`python36Packages.requests,python27Packages.requests: 1.0.0 -> 2.0.0`|`python36Packages.requests`, `python27Packages.requests`|
 |`python{2,3}Packages.requests: 1.0.0 -> 2.0.0`|_nothing_|
 
+If a PR is opened with many commits, it will create a single build job
+for all of the detected packages. If a PR is opened and many commits
+are pushed one by one to the open PR, many build jobs will be created.
 
+To disable automatic building of packages on a PR, add `WIP` to the
+PR's title, or the `2.status: work-in-progress` label.
 
 ## Commands
 
