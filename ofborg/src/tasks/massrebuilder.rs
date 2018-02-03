@@ -15,7 +15,7 @@ use ofborg::nix::Nix;
 use ofborg::acl::ACL;
 use ofborg::stats;
 use ofborg::worker;
-use ofborg::tagger::{StdenvTagger, RebuildTagger};
+use ofborg::tagger::{StdenvTagger, RebuildTagger, PathsTagger};
 use ofborg::outpathdiff::{OutPaths, OutPathDiff};
 use ofborg::evalchecker::EvalChecker;
 use ofborg::commitstatus::CommitStatus;
@@ -30,6 +30,7 @@ pub struct MassRebuildWorker<E> {
     acl: ACL,
     identity: String,
     events: E,
+    tag_paths: HashMap<String, Vec<String>>,
 }
 
 impl<E: stats::SysEvents> MassRebuildWorker<E> {
@@ -40,6 +41,7 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
         acl: ACL,
         identity: String,
         events: E,
+        tag_paths: HashMap<String, Vec<String>>,
     ) -> MassRebuildWorker<E> {
         return MassRebuildWorker {
             cloner: cloner,
@@ -48,11 +50,26 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
             acl: acl,
             identity: identity,
             events: events,
+            tag_paths: tag_paths
         };
     }
 
     fn actions(&self) -> massrebuildjob::Actions {
         return massrebuildjob::Actions {};
+    }
+
+    fn tag_from_paths(&self, issue: &hubcaps::issues::IssueRef, paths: Vec<String>) {
+        let mut tagger = PathsTagger::new(self.tag_paths.clone());
+
+        for path in paths {
+            tagger.path_changed(&path);
+        }
+
+        update_labels(
+            &issue,
+            tagger.tags_to_add(),
+            tagger.tags_to_remove(),
+        );
     }
 }
 
@@ -198,6 +215,11 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
             parse_commit_messages(co.commit_messages_from_head(&job.pr.head_sha).unwrap_or(
                 vec!["".to_owned()],
             ));
+
+        self.tag_from_paths(
+            &issue,
+            co.files_changed_from_head(&job.pr.head_sha).unwrap_or(vec![])
+        );
 
         overall_status.set_with_description("Merging PR", hubcaps::statuses::State::Pending);
 

@@ -148,7 +148,6 @@ impl CachedProjectCo {
         }
     }
 
-
     pub fn commit_messages_from_head(&self, commit: &str) -> Result<Vec<String>, Error> {
         let mut lock = self.lock()?;
 
@@ -156,6 +155,33 @@ impl CachedProjectCo {
             .arg("log")
             .arg("--format=format:%s")
             .arg(format!("HEAD..{}", commit))
+            .current_dir(self.clone_to())
+            .output()?;
+
+        lock.unlock();
+
+        if result.status.success() {
+            return Ok(
+                String::from_utf8_lossy(&result.stdout)
+                    .lines()
+                    .map(|l| l.to_owned())
+                    .collect(),
+            );
+        } else {
+            return Err(Error::new(
+                ErrorKind::Other,
+                String::from_utf8_lossy(&result.stderr).to_lowercase(),
+            ));
+        }
+    }
+
+    pub fn files_changed_from_head(&self, commit: &str) -> Result<Vec<String>, Error> {
+        let mut lock = self.lock()?;
+
+        let result = Command::new("git")
+            .arg("diff")
+            .arg("--name-only")
+            .arg(format!("HEAD...{}", commit))
             .current_dir(self.clone_to())
             .output()?;
 
@@ -264,13 +290,42 @@ mod tests {
         let working_co = project
             .clone_for("testing-commit-msgs".to_owned(), "123".to_owned())
             .expect("clone should work");
-        working_co.checkout_origin_ref(OsStr::new("master"));
+        working_co
+            .checkout_origin_ref(OsStr::new("master"))
+            .unwrap();
 
         let expect: Vec<String> = vec!["check out this cool PR".to_owned()];
 
         assert_eq!(
             working_co.commit_messages_from_head(&hash).expect(
                 "fetching messages should work",
+            ),
+            expect
+        );
+    }
+
+    #[test]
+    pub fn test_files_changed_list() {
+        let workingdir = TestScratch::new_dir("test-test-files-changed-list");
+
+        let bare = TestScratch::new_dir("bare-files-changed");
+        let mk_co = TestScratch::new_dir("mk-files-changed");
+        let hash = make_pr_repo(&bare.path(), &mk_co.path());
+
+        let cloner = cached_cloner(&workingdir.path());
+        let project = cloner.project("commit-files-changed-list".to_owned(), bare.string());
+        let working_co = project
+            .clone_for("testing-files-changed".to_owned(), "123".to_owned())
+            .expect("clone should work");
+        working_co
+            .checkout_origin_ref(OsStr::new("master"))
+            .unwrap();
+
+        let expect: Vec<String> = vec!["default.nix".to_owned(), "hi another file".to_owned()];
+
+        assert_eq!(
+            working_co.files_changed_from_head(&hash).expect(
+                "fetching files changed should work",
             ),
             expect
         );

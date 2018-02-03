@@ -7,6 +7,7 @@ use hyper::net::HttpsConnector;
 use hyper_native_tls::NativeTlsClient;
 use hubcaps::{Credentials, Github};
 use nix::Nix;
+use std::collections::HashMap;
 
 
 use ofborg::acl;
@@ -20,6 +21,7 @@ pub struct Config {
     pub rabbitmq: RabbitMQConfig,
     pub github: Option<GithubConfig>,
     pub log_storage: Option<LogStorage>,
+    pub tag_paths: Option<HashMap<String, Vec<String>>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
