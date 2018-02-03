@@ -91,7 +91,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
         let gists = self.github.gists();
         let issue = repo.issue(job.pr.number);
 
-        let auto_schedule_build_archs: Option<Vec<buildjob::ExchangeQueue>>;
+        let auto_schedule_build_archs: Vec<buildjob::ExchangeQueue>;
 
         match issue.get() {
             Ok(iss) => {
@@ -101,10 +101,10 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
                     return self.actions().skip(&job);
                 }
 
-                auto_schedule_build_archs = Some(self.acl.build_job_destinations_for_user_repo(
+                auto_schedule_build_archs = self.acl.build_job_destinations_for_user_repo(
                     &iss.user.login,
                     &job.repo.full_name,
-                ));
+                );
             }
             Err(e) => {
                 self.events.tick("issue-fetch-failed");
@@ -390,16 +390,22 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
                     try_build.sort();
                     try_build.dedup();
 
-                    let msg = buildjob::BuildJob::new(
-                        job.repo.clone(),
-                        job.pr.clone(),
-                        Subset::Nixpkgs,
-                        try_build,
-                        None,
-                        None,
-                    );
-                    for (dest, rk) in auto_schedule_build_archs.unwrap_or(vec![]) {
-                        response.push(worker::publish_serde_action(dest, rk, &msg));
+                    if try_build.len() <= 10 {
+                        // In the case of trying to merge master in to
+                        // a stable branch, we don't want to do this.
+                        // Therefore, only schedule builds if there
+                        // less than or exactly 10
+                        let msg = buildjob::BuildJob::new(
+                            job.repo.clone(),
+                            job.pr.clone(),
+                            Subset::Nixpkgs,
+                            try_build,
+                            None,
+                            None,
+                        );
+                        for (dest, rk) in auto_schedule_build_archs {
+                            response.push(worker::publish_serde_action(dest, rk, &msg));
+                        }
                     }
                 }
                 Err(mut out) => {
