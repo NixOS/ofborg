@@ -50,6 +50,17 @@
         "6.topic: ruby": [
             "pkgs/development/interpreters/ruby",
             "pkgs/development/ruby-modules"
+        ],
+        "6.topic: erlang": [
+            "doc/languages-frameworks/beam.xml",
+            "pkgs/development/beam-modules/",
+            "pkgs/development/interpreters/elixir/",
+            "pkgs/development/interpreters/erlang/",
+            "pkgs/development/tools/build-managers/rebar/",
+            "pkgs/development/tools/build-managers/rebar3/",
+            "pkgs/development/tools/erlang/",
+            "pkgs/development/tools/elixir/",
+            "pkgs/top-level/beam-packages.nix"
         ]
     },
     "checkout": {
