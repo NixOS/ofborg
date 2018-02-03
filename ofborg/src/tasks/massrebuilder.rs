@@ -771,7 +771,11 @@ mod tests {
 }
 
 fn issue_is_wip(issue: &hubcaps::issues::Issue) -> bool {
-    if indicates_wip(&issue.title) {
+    if issue.title.contains("[WIP]") {
+        return true;
+    }
+
+    if issue.title.starts_with("WIP:") {
         return true;
     }
 
@@ -780,10 +784,6 @@ fn issue_is_wip(issue: &hubcaps::issues::Issue) -> bool {
 
 fn indicates_wip(text: &str) -> bool {
     let text = text.to_lowercase();
-
-    if text.contains("wip") {
-        return true;
-    }
 
     if text.contains("work in progress") {
         return true;

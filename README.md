@@ -24,7 +24,7 @@ If a PR is opened with many commits, it will create a single build job
 for all of the detected packages. If a PR is opened and many commits
 are pushed one by one to the open PR, many build jobs will be created.
 
-To disable automatic building of packages on a PR, add `WIP` to the
+To disable automatic building of packages on a PR, add `[WIP]` to the
 PR's title, or the `2.status: work-in-progress` label.
 
 ## Commands
