@@ -7,6 +7,20 @@
 2. be gentle, preferably don't run mass rebuilds / massive builds like
    chromium on it
 
+## Automatic Building
+
+Users who are _trusted_ (see: ./config.public.json) will have their
+PRs automatically trigger builds if their commits follow the
+well-defined format of Nixpkgs. Example messages and the builds:
+
+|Message|Automatic Build|
+|-|-|
+|`vim: 1.0.0 -> 2.0.0`|`vim`|
+|`python3Packages.requests,python2Packages.requests: 1.0.0 -> 2.0.0`|`python3Packages.requests`, `python2Packages.requests`|
+|`python{2,3}Packages.requests: 1.0.0 -> 2.0.0`|_nothing_|
+
+
+
 ## Commands
 
 The comment parser is line-based, so comments can be interleaved with
