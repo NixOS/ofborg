@@ -36,6 +36,7 @@ fn main() {
         cloner,
         nix,
         cfg.github(),
+        cfg.acl(),
         cfg.runner.identity.clone(),
         events,
     );

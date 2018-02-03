@@ -53,30 +53,13 @@ impl worker::SimpleWorker for GitHubCommentWorker {
             return vec![worker::Action::Ack];
         }
 
-        let build_destinations: Vec<(Option<String>, Option<String>)>;
+        let build_destinations = self.acl.build_job_destinations_for_user_repo(
+            &job.comment.user.login,
+            &job.repository.full_name,
+        );
 
-        if self.acl.can_build_unrestricted(
-            &job.comment.user.login,
-            &job.repository.full_name,
-        )
-        {
-            build_destinations = vec![(Some("build-jobs".to_owned()), None)];
-        } else if self.acl.can_build_restricted(
-            &job.comment.user.login,
-            &job.repository.full_name,
-        )
-        {
-            build_destinations = vec![
-                (None, Some("build-inputs-x86_64-linux".to_owned())),
-                (None, Some("build-inputs-aarch64-linux".to_owned())),
-            ];
-        } else {
-            println!(
-                "ACL prohibits {} from building {:?} for {}",
-                job.comment.user.login,
-                instructions,
-                job.repository.full_name
-            );
+        if build_destinations.len() == 0 {
+            // Don't process comments if they can't build anything
             return vec![worker::Action::Ack];
         }
 
@@ -124,19 +107,14 @@ impl worker::SimpleWorker for GitHubCommentWorker {
             for instruction in instructions {
                 match instruction {
                     commentparser::Instruction::Build(subset, attrs) => {
-                        let logbackrk = format!(
-                            "{}.{}",
-                            job.repository.full_name.clone(),
-                            job.issue.number.clone()
+                        let msg = buildjob::BuildJob::new(
+                            repo_msg.clone(),
+                            pr_msg.clone(),
+                            subset,
+                            attrs,
+                            None,
+                            None
                         );
-                        let msg = buildjob::BuildJob {
-                            repo: repo_msg.clone(),
-                            pr: pr_msg.clone(),
-                            subset: Some(subset),
-                            attrs: attrs,
-                            logs: Some((Some("logs".to_owned()), Some(logbackrk.to_lowercase()))),
-                            statusreport: Some((Some("build-results".to_owned()), None)),
-                        };
 
                         for (exch, rk) in build_destinations.clone() {
                             response.push(worker::publish_serde_action(exch, rk, &msg));

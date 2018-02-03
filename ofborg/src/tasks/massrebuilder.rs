@@ -9,15 +9,17 @@ use std::io::BufReader;
 use std::path::Path;
 use std::path::PathBuf;
 use ofborg::checkout;
-use ofborg::message::massrebuildjob;
+use ofborg::message::{massrebuildjob, buildjob};
 use ofborg::nix::Nix;
 
+use ofborg::acl::ACL;
 use ofborg::stats;
 use ofborg::worker;
 use ofborg::tagger::{StdenvTagger, RebuildTagger};
 use ofborg::outpathdiff::{OutPaths, OutPathDiff};
 use ofborg::evalchecker::EvalChecker;
 use ofborg::commitstatus::CommitStatus;
+use ofborg::commentparser::Subset;
 use amqp::protocol::basic::{Deliver, BasicProperties};
 use hubcaps;
 
@@ -25,6 +27,7 @@ pub struct MassRebuildWorker<E> {
     cloner: checkout::CachedCloner,
     nix: Nix,
     github: hubcaps::Github,
+    acl: ACL,
     identity: String,
     events: E,
 }
@@ -34,6 +37,7 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
         cloner: checkout::CachedCloner,
         nix: Nix,
         github: hubcaps::Github,
+        acl: ACL,
         identity: String,
         events: E,
     ) -> MassRebuildWorker<E> {
@@ -41,6 +45,7 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
             cloner: cloner,
             nix: nix.without_limited_supported_systems(),
             github: github,
+            acl: acl,
             identity: identity,
             events: events,
         };
@@ -86,6 +91,8 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
         let gists = self.github.gists();
         let issue = repo.issue(job.pr.number);
 
+        let auto_schedule_build_archs: Vec<buildjob::ExchangeQueue>;
+
         match issue.get() {
             Ok(iss) => {
                 if iss.state == "closed" {
@@ -93,6 +100,11 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
                     info!("Skipping {} because it is closed", job.pr.number);
                     return self.actions().skip(&job);
                 }
+
+                auto_schedule_build_archs = self.acl.build_job_destinations_for_user_repo(
+                    &iss.user.login,
+                    &job.repo.full_name,
+                );
             }
             Err(e) => {
                 self.events.tick("issue-fetch-failed");
@@ -181,6 +193,10 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
             info!("Commit {} doesn't exist", job.pr.head_sha);
             return self.actions().skip(&job);
         }
+
+        let possibly_touched_packages = parse_commit_messages(
+            co.commit_messages_from_head(&job.pr.head_sha).unwrap_or(vec!["".to_owned()])
+        );
 
         overall_status.set_with_description("Merging PR", hubcaps::statuses::State::Pending);
 
@@ -341,6 +357,9 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
             })
             .all(|status| status == Ok(()));
 
+
+        let mut response: worker::Actions = vec![];
+
         if eval_results {
             let mut status = CommitStatus::new(
                 repo.statuses(),
@@ -357,9 +376,37 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
 
             let checker = OutPaths::new(self.nix.clone(), PathBuf::from(&refpath), true);
             match checker.find() {
-                Ok(_) => {
+                Ok(pkgs) => {
                     state = hubcaps::statuses::State::Success;
                     gist_url = None;
+
+                    let mut try_build: Vec<String> = pkgs
+                        .keys()
+                        .map(|pkgarch| pkgarch.package.clone())
+                        .filter(|pkg| {
+                            possibly_touched_packages.contains(&pkg)
+                        })
+                        .collect();
+                    try_build.sort();
+                    try_build.dedup();
+
+                    if try_build.len() <= 10 {
+                        // In the case of trying to merge master in to
+                        // a stable branch, we don't want to do this.
+                        // Therefore, only schedule builds if there
+                        // less than or exactly 10
+                        let msg = buildjob::BuildJob::new(
+                            job.repo.clone(),
+                            job.pr.clone(),
+                            Subset::Nixpkgs,
+                            try_build,
+                            None,
+                            None,
+                        );
+                        for (dest, rk) in auto_schedule_build_archs {
+                            response.push(worker::publish_serde_action(dest, rk, &msg));
+                        }
+                    }
                 }
                 Err(mut out) => {
                     eval_results = false;
@@ -412,7 +459,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
             );
         }
 
-        return self.actions().done(&job);
+        return self.actions().done(&job, response);
     }
 }
 
@@ -619,6 +666,24 @@ fn file_to_str(f: &mut File) -> String {
     return String::from(String::from_utf8_lossy(&buffer));
 }
 
+fn parse_commit_messages(messages: Vec<String>) -> Vec<String> {
+    messages
+        .iter()
+        .filter_map(|line| {
+            // Convert "foo: some notes" in to "foo"
+            let parts: Vec<&str> = line.splitn(2, ":").collect();
+            if parts.len() == 2 {
+                Some(parts[0])
+            } else {
+                None
+            }
+        })
+        .flat_map(|line| { let pkgs: Vec<&str> = line.split(",").collect(); pkgs })
+        .map(|line| line.trim().to_owned())
+
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -639,5 +704,37 @@ mod tests {
         stdenv.identify(System::X8664Darwin, StdenvFrom::After);
 
         assert!(stdenv.are_same());
+    }
+
+    #[test]
+    fn test_parse_commit_messages() {
+        let expect: Vec<&str> = vec![
+            "firefox{-esr", // don't support such fancy syntax
+            "}", // Don't support such fancy syntax
+            "firefox",
+            "buildkite-agent",
+            "python.pkgs.ptyprocess",
+            "python.pkgs.ptyprocess",
+            "android-studio-preview",
+            "foo",
+            "bar",
+        ];
+        assert_eq!(
+            parse_commit_messages("
+              firefox{-esr,}: fix failing build due to the google-api-key
+              Merge pull request #34483 from andir/dovecot-cve-2017-15132
+              firefox: enable official branding
+              Merge pull request #34442 from rnhmjoj/virtual
+              buildkite-agent: enable building on darwin
+              python.pkgs.ptyprocess: 0.5 -> 0.5.2
+              python.pkgs.ptyprocess: move expression
+              Merge pull request #34465 from steveeJ/steveej-attempt-qtile-bump-0.10.7
+              android-studio-preview: 3.1.0.8 -> 3.1.0.9
+              Merge pull request #34188 from dotlambda/home-assistant
+              Merge pull request #34414 from dotlambda/postfix
+              foo,bar: something here: yeah
+            ".lines().map(|l| l.to_owned()).collect()),
+            expect
+        );
     }
 }
