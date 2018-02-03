@@ -181,7 +181,7 @@ impl CachedProjectCo {
         let result = Command::new("git")
             .arg("diff")
             .arg("--name-only")
-            .arg(format!("HEAD..{}", commit))
+            .arg(format!("HEAD...{}", commit))
             .current_dir(self.clone_to())
             .output()?;
 
