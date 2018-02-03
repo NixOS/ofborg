@@ -118,10 +118,14 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
                     return self.actions().skip(&job);
                 }
 
-                auto_schedule_build_archs = self.acl.build_job_destinations_for_user_repo(
-                    &iss.user.login,
-                    &job.repo.full_name,
-                );
+                if issue_is_wip(&iss) {
+                    auto_schedule_build_archs = vec![];
+                } else {
+                    auto_schedule_build_archs = self.acl.build_job_destinations_for_user_repo(
+                        &iss.user.login,
+                        &job.repo.full_name,
+                    );
+                }
             }
             Err(e) => {
                 self.events.tick("issue-fetch-failed");
@@ -764,4 +768,30 @@ mod tests {
             expect
         );
     }
+}
+
+fn issue_is_wip(issue: &hubcaps::issues::Issue) -> bool {
+    if issue.title.contains("[WIP]") {
+        return true;
+    }
+
+    if issue.title.starts_with("WIP:") {
+        return true;
+    }
+
+    issue.labels.iter().any(|label| indicates_wip(&label.name))
+}
+
+fn indicates_wip(text: &str) -> bool {
+    let text = text.to_lowercase();
+
+    if text.contains("work in progress") {
+        return true;
+    }
+
+    if text.contains("work-in-progress") {
+        return true;
+    }
+
+    return false;
 }
