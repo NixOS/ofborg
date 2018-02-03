@@ -34,6 +34,10 @@ impl TestScratch {
     pub fn path(&self) -> PathBuf {
         self.root.clone()
     }
+
+    pub fn string(&self) -> String {
+        self.path().to_str().unwrap().to_owned()
+    }
 }
 
 impl Drop for TestScratch {

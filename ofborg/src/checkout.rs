@@ -148,7 +148,8 @@ impl CachedProjectCo {
         }
     }
 
-    pub fn commit_messages_from_head(&self, commit: &str) -> Result<String, Error> {
+
+    pub fn commit_messages_from_head(&self, commit: &str) -> Result<Vec<String>, Error> {
         let mut lock = self.lock()?;
 
         let result = Command::new("git")
@@ -161,7 +162,12 @@ impl CachedProjectCo {
         lock.unlock();
 
         if result.status.success() {
-            return Ok(String::from_utf8_lossy(&result.stdout).to_lowercase());
+            return Ok(
+                String::from_utf8_lossy(&result.stdout)
+                    .lines()
+                    .map(|l| l.to_owned())
+                    .collect()
+            );
         } else {
             return Err(Error::new(ErrorKind::Other,
                                   String::from_utf8_lossy(&result.stderr).to_lowercase()));
@@ -215,5 +221,54 @@ impl clone::GitClonable for CachedProject {
 
     fn extra_clone_args(&self) -> Vec<&OsStr> {
         return vec![OsStr::new("--bare")];
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::{Path, PathBuf};
+    use std::process::{Command, Stdio};
+    use ofborg::test_scratch::TestScratch;
+
+    fn tpath(component: &str) -> PathBuf {
+        return Path::new(env!("CARGO_MANIFEST_DIR")).join(component);
+    }
+
+    fn make_pr_repo(bare: &Path, co: &Path) -> String {
+        let output = Command::new("./make-pr.sh")
+            .current_dir(tpath("./test-srcs"))
+            .arg(bare)
+            .arg(co)
+            .stderr(Stdio::null())
+            .stdout(Stdio::piped())
+            .output()
+            .expect("building the test PR failed");
+        let hash = String::from_utf8(output.stdout).expect("Should just be a hash");
+        return hash.trim().to_owned();
+    }
+
+    #[test]
+    pub fn test_commit_msg_list() {
+        let workingdir = TestScratch::new_dir("test-test-commit-msg-list");
+
+        let bare = TestScratch::new_dir("bare-commit-messages");
+        let mk_co = TestScratch::new_dir("mk-commit-messages");
+        let hash = make_pr_repo(&bare.path(), &mk_co.path());
+
+        let cloner = cached_cloner(&workingdir.path());
+        let project = cloner.project("commit-msg-list".to_owned(), bare.string());
+        let working_co = project.clone_for("testing-commit-msgs".to_owned(), "123".to_owned()).expect("clone should work");
+        working_co.checkout_origin_ref(OsStr::new("master"));
+
+        let expect: Vec<String> = vec![
+            "check out this cool PR".to_owned()
+        ];
+
+        assert_eq!(
+            working_co.commit_messages_from_head(&hash).expect("fetching messages should work"),
+            expect
+        );
     }
 }

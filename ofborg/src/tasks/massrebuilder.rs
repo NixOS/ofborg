@@ -195,7 +195,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
         }
 
         let possibly_touched_packages = parse_commit_messages(
-            &co.commit_messages_from_head(&job.pr.head_sha).unwrap_or("".to_owned())
+            co.commit_messages_from_head(&job.pr.head_sha).unwrap_or(vec!["".to_owned()])
         );
 
         overall_status.set_with_description("Merging PR", hubcaps::statuses::State::Pending);
@@ -660,9 +660,9 @@ fn file_to_str(f: &mut File) -> String {
     return String::from(String::from_utf8_lossy(&buffer));
 }
 
-fn parse_commit_messages(messages: &str) -> Vec<String> {
+fn parse_commit_messages(messages: Vec<String>) -> Vec<String> {
     messages
-        .lines()
+        .iter()
         .filter_map(|line| {
             // Convert "foo: some notes" in to "foo"
             let parts: Vec<&str> = line.splitn(2, ":").collect();
@@ -727,7 +727,7 @@ mod tests {
               Merge pull request #34188 from dotlambda/home-assistant
               Merge pull request #34414 from dotlambda/postfix
               foo,bar: something here: yeah
-            "),
+            ".lines().map(|l| l.to_owned()).collect()),
             expect
         );
     }
