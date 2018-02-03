@@ -118,10 +118,14 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
                     return self.actions().skip(&job);
                 }
 
-                auto_schedule_build_archs = self.acl.build_job_destinations_for_user_repo(
-                    &iss.user.login,
-                    &job.repo.full_name,
-                );
+                if iss.title.to_lowercase().contains("wip") {
+                    auto_schedule_build_archs = vec![];
+                } else {
+                    auto_schedule_build_archs = self.acl.build_job_destinations_for_user_repo(
+                        &iss.user.login,
+                        &job.repo.full_name,
+                    );
+                }
             }
             Err(e) => {
                 self.events.tick("issue-fetch-failed");
