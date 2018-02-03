@@ -1,5 +1,6 @@
 use ofborg::tasks;
 use ofborg::outpathdiff::PackageArch;
+use std::collections::HashMap;
 
 pub struct StdenvTagger {
     possible: Vec<String>,
@@ -152,5 +153,106 @@ impl RebuildTagger {
             return "0";
         }
 
+    }
+}
+
+pub struct PathsTagger {
+    possible: HashMap<String, Vec<String>>,
+    selected: Vec<String>,
+}
+
+impl PathsTagger {
+    pub fn new(tags_and_criteria: HashMap<String, Vec<String>>) -> PathsTagger {
+        PathsTagger {
+            possible: tags_and_criteria,
+            selected: vec![],
+        }
+    }
+
+    pub fn path_changed(&mut self, path: &str) {
+        let mut tags_to_add: Vec<String> = self.possible
+            .iter()
+            .filter(|&(ref tag, ref _paths)| !self.selected.contains(&tag))
+            .filter(|&(ref _tag, ref paths)| {
+                paths.iter().any(|tp| path.contains(tp))
+            })
+            .map(|(tag, _paths)| tag.clone())
+            .collect();
+        self.selected.append(&mut tags_to_add);
+        self.selected.sort();
+    }
+
+    pub fn tags_to_add(&self) -> Vec<String> {
+        self.selected.clone()
+    }
+
+    pub fn tags_to_remove(&self) -> Vec<String> {
+        let mut remove: Vec<String> = self.possible.keys().map(|k| k.to_owned()).collect();
+        remove.sort();
+        for tag in &self.selected {
+            let pos = remove.binary_search(&tag).unwrap();
+            remove.remove(pos);
+        }
+
+        return remove;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    pub fn test_files_changed_list() {
+        let mut criteria: HashMap<String, Vec<String>> = HashMap::new();
+        criteria.insert(
+            "topic: python".to_owned(),
+            vec![
+                "pkgs/top-level/python-packages.nix".to_owned(),
+                "bogus".to_owned(),
+            ],
+        );
+        criteria.insert(
+            "topic: ruby".to_owned(),
+            vec![
+                "pkgs/development/interpreters/ruby".to_owned(),
+                "bogus".to_owned(),
+            ],
+        );
+
+        {
+            let mut tagger = PathsTagger::new(criteria.clone());
+            tagger.path_changed("default.nix");
+            assert_eq!(tagger.tags_to_add().len(), 0);
+            assert_eq!(
+                tagger.tags_to_remove(),
+                vec!["topic: python".to_owned(), "topic: ruby".to_owned()]
+            );
+
+
+            tagger.path_changed("pkgs/development/interpreters/ruby/default.nix");
+            assert_eq!(tagger.tags_to_add(), vec!["topic: ruby".to_owned()]);
+            assert_eq!(tagger.tags_to_remove(), vec!["topic: python".to_owned()]);
+
+            tagger.path_changed("pkgs/development/interpreters/ruby/foobar.nix");
+            assert_eq!(tagger.tags_to_add(), vec!["topic: ruby".to_owned()]);
+            assert_eq!(tagger.tags_to_remove(), vec!["topic: python".to_owned()]);
+
+
+            tagger.path_changed("pkgs/top-level/python-packages.nix");
+            assert_eq!(
+                tagger.tags_to_add(),
+                vec!["topic: python".to_owned(), "topic: ruby".to_owned()]
+            );
+        }
+
+        {
+            let mut tagger = PathsTagger::new(criteria.clone());
+            tagger.path_changed("bogus");
+            assert_eq!(
+                tagger.tags_to_add(),
+                vec!["topic: python".to_owned(), "topic: ruby".to_owned()]
+            );
+        }
     }
 }
