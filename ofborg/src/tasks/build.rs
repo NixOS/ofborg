@@ -105,6 +105,10 @@ impl<'a, 'b> JobActions<'a, 'b> {
         self.tell(worker::Action::Ack);
     }
 
+    pub fn nothing_to_do(&mut self) {
+        self.tell(worker::Action::Ack);
+    }
+
     pub fn merge_failed(&mut self) {
         let msg = buildresult::BuildResult {
             repo: self.job.repo.clone(),
@@ -231,6 +235,11 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         notifier: &mut notifyworker::NotificationReceiver,
     ) {
         let mut actions = self.actions(&job, notifier);
+
+        if job.attrs.len() == 0 {
+            actions.nothing_to_do();
+            return;
+        }
 
         info!("Working on {}", job.pr.number);
         let project = self.cloner.project(
