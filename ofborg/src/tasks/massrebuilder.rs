@@ -414,7 +414,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
                     try_build.sort();
                     try_build.dedup();
 
-                    if try_build.len() <= 10 {
+                    if try_build.len() > 0 && try_build.len() <= 10 {
                         // In the case of trying to merge master in to
                         // a stable branch, we don't want to do this.
                         // Therefore, only schedule builds if there
