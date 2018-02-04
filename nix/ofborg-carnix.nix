@@ -210,6 +210,14 @@ rec {
     sha256 = "1xxbzd8cjlpzsb9fsih7mdnndhzrvykj0w77yg90qc85az1xwy5z";
     inherit dependencies buildDependencies features;
   };
+  fnv_1_0_6_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    crateName = "fnv";
+    version = "1.0.6";
+    authors = [ "Alex Crichton <alex@alexcrichton.com>" ];
+    sha256 = "128mlh23y3gg6ag5h8iiqlcbl59smisdzraqy88ldrf75kbw27ip";
+    libPath = "lib.rs";
+    inherit dependencies buildDependencies features;
+  };
   foreign_types_0_3_2_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
     crateName = "foreign-types";
     version = "0.3.2";
@@ -444,6 +452,28 @@ rec {
     sha256 = "06k8fxgrsrxj8mjpjcq1n7mn2p1shpxif4zg9y5h09c7vy20s146";
     inherit dependencies buildDependencies features;
   };
+  prometheus_0_3_11_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    crateName = "prometheus";
+    version = "0.3.11";
+    authors = [ "overvenus@gmail.com" "siddontang@gmail.com" ];
+    sha256 = "1c5vcy771cwpd14adgknf7pmf603p8nf4q90ik7ry083vxrvbmbg";
+    inherit dependencies buildDependencies features;
+  };
+  protobuf_1_4_3_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    crateName = "protobuf";
+    version = "1.4.3";
+    authors = [ "Stepan Koltsov <stepan.koltsov@gmail.com>" ];
+    sha256 = "093fczpx523lm6d7xr5d4mqs88891ay6wk951yck3cavsz35z00b";
+    crateBin = [ {  name = "protoc-gen-rust";  path = "protoc-gen-rust.rs"; } {  name = "protobuf-bin-gen-rust-do-not-use";  path = "protobuf-bin-gen-rust-do-not-use.rs"; } ];
+    inherit dependencies buildDependencies features;
+  };
+  quick_error_0_2_2_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    crateName = "quick-error";
+    version = "0.2.2";
+    authors = [ "Paul Colomiets <paul@colomiets.name>" "Colin Kiegel <kiegel@gmx.de>" ];
+    sha256 = "0r1f4ps998y779qwvnmmxhjq00qh5wxg3m5inswfawg0vr2732db";
+    inherit dependencies buildDependencies features;
+  };
   quote_0_3_15_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
     crateName = "quote";
     version = "0.3.15";
@@ -557,6 +587,13 @@ rec {
     version = "1.0.9";
     authors = [ "Erick Tryzelaar <erick.tryzelaar@gmail.com>" "David Tolnay <dtolnay@gmail.com>" ];
     sha256 = "1pcclssyndz54cncsizkqrblmqqr1p2g6xhkpwldbk6qc95m4yw3";
+    inherit dependencies buildDependencies features;
+  };
+  spin_0_4_6_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    crateName = "spin";
+    version = "0.4.6";
+    authors = [ "Mathijs van de Nes <git@mathijs.vd-nes.nl>" "John Ericson <John_Ericson@Yahoo.com>" ];
+    sha256 = "1mp30r3pxb38m6mszcgn6136d1r162fwcidg3y4d9rym21hmialj";
     inherit dependencies buildDependencies features;
   };
   syn_0_11_11_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
@@ -1025,6 +1062,10 @@ rec {
       (f.error_chain_0_10_0.default or false) ||
       (error_chain_0_10_0.default or false);
   }) [ backtrace_0_3_5_features ];
+  fnv_1_0_6 = { features?(fnv_1_0_6_features {}) }: fnv_1_0_6_ {};
+  fnv_1_0_6_features = f: updateFeatures f (rec {
+    fnv_1_0_6.default = (f.fnv_1_0_6.default or true);
+  }) [];
   foreign_types_0_3_2 = { features?(foreign_types_0_3_2_features {}) }: foreign_types_0_3_2_ {
     dependencies = mapFeatures features ([ foreign_types_shared_0_1_1 ]);
   };
@@ -1324,7 +1365,7 @@ rec {
     num_cpus_1_8_0.default = (f.num_cpus_1_8_0.default or true);
   }) [ libc_0_2_36_features ];
   ofborg_0_1_1 = { features?(ofborg_0_1_1_features {}) }: ofborg_0_1_1_ {
-    dependencies = mapFeatures features ([ amqp_0_1_0 env_logger_0_4_3 fs2_0_4_3 hubcaps_0_3_16 hyper_0_10_13 hyper_native_tls_0_2_4 log_0_3_8 lru_cache_0_1_1 md5_0_3_6 serde_1_0_27 serde_derive_1_0_27 serde_json_1_0_9 tempfile_2_2_0 uuid_0_4_0 ]);
+    dependencies = mapFeatures features ([ amqp_0_1_0 env_logger_0_4_3 fs2_0_4_3 hubcaps_0_3_16 hyper_0_10_13 hyper_native_tls_0_2_4 log_0_3_8 lru_cache_0_1_1 md5_0_3_6 prometheus_0_3_11 serde_1_0_27 serde_derive_1_0_27 serde_json_1_0_9 tempfile_2_2_0 uuid_0_4_0 ]);
   };
   ofborg_0_1_1_features = f: updateFeatures f (rec {
     amqp_0_1_0.default = true;
@@ -1337,13 +1378,14 @@ rec {
     lru_cache_0_1_1.default = true;
     md5_0_3_6.default = true;
     ofborg_0_1_1.default = (f.ofborg_0_1_1.default or true);
+    prometheus_0_3_11.default = true;
     serde_1_0_27.default = true;
     serde_derive_1_0_27.default = true;
     serde_json_1_0_9.default = true;
     tempfile_2_2_0.default = true;
     uuid_0_4_0.default = true;
     uuid_0_4_0.v4 = true;
-  }) [ amqp_0_1_0_features env_logger_0_4_3_features fs2_0_4_3_features hubcaps_0_3_16_features hyper_0_10_13_features hyper_native_tls_0_2_4_features log_0_3_8_features lru_cache_0_1_1_features md5_0_3_6_features serde_1_0_27_features serde_derive_1_0_27_features serde_json_1_0_9_features tempfile_2_2_0_features uuid_0_4_0_features ];
+  }) [ amqp_0_1_0_features env_logger_0_4_3_features fs2_0_4_3_features hubcaps_0_3_16_features hyper_0_10_13_features hyper_native_tls_0_2_4_features log_0_3_8_features lru_cache_0_1_1_features md5_0_3_6_features prometheus_0_3_11_features serde_1_0_27_features serde_derive_1_0_27_features serde_json_1_0_9_features tempfile_2_2_0_features uuid_0_4_0_features ];
   openssl_0_9_23 = { features?(openssl_0_9_23_features {}) }: openssl_0_9_23_ {
     dependencies = mapFeatures features ([ bitflags_0_9_1 foreign_types_0_3_2 lazy_static_1_0_0 libc_0_2_36 openssl_sys_0_9_24 ]);
     features = mkFeatures (features.openssl_0_9_23 or {});
@@ -1374,6 +1416,59 @@ rec {
   pkg_config_0_3_9 = { features?(pkg_config_0_3_9_features {}) }: pkg_config_0_3_9_ {};
   pkg_config_0_3_9_features = f: updateFeatures f (rec {
     pkg_config_0_3_9.default = (f.pkg_config_0_3_9.default or true);
+  }) [];
+  prometheus_0_3_11 = { features?(prometheus_0_3_11_features {}) }: prometheus_0_3_11_ {
+    dependencies = mapFeatures features ([ cfg_if_0_1_2 fnv_1_0_6 lazy_static_0_2_11 protobuf_1_4_3 quick_error_0_2_2 spin_0_4_6 ])
+      ++ (if kernel == "linux" then mapFeatures features ([]) else []);
+    features = mkFeatures (features.prometheus_0_3_11 or {});
+  };
+  prometheus_0_3_11_features = f: updateFeatures f (rec {
+    cfg_if_0_1_2.default = true;
+    fnv_1_0_6.default = true;
+    lazy_static_0_2_11.default = true;
+    prometheus_0_3_11.clippy =
+      (f.prometheus_0_3_11.clippy or false) ||
+      (f.prometheus_0_3_11.dev or false) ||
+      (prometheus_0_3_11.dev or false);
+    prometheus_0_3_11.default = (f.prometheus_0_3_11.default or true);
+    prometheus_0_3_11.hyper =
+      (f.prometheus_0_3_11.hyper or false) ||
+      (f.prometheus_0_3_11.push or false) ||
+      (prometheus_0_3_11.push or false);
+    prometheus_0_3_11.libc =
+      (f.prometheus_0_3_11.libc or false) ||
+      (f.prometheus_0_3_11.nightly or false) ||
+      (prometheus_0_3_11.nightly or false) ||
+      (f.prometheus_0_3_11.process or false) ||
+      (prometheus_0_3_11.process or false) ||
+      (f.prometheus_0_3_11.push or false) ||
+      (prometheus_0_3_11.push or false);
+    prometheus_0_3_11.procinfo =
+      (f.prometheus_0_3_11.procinfo or false) ||
+      (f.prometheus_0_3_11.process or false) ||
+      (prometheus_0_3_11.process or false);
+    protobuf_1_4_3.default = true;
+    quick_error_0_2_2.default = true;
+    spin_0_4_6.default = (f.spin_0_4_6.default or false);
+    spin_0_4_6.unstable =
+      (f.spin_0_4_6.unstable or false) ||
+      (prometheus_0_3_11.nightly or false) ||
+      (f.prometheus_0_3_11.nightly or false);
+  }) [ cfg_if_0_1_2_features fnv_1_0_6_features lazy_static_0_2_11_features protobuf_1_4_3_features quick_error_0_2_2_features spin_0_4_6_features ];
+  protobuf_1_4_3 = { features?(protobuf_1_4_3_features {}) }: protobuf_1_4_3_ {
+    dependencies = mapFeatures features ([]);
+    features = mkFeatures (features.protobuf_1_4_3 or {});
+  };
+  protobuf_1_4_3_features = f: updateFeatures f (rec {
+    protobuf_1_4_3.bytes =
+      (f.protobuf_1_4_3.bytes or false) ||
+      (f.protobuf_1_4_3.with-bytes or false) ||
+      (protobuf_1_4_3.with-bytes or false);
+    protobuf_1_4_3.default = (f.protobuf_1_4_3.default or true);
+  }) [];
+  quick_error_0_2_2 = { features?(quick_error_0_2_2_features {}) }: quick_error_0_2_2_ {};
+  quick_error_0_2_2_features = f: updateFeatures f (rec {
+    quick_error_0_2_2.default = (f.quick_error_0_2_2.default or true);
   }) [];
   quote_0_3_15 = { features?(quote_0_3_15_features {}) }: quote_0_3_15_ {};
   quote_0_3_15_features = f: updateFeatures f (rec {
@@ -1588,6 +1683,34 @@ rec {
       (f.serde_json_1_0_9.preserve_order or false) ||
       (serde_json_1_0_9.preserve_order or false);
   }) [ dtoa_0_4_2_features itoa_0_3_4_features num_traits_0_1_41_features serde_1_0_27_features ];
+  spin_0_4_6 = { features?(spin_0_4_6_features {}) }: spin_0_4_6_ {
+    features = mkFeatures (features.spin_0_4_6 or {});
+  };
+  spin_0_4_6_features = f: updateFeatures f (rec {
+    spin_0_4_6.asm =
+      (f.spin_0_4_6.asm or false) ||
+      (f.spin_0_4_6.unstable or false) ||
+      (spin_0_4_6.unstable or false);
+    spin_0_4_6.const_fn =
+      (f.spin_0_4_6.const_fn or false) ||
+      (f.spin_0_4_6.once or false) ||
+      (spin_0_4_6.once or false) ||
+      (f.spin_0_4_6.unstable or false) ||
+      (spin_0_4_6.unstable or false);
+    spin_0_4_6.core_intrinsics =
+      (f.spin_0_4_6.core_intrinsics or false) ||
+      (f.spin_0_4_6.unstable or false) ||
+      (spin_0_4_6.unstable or false);
+    spin_0_4_6.default = (f.spin_0_4_6.default or true);
+    spin_0_4_6.once =
+      (f.spin_0_4_6.once or false) ||
+      (f.spin_0_4_6.unstable or false) ||
+      (spin_0_4_6.unstable or false);
+    spin_0_4_6.unstable =
+      (f.spin_0_4_6.unstable or false) ||
+      (f.spin_0_4_6.default or false) ||
+      (spin_0_4_6.default or false);
+  }) [];
   syn_0_11_11 = { features?(syn_0_11_11_features {}) }: syn_0_11_11_ {
     dependencies = mapFeatures features ([ ]
       ++ (if features.syn_0_11_11.quote or false then [ quote_0_3_15 ] else [])
