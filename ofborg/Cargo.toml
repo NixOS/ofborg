@@ -2,6 +2,9 @@
 name = "ofborg"
 version = "0.1.1"
 authors = ["Graham Christensen <graham@grahamc.com>"]
+include = ["Cargo.toml", "Cargo.lock", "src", "test-srcs"]
+
+
 
 [dependencies]
 log = "= 0.3.8"

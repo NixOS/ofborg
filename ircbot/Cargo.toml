@@ -2,7 +2,7 @@
 name = "ircbot"
 version = "0.1.0"
 authors = ["Graham Christensen <graham@grahamc.com>"]
-
+include = [ "Cargo.lock", "Cargot.toml", "lib.rs", "src"]
 [dependencies]
 log = "0.3.8"
 env_logger = "0.4.3"
