@@ -11,20 +11,18 @@ let
   '';
 in {
   ofborg.rs = let
-      build = (pkgs.callPackage ./nix/ofborg-carnix.nix {})
-        .ofborg_0_1_1.override {
-          crateOverrides = pkgs.defaultCrateOverrides //
-          {
-            ofborg = attrs: {
-              buildInputs =
-                  pkgs.lib.optionals
-                    pkgs.stdenv.isDarwin
-                    [ pkgs.darwin.apple_sdk.frameworks.Security ];
-            };
-          };
+    drv = (pkgs.callPackage ./nix/ofborg-carnix.nix {}).ofborg {};
+    build = drv.override {
+      crateOverrides = pkgs.defaultCrateOverrides // {
+        ofborg = attrs: {
+          buildInputs = pkgs.lib.optionals pkgs.stdenv.isDarwin
+                     [ pkgs.darwin.apple_sdk.frameworks.Security ];
         };
-    in stripDeps build;
-  ircbot = stripDeps (pkgs.callPackage ./nix/ircbot-carnix.nix {}).ircbot_0_1_0;
+      };
+    };
+  in stripDeps build;
+
+  ircbot = stripDeps ((pkgs.callPackage ./nix/ircbot-carnix.nix {}).ircbot {});
 
   ofborg.php = pkgs.runCommand
     "ofborg"
