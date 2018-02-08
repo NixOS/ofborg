@@ -353,7 +353,7 @@ mod tests {
     use ofborg::test_scratch::TestScratch;
 
     fn nix() -> nix::Nix {
-        nix::Nix::new("x86_64-linux".to_owned(), "daemon".to_owned(), 1800)
+        nix::Nix::new("x86_64-linux".to_owned(), "daemon".to_owned(), 1800, None)
     }
 
     fn tpath(component: &str) -> PathBuf {

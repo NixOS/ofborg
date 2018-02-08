@@ -42,6 +42,7 @@ pub struct NixConfig {
     pub system: String,
     pub remote: String,
     pub build_timeout_seconds: u16,
+    pub initial_heap_size: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -105,6 +106,7 @@ impl Config {
             self.nix.system.clone(),
             self.nix.remote.clone(),
             self.nix.build_timeout_seconds,
+            self.nix.initial_heap_size.clone(),
         );
     }
 }

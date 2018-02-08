@@ -13,43 +13,36 @@ pub struct Nix {
     remote: String,
     build_timeout: u16,
     limit_supported_systems: bool,
+    initial_heap_size: Option<String>,
 }
 
 impl Nix {
-    pub fn new(system: String, remote: String, build_timeout: u16) -> Nix {
+    pub fn new(system: String, remote: String, build_timeout: u16, initial_heap_size: Option<String>) -> Nix {
         return Nix {
             system: system,
             remote: remote,
             build_timeout: build_timeout,
+            initial_heap_size: initial_heap_size,
             limit_supported_systems: true,
         };
     }
 
     pub fn with_system(&self, system: String) -> Nix {
-        return Nix {
-            system: system,
-            remote: self.remote.clone(),
-            build_timeout: self.build_timeout,
-            limit_supported_systems: self.limit_supported_systems,
-        };
+        let mut n = self.clone();
+        n.system = system;
+        return n;
     }
 
     pub fn with_limited_supported_systems(&self) -> Nix {
-        return Nix {
-            system: self.system.clone(),
-            remote: self.remote.clone(),
-            build_timeout: self.build_timeout,
-            limit_supported_systems: true,
-        };
+        let mut n = self.clone();
+        n.limit_supported_systems = true;
+        return n;
     }
 
     pub fn without_limited_supported_systems(&self) -> Nix {
-        return Nix {
-            system: self.system.clone(),
-            remote: self.remote.clone(),
-            build_timeout: self.build_timeout,
-            limit_supported_systems: false,
-        };
+        let mut n = self.clone();
+        n.limit_supported_systems = false;
+        return n;
     }
 
     pub fn safely_build_attrs(
@@ -132,6 +125,10 @@ impl Nix {
         command.env("NIX_PATH", nixpath);
         command.env("NIX_REMOTE", &self.remote);
 
+        if let Some(ref initial_heap_size) = self.initial_heap_size {
+            command.env("GC_INITIAL_HEAP_SIZE", &initial_heap_size);
+        }
+
         let path = env::var("PATH").unwrap();
         command.env("PATH", path);
 
@@ -165,7 +162,7 @@ impl Nix {
 #[cfg(test)]
 mod tests {
     fn nix() -> Nix {
-        Nix::new("x86_64-linux".to_owned(), "daemon".to_owned(), 1800)
+        Nix::new("x86_64-linux".to_owned(), "daemon".to_owned(), 1800, None)
     }
 
     fn build_path() -> PathBuf {
@@ -291,6 +288,29 @@ mod tests {
                 "NIX_PATH=nixpkgs=",
                 "NIX_REMOTE=",
                 "PATH=",
+            ],
+        );
+    }
+
+    #[test]
+    fn safe_command_custom_gc() {
+        let nix = Nix::new("x86_64-linux".to_owned(), "daemon".to_owned(), 1800, Some("4g".to_owned()));
+
+        let ret: Result<File, File> =
+            nix.run(
+                nix.safe_command("./environment.sh", build_path().as_path(), vec![]),
+                true,
+            );
+
+        assert_run(
+            ret,
+            Expect::Pass,
+            vec![
+                "HOME=/homeless-shelter",
+                "NIX_PATH=nixpkgs=",
+                "NIX_REMOTE=",
+                "PATH=",
+                "GC_INITIAL_HEAP_SIZE=4g",
             ],
         );
     }

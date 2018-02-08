@@ -717,7 +717,7 @@ mod tests {
 
     #[test]
     fn stdenv_checking() {
-        let nix = Nix::new(String::from("x86_64-linux"), String::from("daemon"), 1200);
+        let nix = Nix::new(String::from("x86_64-linux"), String::from("daemon"), 1200, None);
         let mut stdenv =
             Stdenvs::new(
                 nix.clone(),
