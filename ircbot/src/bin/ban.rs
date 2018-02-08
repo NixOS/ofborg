@@ -57,6 +57,7 @@ fn main() {
                     "supernets.org",
                     "flooding challenge",
                     "details!!",
+                    "supernets.org",
                 ];
 
                 if let Some(from) = message.source_nickname() {
