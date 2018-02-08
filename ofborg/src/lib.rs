@@ -1,4 +1,8 @@
 #[macro_use]
+extern crate prometheus;
+
+
+#[macro_use]
 extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;

@@ -30,7 +30,10 @@ fn main() {
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
     let nix = cfg.nix();
 
-    let events = stats::RabbitMQ::new(session.open_channel(3).unwrap());
+    let events = stats::RabbitMQ::new(
+        &format!("{}-{}", cfg.runner.identity.clone(), cfg.nix.system.clone()),
+        session.open_channel(3).unwrap()
+    );
 
     let mrw = tasks::massrebuilder::MassRebuildWorker::new(
         cloner,

@@ -14,6 +14,7 @@ use ofborg::nix::Nix;
 
 use ofborg::acl::ACL;
 use ofborg::stats;
+use ofborg::stats::Event;
 use ofborg::worker;
 use ofborg::tagger::{StdenvTagger, RebuildTagger, PathsTagger, PkgsAddedRemovedTagger};
 use ofborg::outpathdiff::{OutPaths, OutPathDiff};
@@ -73,7 +74,7 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
     }
 }
 
-impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
+impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E> {
     type J = massrebuildjob::MassRebuildJob;
 
     fn msg_to_job(
@@ -82,14 +83,14 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
         _: &BasicProperties,
         body: &Vec<u8>,
     ) -> Result<Self::J, String> {
-        self.events.tick("job-received");
+        self.events.notify(Event::JobReceived);
         return match massrebuildjob::from(body) {
             Ok(e) => {
-                self.events.tick("job-decode-success");
+                self.events.notify(Event::JobDecodeSuccess);
                 Ok(e)
             }
             Err(e) => {
-                self.events.tick("job-decode-failure");
+                self.events.notify(Event::JobDecodeFailure);
                 error!(
                     "Failed to decode message: {:?}, Err: {:?}",
                     String::from_utf8(body.clone()),
@@ -113,7 +114,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
         match issue.get() {
             Ok(iss) => {
                 if iss.state == "closed" {
-                    self.events.tick("issue-already-closed");
+                    self.events.notify(Event::IssueAlreadyClosed);
                     info!("Skipping {} because it is closed", job.pr.number);
                     return self.actions().skip(&job);
                 }
@@ -128,7 +129,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
                 }
             }
             Err(e) => {
-                self.events.tick("issue-fetch-failed");
+                self.events.notify(Event::IssueFetchFailed);
                 info!("Error fetching {}!", job.pr.number);
                 info!("E: {:?}", e);
                 return self.actions().skip(&job);
