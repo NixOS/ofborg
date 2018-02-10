@@ -32,7 +32,7 @@ let kernel = buildPlatform.parsed.kernel.name;
           includedFileAbsolutePaths;
 
       in builtins.filterSource (possiblePath: _type:
-          builtins.trace "${possiblePath}" ((checkExactMatch possiblePath) || (checkPrefixMatch possiblePath))
+          ((checkExactMatch possiblePath) || (checkPrefixMatch possiblePath))
       )
     src;
     updateFeatures = f: up: functions: builtins.deepSeq f (lib.lists.foldl' (features: fun: fun features) (lib.attrsets.recursiveUpdate f up) functions);
