@@ -10,3 +10,5 @@ config.local.json
 config.*irc*.json
 result
 target
+*.nix.orig
+*.nix.rej
