@@ -15,7 +15,7 @@ use ofborg::nix::Nix;
 use ofborg::acl::ACL;
 use ofborg::stats;
 use ofborg::worker;
-use ofborg::tagger::{StdenvTagger, RebuildTagger, PathsTagger};
+use ofborg::tagger::{StdenvTagger, RebuildTagger, PathsTagger, PkgsAddedRemovedTagger};
 use ofborg::outpathdiff::{OutPaths, OutPathDiff};
 use ofborg::evalchecker::EvalChecker;
 use ofborg::commitstatus::CommitStatus;
@@ -463,6 +463,16 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
                 stdenvtagger.tags_to_add(),
                 stdenvtagger.tags_to_remove(),
             );
+
+            if let Some((removed, added)) = rebuildsniff.package_diff() {
+            let mut addremovetagger = PkgsAddedRemovedTagger::new();
+                addremovetagger.changed(removed, added);
+                update_labels(
+                    &issue,
+                    addremovetagger.tags_to_add(),
+                    addremovetagger.tags_to_remove(),
+                );
+            }
 
             let mut rebuild_tags = RebuildTagger::new();
             if let Some(attrs) = rebuildsniff.calculate_rebuild() {

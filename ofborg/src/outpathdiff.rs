@@ -1,7 +1,7 @@
 extern crate amqp;
 extern crate env_logger;
 
-use std::collections::HashMap;
+use std::collections::{HashSet, HashMap};
 use std::fs::File;
 use std::fs;
 use std::io::BufRead;
@@ -55,6 +55,23 @@ impl OutPathDiff {
                 info!("Failed to find After list");
                 return Err(e);
             }
+        }
+    }
+
+    pub fn package_diff(&self) -> Option<(Vec<PackageArch>, Vec<PackageArch>)> {
+        if let Some(ref cur) = self.current {
+            if let Some(ref orig) = self.original {
+                let orig_set: HashSet<&PackageArch> = orig.keys().collect();
+                let cur_set: HashSet<&PackageArch> = cur.keys().collect();
+
+                let removed: Vec<PackageArch> = orig_set.difference(&cur_set).map(|ref p| (**p).clone()).collect();
+                let added: Vec<PackageArch> = cur_set.difference(&orig_set).map(|ref p| (**p).clone()).collect();
+                return Some((removed, added));
+            } else {
+                return None;
+            }
+        } else {
+            return None;
         }
     }
 
