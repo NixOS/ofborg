@@ -30,7 +30,9 @@ use std::env;
 #[derive(Serialize, Deserialize, Debug)]
 struct MessageToIRC {
     target: String,
-    body: String
+    body: String,
+    #[serde(default = "default_irc_message_type")]
+    message_type: IRCMessageType
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -38,6 +40,17 @@ struct MessageFromIRC {
     from: String,
     sender: String,
     body: String
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "lowercase")]
+enum IRCMessageType {
+    Privmsg,
+    Notice
+}
+
+fn default_irc_message_type() -> IRCMessageType {
+    IRCMessageType::Privmsg
 }
 
 fn main() {
@@ -81,7 +94,14 @@ fn main() {
             move |_channel: &mut Channel, _deliver: Deliver, _headers: BasicProperties, body: Vec<u8>| {
                 let msg: Result<MessageToIRC, serde_json::Error> = serde_json::from_slice(&body);
                 if let Ok(msg) = msg {
-                    server.send_privmsg(&msg.target, &msg.body).unwrap();
+                    match msg.message_type {
+                        IRCMessageType::Notice => {
+                                server.send_notice(&msg.target, &msg.body).unwrap();
+                        }
+                        IRCMessageType::Privmsg => {
+                                server.send_privmsg(&msg.target, &msg.body).unwrap();
+                        }
+                    }
                 }
             },
             "queue-publish", "", false, true, false, false, Table::new());
