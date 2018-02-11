@@ -476,19 +476,22 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
 
             let mut rebuild_tags = RebuildTagger::new();
             if let Some(attrs) = rebuildsniff.calculate_rebuild() {
-                let gist_url = make_gist(
-                    &gists,
-                    String::from("Changed Paths"),
-                    None,
-                    attrs
-                        .iter()
-                        .map(|attr| format!("{}\t{}", &attr.architecture, &attr.package))
-                        .collect::<Vec<String>>()
-                        .join("\n"),
-                );
+                if attrs.len() > 0 {
+                    let gist_url = make_gist(
+                        &gists,
+                        String::from("Changed Paths"),
+                        Some("".to_owned()),
+                        attrs
+                            .iter()
+                            .map(|attr| format!("{}\t{}", &attr.architecture, &attr.package))
+                            .collect::<Vec<String>>()
+                            .join("\n"),
+                    );
+
+                    overall_status.set_url(gist_url);
+                }
 
                 rebuild_tags.parse_attrs(attrs);
-                overall_status.set_url(gist_url);
             }
 
             update_labels(
