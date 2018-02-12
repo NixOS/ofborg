@@ -249,6 +249,13 @@ fn events() -> Vec<MetricType> {
             ]),
         ),
         Metric::ticker(
+            "TargetBranchFailsEvaluation",
+            "Number of PR evaluations which failed because the target branch failed",
+            Some(vec![
+                ("branch", "String"),
+            ]),
+        ),
+        Metric::ticker(
             "JobDecodeSuccess",
             "Number of successfully decoded jobs",
             None,

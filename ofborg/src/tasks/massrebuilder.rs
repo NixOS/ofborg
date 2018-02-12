@@ -196,6 +196,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                 file_to_str(&mut output),
             ));
 
+            self.events.notify(Event::TargetBranchFailsEvaluation(target_branch.clone()));
             overall_status.set_with_description(
                 format!("Target branch {} doesn't evaluate!", &target_branch).as_ref(),
                 hubcaps::statuses::State::Failure,
