@@ -244,7 +244,9 @@ fn events() -> Vec<MetricType> {
         Metric::counter(
             "EvaluationDuration",
             "Amount of time spent running evaluations",
-            None
+            Some(vec![
+                ("branch", "String"),
+            ]),
         ),
         Metric::ticker(
             "JobDecodeSuccess",

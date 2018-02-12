@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use ofborg::checkout;
 use ofborg::message::{massrebuildjob, buildjob};
 use ofborg::nix::Nix;
-
+use std::time::Instant;
 use ofborg::acl::ACL;
 use ofborg::stats;
 use ofborg::stats::Event;
@@ -186,6 +186,8 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
             hubcaps::statuses::State::Pending,
         );
 
+        let target_branch_rebuild_sniff_start = Instant::now();
+
         if let Err(mut output) = rebuildsniff.find_before() {
             overall_status.set_url(make_gist(
                 &gists,
@@ -201,6 +203,12 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
 
             return self.actions().skip(&job);
         }
+        self.events.notify(
+            Event::EvaluationDuration(
+                target_branch.clone(),
+                target_branch_rebuild_sniff_start.elapsed().as_secs(),
+            )
+        );
 
         overall_status.set_with_description("Fetching PR", hubcaps::statuses::State::Pending);
 
