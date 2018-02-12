@@ -3,21 +3,18 @@ use amqp::Channel;
 use amqp::protocol::basic::BasicProperties;
 use amqp::Basic;
 
+include!(concat!(env!("OUT_DIR"), "/events.rs"));
+
+#[macro_use]
+mod macros {
+    #[macro_export]
+    macro_rules! my_macro(() => (FooBar));
+}
+
 pub trait SysEvents: Send {
     fn notify(&mut self, event: Event);
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all="kebab-case")]
-pub enum Event {
-    StatCollectorLegacyEvent,
-    StatCollectorBogusEvent,
-    JobReceived,
-    JobDecodeSuccess,
-    JobDecodeFailure,
-    IssueAlreadyClosed,
-    IssueFetchFailed,
-}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EventMessage {

@@ -2,8 +2,8 @@
 name = "ofborg"
 version = "0.1.1"
 authors = ["Graham Christensen <graham@grahamc.com>"]
-include = ["Cargo.toml", "Cargo.lock", "src", "test-srcs"]
-
+include = ["Cargo.toml", "Cargo.lock", "src", "test-srcs", "build.rs"]
+build = "build.rs"
 
 
 [dependencies]
@@ -23,9 +23,6 @@ hubcaps = { git = "https://github.com/grahamc/hubcaps.git" }
 hyper = "0.10.*"
 hyper-native-tls = "0.2.4"
 lru-cache = "0.1.1"
-# prometheus = "0.3.11"
-prometheus = { path = "../rust-prometheus/" } # for testing patches
-
 
 #[patch.crates-io]
 #amq-proto = { path = "rust-amq-proto" }
