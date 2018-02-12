@@ -510,6 +510,8 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
             );
         }
 
+        self.events.notify(Event::TaskEvaluationCheckComplete);
+
         return self.actions().done(&job, response);
     }
 }

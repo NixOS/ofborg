@@ -266,6 +266,11 @@ fn events() -> Vec<MetricType> {
             "Number of failed fetches for GitHub issues",
             None,
         ),
+        Metric::ticker(
+            "TaskEvaluationCheckComplete",
+            "Number of completed evaluation tasks",
+            None,
+        ),
         /*
         Metric::counter(
             "TimeElapsed",
