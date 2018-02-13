@@ -249,6 +249,13 @@ fn events() -> Vec<MetricType> {
             ]),
         ),
         Metric::ticker(
+            "EvaluationDurationCount",
+            "Number of timed evaluations performed",
+            Some(vec![
+                ("branch", "String"),
+            ]),
+        ),
+        Metric::ticker(
             "TargetBranchFailsEvaluation",
             "Number of PR evaluations which failed because the target branch failed",
             Some(vec![

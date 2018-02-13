@@ -210,6 +210,11 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                 target_branch_rebuild_sniff_start.elapsed().as_secs(),
             )
         );
+        self.events.notify(
+            Event::EvaluationDurationCount(
+                target_branch.clone()
+            )
+        );
 
         overall_status.set_with_description("Fetching PR", hubcaps::statuses::State::Pending);
 
