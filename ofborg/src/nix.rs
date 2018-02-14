@@ -344,7 +344,7 @@ mod tests {
         assert_run(
             ret,
             Expect::Pass,
-            vec!["-success.drv", "building path(s)", "hi", "-success"],
+            vec!["-success.drv", "building ", "hi", "-success"],
         );
     }
 
@@ -363,7 +363,7 @@ mod tests {
             Expect::Fail,
             vec![
                 "-failed.drv",
-                "building path(s)",
+                "building ",
                 "hi",
                 "failed to produce output path",
             ],
