@@ -300,6 +300,46 @@ mod tests {
     use std::env;
 
     #[test]
+    fn test_build_operation() {
+        let nix = nix();
+        let op = Operation::Build;
+
+        assert_eq!(op.to_string(), "nix-build");
+
+        let ret: Result<File, File> =
+            nix.run(
+                nix.safe_command(op, build_path().as_path(), vec![String::from("--version")]),
+                true,
+            );
+
+        assert_run(
+            ret,
+            Expect::Pass,
+            vec!["nix-build (Nix)"],
+        );
+    }
+
+    #[test]
+    fn test_instantiate_operation() {
+        let nix = nix();
+        let op = Operation::Instantiate;
+
+        assert_eq!(op.to_string(), "nix-instantiate");
+
+        let ret: Result<File, File> =
+            nix.run(
+                nix.safe_command(op, build_path().as_path(), vec![String::from("--version")]),
+                true,
+            );
+
+        assert_run(
+            ret,
+            Expect::Pass,
+            vec!["nix-instantiate (Nix)"],
+        );
+    }
+
+    #[test]
     fn safe_command_environment() {
         let nix = nix();
 
