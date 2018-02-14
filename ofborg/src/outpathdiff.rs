@@ -170,7 +170,7 @@ impl OutPaths {
         }
 
         self.nix.safely(
-            "nix-env",
+            nix::Operation::new("nix-env"),
             &self.path,
             vec![
                 String::from("-f"),

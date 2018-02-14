@@ -10,7 +10,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use ofborg::checkout;
 use ofborg::message::{massrebuildjob, buildjob};
-use ofborg::nix::Nix;
+use ofborg::nix;
 
 use ofborg::acl::ACL;
 use ofborg::stats;
@@ -25,7 +25,7 @@ use hubcaps;
 
 pub struct MassRebuildWorker<E> {
     cloner: checkout::CachedCloner,
-    nix: Nix,
+    nix: nix::Nix,
     github: hubcaps::Github,
     acl: ACL,
     identity: String,
@@ -36,7 +36,7 @@ pub struct MassRebuildWorker<E> {
 impl<E: stats::SysEvents> MassRebuildWorker<E> {
     pub fn new(
         cloner: checkout::CachedCloner,
-        nix: Nix,
+        nix: nix::Nix,
         github: hubcaps::Github,
         acl: ACL,
         identity: String,
@@ -291,7 +291,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
         let eval_checks = vec![
             EvalChecker::new(
                 "package-list",
-                "nix-env",
+                nix::Operation::new("nix-env"),
                 vec![
                     String::from("--file"),
                     String::from("."),
@@ -304,7 +304,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
 
             EvalChecker::new(
                 "nixos-options",
-                "nix-instantiate",
+                nix::Operation::Instantiate,
                 vec![
                     String::from("./nixos/release.nix"),
                     String::from("-A"),
@@ -315,7 +315,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
 
             EvalChecker::new(
                 "nixos-manual",
-                "nix-instantiate",
+                nix::Operation::Instantiate,
                 vec![
                     String::from("./nixos/release.nix"),
                     String::from("-A"),
@@ -326,7 +326,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
 
             EvalChecker::new(
                 "nixpkgs-manual",
-                "nix-instantiate",
+                nix::Operation::Instantiate,
                 vec![
                     String::from("./pkgs/top-level/release.nix"),
                     String::from("-A"),
@@ -337,7 +337,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
 
             EvalChecker::new(
                 "nixpkgs-tarball",
-                "nix-instantiate",
+                nix::Operation::Instantiate,
                 vec![
                     String::from("./pkgs/top-level/release.nix"),
                     String::from("-A"),
@@ -348,7 +348,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
 
             EvalChecker::new(
                 "nixpkgs-unstable-jobset",
-                "nix-instantiate",
+                nix::Operation::Instantiate,
                 vec![
                     String::from("./pkgs/top-level/release.nix"),
                     String::from("-A"),
@@ -542,7 +542,7 @@ pub enum System {
 
 #[derive(Debug, PartialEq)]
 struct Stdenvs {
-    nix: Nix,
+    nix: nix::Nix,
     co: PathBuf,
 
     linux_stdenv_before: Option<String>,
@@ -553,7 +553,7 @@ struct Stdenvs {
 }
 
 impl Stdenvs {
-    fn new(nix: Nix, co: PathBuf) -> Stdenvs {
+    fn new(nix: nix::Nix, co: PathBuf) -> Stdenvs {
         return Stdenvs {
             nix: nix,
             co: co,
@@ -615,7 +615,7 @@ impl Stdenvs {
 
     fn evalstdenv(&self, system: &str) -> Option<String> {
         let result = self.nix.with_system(system.to_owned()).safely(
-            "nix-instantiate",
+            nix::Operation::Instantiate,
             &self.co,
             vec![
                 String::from("."),
@@ -768,8 +768,7 @@ mod tests {
         let nixpkgs = String::from_utf8(output.stdout)
             .expect("nixpkgs required");
 
-        let nix = Nix::new(String::from("x86_64-linux"), String::from("daemon"), 1200, None);
-
+        let nix = nix::Nix::new(String::from("x86_64-linux"), String::from("daemon"), 1200, None);
         let mut stdenv =
             Stdenvs::new(
                 nix.clone(),

@@ -1,11 +1,42 @@
 use std::env;
-use std::ffi::OsString;
+use std::fmt;
 use std::fs::File;
 use std::io::Seek;
 use std::io::SeekFrom;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use tempfile::tempfile;
+
+#[derive(Clone, Debug)]
+pub enum Operation {
+    Build,
+    Instantiate,
+    Unknown { program: String },
+}
+
+impl Operation {
+    pub fn new(program: &str) -> Operation {
+        Operation::Unknown { program: program.to_owned() }
+    }
+
+    fn command(&self) -> Command {
+        match *self {
+            Operation::Build => Command::new("nix-build"),
+            Operation::Instantiate => Command::new("nix-instantiate"),
+            Operation::Unknown { ref program } => Command::new(program),
+        }
+    }
+}
+
+impl fmt::Display for Operation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Operation::Build => write!(f, "{}", "nix-build"),
+            Operation::Instantiate => write!(f, "{}", "nix-instantiate"),
+            Operation::Unknown { ref program } => write!(f, "{}", program),
+        }
+    }
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Nix {
@@ -71,17 +102,17 @@ impl Nix {
             attrargs.push(attr);
         }
 
-        return self.safe_command("nix-build", nixpkgs, attrargs);
+        return self.safe_command(Operation::Build, nixpkgs, attrargs);
     }
 
     pub fn safely(
         &self,
-        cmd: &str,
+        op: Operation,
         nixpkgs: &Path,
         args: Vec<String>,
         keep_stdout: bool,
     ) -> Result<File, File> {
-        return self.run(self.safe_command(cmd, nixpkgs, args), keep_stdout);
+        return self.run(self.safe_command(op, nixpkgs, args), keep_stdout);
     }
 
     pub fn run(&self, mut cmd: Command, keep_stdout: bool) -> Result<File, File> {
@@ -113,12 +144,10 @@ impl Nix {
         }
     }
 
-    pub fn safe_command(&self, cmd: &str, nixpkgs: &Path, args: Vec<String>) -> Command {
-        let mut nixpath = OsString::new();
-        nixpath.push("nixpkgs=");
-        nixpath.push(nixpkgs.as_os_str());
+    pub fn safe_command(&self, op: Operation, nixpkgs: &Path, args: Vec<String>) -> Command {
+        let nixpath = format!("nixpkgs={}", nixpkgs.display());
 
-        let mut command = Command::new(cmd);
+        let mut command = op.command();
         command.env_clear();
         command.current_dir(nixpkgs);
         command.env("HOME", "/homeless-shelter");
@@ -276,7 +305,7 @@ mod tests {
 
         let ret: Result<File, File> =
             nix.run(
-                nix.safe_command("./environment.sh", build_path().as_path(), vec![]),
+                nix.safe_command(Operation::new("./environment.sh"), build_path().as_path(), vec![]),
                 true,
             );
 
@@ -298,7 +327,7 @@ mod tests {
 
         let ret: Result<File, File> =
             nix.run(
-                nix.safe_command("./environment.sh", build_path().as_path(), vec![]),
+                nix.safe_command(Operation::new("./environment.sh"), build_path().as_path(), vec![]),
                 true,
             );
 
@@ -320,7 +349,7 @@ mod tests {
         let nix = nix();
 
         let ret: Result<File, File> = nix.run(
-            nix.safe_command("echo", build_path().as_path(), vec![]),
+            nix.safe_command(Operation::new("echo"), build_path().as_path(), vec![]),
             true,
         );
 
@@ -393,7 +422,7 @@ mod tests {
     #[test]
     fn instantiation() {
         let ret: Result<File, File> = nix().safely(
-            "nix-instantiate",
+            Operation::Instantiate,
             passing_eval_path().as_path(),
             vec![],
             true,
