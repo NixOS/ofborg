@@ -170,14 +170,11 @@ impl OutPaths {
         }
 
         self.nix.safely(
-            nix::Operation::new("nix-env"),
+            nix::Operation::QueryPackagesOutputs,
             &self.path,
             vec![
                 String::from("-f"),
                 String::from(".gc-of-borg-outpaths.nix"),
-                String::from("-qaP"),
-                String::from("--no-name"),
-                String::from("--out-path"),
                 String::from("--arg"),
                 String::from("checkMeta"),
                 check_meta,

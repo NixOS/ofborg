@@ -291,13 +291,10 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
         let eval_checks = vec![
             EvalChecker::new(
                 "package-list",
-                nix::Operation::new("nix-env"),
+                nix::Operation::QueryPackagesJSON,
                 vec![
                     String::from("--file"),
                     String::from("."),
-                    String::from("--query"),
-                    String::from("--available"),
-                    String::from("--json"),
                 ],
                 self.nix.clone()
             ),

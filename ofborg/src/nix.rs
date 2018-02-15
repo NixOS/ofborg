@@ -9,22 +9,40 @@ use tempfile::tempfile;
 
 #[derive(Clone, Debug)]
 pub enum Operation {
-    Build,
     Instantiate,
+    Build,
+    QueryPackagesJSON,
+    QueryPackagesOutputs,
+    NoOp { operation: Box<Operation> },
     Unknown { program: String },
 }
 
 impl Operation {
-    pub fn new(program: &str) -> Operation {
-        Operation::Unknown { program: program.to_owned() }
-    }
-
     fn command(&self) -> Command {
         match *self {
-            Operation::Build => Command::new("nix-build"),
             Operation::Instantiate => Command::new("nix-instantiate"),
+            Operation::Build => Command::new("nix-build"),
+            Operation::QueryPackagesJSON => Command::new("nix-env"),
+            Operation::QueryPackagesOutputs => Command::new("nix-env"),
+            Operation::NoOp { operation: _ } => Command::new("echo"),
             Operation::Unknown { ref program } => Command::new(program),
         }
+    }
+
+    fn args(&self, command: &mut Command) {
+        match *self {
+            Operation::Build => {
+                command.args(&["--no-out-link", "--keep-going"]);
+            },
+            Operation::QueryPackagesJSON => {
+                command.args(&["--query", "--available", "--json"]);
+            },
+            Operation::QueryPackagesOutputs => {
+                command.args(&["--query", "--available", "--no-name", "--attr-path", "--out-path"]);
+            },
+            Operation::NoOp { ref operation } => { operation.args(command); },
+            _ => (),
+        };
     }
 }
 
@@ -33,6 +51,9 @@ impl fmt::Display for Operation {
         match *self {
             Operation::Build => write!(f, "{}", "nix-build"),
             Operation::Instantiate => write!(f, "{}", "nix-instantiate"),
+            Operation::QueryPackagesJSON => write!(f, "{}", "nix-env -qa --json"),
+            Operation::QueryPackagesOutputs => write!(f, "{}", "nix-env -qaP --no-name --out-path"),
+            Operation::NoOp { ref operation } => operation.fmt(f),
             Operation::Unknown { ref program } => write!(f, "{}", program),
         }
     }
@@ -95,8 +116,6 @@ impl Nix {
     ) -> Command {
         let mut attrargs: Vec<String> = Vec::with_capacity(3 + (attrs.len() * 2));
         attrargs.push(file.to_owned());
-        attrargs.push(String::from("--no-out-link"));
-        attrargs.push(String::from("--keep-going"));
         for attr in attrs {
             attrargs.push(String::from("-A"));
             attrargs.push(attr);
@@ -148,6 +167,8 @@ impl Nix {
         let nixpath = format!("nixpkgs={}", nixpkgs.display());
 
         let mut command = op.command();
+        op.args(&mut command);
+
         command.env_clear();
         command.current_dir(nixpkgs);
         command.env("HOME", "/homeless-shelter");
@@ -192,6 +213,14 @@ impl Nix {
 mod tests {
     fn nix() -> Nix {
         Nix::new("x86_64-linux".to_owned(), "daemon".to_owned(), 1800, None)
+    }
+
+    fn noop(operation: Operation) -> Operation {
+        Operation::NoOp { operation: Box::new(operation) }
+    }
+
+    fn env_noop() -> Operation {
+        Operation::Unknown { program: "./environment.sh".to_owned() }
     }
 
     fn build_path() -> PathBuf {
@@ -300,10 +329,9 @@ mod tests {
     use std::env;
 
     #[test]
-    fn test_build_operation() {
+    fn test_build_operations() {
         let nix = nix();
-        let op = Operation::Build;
-
+        let op = noop(Operation::Build);
         assert_eq!(op.to_string(), "nix-build");
 
         let ret: Result<File, File> =
@@ -315,15 +343,14 @@ mod tests {
         assert_run(
             ret,
             Expect::Pass,
-            vec!["nix-build (Nix)"],
+            vec!["--no-out-link --keep-going", "--version"],
         );
     }
 
     #[test]
     fn test_instantiate_operation() {
         let nix = nix();
-        let op = Operation::Instantiate;
-
+        let op = noop(Operation::Instantiate);
         assert_eq!(op.to_string(), "nix-instantiate");
 
         let ret: Result<File, File> =
@@ -335,7 +362,48 @@ mod tests {
         assert_run(
             ret,
             Expect::Pass,
-            vec!["nix-instantiate (Nix)"],
+            vec!["--version"],
+        );
+    }
+
+    #[test]
+    fn test_query_packages_json() {
+        let nix = nix();
+        let op = noop(Operation::QueryPackagesJSON);
+        assert_eq!(op.to_string(), "nix-env -qa --json");
+
+        let ret: Result<File, File> =
+            nix.run(
+                nix.safe_command(op, build_path().as_path(), vec![String::from("--version")]),
+                true,
+            );
+
+        assert_run(
+            ret,
+            Expect::Pass,
+            vec!["--query --available --json", "--version"],
+        );
+    }
+
+    #[test]
+    fn test_query_packages_outputs() {
+        let nix = nix();
+        let op = noop(Operation::QueryPackagesOutputs);
+        assert_eq!(op.to_string(), "nix-env -qaP --no-name --out-path");
+
+        let ret: Result<File, File> =
+            nix.run(
+                nix.safe_command(op, build_path().as_path(), vec![String::from("--version")]),
+                true,
+            );
+
+        assert_run(
+            ret,
+            Expect::Pass,
+            vec![
+                "--query --available --no-name --attr-path --out-path",
+                "--version"
+            ],
         );
     }
 
@@ -345,7 +413,7 @@ mod tests {
 
         let ret: Result<File, File> =
             nix.run(
-                nix.safe_command(Operation::new("./environment.sh"), build_path().as_path(), vec![]),
+                nix.safe_command(env_noop(), build_path().as_path(), vec![]),
                 true,
             );
 
@@ -367,7 +435,7 @@ mod tests {
 
         let ret: Result<File, File> =
             nix.run(
-                nix.safe_command(Operation::new("./environment.sh"), build_path().as_path(), vec![]),
+                nix.safe_command(env_noop(), build_path().as_path(), vec![]),
                 true,
             );
 
@@ -387,9 +455,10 @@ mod tests {
     #[test]
     fn safe_command_options() {
         let nix = nix();
+        let op = noop(Operation::Build);
 
         let ret: Result<File, File> = nix.run(
-            nix.safe_command(Operation::new("echo"), build_path().as_path(), vec![]),
+            nix.safe_command(op, build_path().as_path(), vec![]),
             true,
         );
 
@@ -457,7 +526,6 @@ mod tests {
             ],
         );
     }
-
 
     #[test]
     fn instantiation() {
