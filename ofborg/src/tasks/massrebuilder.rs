@@ -740,14 +740,24 @@ fn parse_commit_messages(messages: Vec<String>) -> Vec<String> {
 mod tests {
 
     use super::*;
+    use std::process::Command;
 
     #[test]
     fn stdenv_checking() {
+        let output = Command::new("nix-instantiate")
+            .args(&["--eval", "-E", "<nixpkgs>"])
+            .output()
+            .expect("nix-instantiate required");
+
+        let nixpkgs = String::from_utf8(output.stdout)
+            .expect("nixpkgs required");
+
         let nix = Nix::new(String::from("x86_64-linux"), String::from("daemon"), 1200, None);
+
         let mut stdenv =
             Stdenvs::new(
                 nix.clone(),
-                PathBuf::from("/nix/var/nix/profiles/per-user/root/channels/nixos/nixpkgs"),
+                PathBuf::from(nixpkgs.trim_right()),
             );
         stdenv.identify(System::X8664Linux, StdenvFrom::Before);
         stdenv.identify(System::X8664Darwin, StdenvFrom::Before);
