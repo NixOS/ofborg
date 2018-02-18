@@ -58,6 +58,20 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
         return massrebuildjob::Actions {};
     }
 
+    fn tag_from_title(&self, issue: &hubcaps::issues::IssueRef) {
+        let darwin = issue.get()
+            .map(|iss| iss.title.to_lowercase().contains("darwin"))
+            .unwrap_or(false);
+
+        if darwin {
+            update_labels(
+                &issue,
+                vec![String::from("6.topic: darwin")],
+                vec![],
+            );
+        }
+    }
+
     fn tag_from_paths(&self, issue: &hubcaps::issues::IssueRef, paths: Vec<String>) {
         let mut tagger = PathsTagger::new(self.tag_paths.clone());
 
@@ -134,6 +148,8 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
                 return self.actions().skip(&job);
             }
         }
+
+        self.tag_from_title(&issue);
 
         let mut overall_status = CommitStatus::new(
             repo.statuses(),
