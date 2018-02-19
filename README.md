@@ -141,7 +141,7 @@ Nixpkgs evals are run like:
 
 ```
 $ curl -o outpaths.nix https://raw.githubusercontent.com/NixOS/ofborg/released/ofborg/src/outpaths.nix
-$ nix-env -f ./outpaths.nix -qaP --no-name --out-path --arg checkMeta true > out-paths
+$ GC_INITIAL_HEAP_SIZE=4g nix-env -f ./outpaths.nix -qaP --no-name --out-path --arg checkMeta true > out-paths
 ```
 
 ---
