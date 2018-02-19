@@ -137,6 +137,13 @@ Nixpkgs evals are run like:
 > --show-trace
 
 
+# Running meta checks locally
+
+```
+$ curl -o outpaths.nix https://raw.githubusercontent.com/NixOS/ofborg/released/ofborg/src/outpaths.nix
+$ nix-env -f ./outpaths.nix -qaP --no-name --out-path --arg checkMeta true > out-paths
+```
+
 ---
 
 
