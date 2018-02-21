@@ -44,10 +44,6 @@
         ]
     },
     "tag_paths": {
-        "6.topic: darwin": [
-            "pkgs/top-level/darwin-packages.nix",
-            "pkgs/stdenv/darwin"
-        ],
         "6.topic: emacs": [
             "nixos/modules/services/editors/emacs.nix",
             "nixos/modules/services/editors/emacs.xml",
