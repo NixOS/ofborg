@@ -11,9 +11,10 @@ use std::path::PathBuf;
 use ofborg::checkout;
 use ofborg::message::{massrebuildjob, buildjob};
 use ofborg::nix::Nix;
-
+use std::time::Instant;
 use ofborg::acl::ACL;
 use ofborg::stats;
+use ofborg::stats::Event;
 use ofborg::worker;
 use ofborg::tagger::{StdenvTagger, RebuildTagger, PathsTagger, PkgsAddedRemovedTagger};
 use ofborg::outpathdiff::{OutPaths, OutPathDiff};
@@ -87,7 +88,7 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
     }
 }
 
-impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
+impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E> {
     type J = massrebuildjob::MassRebuildJob;
 
     fn msg_to_job(
@@ -96,14 +97,14 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
         _: &BasicProperties,
         body: &Vec<u8>,
     ) -> Result<Self::J, String> {
-        self.events.tick("job-received");
+        self.events.notify(Event::JobReceived);
         return match massrebuildjob::from(body) {
             Ok(e) => {
-                self.events.tick("job-decode-success");
+                self.events.notify(Event::JobDecodeSuccess);
                 Ok(e)
             }
             Err(e) => {
-                self.events.tick("job-decode-failure");
+                self.events.notify(Event::JobDecodeFailure);
                 error!(
                     "Failed to decode message: {:?}, Err: {:?}",
                     String::from_utf8(body.clone()),
@@ -127,7 +128,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
         match issue.get() {
             Ok(iss) => {
                 if iss.state == "closed" {
-                    self.events.tick("issue-already-closed");
+                    self.events.notify(Event::IssueAlreadyClosed);
                     info!("Skipping {} because it is closed", job.pr.number);
                     return self.actions().skip(&job);
                 }
@@ -142,7 +143,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
                 }
             }
             Err(e) => {
-                self.events.tick("issue-fetch-failed");
+                self.events.notify(Event::IssueFetchFailed);
                 info!("Error fetching {}!", job.pr.number);
                 info!("E: {:?}", e);
                 return self.actions().skip(&job);
@@ -201,6 +202,8 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
             hubcaps::statuses::State::Pending,
         );
 
+        let target_branch_rebuild_sniff_start = Instant::now();
+
         if let Err(mut output) = rebuildsniff.find_before() {
             overall_status.set_url(make_gist(
                 &gists,
@@ -209,6 +212,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
                 file_to_str(&mut output),
             ));
 
+            self.events.notify(Event::TargetBranchFailsEvaluation(target_branch.clone()));
             overall_status.set_with_description(
                 format!("Target branch {} doesn't evaluate!", &target_branch).as_ref(),
                 hubcaps::statuses::State::Failure,
@@ -216,6 +220,17 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
 
             return self.actions().skip(&job);
         }
+        self.events.notify(
+            Event::EvaluationDuration(
+                target_branch.clone(),
+                target_branch_rebuild_sniff_start.elapsed().as_secs(),
+            )
+        );
+        self.events.notify(
+            Event::EvaluationDurationCount(
+                target_branch.clone()
+            )
+        );
 
         overall_status.set_with_description("Fetching PR", hubcaps::statuses::State::Pending);
 
@@ -524,6 +539,8 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
                 hubcaps::statuses::State::Failure,
             );
         }
+
+        self.events.notify(Event::TaskEvaluationCheckComplete);
 
         return self.actions().done(&job, response);
     }

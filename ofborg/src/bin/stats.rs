@@ -1,22 +1,19 @@
-extern crate ofborg;
+extern crate hyper;
 extern crate amqp;
-extern crate env_logger;
+extern crate ofborg;
 
 use std::env;
-use std::path::Path;
-use ofborg::tasks;
-use ofborg::config;
-use ofborg::checkout;
+use ofborg::{easyamqp, tasks, worker, config, stats};
 
-use ofborg::stats;
-use ofborg::worker;
 use amqp::Basic;
-use ofborg::easyamqp;
 use ofborg::easyamqp::TypedWrappers;
+use hyper::server::{Request, Response, Server};
+
+use std::thread;
+use std::time::Duration;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
-
     ofborg::setup_log();
 
     println!("Hello, world!");
@@ -25,33 +22,27 @@ fn main() {
     let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
     println!("Connected to rabbitmq");
 
-    let mut channel = session.open_channel(1).unwrap();
-
-    let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
-    let nix = cfg.nix();
-
     let events = stats::RabbitMQ::new(
         &format!("{}-{}", cfg.runner.identity.clone(), cfg.nix.system.clone()),
         session.open_channel(3).unwrap()
     );
 
-    let mrw = tasks::massrebuilder::MassRebuildWorker::new(
-        cloner,
-        nix,
-        cfg.github(),
-        cfg.acl(),
-        cfg.runner.identity.clone(),
+    let metrics = stats::MetricCollector::new();
+
+    let collector = tasks::statscollector::StatCollectorWorker::new(
         events,
-        cfg.tag_paths.clone().unwrap(),
+        metrics.clone(),
     );
+
+    let mut channel = session.open_channel(1).unwrap();
 
     channel.basic_prefetch(1).unwrap();
     channel
         .consume(
-            worker::new(mrw),
+            worker::new(collector),
             easyamqp::ConsumeConfig {
-                queue: "mass-rebuild-check-jobs".to_owned(),
-                consumer_tag: format!("{}-mass-rebuild-checker", cfg.whoami()),
+                queue: "sample-stats-events".to_owned(),
+                consumer_tag: format!("{}-prometheus-stats-collector", cfg.whoami()),
                 no_local: false,
                 no_ack: false,
                 no_wait: false,
@@ -60,6 +51,19 @@ fn main() {
             },
         )
         .unwrap();
+
+
+    thread::spawn(||{
+        let addr = "127.0.0.1:9898";
+        println!("listening addr {:?}", addr);
+        Server::http(addr)
+            .unwrap()
+            .handle(move |_: Request, res: Response| {
+                res.send(metrics.prometheus_output().as_bytes()).unwrap();
+            })
+            .unwrap();
+    });
+
 
     channel.start_consuming();
 

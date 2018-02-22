@@ -54,8 +54,8 @@ where
     });
 }
 
-pub trait SimpleWorker {
-    type J;
+pub trait SimpleWorker: Send + 'static {
+    type J: Send;
 
     fn consumer(&mut self, job: &Self::J) -> Actions;
 

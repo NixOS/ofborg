@@ -410,7 +410,8 @@ rec {
     crateName = "ofborg";
     version = "0.1.1";
     authors = [ "Graham Christensen <graham@grahamc.com>" ];
-    src = include [ "Cargo.toml" "Cargo.lock" "src" "test-srcs" ] ./../ofborg;
+    src = include [ "Cargo.toml" "Cargo.lock" "src" "test-srcs" "build.rs" ] ./../ofborg;
+    build = "build.rs";
     inherit dependencies buildDependencies features;
   };
   openssl_0_9_23_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
