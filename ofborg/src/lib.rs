@@ -9,7 +9,7 @@ extern crate log;
 extern crate hubcaps;
 extern crate hyper;
 extern crate hyper_native_tls;
-
+extern crate either;
 extern crate lru_cache;
 extern crate tempfile;
 extern crate amqp;

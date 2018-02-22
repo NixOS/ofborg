@@ -182,6 +182,13 @@ rec {
     sha256 = "1bxsh6fags7nr36vlz07ik2a1rzyipc8x1y30kjk832hf2pzadmw";
     inherit dependencies buildDependencies features;
   };
+  either_1_4_0_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    crateName = "either";
+    version = "1.4.0";
+    authors = [ "bluss" ];
+    sha256 = "04kpfd84lvyrkb2z4sljlz2d3d5qczd0sb1yy37fgijq2yx3vb37";
+    inherit dependencies buildDependencies features;
+  };
   enum_primitive_0_1_1_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
     crateName = "enum_primitive";
     version = "0.1.1";
@@ -974,6 +981,17 @@ rec {
   dtoa_0_4_2_features = f: updateFeatures f (rec {
     dtoa_0_4_2.default = (f.dtoa_0_4_2.default or true);
   }) [];
+  either_1_4_0 = { features?(either_1_4_0_features {}) }: either_1_4_0_ {
+    dependencies = mapFeatures features ([]);
+    features = mkFeatures (features.either_1_4_0 or {});
+  };
+  either_1_4_0_features = f: updateFeatures f (rec {
+    either_1_4_0.default = (f.either_1_4_0.default or true);
+    either_1_4_0.use_std =
+      (f.either_1_4_0.use_std or false) ||
+      (f.either_1_4_0.default or false) ||
+      (either_1_4_0.default or false);
+  }) [];
   enum_primitive_0_1_1 = { features?(enum_primitive_0_1_1_features {}) }: enum_primitive_0_1_1_ {
     dependencies = mapFeatures features ([ num_traits_0_1_41 ]);
   };
@@ -1325,10 +1343,11 @@ rec {
     num_cpus_1_8_0.default = (f.num_cpus_1_8_0.default or true);
   }) [ libc_0_2_36_features ];
   ofborg_0_1_1 = { features?(ofborg_0_1_1_features {}) }: ofborg_0_1_1_ {
-    dependencies = mapFeatures features ([ amqp_0_1_0 env_logger_0_4_3 fs2_0_4_3 hubcaps_0_3_16 hyper_0_10_13 hyper_native_tls_0_2_4 log_0_3_8 lru_cache_0_1_1 md5_0_3_6 serde_1_0_27 serde_derive_1_0_27 serde_json_1_0_9 tempfile_2_2_0 uuid_0_4_0 ]);
+    dependencies = mapFeatures features ([ amqp_0_1_0 either_1_4_0 env_logger_0_4_3 fs2_0_4_3 hubcaps_0_3_16 hyper_0_10_13 hyper_native_tls_0_2_4 log_0_3_8 lru_cache_0_1_1 md5_0_3_6 serde_1_0_27 serde_derive_1_0_27 serde_json_1_0_9 tempfile_2_2_0 uuid_0_4_0 ]);
   };
   ofborg_0_1_1_features = f: updateFeatures f (rec {
     amqp_0_1_0.default = true;
+    either_1_4_0.default = true;
     env_logger_0_4_3.default = true;
     fs2_0_4_3.default = true;
     hubcaps_0_3_16.default = true;
@@ -1344,7 +1363,7 @@ rec {
     tempfile_2_2_0.default = true;
     uuid_0_4_0.default = true;
     uuid_0_4_0.v4 = true;
-  }) [ amqp_0_1_0_features env_logger_0_4_3_features fs2_0_4_3_features hubcaps_0_3_16_features hyper_0_10_13_features hyper_native_tls_0_2_4_features log_0_3_8_features lru_cache_0_1_1_features md5_0_3_6_features serde_1_0_27_features serde_derive_1_0_27_features serde_json_1_0_9_features tempfile_2_2_0_features uuid_0_4_0_features ];
+  }) [ amqp_0_1_0_features either_1_4_0_features env_logger_0_4_3_features fs2_0_4_3_features hubcaps_0_3_16_features hyper_0_10_13_features hyper_native_tls_0_2_4_features log_0_3_8_features lru_cache_0_1_1_features md5_0_3_6_features serde_1_0_27_features serde_derive_1_0_27_features serde_json_1_0_9_features tempfile_2_2_0_features uuid_0_4_0_features ];
   openssl_0_9_23 = { features?(openssl_0_9_23_features {}) }: openssl_0_9_23_ {
     dependencies = mapFeatures features ([ bitflags_0_9_1 foreign_types_0_3_2 lazy_static_1_0_0 libc_0_2_36 openssl_sys_0_9_24 ]);
     features = mkFeatures (features.openssl_0_9_23 or {});

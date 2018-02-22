@@ -7,6 +7,7 @@ build = "build.rs"
 
 
 [dependencies]
+either = "1.4.0"
 log = "= 0.3.8"
 env_logger = "= 0.4.3"
 # amqp = { path = "./rust-amqp/" } # for testing patches
