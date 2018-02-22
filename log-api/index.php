@@ -42,7 +42,19 @@ if ($handle = opendir($req)) {
             }
 
             if (is_file($req . '/' . $entry)) {
-                $d['attempts'][$entry] = [ "log_url" => "$serve_root/$entry" ];
+                if (substr($entry, -strlen(".metadata.json"),strlen(".metadata.json")) == ".metadata.json") {
+                    $metadata = json_decode(file_get_contents($req . '/' . $entry), JSON_OBJECT_AS_ARRAY);
+                    $attempt = $metadata['attempt_id'];
+                    if (!isset($d['attempts'][$attempt])) {
+                        $d['attempts'][$attempt] = [];
+                    }
+                    $d['attempts'][$attempt]['metadata'] = $metadata;
+                } else {
+                    if (!isset($d['attempts'][$entry])) {
+                        $d['attempts'][$entry] = [];
+                    }
+                    $d['attempts'][$entry]['log_url'] = "$serve_root/$entry";
+                }
             }
         }
     }
