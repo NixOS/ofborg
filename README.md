@@ -45,7 +45,7 @@ Commands:
 @grahamcofborg test list of tests
 ```
 
-This will run `nix-build ./nixos/release.nix -A tests.list -A tests.of -A tests.attrs` in
+This will run `nix-build ./nixos/release.nix -A tests.list -A tests.of -A tests.tests` in
 the nixpkgs checkout. Note: this will only run on x86_64-linux machines.
 
 ### eval
@@ -136,6 +136,13 @@ Nixpkgs evals are run like:
 > --argstr system thesystem
 > --show-trace
 
+
+# Running meta checks locally
+
+```
+$ curl -o outpaths.nix https://raw.githubusercontent.com/NixOS/ofborg/released/ofborg/src/outpaths.nix
+$ GC_INITIAL_HEAP_SIZE=4g nix-env -f ./outpaths.nix -qaP --no-name --out-path --arg checkMeta true > out-paths
+```
 
 ---
 
