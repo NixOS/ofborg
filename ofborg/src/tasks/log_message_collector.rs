@@ -158,20 +158,30 @@ impl worker::SimpleWorker for LogMessageCollector {
         body: &Vec<u8>,
     ) -> Result<Self::J, String> {
 
-        let decode = serde_json::from_slice(body);
-        if let Err(e) = decode {
-            return Err(format!("failed to decode job: {:?}", e));
+        let message: Either<BuildLogStart, BuildLogMsg>;
+        let attempt_id: String;
+
+        let decode_msg: Result<BuildLogMsg, _> = serde_json::from_slice(body);
+        if let Ok(msg) = decode_msg {
+            attempt_id = msg.attempt_id.clone();
+            message = Right(msg);
+        } else {
+            let decode_msg: Result<BuildLogStart, _> = serde_json::from_slice(body);
+            if let Ok(msg) = decode_msg {
+                attempt_id = msg.attempt_id.clone();
+                message = Left(msg);
+            } else {
+                return Err(format!("failed to decode job: {:?}", decode_msg));
+            }
         }
 
-        let message: BuildLogMsg = decode.unwrap();
-
-        Ok(LogMessage {
+        return Ok(LogMessage {
             from: LogFrom {
                 routing_key: deliver.routing_key.clone(),
-                attempt_id: message.attempt_id.clone(),
+                attempt_id: attempt_id,
             },
-            message: Right(message),
-        })
+            message: message
+        });
     }
 
     fn consumer(&mut self, job: &LogMessage) -> worker::Actions {
