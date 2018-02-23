@@ -20,7 +20,6 @@ pub struct Repository {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Issue {
     pub number: u64,
-    pub pull_request: Option<PullRequest>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
