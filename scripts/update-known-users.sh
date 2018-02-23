@@ -33,3 +33,5 @@ done
 jq -s '{ "runner": { "known_users": .[0]}}' "$accumulator" > "$dest"
 
 rm -f "$result" "$scratch" "$accumulator"
+
+jq -s '.[0] * .[1] * .[2]' ./config.public.json ./config.known-users.json ./config.private.json > ./config.prod.json
