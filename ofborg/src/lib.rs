@@ -1,6 +1,12 @@
+
+#![recursion_limit="512"]
+
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
+
+
+#[cfg_attr(test, macro_use)]
 extern crate serde_json;
 
 #[macro_use]

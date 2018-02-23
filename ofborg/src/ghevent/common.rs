@@ -21,6 +21,3 @@ pub struct Repository {
 pub struct Issue {
     pub number: u64,
 }
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct PullRequest {}

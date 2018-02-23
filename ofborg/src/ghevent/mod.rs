@@ -1,5 +1,7 @@
 mod common;
 mod issuecomment;
+mod pullrequestevent;
 
 pub use self::issuecomment::IssueComment;
-pub use self::common::{Issue, Repository, User, Comment, PullRequest};
+pub use self::pullrequestevent::{PullRequest,PullRequestEvent};
+pub use self::common::{Issue, Repository, User, Comment};
