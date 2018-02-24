@@ -10,7 +10,6 @@ use ofborg::easyamqp::TypedWrappers;
 use hyper::server::{Request, Response, Server};
 
 use std::thread;
-use std::time::Duration;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
