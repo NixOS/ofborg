@@ -8,7 +8,14 @@ pub struct PullRequestEvent {
     pub pull_request: PullRequest,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(rename_all="snake_case")]
+pub enum PullRequestState {
+    Open,
+    Closed,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all="snake_case")]
 pub enum PullRequestAction {
     Assigned,
@@ -21,6 +28,7 @@ pub enum PullRequestAction {
     Edited,
     Closed,
     Reopened,
+    Synchronize,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -32,9 +40,9 @@ pub struct PullRequestRef {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PullRequest {
+    pub state: PullRequestState,
     pub base: PullRequestRef,
     pub head: PullRequestRef,
-    pub patch_url: String,
 }
 
 
