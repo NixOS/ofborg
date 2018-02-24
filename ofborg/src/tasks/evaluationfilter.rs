@@ -68,39 +68,46 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
             _ => false,
         };
 
-        if interesting {
-            let repo_msg = Repo {
-                clone_url: job.repository.clone_url.clone(),
-                full_name: job.repository.full_name.clone(),
-                owner: job.repository.owner.login.clone(),
-                name: job.repository.name.clone(),
-            };
-
-            let pr_msg = Pr {
-                number: job.number.clone(),
-                head_sha: job.pull_request.head.sha.clone(),
-                target_branch: Some(job.pull_request.base.git_ref.clone()),
-            };
-
-            let msg = massrebuildjob::MassRebuildJob {
-                repo: repo_msg.clone(),
-                pr: pr_msg.clone(),
-            };
+        if !interesting {
+            info!("Not interesting: {}#{} to be interesting because of {:?}",
+                  job.repository.full_name, job.number, job.action
+            );
 
             return vec![
-                worker::publish_serde_action(
-                    Some("mass-rebuild-check-jobs".to_owned()),
-                    None,
-                    &msg
-                ),
                 worker::Action::Ack
             ];
         }
 
+        info!("Found {}#{} to be interesting because of {:?}",
+              job.repository.full_name, job.number, job.action
+        );
+        let repo_msg = Repo {
+            clone_url: job.repository.clone_url.clone(),
+            full_name: job.repository.full_name.clone(),
+            owner: job.repository.owner.login.clone(),
+            name: job.repository.name.clone(),
+        };
+
+        let pr_msg = Pr {
+            number: job.number.clone(),
+            head_sha: job.pull_request.head.sha.clone(),
+            target_branch: Some(job.pull_request.base.git_ref.clone()),
+        };
+
+        let msg = massrebuildjob::MassRebuildJob {
+            repo: repo_msg.clone(),
+            pr: pr_msg.clone(),
+        };
+
         return vec![
+            worker::publish_serde_action(
+                None,
+                Some("mass-rebuild-check-jobs".to_owned()),
+                &msg
+            ),
             worker::Action::Ack
         ];
-     }
+    }
 }
 
 #[cfg(test)]
@@ -126,8 +133,8 @@ mod tests {
             worker.consumer(&job),
             vec![
                 worker::publish_serde_action(
-                    Some("mass-rebuild-check-jobs".to_owned()),
                     None,
+                    Some("mass-rebuild-check-jobs".to_owned()),
                     &massrebuildjob::MassRebuildJob {
                         repo: Repo {
                             clone_url: String::from("https://github.com/NixOS/nixpkgs.git"),
