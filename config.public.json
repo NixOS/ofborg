@@ -6,6 +6,9 @@
         "path": "/var/lib/nginx/ofborg/logs/"
     },
     "runner": {
+        "repos": [
+            "nixos/nixpkgs"
+        ],
         "trusted_users": [
             "7c6f434c",
             "adisbladis",
