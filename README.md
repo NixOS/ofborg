@@ -214,13 +214,9 @@ function rabbitmq_conn($timeout = 3) {
     return $connection;
 }
 
-function gh_client() {
-    $client = new \Github\Client();
-    $client->authenticate('githubusername',
-                          'githubpassword',
-                          Github\Client::AUTH_HTTP_PASSWORD);
-
-    return $client;
+function gh_secret() {
+    return "github webhook secret";
 }
+
 
 ```
