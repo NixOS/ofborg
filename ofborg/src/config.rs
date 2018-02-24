@@ -58,6 +58,7 @@ pub struct LogStorage {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RunnerConfig {
     pub identity: String,
+    pub repos: Option<Vec<String>>,
     pub trusted_users: Option<Vec<String>>,
     pub known_users: Option<Vec<String>>,
 }
@@ -74,6 +75,9 @@ impl Config {
 
     pub fn acl(&self) -> acl::ACL {
         return acl::ACL::new(
+            self.runner.repos.clone().expect(
+                "fetching config's runner.repos",
+            ),
             self.runner.trusted_users.clone().expect(
                 "fetching config's runner.trusted_users",
             ),
