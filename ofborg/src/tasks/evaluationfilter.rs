@@ -69,7 +69,7 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
         };
 
         if !interesting {
-            info!("Not interesting: {}#{} to be interesting because of {:?}",
+            info!("Not interesting: {}#{} because of {:?}",
                   job.repository.full_name, job.number, job.action
             );
 
