@@ -127,6 +127,7 @@
         ],
         "6.topic: vim": [
             "pkgs/applications/editors/vim",
+            "pkgs/misc/vim-plugins",
             "doc/languages-frameworks/vim.md"
         ],
         "6.topic: xfce": [
