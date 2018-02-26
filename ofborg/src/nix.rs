@@ -261,6 +261,7 @@ mod tests {
 
         let buildlog = lines
             .into_iter()
+            .map(|line| line.replace("\u{1b}[0m", "")) // ANSI reset
             .map(|line| format!("   | {}", line))
             .collect::<Vec<String>>()
             .join("\n");
