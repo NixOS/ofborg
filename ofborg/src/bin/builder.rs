@@ -40,6 +40,40 @@ fn main() {
     let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
     let mut channel = session.open_channel(1).unwrap();
     channel.basic_prefetch(1).unwrap();
+    channel
+        .declare_exchange(easyamqp::ExchangeConfig {
+            exchange: "build-inputs".to_owned(),
+            exchange_type: easyamqp::ExchangeType::Fanout,
+            passive: false,
+            durable: true,
+            auto_delete: false,
+            no_wait: false,
+            internal: false,
+            arguments: None,
+        })
+        .unwrap();
+
+    channel
+        .declare_queue(easyamqp::QueueConfig {
+            queue: format!("build-inputs-{}", cfg.nix.system.clone()),
+            passive: false,
+            durable: true,
+            exclusive: false,
+            auto_delete: false,
+            no_wait: false,
+            arguments: None,
+        })
+        .unwrap();
+
+    channel
+        .bind_queue(easyamqp::BindQueueConfig {
+            queue: format!("build-inputs-{}", cfg.nix.system.clone()),
+            exchange: "build-inputs".to_owned(),
+            routing_key: None,
+            no_wait: false,
+            arguments: None,
+        })
+        .unwrap();
 
     channel
         .consume(

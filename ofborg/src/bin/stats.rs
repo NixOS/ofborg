@@ -34,13 +34,47 @@ fn main() {
     );
 
     let mut channel = session.open_channel(1).unwrap();
+    channel
+        .declare_exchange(easyamqp::ExchangeConfig {
+            exchange: "stats".to_owned(),
+            exchange_type: easyamqp::ExchangeType::Fanout,
+            passive: false,
+            durable: true,
+            auto_delete: false,
+            no_wait: false,
+            internal: false,
+            arguments: None,
+        })
+        .unwrap();
+
+    channel
+        .declare_queue(easyamqp::QueueConfig {
+            queue: "stats-events".to_owned(),
+            passive: false,
+            durable: true,
+            exclusive: false,
+            auto_delete: false,
+            no_wait: false,
+            arguments: None,
+        })
+        .unwrap();
+
+    channel
+        .bind_queue(easyamqp::BindQueueConfig {
+            queue: "stats-events".to_owned(),
+            exchange: "stats".to_owned(),
+            routing_key: None,
+            no_wait: false,
+            arguments: None,
+        })
+        .unwrap();
 
     channel.basic_prefetch(1).unwrap();
     channel
         .consume(
             worker::new(collector),
             easyamqp::ConsumeConfig {
-                queue: "sample-stats-events".to_owned(),
+                queue: "stats-events".to_owned(),
                 consumer_tag: format!("{}-prometheus-stats-collector", cfg.whoami()),
                 no_local: false,
                 no_ack: false,
