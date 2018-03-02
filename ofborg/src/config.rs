@@ -33,6 +33,7 @@ pub struct FeedbackConfig {
 pub struct RabbitMQConfig {
     pub ssl: bool,
     pub host: String,
+    pub virtualhost: Option<String>,
     pub username: String,
     pub password: String,
 }
@@ -118,11 +119,12 @@ impl Config {
 impl RabbitMQConfig {
     pub fn as_uri(&self) -> String {
         return format!(
-            "{}://{}:{}@{}//",
+            "{}://{}:{}@{}/{}",
             if self.ssl { "amqps" } else { "amqp" },
             self.username,
             self.password,
-            self.host
+            self.host,
+            self.virtualhost.clone().unwrap_or("/".to_owned()),
         );
     }
 }
