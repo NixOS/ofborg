@@ -46,7 +46,8 @@ fn main() {
             no_wait: false,
             arguments: None,
         })
-        .unwrap();
+        .unwrap()
+        .queue;
 
     channel
         .bind_queue(easyamqp::BindQueueConfig {

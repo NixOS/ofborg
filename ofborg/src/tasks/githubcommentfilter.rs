@@ -59,6 +59,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         );
 
         if build_destinations.len() == 0 {
+            println!("No build destinations for: {:?}", job);
             // Don't process comments if they can't build anything
             return vec![worker::Action::Ack];
         }

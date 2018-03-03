@@ -45,6 +45,18 @@ fn main() {
         cfg.tag_paths.clone().unwrap(),
     );
 
+    channel
+        .declare_queue(easyamqp::QueueConfig {
+            queue: "mass-rebuild-check-jobs".to_owned(),
+            passive: false,
+            durable: true,
+            exclusive: false,
+            auto_delete: false,
+            no_wait: false,
+            arguments: None,
+        })
+        .unwrap();
+
     channel.basic_prefetch(1).unwrap();
     channel
         .consume(
