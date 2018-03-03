@@ -31,6 +31,19 @@ fn main() {
     let mut channel = session.open_channel(1).unwrap();
 
     channel
+        .declare_exchange(easyamqp::ExchangeConfig {
+            exchange: "github-events".to_owned(),
+            exchange_type: easyamqp::ExchangeType::Topic,
+            passive: false,
+            durable: true,
+            auto_delete: false,
+            no_wait: false,
+            internal: false,
+            arguments: None,
+        })
+        .unwrap();
+
+    channel
         .declare_queue(easyamqp::QueueConfig {
             queue: "mass-rebuild-check-jobs".to_owned(),
             passive: false,
