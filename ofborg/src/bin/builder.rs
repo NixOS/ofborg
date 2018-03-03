@@ -42,7 +42,7 @@ fn main() {
     channel.basic_prefetch(1).unwrap();
     channel
         .declare_exchange(easyamqp::ExchangeConfig {
-            exchange: "build-inputs".to_owned(),
+            exchange: "build-jobs".to_owned(),
             exchange_type: easyamqp::ExchangeType::Fanout,
             passive: false,
             durable: true,
@@ -68,7 +68,7 @@ fn main() {
     channel
         .bind_queue(easyamqp::BindQueueConfig {
             queue: format!("build-inputs-{}", cfg.nix.system.clone()),
-            exchange: "build-inputs".to_owned(),
+            exchange: "build-jobs".to_owned(),
             routing_key: None,
             no_wait: false,
             arguments: None,

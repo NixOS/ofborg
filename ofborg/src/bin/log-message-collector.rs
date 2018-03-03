@@ -23,29 +23,40 @@ fn main() {
 
     let mut channel = session.open_channel(1).unwrap();
 
-    let queue_name = channel
-        .queue_declare(
-            "",
-            false, // passive
-            false, // durable
-            true, // exclusive
-            true, // auto_delete
-            false, //nowait
-            Table::new(),
-        )
-        .expect("Failed to declare an anon queue for log collection!")
-        .queue;
-
     channel
-        .queue_bind(
-            queue_name.as_ref(),
-            "logs",
-            "*.*".as_ref(),
-            false,
-            Table::new(),
-        )
+        .declare_exchange(easyamqp::ExchangeConfig {
+            exchange: "logs".to_owned(),
+            exchange_type: easyamqp::ExchangeType::Topic,
+            passive: false,
+            durable: true,
+            auto_delete: false,
+            no_wait: false,
+            internal: false,
+            arguments: None,
+        })
         .unwrap();
 
+    let queue_name = channel
+        .declare_queue(easyamqp::QueueConfig {
+            queue: "".to_owned(),
+            passive: false,
+            durable: false,
+            exclusive: true,
+            auto_delete: true,
+            no_wait: false,
+            arguments: None,
+        })
+        .unwrap();
+
+    channel
+        .bind_queue(easyamqp::BindQueueConfig {
+            queue: queue_name.clone(),
+            exchange: "logs".to_owned(),
+            routing_key: Some("*.*".to_owned()),
+            no_wait: false,
+            arguments: None,
+        })
+        .unwrap();
 
     channel
         .consume(
