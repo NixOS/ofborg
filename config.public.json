@@ -7,7 +7,9 @@
     },
     "runner": {
         "repos": [
-            "nixos/nixpkgs"
+            "nixos/nixpkgs",
+            "nixos/ofborg",
+            "grahamc/nixpkgs"
         ],
         "trusted_users": [
             "7c6f434c",
