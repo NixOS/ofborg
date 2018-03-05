@@ -142,7 +142,26 @@ try {
     $connection = retry_rabbitmq_conn();
     $channel = $connection->channel();
 
-    $dec = $channel->exchange_declare('github-events', 'topic', false, true, false);
+    $dec = $channel->exchange_declare(
+        'github-events',
+        'topic',
+        false, // passive
+        true, // durable
+        false // auto_delete
+    );
+
+    $channel->queue_declare(
+        'github-events-unknown',
+        false, // passive
+        true, // durable
+        false, // exclusive
+        false // auto-delete
+    );
+    $channel->queue_bind(
+        'github-events-unknown',
+        'github-events',
+        'unknown.*'
+    );
 
     $message = new AMQPMessage(json_encode($input),
                                array(
