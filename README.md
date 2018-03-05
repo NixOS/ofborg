@@ -11,12 +11,15 @@
 
 Users who are _trusted_ (see: ./config.public.json) or _known_ (see:
 ./config.known-users.json) will have their PRs automatically trigger
-builds if their commits follow the well-defined format of Nixpkgs.
+builds if their commits follow the well-defined format of Nixpkgs,
+specifically prefixing the commit title with the package attribute.
+This includes package bumps as well as other changes.
 Example messages and the builds:
 
 |Message|Automatic Build|
 |-|-|
 |`vim: 1.0.0 -> 2.0.0`|`vim`|
+|`vagrant: Fix dependencies for version 2.0.2 `|`vagrant`|
 |`python36Packages.requests,python27Packages.requests: 1.0.0 -> 2.0.0`|`python36Packages.requests`, `python27Packages.requests`|
 |`python{2,3}Packages.requests: 1.0.0 -> 2.0.0`|_nothing_|
 
