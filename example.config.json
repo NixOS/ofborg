@@ -12,7 +12,8 @@
     },
     "rabbitmq": {
         "ssl": true,
-        "host": "events.nix.gsc.io",
+        "host": "events.nix.ci",
+        "virtualhost": "ofborg",
         "username": "...",
         "password": "..."
     }
