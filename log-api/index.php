@@ -3,7 +3,7 @@
 header('Content-Type: application/json');
 $d = array('attempts' => []);
 
-$root = "/var/lib/nginx/ofborg/";
+$root = "/var/log/ofborg/";
 
 function abrt($msg) {
     echo $msg;
@@ -19,8 +19,8 @@ if (!isset($_SERVER['REQUEST_URI']) || empty($_SERVER['REQUEST_URI'])) {
 }
 
 $reqd = substr($_SERVER['REQUEST_URI'], strlen("/logs/"));
-$req = realpath("$root/logs/$reqd");
-$serve_root = "https://logs.nix.gsc.io/logfile/$reqd";
+$req = realpath("$root/$reqd");
+$serve_root = "https://logs.nix.ci/logfile/$reqd";
 
 if ($req === false) {
     abrt("absent");
