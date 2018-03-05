@@ -87,7 +87,7 @@ fn main() {
 
 
     thread::spawn(||{
-        let addr = "127.0.0.1:9898";
+        let addr = "0.0.0.0:9898";
         println!("listening addr {:?}", addr);
         Server::http(addr)
             .unwrap()
