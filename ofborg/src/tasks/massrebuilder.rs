@@ -10,10 +10,11 @@ use std::path::Path;
 use std::path::PathBuf;
 use ofborg::checkout;
 use ofborg::message::{massrebuildjob, buildjob};
-use ofborg::nix::Nix;
-
+use std::time::Instant;
+use ofborg::nix;
 use ofborg::acl::ACL;
 use ofborg::stats;
+use ofborg::stats::Event;
 use ofborg::worker;
 use ofborg::tagger::{StdenvTagger, RebuildTagger, PathsTagger, PkgsAddedRemovedTagger};
 use ofborg::outpathdiff::{OutPaths, OutPathDiff};
@@ -25,7 +26,7 @@ use hubcaps;
 
 pub struct MassRebuildWorker<E> {
     cloner: checkout::CachedCloner,
-    nix: Nix,
+    nix: nix::Nix,
     github: hubcaps::Github,
     acl: ACL,
     identity: String,
@@ -36,7 +37,7 @@ pub struct MassRebuildWorker<E> {
 impl<E: stats::SysEvents> MassRebuildWorker<E> {
     pub fn new(
         cloner: checkout::CachedCloner,
-        nix: Nix,
+        nix: nix::Nix,
         github: hubcaps::Github,
         acl: ACL,
         identity: String,
@@ -58,6 +59,20 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
         return massrebuildjob::Actions {};
     }
 
+    fn tag_from_title(&self, issue: &hubcaps::issues::IssueRef) {
+        let darwin = issue.get()
+            .map(|iss| iss.title.to_lowercase().contains("darwin"))
+            .unwrap_or(false);
+
+        if darwin {
+            update_labels(
+                &issue,
+                vec![String::from("6.topic: darwin")],
+                vec![],
+            );
+        }
+    }
+
     fn tag_from_paths(&self, issue: &hubcaps::issues::IssueRef, paths: Vec<String>) {
         let mut tagger = PathsTagger::new(self.tag_paths.clone());
 
@@ -73,7 +88,7 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
     }
 }
 
-impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
+impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E> {
     type J = massrebuildjob::MassRebuildJob;
 
     fn msg_to_job(
@@ -82,14 +97,14 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
         _: &BasicProperties,
         body: &Vec<u8>,
     ) -> Result<Self::J, String> {
-        self.events.tick("job-received");
+        self.events.notify(Event::JobReceived);
         return match massrebuildjob::from(body) {
             Ok(e) => {
-                self.events.tick("job-decode-success");
+                self.events.notify(Event::JobDecodeSuccess);
                 Ok(e)
             }
             Err(e) => {
-                self.events.tick("job-decode-failure");
+                self.events.notify(Event::JobDecodeFailure);
                 error!(
                     "Failed to decode message: {:?}, Err: {:?}",
                     String::from_utf8(body.clone()),
@@ -113,7 +128,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
         match issue.get() {
             Ok(iss) => {
                 if iss.state == "closed" {
-                    self.events.tick("issue-already-closed");
+                    self.events.notify(Event::IssueAlreadyClosed);
                     info!("Skipping {} because it is closed", job.pr.number);
                     return self.actions().skip(&job);
                 }
@@ -128,12 +143,14 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
                 }
             }
             Err(e) => {
-                self.events.tick("issue-fetch-failed");
+                self.events.notify(Event::IssueFetchFailed);
                 info!("Error fetching {}!", job.pr.number);
                 info!("E: {:?}", e);
                 return self.actions().skip(&job);
             }
         }
+
+        self.tag_from_title(&issue);
 
         let mut overall_status = CommitStatus::new(
             repo.statuses(),
@@ -185,6 +202,8 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
             hubcaps::statuses::State::Pending,
         );
 
+        let target_branch_rebuild_sniff_start = Instant::now();
+
         if let Err(mut output) = rebuildsniff.find_before() {
             overall_status.set_url(make_gist(
                 &gists,
@@ -193,6 +212,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
                 file_to_str(&mut output),
             ));
 
+            self.events.notify(Event::TargetBranchFailsEvaluation(target_branch.clone()));
             overall_status.set_with_description(
                 format!("Target branch {} doesn't evaluate!", &target_branch).as_ref(),
                 hubcaps::statuses::State::Failure,
@@ -200,6 +220,17 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
 
             return self.actions().skip(&job);
         }
+        self.events.notify(
+            Event::EvaluationDuration(
+                target_branch.clone(),
+                target_branch_rebuild_sniff_start.elapsed().as_secs(),
+            )
+        );
+        self.events.notify(
+            Event::EvaluationDurationCount(
+                target_branch.clone()
+            )
+        );
 
         overall_status.set_with_description("Fetching PR", hubcaps::statuses::State::Pending);
 
@@ -275,20 +306,17 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
         let eval_checks = vec![
             EvalChecker::new(
                 "package-list",
-                "nix-env",
+                nix::Operation::QueryPackagesJSON,
                 vec![
                     String::from("--file"),
                     String::from("."),
-                    String::from("--query"),
-                    String::from("--available"),
-                    String::from("--json"),
                 ],
                 self.nix.clone()
             ),
 
             EvalChecker::new(
                 "nixos-options",
-                "nix-instantiate",
+                nix::Operation::Instantiate,
                 vec![
                     String::from("./nixos/release.nix"),
                     String::from("-A"),
@@ -299,7 +327,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
 
             EvalChecker::new(
                 "nixos-manual",
-                "nix-instantiate",
+                nix::Operation::Instantiate,
                 vec![
                     String::from("./nixos/release.nix"),
                     String::from("-A"),
@@ -310,7 +338,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
 
             EvalChecker::new(
                 "nixpkgs-manual",
-                "nix-instantiate",
+                nix::Operation::Instantiate,
                 vec![
                     String::from("./pkgs/top-level/release.nix"),
                     String::from("-A"),
@@ -321,7 +349,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
 
             EvalChecker::new(
                 "nixpkgs-tarball",
-                "nix-instantiate",
+                nix::Operation::Instantiate,
                 vec![
                     String::from("./pkgs/top-level/release.nix"),
                     String::from("-A"),
@@ -332,7 +360,7 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
 
             EvalChecker::new(
                 "nixpkgs-unstable-jobset",
-                "nix-instantiate",
+                nix::Operation::Instantiate,
                 vec![
                     String::from("./pkgs/top-level/release.nix"),
                     String::from("-A"),
@@ -476,19 +504,22 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
 
             let mut rebuild_tags = RebuildTagger::new();
             if let Some(attrs) = rebuildsniff.calculate_rebuild() {
-                let gist_url = make_gist(
-                    &gists,
-                    String::from("Changed Paths"),
-                    None,
-                    attrs
-                        .iter()
-                        .map(|attr| format!("{}\t{}", &attr.architecture, &attr.package))
-                        .collect::<Vec<String>>()
-                        .join("\n"),
-                );
+                if attrs.len() > 0 {
+                    let gist_url = make_gist(
+                        &gists,
+                        String::from("Changed Paths"),
+                        Some("".to_owned()),
+                        attrs
+                            .iter()
+                            .map(|attr| format!("{}\t{}", &attr.architecture, &attr.package))
+                            .collect::<Vec<String>>()
+                            .join("\n"),
+                    );
+
+                    overall_status.set_url(gist_url);
+                }
 
                 rebuild_tags.parse_attrs(attrs);
-                overall_status.set_url(gist_url);
             }
 
             update_labels(
@@ -505,6 +536,8 @@ impl<E: stats::SysEvents> worker::SimpleWorker for MassRebuildWorker<E> {
                 hubcaps::statuses::State::Failure,
             );
         }
+
+        self.events.notify(Event::TaskEvaluationCheckComplete);
 
         return self.actions().done(&job, response);
     }
@@ -523,7 +556,7 @@ pub enum System {
 
 #[derive(Debug, PartialEq)]
 struct Stdenvs {
-    nix: Nix,
+    nix: nix::Nix,
     co: PathBuf,
 
     linux_stdenv_before: Option<String>,
@@ -534,7 +567,7 @@ struct Stdenvs {
 }
 
 impl Stdenvs {
-    fn new(nix: Nix, co: PathBuf) -> Stdenvs {
+    fn new(nix: nix::Nix, co: PathBuf) -> Stdenvs {
         return Stdenvs {
             nix: nix,
             co: co,
@@ -596,7 +629,7 @@ impl Stdenvs {
 
     fn evalstdenv(&self, system: &str) -> Option<String> {
         let result = self.nix.with_system(system.to_owned()).safely(
-            "nix-instantiate",
+            nix::Operation::Instantiate,
             &self.co,
             vec![
                 String::from("."),
@@ -737,14 +770,23 @@ fn parse_commit_messages(messages: Vec<String>) -> Vec<String> {
 mod tests {
 
     use super::*;
+    use std::process::Command;
 
     #[test]
     fn stdenv_checking() {
-        let nix = Nix::new(String::from("x86_64-linux"), String::from("daemon"), 1200, None);
+        let output = Command::new("nix-instantiate")
+            .args(&["--eval", "-E", "<nixpkgs>"])
+            .output()
+            .expect("nix-instantiate required");
+
+        let nixpkgs = String::from_utf8(output.stdout)
+            .expect("nixpkgs required");
+
+        let nix = nix::Nix::new(String::from("x86_64-linux"), String::from("daemon"), 1200, None);
         let mut stdenv =
             Stdenvs::new(
                 nix.clone(),
-                PathBuf::from("/nix/var/nix/profiles/per-user/root/channels/nixos/nixpkgs"),
+                PathBuf::from(nixpkgs.trim_right()),
             );
         stdenv.identify(System::X8664Linux, StdenvFrom::Before);
         stdenv.identify(System::X8664Darwin, StdenvFrom::Before);

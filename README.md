@@ -9,11 +9,12 @@
 
 ## Automatic Building
 
-Users who are _trusted_ (see: ./config.public.json) or _known_ (see:
-./config.known-users.json) will have their PRs automatically trigger
-builds if their commits follow the well-defined format of Nixpkgs,
-specifically prefixing the commit title with the package attribute.
-This includes package bumps as well as other changes.
+Users who are _trusted_ or _known_ (see: Trusted Users vs Known Users)
+will have their PRs automatically trigger builds if their commits
+follow the well-defined format of Nixpkgs. Specifically: prefixing the
+commit title with the package attribute. This includes package bumps
+as well as other changes.
+
 Example messages and the builds:
 
 |Message|Automatic Build|
@@ -107,6 +108,28 @@ This is will build `list`, `of`, `attrs`, `looks`, `good`, `to`, `me!`:
 @grahamcofborg build list of attrs looks good to me!
 ```
 
+## Trusted Users vs Known Users
+
+Known users have their builds executed on platforms with working
+sandboxing. At the time of writing, that means:
+
+ - `x86_64-linux`
+ - `aarch64_linux`
+
+Trusted users have their builds executed on _all_ platforms, even if
+they don't have good sandboxing. This opens the host up to a higher
+risk of security issues, so only well known, trusted member of the
+community should be added to the trusted user list.
+
+At the time of writing, trusted users have their builds run on the
+following platforms:
+
+ - `x86_64-linux`
+ - `aarch64_linux`
+ - `x86_64-darwin`
+
+See ./config.public.json and ./config.known-users.json for a list of
+all the trusted and known users.
 
 # How does OfBorg call nix-build?
 
@@ -217,13 +240,9 @@ function rabbitmq_conn($timeout = 3) {
     return $connection;
 }
 
-function gh_client() {
-    $client = new \Github\Client();
-    $client->authenticate('githubusername',
-                          'githubpassword',
-                          Github\Client::AUTH_HTTP_PASSWORD);
-
-    return $client;
+function gh_secret() {
+    return "github webhook secret";
 }
+
 
 ```

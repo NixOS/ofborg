@@ -29,6 +29,53 @@ fn main() {
     println!("Connected to rabbitmq");
 
     let mut channel = session.open_channel(1).unwrap();
+    channel
+        .declare_exchange(easyamqp::ExchangeConfig {
+            exchange: "github-events".to_owned(),
+            exchange_type: easyamqp::ExchangeType::Topic,
+            passive: false,
+            durable: true,
+            auto_delete: false,
+            no_wait: false,
+            internal: false,
+            arguments: None,
+        })
+        .unwrap();
+
+    channel
+        .declare_exchange(easyamqp::ExchangeConfig {
+            exchange: "build-jobs".to_owned(),
+            exchange_type: easyamqp::ExchangeType::Fanout,
+            passive: false,
+            durable: true,
+            auto_delete: false,
+            no_wait: false,
+            internal: false,
+            arguments: None,
+        })
+        .unwrap();
+
+    channel
+        .declare_queue(easyamqp::QueueConfig {
+            queue: "build-inputs".to_owned(),
+            passive: false,
+            durable: true,
+            exclusive: false,
+            auto_delete: false,
+            no_wait: false,
+            arguments: None,
+        })
+        .unwrap();
+
+    channel
+        .bind_queue(easyamqp::BindQueueConfig {
+            queue: "build-inputs".to_owned(),
+            exchange: "github-events".to_owned(),
+            routing_key: Some("issue_comment.*".to_owned()),
+            no_wait: false,
+            arguments: None,
+        })
+        .unwrap();
 
     channel.basic_prefetch(1).unwrap();
     channel

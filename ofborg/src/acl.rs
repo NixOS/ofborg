@@ -2,14 +2,20 @@
 pub struct ACL {
     trusted_users: Vec<String>,
     known_users: Vec<String>,
+    repos: Vec<String>,
 }
 
 impl ACL {
-    pub fn new(trusted_users: Vec<String>, known_users: Vec<String>) -> ACL {
+    pub fn new(repos: Vec<String>, trusted_users: Vec<String>, known_users: Vec<String>) -> ACL {
         return ACL {
             trusted_users: trusted_users,
             known_users: known_users,
+            repos: repos,
         };
+    }
+
+    pub fn is_repo_eligible(&self, name: &str) -> bool {
+        self.repos.contains(&name.to_lowercase())
     }
 
     pub fn build_job_destinations_for_user_repo(
@@ -38,10 +44,12 @@ impl ACL {
     }
 
     pub fn can_build_unrestricted(&self, user: &str, repo: &str) -> bool {
-        if repo.to_lowercase() != "nixos/nixpkgs" {
+        if repo.to_lowercase() == "nixos/nixpkgs" {
+            return self.trusted_users.contains(&user.to_lowercase());
+        } else if user == "grahamc" {
+            return true;
+        } else {
             return false;
         }
-
-        return self.trusted_users.contains(&user.to_lowercase());
     }
 }

@@ -75,7 +75,7 @@ fn result_to_comment(result: &BuildResult) -> String {
     let mut reply: Vec<String> = vec![];
 
     reply.push(format!(
-        "{} on {} [(full log)](https://logs.nix.gsc.io/?key={}/{}.{}&attempt_id={})",
+        "{} on {} [(full log)](https://logs.nix.ci/?key={}/{}.{}&attempt_id={})",
         (match result.success {
              true => "Success",
              false => "Failure",
@@ -142,7 +142,7 @@ mod tests {
 
         assert_eq!(
             &result_to_comment(&result),
-            "Success on x86_64-linux [(full log)](https://logs.nix.gsc.io/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
+            "Success on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
 
 <details><summary>Partial log (click to expand)</summary><p>
 
@@ -197,7 +197,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
 
         assert_eq!(
             &result_to_comment(&result),
-            "Failure on x86_64-linux [(full log)](https://logs.nix.gsc.io/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
+            "Failure on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
 
 <details><summary>Partial log (click to expand)</summary><p>
 
@@ -252,7 +252,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
 
         assert_eq!(
             &result_to_comment(&result),
-            "Failure on x86_64-linux [(full log)](https://logs.nix.gsc.io/?key=nixos/nixpkgs.2345&attempt_id=none)
+            "Failure on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=none)
 
 <details><summary>Partial log (click to expand)</summary><p>
 

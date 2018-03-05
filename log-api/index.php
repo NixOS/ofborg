@@ -3,7 +3,7 @@
 header('Content-Type: application/json');
 $d = array('attempts' => []);
 
-$root = "/var/lib/nginx/ofborg/";
+$root = "/var/log/ofborg/";
 
 function abrt($msg) {
     echo $msg;
@@ -19,8 +19,8 @@ if (!isset($_SERVER['REQUEST_URI']) || empty($_SERVER['REQUEST_URI'])) {
 }
 
 $reqd = substr($_SERVER['REQUEST_URI'], strlen("/logs/"));
-$req = realpath("$root/logs/$reqd");
-$serve_root = "https://logs.nix.gsc.io/logfile/$reqd";
+$req = realpath("$root/$reqd");
+$serve_root = "https://logs.nix.ci/logfile/$reqd";
 
 if ($req === false) {
     abrt("absent");
@@ -42,7 +42,19 @@ if ($handle = opendir($req)) {
             }
 
             if (is_file($req . '/' . $entry)) {
-                $d['attempts'][$entry] = [ "log_url" => "$serve_root/$entry" ];
+                if (substr($entry, -strlen(".metadata.json"),strlen(".metadata.json")) == ".metadata.json") {
+                    $metadata = json_decode(file_get_contents($req . '/' . $entry), JSON_OBJECT_AS_ARRAY);
+                    $attempt = $metadata['attempt_id'];
+                    if (!isset($d['attempts'][$attempt])) {
+                        $d['attempts'][$attempt] = [];
+                    }
+                    $d['attempts'][$attempt]['metadata'] = $metadata;
+                } else {
+                    if (!isset($d['attempts'][$entry])) {
+                        $d['attempts'][$entry] = [];
+                    }
+                    $d['attempts'][$entry]['log_url'] = "$serve_root/$entry";
+                }
             }
         }
     }

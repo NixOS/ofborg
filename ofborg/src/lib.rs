@@ -1,6 +1,12 @@
+
+#![recursion_limit="512"]
+
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
+
+
+#[cfg_attr(test, macro_use)]
 extern crate serde_json;
 
 #[macro_use]
@@ -9,7 +15,7 @@ extern crate log;
 extern crate hubcaps;
 extern crate hyper;
 extern crate hyper_native_tls;
-
+extern crate either;
 extern crate lru_cache;
 extern crate tempfile;
 extern crate amqp;

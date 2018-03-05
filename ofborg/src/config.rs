@@ -33,6 +33,7 @@ pub struct FeedbackConfig {
 pub struct RabbitMQConfig {
     pub ssl: bool,
     pub host: String,
+    pub virtualhost: Option<String>,
     pub username: String,
     pub password: String,
 }
@@ -58,6 +59,7 @@ pub struct LogStorage {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RunnerConfig {
     pub identity: String,
+    pub repos: Option<Vec<String>>,
     pub trusted_users: Option<Vec<String>>,
     pub known_users: Option<Vec<String>>,
 }
@@ -74,6 +76,9 @@ impl Config {
 
     pub fn acl(&self) -> acl::ACL {
         return acl::ACL::new(
+            self.runner.repos.clone().expect(
+                "fetching config's runner.repos",
+            ),
             self.runner.trusted_users.clone().expect(
                 "fetching config's runner.trusted_users",
             ),
@@ -114,11 +119,12 @@ impl Config {
 impl RabbitMQConfig {
     pub fn as_uri(&self) -> String {
         return format!(
-            "{}://{}:{}@{}//",
+            "{}://{}:{}@{}/{}",
             if self.ssl { "amqps" } else { "amqp" },
             self.username,
             self.password,
-            self.host
+            self.host,
+            self.virtualhost.clone().unwrap_or("/".to_owned()),
         );
     }
 }

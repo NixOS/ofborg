@@ -2,11 +2,12 @@
 name = "ofborg"
 version = "0.1.1"
 authors = ["Graham Christensen <graham@grahamc.com>"]
-include = ["Cargo.toml", "Cargo.lock", "src", "test-srcs"]
-
+include = ["Cargo.toml", "Cargo.lock", "src", "test-srcs", "build.rs"]
+build = "build.rs"
 
 
 [dependencies]
+either = "1.4.0"
 log = "= 0.3.8"
 env_logger = "= 0.4.3"
 # amqp = { path = "./rust-amqp/" } # for testing patches
@@ -23,7 +24,6 @@ hubcaps = { git = "https://github.com/grahamc/hubcaps.git" }
 hyper = "0.10.*"
 hyper-native-tls = "0.2.4"
 lru-cache = "0.1.1"
-
 
 #[patch.crates-io]
 #amq-proto = { path = "rust-amq-proto" }

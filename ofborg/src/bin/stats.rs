@@ -1,48 +1,42 @@
-extern crate ofborg;
+extern crate hyper;
 extern crate amqp;
-extern crate env_logger;
-
-#[macro_use]
-extern crate log;
+extern crate ofborg;
 
 use std::env;
+use ofborg::{easyamqp, tasks, worker, config, stats};
 
-use std::path::Path;
 use amqp::Basic;
-use ofborg::config;
-use ofborg::checkout;
-use ofborg::notifyworker;
-use ofborg::tasks;
-use ofborg::easyamqp;
 use ofborg::easyamqp::TypedWrappers;
+use hyper::server::{Request, Response, Server};
 
+use std::thread;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
-
     ofborg::setup_log();
 
-    let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
-    let nix = cfg.nix();
-
-    let full_logs: bool = match &cfg.feedback {
-        &Some(ref feedback) => feedback.full_logs,
-        &None => {
-            warn!("Please define feedback.full_logs in your configuration to true or false!");
-            warn!("feedback.full_logs when true will cause the full build log to be sent back");
-            warn!("to the server, and be viewable by everyone.");
-            warn!("I strongly encourage everybody turn this on!");
-            false
-        }
-    };
+    println!("Hello, world!");
 
 
     let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
+    println!("Connected to rabbitmq");
+
+    let events = stats::RabbitMQ::new(
+        &format!("{}-{}", cfg.runner.identity.clone(), cfg.nix.system.clone()),
+        session.open_channel(3).unwrap()
+    );
+
+    let metrics = stats::MetricCollector::new();
+
+    let collector = tasks::statscollector::StatCollectorWorker::new(
+        events,
+        metrics.clone(),
+    );
+
     let mut channel = session.open_channel(1).unwrap();
-    channel.basic_prefetch(1).unwrap();
     channel
         .declare_exchange(easyamqp::ExchangeConfig {
-            exchange: "build-jobs".to_owned(),
+            exchange: "stats".to_owned(),
             exchange_type: easyamqp::ExchangeType::Fanout,
             passive: false,
             durable: true,
@@ -55,7 +49,7 @@ fn main() {
 
     channel
         .declare_queue(easyamqp::QueueConfig {
-            queue: format!("build-inputs-{}", cfg.nix.system.clone()),
+            queue: "stats-events".to_owned(),
             passive: false,
             durable: true,
             exclusive: false,
@@ -67,26 +61,21 @@ fn main() {
 
     channel
         .bind_queue(easyamqp::BindQueueConfig {
-            queue: format!("build-inputs-{}", cfg.nix.system.clone()),
-            exchange: "build-jobs".to_owned(),
+            queue: "stats-events".to_owned(),
+            exchange: "stats".to_owned(),
             routing_key: None,
             no_wait: false,
             arguments: None,
         })
         .unwrap();
 
+    channel.basic_prefetch(1).unwrap();
     channel
         .consume(
-            notifyworker::new(tasks::build::BuildWorker::new(
-                cloner,
-                nix,
-                cfg.nix.system.clone(),
-                cfg.runner.identity.clone(),
-                full_logs,
-            )),
+            worker::new(collector),
             easyamqp::ConsumeConfig {
-                queue: format!("build-inputs-{}", cfg.nix.system.clone()),
-                consumer_tag: format!("{}-builder", cfg.whoami()),
+                queue: "stats-events".to_owned(),
+                consumer_tag: format!("{}-prometheus-stats-collector", cfg.whoami()),
                 no_local: false,
                 no_ack: false,
                 no_wait: false,
@@ -96,7 +85,23 @@ fn main() {
         )
         .unwrap();
 
+
+    thread::spawn(||{
+        let addr = "0.0.0.0:9898";
+        println!("listening addr {:?}", addr);
+        Server::http(addr)
+            .unwrap()
+            .handle(move |_: Request, res: Response| {
+                res.send(metrics.prometheus_output().as_bytes()).unwrap();
+            })
+            .unwrap();
+    });
+
+
     channel.start_consuming();
+
+    println!("Finished consuming?");
+
     channel.close(200, "Bye").unwrap();
     println!("Closed the channel");
     session.close(200, "Good Bye");

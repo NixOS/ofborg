@@ -2,10 +2,14 @@ extern crate ofborg;
 extern crate amqp;
 extern crate env_logger;
 
-use std::env;
-use std::path::PathBuf;
+extern crate hyper;
+extern crate hubcaps;
+extern crate hyper_native_tls;
 
-use amqp::Table;
+
+use std::env;
+
+use amqp::Basic;
 
 use ofborg::config;
 use ofborg::worker;
@@ -18,6 +22,9 @@ fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
     ofborg::setup_log();
 
+    println!("Hello, world!");
+
+
     let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
     println!("Connected to rabbitmq");
 
@@ -25,7 +32,7 @@ fn main() {
 
     channel
         .declare_exchange(easyamqp::ExchangeConfig {
-            exchange: "logs".to_owned(),
+            exchange: "github-events".to_owned(),
             exchange_type: easyamqp::ExchangeType::Topic,
             passive: false,
             durable: true,
@@ -36,38 +43,49 @@ fn main() {
         })
         .unwrap();
 
-    let queue_name = channel
-        .declare_queue(easyamqp::QueueConfig {
-            queue: "".to_owned(),
-            passive: false,
-            durable: false,
-            exclusive: true,
-            auto_delete: true,
-            no_wait: false,
-            arguments: None,
-        })
-        .unwrap()
-        .queue;
-
     channel
-        .bind_queue(easyamqp::BindQueueConfig {
-            queue: queue_name.clone(),
-            exchange: "logs".to_owned(),
-            routing_key: Some("*.*".to_owned()),
+        .declare_queue(easyamqp::QueueConfig {
+            queue: "mass-rebuild-check-jobs".to_owned(),
+            passive: false,
+            durable: true,
+            exclusive: false,
+            auto_delete: false,
             no_wait: false,
             arguments: None,
         })
         .unwrap();
 
     channel
+        .declare_queue(easyamqp::QueueConfig {
+            queue: "mass-rebuild-check-inputs".to_owned(),
+            passive: false,
+            durable: true,
+            exclusive: false,
+            auto_delete: false,
+            no_wait: false,
+            arguments: None,
+        })
+        .unwrap();
+
+    channel
+        .bind_queue(easyamqp::BindQueueConfig {
+            queue: "mass-rebuild-check-inputs".to_owned(),
+            exchange: "github-events".to_owned(),
+            routing_key: Some("pull_request.nixos/nixpkgs".to_owned()),
+            no_wait: false,
+            arguments: None,
+        })
+        .unwrap();
+
+    channel.basic_prefetch(1).unwrap();
+    channel
         .consume(
-            worker::new(tasks::log_message_collector::LogMessageCollector::new(
-                PathBuf::from(cfg.log_storage.clone().unwrap().path),
-                100,
+            worker::new(tasks::evaluationfilter::EvaluationFilterWorker::new(
+                cfg.acl(),
             )),
             easyamqp::ConsumeConfig {
-                queue: queue_name,
-                consumer_tag: format!("{}-log-collector", cfg.whoami()),
+                queue: "mass-rebuild-check-inputs".to_owned(),
+                consumer_tag: format!("{}-evaluation-filter", cfg.whoami()),
                 no_local: false,
                 no_ack: false,
                 no_wait: false,
@@ -77,7 +95,6 @@ fn main() {
         )
         .unwrap();
 
-
     channel.start_consuming();
 
     println!("Finished consuming?");
@@ -86,5 +103,4 @@ fn main() {
     println!("Closed the channel");
     session.close(200, "Good Bye");
     println!("Closed the session... EOF");
-
 }

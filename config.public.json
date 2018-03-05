@@ -6,6 +6,11 @@
         "path": "/var/lib/nginx/ofborg/logs/"
     },
     "runner": {
+        "repos": [
+            "nixos/nixpkgs",
+            "nixos/ofborg",
+            "grahamc/nixpkgs"
+        ],
         "trusted_users": [
             "7c6f434c",
             "adisbladis",
@@ -14,6 +19,7 @@
             "aneeshusa",
             "aszlig",
             "copumpkin",
+            "dezgeg",
             "disassembler",
             "domenkozar",
             "dtzwill",
@@ -48,10 +54,6 @@
         ]
     },
     "tag_paths": {
-        "6.topic: darwin": [
-            "pkgs/top-level/darwin-packages.nix",
-            "pkgs/stdenv/darwin"
-        ],
         "6.topic: emacs": [
             "nixos/modules/services/editors/emacs.nix",
             "nixos/modules/services/editors/emacs.xml",
@@ -130,6 +132,7 @@
         ],
         "6.topic: vim": [
             "pkgs/applications/editors/vim",
+            "pkgs/misc/vim-plugins",
             "doc/languages-frameworks/vim.md"
         ],
         "6.topic: xfce": [
