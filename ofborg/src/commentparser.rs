@@ -49,7 +49,7 @@ pub fn parse_line(text: &str) -> Option<Vec<Instruction>> {
                     Subset::NixOS,
                     right
                         .into_iter()
-                        .map(|attr| format!("tests.{}.x86_64-linux", attr))
+                        .map(|attr| format!("tests.{}", attr))
                         .collect(),
                 ));
 
@@ -216,9 +216,9 @@ baz",
                 Instruction::Build(
                     Subset::NixOS,
                     vec![
-                        String::from("tests.foo.x86_64-linux"),
-                        String::from("tests.bar.x86_64-linux"),
-                        String::from("tests.baz.x86_64-linux"),
+                        String::from("tests.foo"),
+                        String::from("tests.bar"),
+                        String::from("tests.baz"),
                     ]
                 ),
             ]),
