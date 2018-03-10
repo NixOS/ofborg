@@ -345,6 +345,8 @@ mod tests {
                                                attempt_id: String::from("my-attempt-id"),
                                                identity: String::from("my-identity"),
                                                system: String::from("foobar-x8664"),
+                                               attempted_attrs: Some(vec!["foo".to_owned()]),
+                                               skipped_attrs: Some(vec!["bar".to_owned()]),
                                            })
                                        }
                        )
@@ -369,7 +371,7 @@ mod tests {
         let mut s = String::new();
         pr.push("routing-key-foo/attempt-id-foo.metadata.json");
         File::open(pr).unwrap().read_to_string(&mut s).unwrap();
-        assert_eq!(&s, "{\"system\":\"foobar-x8664\",\"identity\":\"my-identity\",\"attempt_id\":\"my-attempt-id\"}");
+        assert_eq!(&s, "{\"system\":\"foobar-x8664\",\"identity\":\"my-identity\",\"attempt_id\":\"my-attempt-id\",\"attempted_attrs\":[\"foo\"],\"skipped_attrs\":[\"bar\"]}");
 
 
         let mut pr = p.path();

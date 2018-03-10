@@ -77,8 +77,9 @@ fn result_to_comment(result: &BuildResult) -> String {
     reply.push(format!(
         "{} on {} [(full log)](https://logs.nix.ci/?key={}/{}.{}&attempt_id={})",
         (match result.success {
-             true => "Success",
-             false => "Failure",
+            Some(true) => "Success",
+            Some(false) => "Failure",
+            None => "No attempt",
          }),
         result.system,
         &result.repo.owner.to_lowercase(),
@@ -137,7 +138,9 @@ mod tests {
             ],
             attempt_id: Some("neatattemptid".to_owned()),
             system: "x86_64-linux".to_owned(),
-            success: true,
+            attempted_attrs: None,
+            skipped_attrs: None,
+            success: Some(true),
         };
 
         assert_eq!(
@@ -192,7 +195,9 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             ],
             attempt_id: Some("neatattemptid".to_owned()),
             system: "x86_64-linux".to_owned(),
-            success: false,
+            attempted_attrs: None,
+            skipped_attrs: None,
+            success: Some(false),
         };
 
         assert_eq!(
@@ -247,7 +252,9 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             ],
             attempt_id: None,
             system: "x86_64-linux".to_owned(),
-            success: false,
+            attempted_attrs: None,
+            skipped_attrs: None,
+            success: Some(false),
         };
 
         assert_eq!(
