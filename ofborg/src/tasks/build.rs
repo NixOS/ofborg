@@ -492,7 +492,8 @@ mod tests {
         assert_contains_job(&mut actions, "output\":\"2");
         assert_contains_job(&mut actions, "output\":\"3");
         assert_contains_job(&mut actions, "output\":\"4");
-        assert_contains_job(&mut actions, "success\":true");
+        assert_contains_job(&mut actions, "success\":true"); // First one to the github poster
+        assert_contains_job(&mut actions, "success\":true"); // This one to the logs
         assert_eq!(actions.next(), Some(worker::Action::Ack));
     }
 
@@ -533,7 +534,8 @@ mod tests {
 
         println!("Total actions: {:?}", dummyreceiver.actions.len());
         let mut actions = dummyreceiver.actions.into_iter();
-        assert_contains_job(&mut actions, "skipped_attrs\":[\"not-real");
+        assert_contains_job(&mut actions, "skipped_attrs\":[\"not-real"); // First one to the github poster
+        assert_contains_job(&mut actions, "skipped_attrs\":[\"not-real"); // This one to the logs
         assert_eq!(actions.next(), Some(worker::Action::Ack));
     }
 }

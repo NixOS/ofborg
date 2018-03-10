@@ -207,7 +207,9 @@ impl worker::SimpleWorker for LogMessageCollector {
 
                 handle.write_to_line((message.line_number - 1) as usize,
                                      &message.output);
-            }
+            },
+            MsgType::Finish(ref _finish) => {
+            },
         }
 
         return vec![worker::Action::Ack];
@@ -343,7 +345,7 @@ mod tests {
         };
         let mut job = LogMessage {
             from: make_from("foo"),
-            message: Right(logmsg.clone()),
+            message: MsgType::Msg(logmsg.clone()),
         };
 
         let p = TestScratch::new_dir("log-message-collector-path_for_log");
@@ -354,7 +356,7 @@ mod tests {
                        worker.consumer(&
                                        LogMessage {
                                            from: make_from("foo"),
-                                           message: Left(BuildLogStart {
+                                           message: MsgType::Start(BuildLogStart {
                                                attempt_id: String::from("my-attempt-id"),
                                                identity: String::from("my-identity"),
                                                system: String::from("foobar-x8664"),
@@ -369,14 +371,14 @@ mod tests {
 
             logmsg.line_number = 5;
             logmsg.output = String::from("line-5");
-            job.message = Right(logmsg.clone());
+            job.message = MsgType::Msg(logmsg.clone());
             assert_eq!(vec![worker::Action::Ack], worker.consumer(&job));
 
             job.from.attempt_id = String::from("my-other-attempt");
             logmsg.attempt_id = String::from("my-other-attempt");
             logmsg.line_number = 3;
             logmsg.output = String::from("line-3");
-            job.message = Right(logmsg.clone());
+            job.message = MsgType::Msg(logmsg.clone());
             assert_eq!(vec![worker::Action::Ack], worker.consumer(&job));
         }
 
