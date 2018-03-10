@@ -121,20 +121,10 @@ fn result_to_comment(result: &BuildResult) -> String {
 fn list_segment(name: &str, things: Vec<String>) -> Vec<String> {
     let mut reply: Vec<String> = vec![];
 
-    let things: Vec<String> = things
-        .iter()
-        .map(|s| format!(" - {}", s))
-        .collect();
-
     if things.len() > 0 {
-        reply.push(format!("{}:", name));
+        reply.push(format!("{}: {}", name, things.join(", ")));
         reply.push("".to_owned());
-        reply.extend(things);
-    } else {
-        reply.push(format!("{}: _none_", name));
     }
-
-    reply.push("".to_owned());
 
     return reply;
 }
@@ -198,13 +188,9 @@ mod tests {
             &result_to_comment(&result),
             "Success on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
 
-Attempted:
+Attempted: foo
 
- - foo
-
-Skipped because they don't instantiate on this system:
-
- - bar
+Skipped because they don't instantiate on this system: bar
 
 <details><summary>Partial log (click to expand)</summary><p>
 
@@ -263,9 +249,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             &result_to_comment(&result),
             "Failure on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
 
-Attempted:
-
- - foo
+Attempted: foo
 
 <details><summary>Partial log (click to expand)</summary><p>
 
@@ -485,9 +469,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             &result_to_comment(&result),
             "No attempt on x86_64-linux
 
-Skipped because they don't instantiate on this system:
-
- - not-attempted
+Skipped because they don't instantiate on this system: not-attempted
 
 No log is available.
 "
