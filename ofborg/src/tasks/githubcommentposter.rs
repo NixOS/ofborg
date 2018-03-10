@@ -105,7 +105,12 @@ fn result_to_comment(result: &BuildResult) -> String {
     }
 
     if let Some(ref skipped) = result.skipped_attrs {
-        reply.extend(list_segment("Skipped because they don't instantiate on this system", skipped.clone()));
+        reply.extend(list_segment(
+            &format!(
+                "The following builds were skipped because they don't evaluate on {}",
+                result.system
+            ),
+            skipped.clone()));
     }
 
     if result.output.len() > 0 {
@@ -190,7 +195,7 @@ mod tests {
 
 Attempted: foo
 
-Skipped because they don't instantiate on this system: bar
+The following builds were skipped because they don't evaluate on x86_64-linux: bar
 
 <details><summary>Partial log (click to expand)</summary><p>
 
@@ -469,7 +474,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             &result_to_comment(&result),
             "No attempt on x86_64-linux
 
-Skipped because they don't instantiate on this system: not-attempted
+The following builds were skipped because they don't evaluate on x86_64-linux: not-attempted
 
 No log is available.
 "
