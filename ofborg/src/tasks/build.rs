@@ -266,13 +266,21 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             return;
         }
 
-        println!("Got path: {:?}, building", refpath);
+        println!("Got path: {:?}, determining which ones we can build ", refpath);
+        let (can_build, cannot_build) = self.nix.safely_partition_instantiable_attrs(
+            refpath.as_ref(),
+            buildfile,
+            job.attrs.clone(),
+        );
 
+        println!("Can build: {}, Cannot build: {}",
+                 can_build.join(", "),
+                 cannot_build.join(", "));
 
         let cmd = self.nix.safely_build_attrs_cmd(
             refpath.as_ref(),
             buildfile,
-            job.attrs.clone(),
+            can_build.clone(),
         );
 
         actions.log_started();
