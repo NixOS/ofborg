@@ -5,8 +5,6 @@ extern crate env_logger;
 use std::env;
 use std::path::PathBuf;
 
-use amqp::Table;
-
 use ofborg::config;
 use ofborg::worker;
 use ofborg::tasks;
