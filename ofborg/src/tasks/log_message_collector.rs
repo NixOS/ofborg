@@ -1,7 +1,6 @@
 extern crate amqp;
 extern crate env_logger;
 
-use either::{Either, Left, Right};
 use lru_cache::LruCache;
 use serde_json;
 use std::fs;
@@ -26,9 +25,15 @@ pub struct LogMessageCollector {
 }
 
 #[derive(Debug)]
+enum MsgType {
+    Start(BuildLogStart),
+    Msg(BuildLogMsg),
+}
+
+#[derive(Debug)]
 pub struct LogMessage {
     from: LogFrom,
-    message: Either<BuildLogStart, BuildLogMsg>,
+    message: MsgType
 }
 
 fn validate_path_segment(segment: &PathBuf) -> Result<(), String> {
@@ -158,18 +163,18 @@ impl worker::SimpleWorker for LogMessageCollector {
         body: &Vec<u8>,
     ) -> Result<Self::J, String> {
 
-        let message: Either<BuildLogStart, BuildLogMsg>;
+        let message: MsgType;
         let attempt_id: String;
 
         let decode_msg: Result<BuildLogMsg, _> = serde_json::from_slice(body);
         if let Ok(msg) = decode_msg {
             attempt_id = msg.attempt_id.clone();
-            message = Right(msg);
+            message = MsgType::Msg(msg);
         } else {
             let decode_msg: Result<BuildLogStart, _> = serde_json::from_slice(body);
             if let Ok(msg) = decode_msg {
                 attempt_id = msg.attempt_id.clone();
-                message = Left(msg);
+                message = MsgType::Start(msg);
             } else {
                 return Err(format!("failed to decode job: {:?}", decode_msg));
             }
@@ -186,10 +191,10 @@ impl worker::SimpleWorker for LogMessageCollector {
 
     fn consumer(&mut self, job: &LogMessage) -> worker::Actions {
         match job.message {
-            Left(ref start) => {
+            MsgType::Start(ref start) => {
                 self.write_metadata(&job.from, &start).expect("failed to write metadata");
             },
-            Right(ref message) => {
+            MsgType::Msg(ref message) => {
                 let handle = self.handle_for(&job.from).unwrap();
 
                 handle.write_to_line((message.line_number - 1) as usize,
