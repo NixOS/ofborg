@@ -97,6 +97,50 @@ impl Nix {
         return n;
     }
 
+    pub fn safely_partition_instantiable_attrs(
+        &self,
+        nixpkgs: &Path,
+        file: &str,
+        attrs: Vec<String>,
+    ) -> (Vec<String>, Vec<String>) {
+        attrs
+            .into_iter()
+            .partition(|attr| {
+                self.safely_instantiate_attrs(
+                    nixpkgs,
+                    file,
+                    vec![attr.clone()]
+                ).is_ok()
+            })
+    }
+
+    pub fn safely_instantiate_attrs(
+        &self,
+        nixpkgs: &Path,
+        file: &str,
+        attrs: Vec<String>,
+    ) -> Result<File, File> {
+        let cmd = self.safely_instantiate_attrs_cmd(nixpkgs, file, attrs);
+
+        return self.run(cmd, true);
+    }
+
+    pub fn safely_instantiate_attrs_cmd(
+        &self,
+        nixpkgs: &Path,
+        file: &str,
+        attrs: Vec<String>,
+    ) -> Command {
+        let mut attrargs: Vec<String> = Vec::with_capacity(3 + (attrs.len() * 2));
+        attrargs.push(file.to_owned());
+        for attr in attrs {
+            attrargs.push(String::from("-A"));
+            attrargs.push(attr);
+        }
+
+        return self.safe_command(Operation::Instantiate, nixpkgs, attrargs);
+    }
+
     pub fn safely_build_attrs(
         &self,
         nixpkgs: &Path,
@@ -232,6 +276,12 @@ mod tests {
     fn passing_eval_path() -> PathBuf {
         let mut cwd = env::current_dir().unwrap();
         cwd.push(Path::new("./test-srcs/eval"));
+        return cwd;
+    }
+
+    fn individual_eval_path() -> PathBuf {
+        let mut cwd = env::current_dir().unwrap();
+        cwd.push(Path::new("./test-srcs/eval-mixed-failure"));
         return cwd;
     }
 
@@ -505,6 +555,63 @@ mod tests {
                 "building ",
                 "hi",
                 "failed to produce output path",
+            ],
+        );
+    }
+
+    #[test]
+    fn partition_instantiable_attributes() {
+        let nix = nix();
+
+        let ret: (Vec<String>, Vec<String>) = nix.safely_partition_instantiable_attrs(
+            individual_eval_path().as_path(),
+            "default.nix",
+            vec![
+                String::from("fails-instantiation"),
+                String::from("passes-instantiation"),
+                String::from("missing-attr"),
+            ],
+        );
+
+        assert_eq!(ret.0, vec!["passes-instantiation"]);
+        assert_eq!(ret.1, vec!["fails-instantiation", "missing-attr"]);
+    }
+
+    #[test]
+    fn safely_instantiate_attrs_failure() {
+        let nix = nix();
+
+        let ret: Result<File, File> = nix.safely_instantiate_attrs(
+            individual_eval_path().as_path(),
+            "default.nix",
+            vec![String::from("fails-instantiation")],
+        );
+
+        assert_run(
+            ret,
+            Expect::Fail,
+            vec![
+                "You just can't",
+                "assertion failed",
+            ],
+        );
+    }
+
+    #[test]
+    fn safely_instantiate_attrs_success() {
+        let nix = nix();
+
+        let ret: Result<File, File> = nix.safely_instantiate_attrs(
+            individual_eval_path().as_path(),
+            "default.nix",
+            vec![String::from("passes-instantiation")],
+        );
+
+        assert_run(
+            ret,
+            Expect::Pass,
+            vec![
+                "-passes-instantiation.drv"
             ],
         );
     }

@@ -50,7 +50,7 @@ fn main() {
         println!("Starting a new build simulation");
         let mut actions =
             build::JobActions::new(&cfg.nix.system, &cfg.runner.identity, &job, &mut receiver);
-        actions.log_started();
+        actions.log_started(vec![], vec![]);
 
         for i in 1..51 {
             actions.log_line(&format!("Bogus message  #{:?}/50", i));

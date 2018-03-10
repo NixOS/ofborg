@@ -13,4 +13,6 @@ pub struct BuildLogStart {
     pub system: String,
     pub identity: String,
     pub attempt_id: String,
+    pub attempted_attrs: Option<Vec<String>>,
+    pub skipped_attrs: Option<Vec<String>>,
 }
