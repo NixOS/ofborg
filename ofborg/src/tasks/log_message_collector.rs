@@ -10,6 +10,7 @@ use std::io::Write;
 
 use ofborg::writetoline::LineWriter;
 use ofborg::message::buildlogmsg::{BuildLogStart, BuildLogMsg};
+use ofborg::message::buildresult::BuildResult;
 use ofborg::worker;
 use amqp::protocol::basic::{Deliver, BasicProperties};
 
@@ -28,6 +29,7 @@ pub struct LogMessageCollector {
 enum MsgType {
     Start(BuildLogStart),
     Msg(BuildLogMsg),
+    Finish(BuildResult),
 }
 
 #[derive(Debug)]
@@ -176,7 +178,13 @@ impl worker::SimpleWorker for LogMessageCollector {
                 attempt_id = msg.attempt_id.clone();
                 message = MsgType::Start(msg);
             } else {
-                return Err(format!("failed to decode job: {:?}", decode_msg));
+                let decode_msg: Result<BuildResult, _> = serde_json::from_slice(body);
+                if let Ok(msg) = decode_msg {
+                    attempt_id = msg.attempt_id.clone();
+                    message = MsgType::Finish(msg);
+                } else {
+                    return Err(format!("failed to decode job: {:?}", decode_msg));
+                }
             }
         }
 

@@ -189,12 +189,20 @@ impl<'a, 'b> JobActions<'a, 'b> {
 
         let result_exchange = self.result_exchange.clone();
         let result_routing_key = self.result_routing_key.clone();
-
         self.tell(worker::publish_serde_action(
             result_exchange,
             result_routing_key,
             &msg,
         ));
+
+        let log_exchange = self.log_exchange.clone();
+        let log_routing_key = self.log_routing_key.clone();
+        self.tell(worker::publish_serde_action(
+            log_exchange,
+            log_routing_key,
+            &msg,
+        ));
+
         self.tell(worker::Action::Ack);
     }
 
@@ -216,12 +224,20 @@ impl<'a, 'b> JobActions<'a, 'b> {
 
         let result_exchange = self.result_exchange.clone();
         let result_routing_key = self.result_routing_key.clone();
-
         self.tell(worker::publish_serde_action(
             result_exchange,
             result_routing_key,
             &msg,
         ));
+
+        let log_exchange = self.log_exchange.clone();
+        let log_routing_key = self.log_routing_key.clone();
+        self.tell(worker::publish_serde_action(
+            log_exchange,
+            log_routing_key,
+            &msg,
+        ));
+
         self.tell(worker::Action::Ack);
     }
 
