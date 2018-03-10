@@ -74,35 +74,86 @@ impl worker::SimpleWorker for GitHubCommentPoster {
 fn result_to_comment(result: &BuildResult) -> String {
     let mut reply: Vec<String> = vec![];
 
+    let log_link = match result.success {
+        Some(_) => format!(
+            " [(full log)](https://logs.nix.ci/?key={}/{}.{}&attempt_id={})",
+            &result.repo.owner.to_lowercase(),
+            &result.repo.name.to_lowercase(),
+            result.pr.number,
+            (match result.attempt_id {
+                Some(ref attempt_id) => &attempt_id,
+                None => "none",
+            })
+        ),
+        None => "".to_owned()
+    };
+
     reply.push(format!(
-        "{} on {} [(full log)](https://logs.nix.ci/?key={}/{}.{}&attempt_id={})",
+        "{} on {}{}",
         (match result.success {
             Some(true) => "Success",
             Some(false) => "Failure",
             None => "No attempt",
          }),
         result.system,
-        &result.repo.owner.to_lowercase(),
-        &result.repo.name.to_lowercase(),
-        result.pr.number,
-        (match result.attempt_id {
-             Some(ref attempt_id) => &attempt_id,
-             None => "none",
-         })
+        log_link
     ));
     reply.push("".to_owned());
+
+    if let Some(ref attempted) = result.attempted_attrs {
+        reply.extend(list_segment("Attempted", attempted.clone()));
+    }
+
+    if let Some(ref skipped) = result.skipped_attrs {
+        reply.extend(list_segment("Skipped because they don't instantiate on this system", skipped.clone()));
+    }
+
+    if result.output.len() > 0 {
+        reply.extend(partial_log_segment(&result.output));
+    } else {
+        reply.push("No log is available.".to_owned());
+        reply.push("".to_owned());
+    }
+
+    reply.join("\n")
+}
+
+fn list_segment(name: &str, things: Vec<String>) -> Vec<String> {
+    let mut reply: Vec<String> = vec![];
+
+    let things: Vec<String> = things
+        .iter()
+        .map(|s| format!(" - {}", s))
+        .collect();
+
+    if things.len() > 0 {
+        reply.push(format!("{}:", name));
+        reply.push("".to_owned());
+        reply.extend(things);
+    } else {
+        reply.push(format!("{}: _none_", name));
+    }
+
+    reply.push("".to_owned());
+
+    return reply;
+}
+
+fn partial_log_segment(output: &Vec<String>) -> Vec<String> {
+    let mut reply: Vec<String> = vec![];
+
     reply.push(
         "<details><summary>Partial log (click to expand)</summary><p>".to_owned(),
     );
     reply.push("".to_owned());
     reply.push("```".to_owned());
-    reply.extend(result.output.clone());
+    reply.extend(output.clone());
     reply.push("```".to_owned());
     reply.push("</p></details>".to_owned());
     reply.push("".to_owned());
     reply.push("".to_owned());
 
-    reply.join("\n")
+    return reply;
 }
 
 #[cfg(test)]
@@ -112,6 +163,133 @@ mod tests {
 
     #[test]
     pub fn test_passing_build() {
+        let result = BuildResult {
+            repo: Repo {
+                clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
+                full_name: "NixOS/nixpkgs".to_owned(),
+                owner: "NixOS".to_owned(),
+                name: "nixpkgs".to_owned(),
+            },
+            pr: Pr {
+                head_sha: "abc123".to_owned(),
+                number: 2345,
+                target_branch: Some("master".to_owned()),
+            },
+            output: vec![
+                "make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
+                "make[2]: Nothing to be done for 'install'.".to_owned(),
+                "make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
+                "make[1]: Nothing to be done for 'install-target'.".to_owned(),
+                "make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'".to_owned(),
+                "removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'".to_owned(),
+                "post-installation fixup".to_owned(),
+                "strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip".to_owned(),
+                "patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
+                "/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
+            ],
+            attempt_id: Some("neatattemptid".to_owned()),
+            system: "x86_64-linux".to_owned(),
+            attempted_attrs: Some(vec!["foo".to_owned()]),
+            skipped_attrs: Some(vec!["bar".to_owned()]),
+            success: Some(true),
+        };
+
+        assert_eq!(
+            &result_to_comment(&result),
+            "Success on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
+
+Attempted:
+
+ - foo
+
+Skipped because they don't instantiate on this system:
+
+ - bar
+
+<details><summary>Partial log (click to expand)</summary><p>
+
+```
+make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
+make[2]: Nothing to be done for 'install'.
+make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
+make[1]: Nothing to be done for 'install-target'.
+make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'
+removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'
+post-installation fixup
+strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip
+patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
+/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
+```
+</p></details>
+
+"
+        );
+    }
+
+    #[test]
+    pub fn test_failing_build() {
+        let result = BuildResult {
+            repo: Repo {
+                clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
+                full_name: "NixOS/nixpkgs".to_owned(),
+                owner: "NixOS".to_owned(),
+                name: "nixpkgs".to_owned(),
+            },
+            pr: Pr {
+                head_sha: "abc123".to_owned(),
+                number: 2345,
+                target_branch: Some("master".to_owned()),
+            },
+            output: vec![
+                "make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
+                "make[2]: Nothing to be done for 'install'.".to_owned(),
+                "make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
+                "make[1]: Nothing to be done for 'install-target'.".to_owned(),
+                "make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'".to_owned(),
+                "removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'".to_owned(),
+                "post-installation fixup".to_owned(),
+                "strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip".to_owned(),
+                "patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
+                "/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
+            ],
+            attempt_id: Some("neatattemptid".to_owned()),
+            system: "x86_64-linux".to_owned(),
+            attempted_attrs: Some(vec!["foo".to_owned()]),
+            skipped_attrs: None,
+            success: Some(false),
+        };
+
+        assert_eq!(
+            &result_to_comment(&result),
+            "Failure on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
+
+Attempted:
+
+ - foo
+
+<details><summary>Partial log (click to expand)</summary><p>
+
+```
+make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
+make[2]: Nothing to be done for 'install'.
+make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
+make[1]: Nothing to be done for 'install-target'.
+make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'
+removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'
+post-installation fixup
+strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip
+patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
+/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
+```
+</p></details>
+
+"
+        );
+    }
+
+
+    #[test]
+    pub fn test_passing_build_unspecified_attributes() {
         let result = BuildResult {
             repo: Repo {
                 clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
@@ -168,7 +346,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
     }
 
     #[test]
-    pub fn test_failing_build() {
+    pub fn test_failing_build_unspecified_attributes() {
         let result = BuildResult {
             repo: Repo {
                 clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
@@ -277,6 +455,41 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
 ```
 </p></details>
 
+"
+        );
+    }
+
+    #[test]
+    pub fn test_no_attempt() {
+        let result = BuildResult {
+            repo: Repo {
+                clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
+                full_name: "NixOS/nixpkgs".to_owned(),
+                owner: "NixOS".to_owned(),
+                name: "nixpkgs".to_owned(),
+            },
+            pr: Pr {
+                head_sha: "abc123".to_owned(),
+                number: 2345,
+                target_branch: Some("master".to_owned()),
+            },
+            output: vec![],
+            attempt_id: Some("foo".to_owned()),
+            system: "x86_64-linux".to_owned(),
+            attempted_attrs: None,
+            skipped_attrs: Some(vec!["not-attempted".to_owned()]),
+            success: None,
+        };
+
+        assert_eq!(
+            &result_to_comment(&result),
+            "No attempt on x86_64-linux
+
+Skipped because they don't instantiate on this system:
+
+ - not-attempted
+
+No log is available.
 "
         );
     }
