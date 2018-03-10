@@ -80,10 +80,7 @@ fn result_to_comment(result: &BuildResult) -> String {
             &result.repo.owner.to_lowercase(),
             &result.repo.name.to_lowercase(),
             result.pr.number,
-            (match result.attempt_id {
-                Some(ref attempt_id) => &attempt_id,
-                None => "none",
-            })
+            result.attempt_id,
         ),
         None => "".to_owned()
     };
@@ -182,7 +179,7 @@ mod tests {
                 "patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
                 "/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
             ],
-            attempt_id: Some("neatattemptid".to_owned()),
+            attempt_id: "neatattemptid".to_owned(),
             system: "x86_64-linux".to_owned(),
             attempted_attrs: Some(vec!["foo".to_owned()]),
             skipped_attrs: Some(vec!["bar".to_owned()]),
@@ -243,7 +240,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 "patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
                 "/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
             ],
-            attempt_id: Some("neatattemptid".to_owned()),
+            attempt_id: "neatattemptid".to_owned(),
             system: "x86_64-linux".to_owned(),
             attempted_attrs: Some(vec!["foo".to_owned()]),
             skipped_attrs: None,
@@ -303,7 +300,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 "patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
                 "/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
             ],
-            attempt_id: Some("neatattemptid".to_owned()),
+            attempt_id: "neatattemptid".to_owned(),
             system: "x86_64-linux".to_owned(),
             attempted_attrs: None,
             skipped_attrs: None,
@@ -360,7 +357,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 "patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
                 "/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
             ],
-            attempt_id: Some("neatattemptid".to_owned()),
+            attempt_id: "neatattemptid".to_owned(),
             system: "x86_64-linux".to_owned(),
             attempted_attrs: None,
             skipped_attrs: None,
@@ -370,63 +367,6 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
         assert_eq!(
             &result_to_comment(&result),
             "Failure on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
-
-<details><summary>Partial log (click to expand)</summary><p>
-
-```
-make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
-make[2]: Nothing to be done for 'install'.
-make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
-make[1]: Nothing to be done for 'install-target'.
-make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'
-removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'
-post-installation fixup
-strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip
-patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
-/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
-```
-</p></details>
-
-"
-        );
-    }
-
-    #[test]
-    pub fn test_failing_build_no_attempt_id() {
-        let result = BuildResult {
-            repo: Repo {
-                clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
-                full_name: "NixOS/nixpkgs".to_owned(),
-                owner: "NixOS".to_owned(),
-                name: "nixpkgs".to_owned(),
-            },
-            pr: Pr {
-                head_sha: "abc123".to_owned(),
-                number: 2345,
-                target_branch: Some("master".to_owned()),
-            },
-            output: vec![
-                "make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
-                "make[2]: Nothing to be done for 'install'.".to_owned(),
-                "make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
-                "make[1]: Nothing to be done for 'install-target'.".to_owned(),
-                "make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'".to_owned(),
-                "removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'".to_owned(),
-                "post-installation fixup".to_owned(),
-                "strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip".to_owned(),
-                "patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
-                "/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
-            ],
-            attempt_id: None,
-            system: "x86_64-linux".to_owned(),
-            attempted_attrs: None,
-            skipped_attrs: None,
-            success: Some(false),
-        };
-
-        assert_eq!(
-            &result_to_comment(&result),
-            "Failure on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=none)
 
 <details><summary>Partial log (click to expand)</summary><p>
 
@@ -463,7 +403,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 target_branch: Some("master".to_owned()),
             },
             output: vec![],
-            attempt_id: Some("foo".to_owned()),
+            attempt_id: "foo".to_owned(),
             system: "x86_64-linux".to_owned(),
             attempted_attrs: None,
             skipped_attrs: Some(vec!["not-attempted".to_owned()]),
