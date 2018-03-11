@@ -1,6 +1,5 @@
 extern crate amqp;
 extern crate env_logger;
-
 use lru_cache::LruCache;
 use serde_json;
 use std::fs;
@@ -85,6 +84,25 @@ impl LogMessageCollector {
         }
     }
 
+
+    pub fn write_result(&mut self, from: &LogFrom, data: &BuildResult) -> Result<(), String>{
+        let path = self.path_for_result(&from)?;
+        let mut fp = self.open_file(path)?;
+
+        match serde_json::to_string(data) {
+            Ok(data) => {
+                if let Err(e) = fp.write(&data.as_bytes()) {
+                    Err(format!("Failed to write result: {:?}", e))
+                } else {
+                    Ok(())
+                }
+            },
+            Err(e) => {
+                Err(format!("Failed to stringify result: {:?}", e))
+            }
+        }
+    }
+
     pub fn handle_for(&mut self, from: &LogFrom) -> Result<&mut LineWriter, String> {
         if self.handles.contains_key(&from) {
             return Ok(self.handles.get_mut(&from).expect(
@@ -108,6 +126,12 @@ impl LogMessageCollector {
     fn path_for_metadata(&self, from: &LogFrom) -> Result<PathBuf, String> {
         let mut path = self.path_for_log(from)?;
         path.set_extension("metadata.json");
+        return Ok(path);
+    }
+
+    fn path_for_result(&self, from: &LogFrom) -> Result<PathBuf, String> {
+        let mut path = self.path_for_log(from)?;
+        path.set_extension("result.json");
         return Ok(path);
     }
 
@@ -208,7 +232,8 @@ impl worker::SimpleWorker for LogMessageCollector {
                 handle.write_to_line((message.line_number - 1) as usize,
                                      &message.output);
             },
-            MsgType::Finish(ref _finish) => {
+            MsgType::Finish(ref finish) => {
+                self.write_result(&job.from, &finish).expect("failed to write result");
             },
         }
 
@@ -223,6 +248,7 @@ mod tests {
     use std::path::PathBuf;
     use ofborg::worker::SimpleWorker;
     use ofborg::test_scratch::TestScratch;
+    use ofborg::message::{Pr,Repo};
 
     fn make_worker(path: PathBuf) -> LogMessageCollector {
         LogMessageCollector::new(path, 3)
@@ -267,6 +293,24 @@ mod tests {
 
         assert!(path.starts_with(p.path()));
         assert!(path.as_os_str().to_string_lossy().ends_with("my-routing-key/my-attempt-id.metadata.json"));
+    }
+
+
+    #[test]
+    fn test_path_for_result() {
+        let p = TestScratch::new_dir("log-message-collector-path_for_result");
+        let worker = make_worker(p.path());
+
+        let path = worker
+            .path_for_result(&LogFrom {
+                attempt_id: String::from("my-attempt-id"),
+                routing_key: String::from("my-routing-key"),
+            })
+            .expect("the path should be valid");
+
+
+        assert!(path.starts_with(p.path()));
+        assert!(path.as_os_str().to_string_lossy().ends_with("my-routing-key/my-attempt-id.result.json"));
     }
 
     #[test]
@@ -380,6 +424,33 @@ mod tests {
             logmsg.output = String::from("line-3");
             job.message = MsgType::Msg(logmsg.clone());
             assert_eq!(vec![worker::Action::Ack], worker.consumer(&job));
+
+            assert_eq!(vec![worker::Action::Ack],
+                       worker.consumer(&
+                                       LogMessage {
+                                           from: make_from("foo"),
+                                           message: MsgType::Finish(BuildResult {
+                                               repo: Repo {
+                                                   clone_url: "https://github.com/nixos/ofborg.git".to_owned(),
+                                                   full_name: "NixOS/ofborg".to_owned(),
+                                                   owner: "NixOS".to_owned(),
+                                                   name: "ofborg".to_owned(),
+                                               },
+                                               pr: Pr {
+                                                   number: 42,
+                                                   head_sha: "6dd9f0265d52b946dd13daf996f30b64e4edb446".to_owned(),
+                                                   target_branch: Some("scratch".to_owned()),
+                                               },
+                                               system: "x86_64-linux".to_owned(),
+                                               output: vec![],
+                                               attempt_id: "attempt-id-foo".to_owned(),
+                                               success: Some(true),
+                                               attempted_attrs: Some(vec!["foo".to_owned()]),
+                                               skipped_attrs: Some(vec!["bar".to_owned()]),
+                                           })
+                                       }
+                       )
+            );
         }
 
         let mut pr = p.path();
@@ -401,5 +472,11 @@ mod tests {
         pr.push("routing-key-foo/my-other-attempt");
         File::open(pr).unwrap().read_to_string(&mut s).unwrap();
         assert_eq!(&s, "\n\nline-3\n");
+
+        let mut pr = p.path();
+        let mut s = String::new();
+        pr.push("routing-key-foo/attempt-id-foo.result.json");
+        File::open(pr).unwrap().read_to_string(&mut s).unwrap();
+        assert_eq!(&s, "{\"repo\":{\"owner\":\"NixOS\",\"name\":\"ofborg\",\"full_name\":\"NixOS/ofborg\",\"clone_url\":\"https://github.com/nixos/ofborg.git\"},\"pr\":{\"target_branch\":\"scratch\",\"number\":42,\"head_sha\":\"6dd9f0265d52b946dd13daf996f30b64e4edb446\"},\"system\":\"x86_64-linux\",\"output\":[],\"attempt_id\":\"attempt-id-foo\",\"success\":true,\"skipped_attrs\":[\"bar\"],\"attempted_attrs\":[\"foo\"]}");
     }
 }
