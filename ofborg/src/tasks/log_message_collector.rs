@@ -1,7 +1,6 @@
 extern crate amqp;
 extern crate env_logger;
 
-use either::{Either, Left, Right};
 use lru_cache::LruCache;
 use serde_json;
 use std::fs;
@@ -11,6 +10,7 @@ use std::io::Write;
 
 use ofborg::writetoline::LineWriter;
 use ofborg::message::buildlogmsg::{BuildLogStart, BuildLogMsg};
+use ofborg::message::buildresult::BuildResult;
 use ofborg::worker;
 use amqp::protocol::basic::{Deliver, BasicProperties};
 
@@ -26,9 +26,16 @@ pub struct LogMessageCollector {
 }
 
 #[derive(Debug)]
+enum MsgType {
+    Start(BuildLogStart),
+    Msg(BuildLogMsg),
+    Finish(BuildResult),
+}
+
+#[derive(Debug)]
 pub struct LogMessage {
     from: LogFrom,
-    message: Either<BuildLogStart, BuildLogMsg>,
+    message: MsgType
 }
 
 fn validate_path_segment(segment: &PathBuf) -> Result<(), String> {
@@ -158,20 +165,26 @@ impl worker::SimpleWorker for LogMessageCollector {
         body: &Vec<u8>,
     ) -> Result<Self::J, String> {
 
-        let message: Either<BuildLogStart, BuildLogMsg>;
+        let message: MsgType;
         let attempt_id: String;
 
         let decode_msg: Result<BuildLogMsg, _> = serde_json::from_slice(body);
         if let Ok(msg) = decode_msg {
             attempt_id = msg.attempt_id.clone();
-            message = Right(msg);
+            message = MsgType::Msg(msg);
         } else {
             let decode_msg: Result<BuildLogStart, _> = serde_json::from_slice(body);
             if let Ok(msg) = decode_msg {
                 attempt_id = msg.attempt_id.clone();
-                message = Left(msg);
+                message = MsgType::Start(msg);
             } else {
-                return Err(format!("failed to decode job: {:?}", decode_msg));
+                let decode_msg: Result<BuildResult, _> = serde_json::from_slice(body);
+                if let Ok(msg) = decode_msg {
+                    attempt_id = msg.attempt_id.clone();
+                    message = MsgType::Finish(msg);
+                } else {
+                    return Err(format!("failed to decode job: {:?}", decode_msg));
+                }
             }
         }
 
@@ -186,15 +199,17 @@ impl worker::SimpleWorker for LogMessageCollector {
 
     fn consumer(&mut self, job: &LogMessage) -> worker::Actions {
         match job.message {
-            Left(ref start) => {
+            MsgType::Start(ref start) => {
                 self.write_metadata(&job.from, &start).expect("failed to write metadata");
             },
-            Right(ref message) => {
+            MsgType::Msg(ref message) => {
                 let handle = self.handle_for(&job.from).unwrap();
 
                 handle.write_to_line((message.line_number - 1) as usize,
                                      &message.output);
-            }
+            },
+            MsgType::Finish(ref _finish) => {
+            },
         }
 
         return vec![worker::Action::Ack];
@@ -330,7 +345,7 @@ mod tests {
         };
         let mut job = LogMessage {
             from: make_from("foo"),
-            message: Right(logmsg.clone()),
+            message: MsgType::Msg(logmsg.clone()),
         };
 
         let p = TestScratch::new_dir("log-message-collector-path_for_log");
@@ -341,7 +356,7 @@ mod tests {
                        worker.consumer(&
                                        LogMessage {
                                            from: make_from("foo"),
-                                           message: Left(BuildLogStart {
+                                           message: MsgType::Start(BuildLogStart {
                                                attempt_id: String::from("my-attempt-id"),
                                                identity: String::from("my-identity"),
                                                system: String::from("foobar-x8664"),
@@ -356,14 +371,14 @@ mod tests {
 
             logmsg.line_number = 5;
             logmsg.output = String::from("line-5");
-            job.message = Right(logmsg.clone());
+            job.message = MsgType::Msg(logmsg.clone());
             assert_eq!(vec![worker::Action::Ack], worker.consumer(&job));
 
             job.from.attempt_id = String::from("my-other-attempt");
             logmsg.attempt_id = String::from("my-other-attempt");
             logmsg.line_number = 3;
             logmsg.output = String::from("line-3");
-            job.message = Right(logmsg.clone());
+            job.message = MsgType::Msg(logmsg.clone());
             assert_eq!(vec![worker::Action::Ack], worker.consumer(&job));
         }
 

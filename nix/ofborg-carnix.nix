@@ -45,7 +45,7 @@ let kernel = buildPlatform.parsed.kernel.name;
     ) [] (builtins.attrNames feat);
 in
 rec {
-  ofborg = f: ofborg_0_1_2 { features = ofborg_0_1_2_features { ofborg_0_1_2 = f; }; };
+  ofborg = f: ofborg_0_1_3 { features = ofborg_0_1_3_features { ofborg_0_1_3 = f; }; };
   aho_corasick_0_5_3_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
     crateName = "aho-corasick";
     version = "0.5.3";
