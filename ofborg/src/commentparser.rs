@@ -30,7 +30,7 @@ named!(parse_line_impl(CompleteStr) -> Option<Vec<Instruction>>, alt!(
                     (Some(Instruction::Build(Subset::Nixpkgs, pkgs)))
                 )) |
                 ws!(do_parse!(
-                    tag!("test") >>
+                    alt!(tag!("test") | tag!("nixos-test")) >>
                     tests: ws!(many1!(map!(normal_token, |s| format!("tests.{}", s.0)))) >>
                     (Some(Instruction::Build(Subset::NixOS, tests)))
                 )) |
@@ -217,8 +217,12 @@ baz",
                         String::from("tests.baz"),
                     ]
                 ),
+                Instruction::Build(
+                    Subset::NixOS,
+                    vec![String::from("tests.quux")]
+                ),
             ]),
-            parse("@GrahamCOfBorg test foo bar baz")
+            parse("@GrahamCOfBorg test foo bar baz @GrahamCOfBorg nixos-test quux")
         );
     }
 
