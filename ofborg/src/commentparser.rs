@@ -1,3 +1,4 @@
+use nom::types::CompleteStr;
 
 pub fn parse(text: &str) -> Option<Vec<Instruction>> {
     let instructions: Vec<Instruction> = text.lines()
@@ -14,49 +15,46 @@ pub fn parse(text: &str) -> Option<Vec<Instruction>> {
     }
 }
 
+named!(normal_token(CompleteStr) -> CompleteStr,
+    verify!(take_while1!(|c: char| c.is_ascii_graphic()),
+            |s: CompleteStr| !s.0.eq_ignore_ascii_case("@grahamcofborg"))
+);
+named!(parse_line_impl(CompleteStr) -> Option<Vec<Instruction>>, alt!(
+    do_parse!(
+        res: ws!(many1!(ws!(preceded!(
+            tag_no_case!("@grahamcofborg"),
+            alt!(
+                ws!(do_parse!(
+                    tag!("build") >>
+                    pkgs: ws!(many1!(map!(normal_token, |s| s.0.to_owned()))) >>
+                    (Some(Instruction::Build(Subset::Nixpkgs, pkgs)))
+                )) |
+                ws!(do_parse!(
+                    tag!("test") >>
+                    tests: ws!(many1!(map!(normal_token, |s| format!("tests.{}", s.0)))) >>
+                    (Some(Instruction::Build(Subset::NixOS, tests)))
+                )) |
+                value!(Some(Instruction::Eval), tag!("eval")) |
+                // TODO: Currently keeping previous behaviour of ignoring unknown commands. Maybe
+                // it would be better to return an error so that the caller would know one of the
+                // commands couldn't be handled?
+                value!(None, many_till!(take!(1), tag_no_case!("@grahamcofborg")))
+            )
+        )))) >>
+        eof!() >>
+        (Some(res.into_iter().filter_map(|x| x).collect()))
+    ) |
+    value!(None)
+));
+
 pub fn parse_line(text: &str) -> Option<Vec<Instruction>> {
-    let tokens: Vec<String> = text.split_whitespace().map(|s| s.to_owned()).collect();
-
-    if tokens.len() < 2 {
-        return None;
+    match parse_line_impl(CompleteStr(text)) {
+        Ok((_, res)) => res,
+        Err(e) => { // This should likely never happen thanks to the | value!(None), but well...
+            warn!("Failed parsing string ‘{}’: result was {:?}", text, e);
+            None
+        },
     }
-
-    if tokens[0].to_lowercase() != "@grahamcofborg" {
-        return None;
-    }
-
-    let commands: Vec<&[String]> = tokens
-        .split(|token| token.to_lowercase() == "@grahamcofborg")
-        .filter(|token| token.len() > 0)
-        .collect();
-
-    let mut instructions: Vec<Instruction> = vec![];
-    for command in commands {
-        let (left, right) = command.split_at(1);
-        match left[0].as_ref() {
-            "build" => {
-                let attrs = right.to_vec();
-
-                if attrs.len() > 0 {
-                    instructions.push(Instruction::Build(Subset::Nixpkgs, attrs));
-                }
-            }
-            "test" => {
-                instructions.push(Instruction::Build(
-                    Subset::NixOS,
-                    right
-                        .into_iter()
-                        .map(|attr| format!("tests.{}", attr))
-                        .collect(),
-                ));
-
-            }
-            "eval" => instructions.push(Instruction::Eval),
-            _ => {}
-        }
-    }
-
-    return Some(instructions);
 }
 
 #[derive(PartialEq, Debug)]
