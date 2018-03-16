@@ -1,14 +1,11 @@
 
 pub fn parse(text: &str) -> Option<Vec<Instruction>> {
     let instructions: Vec<Instruction> = text.lines()
-        .map(|s| match parse_line(s) {
-            Some(instructions) => instructions,
-            None => vec![],
+        .flat_map(|s| match parse_line(s) {
+            Some(instructions) => instructions.into_iter(),
+            None => Vec::new().into_iter(),
         })
-        .fold(vec![], |mut collector, mut inst| {
-            collector.append(&mut inst);
-            collector
-        });
+        .collect();
 
     if instructions.len() == 0 {
         return None;
