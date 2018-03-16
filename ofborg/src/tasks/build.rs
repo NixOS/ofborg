@@ -338,6 +338,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             can_build.clone(),
         );
 
+        println!("About to execute {:?}", cmd);
         actions.log_started(can_build.clone(), cannot_build.clone());
         let acmd = AsyncCmd::new(cmd);
         let mut spawned = acmd.spawn();
@@ -373,7 +374,6 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         println!("Lines:\n-----8<-----");
         snippet_log.iter().inspect(|x| println!("{}", x)).last();
         println!("----->8-----");
-        assert!(success);
 
         let last10lines: Vec<String> = snippet_log.into_iter().collect::<Vec<String>>();
 
