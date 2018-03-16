@@ -323,7 +323,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             job.attrs.clone(),
         );
 
-        println!("Can build: {}, Cannot build: {}",
+        println!("Can build: '{}', Cannot build: '{}'",
                  can_build.join(", "),
                  cannot_build.join(", "));
 
@@ -370,7 +370,10 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         };
 
         println!("ok built ({:?}), building", success);
-        println!("Lines: {:?}", snippet_log);
+        println!("Lines:\n-----8<-----");
+        snippet_log.iter().inspect(|x| println!("{}", x)).last();
+        println!("----->8-----");
+        assert!(success);
 
         let last10lines: Vec<String> = snippet_log.into_iter().collect::<Vec<String>>();
 
