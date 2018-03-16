@@ -34,6 +34,11 @@ named!(parse_line_impl(CompleteStr) -> Option<Vec<Instruction>>, alt!(
                     tests: ws!(many1!(map!(normal_token, |s| format!("tests.{}", s.0)))) >>
                     (Some(Instruction::Build(Subset::NixOS, tests)))
                 )) |
+                ws!(do_parse!(
+                    tag!("nixpkgs-test") >>
+                    tests: ws!(many1!(map!(normal_token, |s| s.0.to_owned()))) >>
+                    (Some(Instruction::Build(Subset::NixpkgsTests, tests)))
+                )) |
                 value!(Some(Instruction::Eval), tag!("eval")) |
                 // TODO: Currently keeping previous behaviour of ignoring unknown commands. Maybe
                 // it would be better to return an error so that the caller would know one of the
@@ -68,6 +73,7 @@ pub enum Instruction {
 pub enum Subset {
     Nixpkgs,
     NixOS,
+    NixpkgsTests,
 }
 
 #[cfg(test)]

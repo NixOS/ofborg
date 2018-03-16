@@ -293,6 +293,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
 
         let buildfile = match job.subset {
             Some(commentparser::Subset::NixOS) => "./nixos/release.nix",
+            Some(commentparser::Subset::NixpkgsTests) => "./tests/default.nix",
             _ => "./default.nix",
         };
 
