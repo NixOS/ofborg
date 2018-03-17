@@ -291,6 +291,15 @@ mod tests {
         Fail,
     }
 
+    fn lines_from_file(file: File) -> Vec<String> {
+        BufReader::new(file)
+            .lines()
+            .into_iter()
+            .filter(|line| line.is_ok())
+            .map(|line| line.unwrap())
+            .collect()
+    }
+
     fn assert_run(res: Result<File, File>, expected: Expect, require: Vec<&str>) {
         let expectation_held: bool = match expected {
             Expect::Pass => res.is_ok(),
@@ -302,12 +311,7 @@ mod tests {
             Err(file) => file,
         };
 
-        let lines: Vec<String> = BufReader::new(file)
-            .lines()
-            .into_iter()
-            .filter(|line| line.is_ok())
-            .map(|line| line.unwrap())
-            .collect();
+        let lines = lines_from_file(file);
 
         let buildlog = lines
             .into_iter()
