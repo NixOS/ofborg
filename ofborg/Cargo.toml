@@ -24,6 +24,8 @@ hubcaps = { git = "https://github.com/grahamc/hubcaps.git" }
 hyper = "0.10.*"
 hyper-native-tls = "0.2.4"
 lru-cache = "0.1.1"
+# TODO: switch to 4.0.0-beta3 when it's out, as master has a required fix
+nom = { git = "https://github.com/geal/nom.git" }
 
 #[patch.crates-io]
 #amq-proto = { path = "rust-amq-proto" }

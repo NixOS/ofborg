@@ -10,6 +10,9 @@ extern crate serde_json;
 #[macro_use]
 extern crate log;
 
+#[macro_use]
+extern crate nom;
+
 extern crate hubcaps;
 extern crate hyper;
 extern crate hyper_native_tls;
