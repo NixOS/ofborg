@@ -1,6 +1,8 @@
 extern crate amqp;
 extern crate env_logger;
+extern crate uuid;
 
+use uuid::Uuid;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
@@ -454,6 +456,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                             try_build,
                             None,
                             None,
+                            format!("{}", Uuid::new_v4()),
                         );
                         for (dest, rk) in auto_schedule_build_archs {
                             response.push(worker::publish_serde_action(dest, rk, &msg));

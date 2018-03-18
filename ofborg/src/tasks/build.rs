@@ -119,6 +119,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             system: self.system.clone(),
             output: vec![String::from("Merge failed")],
             attempt_id: self.attempt_id.clone(),
+            request_id: Some(self.job.request_id.clone()),
             attempted_attrs: None,
             skipped_attrs: None,
             success: Some(false),
@@ -201,6 +202,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             system: self.system.clone(),
             output: self.log_snippet(),
             attempt_id: self.attempt_id.clone(),
+            request_id: Some(self.job.request_id.clone()),
             skipped_attrs: Some(not_attempted_attrs),
             attempted_attrs: None,
             success: None,
@@ -236,6 +238,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             system: self.system.clone(),
             output: self.log_snippet(),
             attempt_id: self.attempt_id.clone(),
+            request_id: Some(self.job.request_id.clone()),
             success: Some(success),
             attempted_attrs: Some(attempted_attrs),
             skipped_attrs: Some(not_attempted_attrs),
@@ -492,6 +495,7 @@ mod tests {
                 Some(String::from("build.log")),
             )),
             statusreport: Some((Some(String::from("build-results")), None)),
+            request_id: "bogus-request-id".to_owned(),
         };
 
         let mut dummyreceiver = notifyworker::DummyNotificationReceiver::new();
@@ -540,6 +544,7 @@ mod tests {
                 Some(String::from("build.log")),
             )),
             statusreport: Some((Some(String::from("build-results")), None)),
+            request_id: "bogus-request-id".to_owned(),
         };
 
         let mut dummyreceiver = notifyworker::DummyNotificationReceiver::new();

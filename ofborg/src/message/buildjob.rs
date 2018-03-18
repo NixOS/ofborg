@@ -8,6 +8,7 @@ pub struct BuildJob {
     pub pr: Pr,
     pub subset: Option<Subset>,
     pub attrs: Vec<String>,
+    pub request_id: String,
     pub logs: Option<ExchangeQueue>, // (Exchange, Routing Key)
     pub statusreport: Option<ExchangeQueue>, // (Exchange, Routing Key)
 }
@@ -24,6 +25,7 @@ impl BuildJob {
         attrs: Vec<String>,
         logs: Option<ExchangeQueue>,
         statusreport: Option<ExchangeQueue>,
+        request_id: String,
     ) -> BuildJob {
 
         let logbackrk = format!(
@@ -41,6 +43,7 @@ impl BuildJob {
             statusreport: Some(statusreport.unwrap_or(
                 (Some("build-results".to_owned()), None),
             )),
+            request_id: request_id,
         }
     }
 }
