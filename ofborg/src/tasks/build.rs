@@ -422,7 +422,6 @@ mod tests {
             nix,
             "x86_64-linux".to_owned(),
             "cargo-test-build".to_owned(),
-            true,
         );
 
         return worker;
