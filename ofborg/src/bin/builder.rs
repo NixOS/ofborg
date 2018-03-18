@@ -25,17 +25,15 @@ fn main() {
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
     let nix = cfg.nix();
 
-    let full_logs: bool = match &cfg.feedback {
-        &Some(ref feedback) => feedback.full_logs,
-        &None => {
-            warn!("Please define feedback.full_logs in your configuration to true or false!");
-            warn!("feedback.full_logs when true will cause the full build log to be sent back");
-            warn!("to the server, and be viewable by everyone.");
-            warn!("I strongly encourage everybody turn this on!");
-            false
-        }
+    if cfg.feedback.full_logs != true {
+        warn!("Please define feedback.full_logs in your configuration to true!");
+        warn!("feedback.full_logs when true will cause the full build log to be sent back");
+        warn!("to the server, and be viewable by everyone.");
+        warn!("");
+        warn!("Builders are no longer allowed to operate with this off");
+        warn!("so your builder will no longer start.");
+        panic!();
     };
-
 
     let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
     let mut channel = session.open_channel(1).unwrap();
@@ -53,21 +51,38 @@ fn main() {
         })
         .unwrap();
 
-    channel
-        .declare_queue(easyamqp::QueueConfig {
-            queue: format!("build-inputs-{}", cfg.nix.system.clone()),
-            passive: false,
-            durable: true,
-            exclusive: false,
-            auto_delete: false,
-            no_wait: false,
-            arguments: None,
-        })
-        .unwrap();
+    let queue_name: String;
+    if cfg.runner.build_all_jobs != Some(true) {
+        queue_name = channel
+            .declare_queue(easyamqp::QueueConfig {
+                queue: format!("build-inputs-{}", cfg.nix.system.clone()),
+                passive: false,
+                durable: true,
+                exclusive: false,
+                auto_delete: false,
+                no_wait: false,
+                arguments: None,
+            })
+            .unwrap().queue;
+    } else {
+        warn!("Building all jobs, please don't use this unless you're");
+        warn!("developing and have Graham's permission!");
+        queue_name = channel
+            .declare_queue(easyamqp::QueueConfig {
+                queue: "".to_owned(),
+                passive: false,
+                durable: false,
+                exclusive: true,
+                auto_delete: true,
+                no_wait: false,
+                arguments: None,
+            })
+            .unwrap().queue;
+    }
 
     channel
         .bind_queue(easyamqp::BindQueueConfig {
-            queue: format!("build-inputs-{}", cfg.nix.system.clone()),
+            queue: queue_name.clone(),
             exchange: "build-jobs".to_owned(),
             routing_key: None,
             no_wait: false,
@@ -82,10 +97,9 @@ fn main() {
                 nix,
                 cfg.nix.system.clone(),
                 cfg.runner.identity.clone(),
-                full_logs,
             )),
             easyamqp::ConsumeConfig {
-                queue: format!("build-inputs-{}", cfg.nix.system.clone()),
+                queue: queue_name.clone(),
                 consumer_tag: format!("{}-builder", cfg.whoami()),
                 no_local: false,
                 no_ack: false,
@@ -96,6 +110,7 @@ fn main() {
         )
         .unwrap();
 
+    println!("Fetching jobs from {}", &queue_name);
     channel.start_consuming();
     channel.close(200, "Bye").unwrap();
     println!("Closed the channel");

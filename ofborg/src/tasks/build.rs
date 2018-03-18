@@ -23,7 +23,6 @@ pub struct BuildWorker {
     nix: nix::Nix,
     system: String,
     identity: String,
-    full_logs: bool,
 }
 
 impl BuildWorker {
@@ -32,14 +31,12 @@ impl BuildWorker {
         nix: nix::Nix,
         system: String,
         identity: String,
-        full_logs: bool,
     ) -> BuildWorker {
         return BuildWorker {
             cloner: cloner,
             nix: nix,
             system: system,
             identity: identity,
-            full_logs: full_logs,
         };
     }
 
@@ -58,6 +55,7 @@ pub struct JobActions<'a, 'b> {
     receiver: &'a mut notifyworker::NotificationReceiver,
     job: &'b buildjob::BuildJob,
     line_counter: u64,
+    snippet_log: VecDeque<String>,
     attempt_id: String,
     log_exchange: Option<String>,
     log_routing_key: Option<String>,
@@ -89,12 +87,20 @@ impl<'a, 'b> JobActions<'a, 'b> {
             receiver: receiver,
             job: job,
             line_counter: 0,
+            snippet_log: VecDeque::with_capacity(10),
             attempt_id: format!("{}", Uuid::new_v4()),
             log_exchange: log_exchange,
             log_routing_key: log_routing_key,
             result_exchange: result_exchange,
             result_routing_key: result_routing_key,
         };
+    }
+
+    pub fn log_snippet(&self) -> Vec<String> {
+        self.snippet_log
+            .clone()
+            .into_iter()
+            .collect::<Vec<String>>()
     }
 
     pub fn commit_missing(&mut self) {
@@ -152,8 +158,24 @@ impl<'a, 'b> JobActions<'a, 'b> {
         ));
     }
 
+    pub fn log_instantiation_errors(&mut self, cannot_build: Vec<(String, Vec<String>)>) {
+        for (attr, log) in cannot_build {
+            self.log_line(&format!("Cannot nix-instantiate `{}' because:", &attr));
+
+            for line in log {
+                self.log_line(&line);
+            }
+            self.log_line("");
+        }
+    }
+
     pub fn log_line(&mut self, line: &str) {
         self.line_counter += 1;
+
+        if self.snippet_log.len() >= 10 {
+            self.snippet_log.pop_front();
+        }
+        self.snippet_log.push_back(line.to_owned());
 
         let msg = buildlogmsg::BuildLogMsg {
             identity: self.identity.clone(),
@@ -180,7 +202,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             repo: self.job.repo.clone(),
             pr: self.job.pr.clone(),
             system: self.system.clone(),
-            output: vec![],
+            output: self.log_snippet(),
             attempt_id: self.attempt_id.clone(),
             skipped_attrs: Some(not_attempted_attrs),
             attempted_attrs: None,
@@ -206,7 +228,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
         self.tell(worker::Action::Ack);
     }
 
-    pub fn build_finished(&mut self, success: bool, lines: Vec<String>,
+    pub fn build_finished(&mut self, success: bool,
                           attempted_attrs: Vec<String>,
                           not_attempted_attrs: Vec<String>,
 
@@ -215,7 +237,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             repo: self.job.repo.clone(),
             pr: self.job.pr.clone(),
             system: self.system.clone(),
-            output: lines,
+            output: self.log_snippet(),
             attempt_id: self.attempt_id.clone(),
             success: Some(success),
             attempted_attrs: Some(attempted_attrs),
@@ -323,12 +345,22 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             job.attrs.clone(),
         );
 
+        let cannot_build_attrs: Vec<String> = cannot_build
+            .clone()
+            .into_iter()
+            .map(|(attr,_)| attr)
+            .collect();
+
         println!("Can build: '{}', Cannot build: '{}'",
                  can_build.join(", "),
-                 cannot_build.join(", "));
+                 cannot_build_attrs.join(", "));
+
+
+        actions.log_started(can_build.clone(), cannot_build_attrs.clone());
+        actions.log_instantiation_errors(cannot_build);
 
         if can_build.len() == 0 {
-            actions.build_not_attempted(cannot_build);
+            actions.build_not_attempted(cannot_build_attrs);
             return;
         }
 
@@ -339,27 +371,11 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         );
 
         println!("About to execute {:?}", cmd);
-        actions.log_started(can_build.clone(), cannot_build.clone());
         let acmd = AsyncCmd::new(cmd);
         let mut spawned = acmd.spawn();
 
-        let mut snippet_log = VecDeque::with_capacity(10);
-
-
-        if !self.full_logs {
-            actions.log_line("Full logs are disabled on this builder.");
-        }
-
         for line in spawned.lines().iter() {
-            if self.full_logs {
-                actions.log_line(&line);
-            }
-
-            if snippet_log.len() >= 10 {
-                snippet_log.pop_front();
-            }
-
-            snippet_log.push_back(line.to_owned());
+            actions.log_line(&line);
         }
 
         let success = match spawned.wait() {
@@ -372,12 +388,11 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
 
         println!("ok built ({:?}), building", success);
         println!("Lines:\n-----8<-----");
-        snippet_log.iter().inspect(|x| println!("{}", x)).last();
+        actions.log_snippet().iter().inspect(|x| println!("{}", x)).last();
         println!("----->8-----");
 
-        let last10lines: Vec<String> = snippet_log.into_iter().collect::<Vec<String>>();
 
-        actions.build_finished(success, last10lines.clone(), can_build, cannot_build);
+        actions.build_finished(success, can_build, cannot_build_attrs);
         println!("Done!");
     }
 }
@@ -409,7 +424,6 @@ mod tests {
             nix,
             "x86_64-linux".to_owned(),
             "cargo-test-build".to_owned(),
-            true,
         );
 
         return worker;
@@ -537,6 +551,8 @@ mod tests {
 
         println!("Total actions: {:?}", dummyreceiver.actions.len());
         let mut actions = dummyreceiver.actions.into_iter();
+        assert_contains_job(&mut actions, "\"line_number\":1,\"output\":\"Cannot nix-instantiate `not-real\' because:\"");
+        assert_contains_job(&mut actions, "\"line_number\":2,\"output\":\"error: attribute ‘not-real’ in selection path ‘not-real’ not found\"}");
         assert_contains_job(&mut actions, "skipped_attrs\":[\"not-real"); // First one to the github poster
         assert_contains_job(&mut actions, "skipped_attrs\":[\"not-real"); // This one to the logs
         assert_eq!(actions.next(), Some(worker::Action::Ack));
