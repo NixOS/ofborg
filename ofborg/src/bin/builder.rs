@@ -51,21 +51,38 @@ fn main() {
         })
         .unwrap();
 
-    channel
-        .declare_queue(easyamqp::QueueConfig {
-            queue: format!("build-inputs-{}", cfg.nix.system.clone()),
-            passive: false,
-            durable: true,
-            exclusive: false,
-            auto_delete: false,
-            no_wait: false,
-            arguments: None,
-        })
-        .unwrap();
+    let queue_name: String;
+    if cfg.runner.build_all_jobs != Some(true) {
+        queue_name = channel
+            .declare_queue(easyamqp::QueueConfig {
+                queue: format!("build-inputs-{}", cfg.nix.system.clone()),
+                passive: false,
+                durable: true,
+                exclusive: false,
+                auto_delete: false,
+                no_wait: false,
+                arguments: None,
+            })
+            .unwrap().queue;
+    } else {
+        warn!("Building all jobs, please don't use this unless you're");
+        warn!("developing and have Graham's permission!");
+        queue_name = channel
+            .declare_queue(easyamqp::QueueConfig {
+                queue: "".to_owned(),
+                passive: false,
+                durable: false,
+                exclusive: true,
+                auto_delete: true,
+                no_wait: false,
+                arguments: None,
+            })
+            .unwrap().queue;
+    }
 
     channel
         .bind_queue(easyamqp::BindQueueConfig {
-            queue: format!("build-inputs-{}", cfg.nix.system.clone()),
+            queue: queue_name.clone(),
             exchange: "build-jobs".to_owned(),
             routing_key: None,
             no_wait: false,
@@ -82,7 +99,7 @@ fn main() {
                 cfg.runner.identity.clone(),
             )),
             easyamqp::ConsumeConfig {
-                queue: format!("build-inputs-{}", cfg.nix.system.clone()),
+                queue: queue_name.clone(),
                 consumer_tag: format!("{}-builder", cfg.whoami()),
                 no_local: false,
                 no_ack: false,
@@ -93,6 +110,7 @@ fn main() {
         )
         .unwrap();
 
+    println!("Fetching jobs from {}", &queue_name);
     channel.start_consuming();
     channel.close(200, "Bye").unwrap();
     println!("Closed the channel");

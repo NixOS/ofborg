@@ -62,6 +62,14 @@ pub struct RunnerConfig {
     pub repos: Option<Vec<String>>,
     pub trusted_users: Option<Vec<String>>,
     pub known_users: Option<Vec<String>>,
+
+    /// If true, will create its own queue attached to the build job
+    /// exchange. This means that builders with this enabled will
+    /// trigger duplicate replies to the request for this
+    /// architecture.
+    ///
+    /// This should only be turned on for development.
+    pub build_all_jobs: Option<bool>
 }
 
 #[derive(Serialize, Deserialize, Debug)]
