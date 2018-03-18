@@ -74,15 +74,16 @@ impl worker::SimpleWorker for GitHubCommentPoster {
 fn result_to_comment(result: &BuildResult) -> String {
     let mut reply: Vec<String> = vec![];
 
-    let log_link = match result.success {
-        Some(_) => format!(
+    let log_link = if result.output.len() > 0 {
+        format!(
             " [(full log)](https://logs.nix.ci/?key={}/{}.{}&attempt_id={})",
             &result.repo.owner.to_lowercase(),
             &result.repo.name.to_lowercase(),
             result.pr.number,
             result.attempt_id,
-        ),
-        None => "".to_owned()
+        )
+    } else {
+        "".to_owned()
     };
 
     reply.push(format!(
@@ -390,6 +391,45 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
 
     #[test]
     pub fn test_no_attempt() {
+        let result = BuildResult {
+            repo: Repo {
+                clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
+                full_name: "NixOS/nixpkgs".to_owned(),
+                owner: "NixOS".to_owned(),
+                name: "nixpkgs".to_owned(),
+            },
+            pr: Pr {
+                head_sha: "abc123".to_owned(),
+                number: 2345,
+                target_branch: Some("master".to_owned()),
+            },
+            output: vec!["foo".to_owned()],
+            attempt_id: "foo".to_owned(),
+            system: "x86_64-linux".to_owned(),
+            attempted_attrs: None,
+            skipped_attrs: Some(vec!["not-attempted".to_owned()]),
+            success: None,
+        };
+
+        assert_eq!(
+            &result_to_comment(&result),
+            "No attempt on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=foo)
+
+The following builds were skipped because they don't evaluate on x86_64-linux: not-attempted
+
+<details><summary>Partial log (click to expand)</summary><p>
+
+```
+foo
+```
+</p></details>
+
+"
+        );
+    }
+
+    #[test]
+    pub fn test_no_attempt_no_log() {
         let result = BuildResult {
             repo: Repo {
                 clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
