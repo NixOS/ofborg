@@ -1,6 +1,6 @@
 [package]
 name = "ofborg"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Graham Christensen <graham@grahamc.com>"]
 include = ["Cargo.toml", "Cargo.lock", "src", "test-srcs", "build.rs"]
 build = "build.rs"
