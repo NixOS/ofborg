@@ -23,7 +23,6 @@ pub struct BuildWorker {
     nix: nix::Nix,
     system: String,
     identity: String,
-    full_logs: bool,
 }
 
 impl BuildWorker {
@@ -32,14 +31,12 @@ impl BuildWorker {
         nix: nix::Nix,
         system: String,
         identity: String,
-        full_logs: bool,
     ) -> BuildWorker {
         return BuildWorker {
             cloner: cloner,
             nix: nix,
             system: system,
             identity: identity,
-            full_logs: full_logs,
         };
     }
 
@@ -346,20 +343,15 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         let mut snippet_log = VecDeque::with_capacity(10);
 
 
-        if !self.full_logs {
-            actions.log_line("Full logs are disabled on this builder.");
-        }
 
         for line in spawned.lines().iter() {
-            if self.full_logs {
-                actions.log_line(&line);
-            }
 
             if snippet_log.len() >= 10 {
                 snippet_log.pop_front();
             }
 
             snippet_log.push_back(line.to_owned());
+            actions.log_line(&line);
         }
 
         let success = match spawned.wait() {

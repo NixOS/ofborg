@@ -25,17 +25,15 @@ fn main() {
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
     let nix = cfg.nix();
 
-    let full_logs: bool = match &cfg.feedback {
-        &Some(ref feedback) => feedback.full_logs,
-        &None => {
-            warn!("Please define feedback.full_logs in your configuration to true or false!");
-            warn!("feedback.full_logs when true will cause the full build log to be sent back");
-            warn!("to the server, and be viewable by everyone.");
-            warn!("I strongly encourage everybody turn this on!");
-            false
-        }
+    if &cfg.feedback.full_logs != Some(true) {
+        warn!("Please define feedback.full_logs in your configuration to true!");
+        warn!("feedback.full_logs when true will cause the full build log to be sent back");
+        warn!("to the server, and be viewable by everyone.");
+        warn!("");
+        warn!("Builders are no longer allowed to operate with this off");
+        warn!("so your builder will no longer start.");
+        panic!();
     };
-
 
     let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
     let mut channel = session.open_channel(1).unwrap();
