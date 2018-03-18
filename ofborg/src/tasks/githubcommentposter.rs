@@ -113,7 +113,7 @@ fn result_to_comment(result: &BuildResult) -> String {
     if result.output.len() > 0 {
         reply.extend(partial_log_segment(&result.output));
     } else {
-        reply.push("No log is available.".to_owned());
+        reply.push("No partial log is available.".to_owned());
         reply.push("".to_owned());
     }
 
@@ -416,7 +416,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
 
 The following builds were skipped because they don't evaluate on x86_64-linux: not-attempted
 
-No log is available.
+No partial log is available.
 "
         );
     }
