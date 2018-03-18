@@ -25,7 +25,7 @@ fn main() {
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
     let nix = cfg.nix();
 
-    if &cfg.feedback.full_logs != Some(true) {
+    if cfg.feedback.full_logs != true {
         warn!("Please define feedback.full_logs in your configuration to true!");
         warn!("feedback.full_logs when true will cause the full build log to be sent back");
         warn!("to the server, and be viewable by everyone.");
@@ -80,7 +80,6 @@ fn main() {
                 nix,
                 cfg.nix.system.clone(),
                 cfg.runner.identity.clone(),
-                full_logs,
             )),
             easyamqp::ConsumeConfig {
                 queue: format!("build-inputs-{}", cfg.nix.system.clone()),
