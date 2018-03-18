@@ -6,6 +6,8 @@ use std::io::SeekFrom;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use tempfile::tempfile;
+use std::io::BufReader;
+use std::io::BufRead;
 
 #[derive(Clone, Debug)]
 pub enum Operation {
@@ -102,16 +104,35 @@ impl Nix {
         nixpkgs: &Path,
         file: &str,
         attrs: Vec<String>,
-    ) -> (Vec<String>, Vec<String>) {
-        attrs
+    ) -> (Vec<String>, Vec<(String,Vec<String>)>) {
+        let attr_instantiations: Vec<Result<String, (String, Vec<String>)>> =
+            attrs
             .into_iter()
-            .partition(|attr| {
-                self.safely_instantiate_attrs(
-                    nixpkgs,
-                    file,
-                    vec![attr.clone()]
-                ).is_ok()
-            })
+            .map(|attr|
+                 match self.safely_instantiate_attrs(
+                     nixpkgs,
+                     file,
+                     vec![attr.clone()]
+                 ) {
+                     Ok(_) => Ok(attr.clone()),
+                     Err(f) => Err((attr.clone(), lines_from_file(f)))
+                 }
+            )
+            .collect();
+
+        let (ok, err): (
+            Vec<Result<String, (String, Vec<String>)>>,
+            Vec<Result<String, (String, Vec<String>)>>)  = attr_instantiations
+            .into_iter()
+            .partition(|x| x.is_ok());
+
+        let ok_ret: Vec<String> = ok.into_iter().map(|x| x.unwrap()).collect();
+        let err_ret: Vec<(String, Vec<String>)> = err.into_iter().map(|x| x.unwrap_err()).collect();
+
+        return (
+            ok_ret,
+            err_ret
+        )
     }
 
     pub fn safely_instantiate_attrs(
@@ -253,6 +274,15 @@ impl Nix {
     }
 }
 
+fn lines_from_file(file: File) -> Vec<String> {
+    BufReader::new(file)
+        .lines()
+        .into_iter()
+        .filter(|line| line.is_ok())
+        .map(|line| line.unwrap())
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     fn nix() -> Nix {
@@ -289,15 +319,6 @@ mod tests {
     enum Expect {
         Pass,
         Fail,
-    }
-
-    fn lines_from_file(file: File) -> Vec<String> {
-        BufReader::new(file)
-            .lines()
-            .into_iter()
-            .filter(|line| line.is_ok())
-            .map(|line| line.unwrap())
-            .collect()
     }
 
     fn assert_run(res: Result<File, File>, expected: Expect, require: Vec<&str>) {
@@ -378,8 +399,6 @@ mod tests {
     }
 
     use super::*;
-    use std::io::BufReader;
-    use std::io::BufRead;
     use std::path::PathBuf;
     use std::env;
 
@@ -567,7 +586,7 @@ mod tests {
     fn partition_instantiable_attributes() {
         let nix = nix();
 
-        let ret: (Vec<String>, Vec<String>) = nix.safely_partition_instantiable_attrs(
+        let ret: (Vec<String>, Vec<(String, Vec<String>)>) = nix.safely_partition_instantiable_attrs(
             individual_eval_path().as_path(),
             "default.nix",
             vec![
@@ -578,7 +597,12 @@ mod tests {
         );
 
         assert_eq!(ret.0, vec!["passes-instantiation"]);
-        assert_eq!(ret.1, vec!["fails-instantiation", "missing-attr"]);
+
+        assert_eq!(ret.1[0].0, "fails-instantiation");
+        assert_eq!(ret.1[0].1[0], "trace: You just can\'t frooble the frozz on this particular system.");
+
+        assert_eq!(ret.1[1].0, "missing-attr");
+        assert_eq!(ret.1[1].1[0], "error: attribute ‘missing-attr’ in selection path ‘missing-attr’ not found");
     }
 
     #[test]

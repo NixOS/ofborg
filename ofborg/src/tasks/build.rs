@@ -342,12 +342,22 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             job.attrs.clone(),
         );
 
+        let cannot_build_attrs: Vec<String> = cannot_build
+            .clone()
+            .into_iter()
+            .map(|(attr,_)| attr)
+            .collect();
+
         println!("Can build: '{}', Cannot build: '{}'",
                  can_build.join(", "),
-                 cannot_build.join(", "));
+                 cannot_build_attrs.join(", "));
+
+
+        actions.log_started(can_build.clone(), cannot_build_attrs.clone());
+        actions.log_instantiation_errors(cannot_build);
 
         if can_build.len() == 0 {
-            actions.build_not_attempted(cannot_build);
+            actions.build_not_attempted(cannot_build_attrs);
             return;
         }
 
@@ -358,7 +368,6 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         );
 
         println!("About to execute {:?}", cmd);
-        actions.log_started(can_build.clone(), cannot_build.clone());
         let acmd = AsyncCmd::new(cmd);
         let mut spawned = acmd.spawn();
 
@@ -381,7 +390,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
 
         let last10lines: Vec<String> = actions.log_snippet().into_iter().collect::<Vec<String>>();
 
-        actions.build_finished(success, last10lines.clone(), can_build, cannot_build);
+        actions.build_finished(success, last10lines.clone(), can_build, cannot_build_attrs);
         println!("Done!");
     }
 }
@@ -541,6 +550,8 @@ mod tests {
 
         println!("Total actions: {:?}", dummyreceiver.actions.len());
         let mut actions = dummyreceiver.actions.into_iter();
+        assert_contains_job(&mut actions, "\"line_number\":1,\"output\":\"Cannot nix-instantiate `not-real\' because:\"");
+        assert_contains_job(&mut actions, "\"line_number\":2,\"output\":\"error: attribute ‘not-real’ in selection path ‘not-real’ not found\"}");
         assert_contains_job(&mut actions, "skipped_attrs\":[\"not-real"); // First one to the github poster
         assert_contains_job(&mut actions, "skipped_attrs\":[\"not-real"); // This one to the logs
         assert_eq!(actions.next(), Some(worker::Action::Ack));
