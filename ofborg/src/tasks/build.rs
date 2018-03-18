@@ -96,8 +96,11 @@ impl<'a, 'b> JobActions<'a, 'b> {
         };
     }
 
-    pub fn log_snippet(&self) -> VecDeque<String> {
-        self.snippet_log.clone()
+    pub fn log_snippet(&self) -> Vec<String> {
+        self.snippet_log
+            .clone()
+            .into_iter()
+            .collect::<Vec<String>>()
     }
 
     pub fn commit_missing(&mut self) {
@@ -199,7 +202,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             repo: self.job.repo.clone(),
             pr: self.job.pr.clone(),
             system: self.system.clone(),
-            output: vec![],
+            output: self.log_snippet(),
             attempt_id: self.attempt_id.clone(),
             skipped_attrs: Some(not_attempted_attrs),
             attempted_attrs: None,
@@ -225,7 +228,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
         self.tell(worker::Action::Ack);
     }
 
-    pub fn build_finished(&mut self, success: bool, lines: Vec<String>,
+    pub fn build_finished(&mut self, success: bool,
                           attempted_attrs: Vec<String>,
                           not_attempted_attrs: Vec<String>,
 
@@ -234,7 +237,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             repo: self.job.repo.clone(),
             pr: self.job.pr.clone(),
             system: self.system.clone(),
-            output: lines,
+            output: self.log_snippet(),
             attempt_id: self.attempt_id.clone(),
             success: Some(success),
             attempted_attrs: Some(attempted_attrs),
@@ -388,9 +391,8 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         actions.log_snippet().iter().inspect(|x| println!("{}", x)).last();
         println!("----->8-----");
 
-        let last10lines: Vec<String> = actions.log_snippet().into_iter().collect::<Vec<String>>();
 
-        actions.build_finished(success, last10lines.clone(), can_build, cannot_build_attrs);
+        actions.build_finished(success, can_build, cannot_build_attrs);
         println!("Done!");
     }
 }
