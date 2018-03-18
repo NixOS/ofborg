@@ -8,6 +8,7 @@ use std::process::{Command, Stdio};
 use tempfile::tempfile;
 use std::io::BufReader;
 use std::io::BufRead;
+use ofborg::partition_result;
 
 #[derive(Clone, Debug)]
 pub enum Operation {
@@ -120,19 +121,7 @@ impl Nix {
             )
             .collect();
 
-        let (ok, err): (
-            Vec<Result<String, (String, Vec<String>)>>,
-            Vec<Result<String, (String, Vec<String>)>>)  = attr_instantiations
-            .into_iter()
-            .partition(|x| x.is_ok());
-
-        let ok_ret: Vec<String> = ok.into_iter().map(|x| x.unwrap()).collect();
-        let err_ret: Vec<(String, Vec<String>)> = err.into_iter().map(|x| x.unwrap_err()).collect();
-
-        return (
-            ok_ret,
-            err_ret
-        )
+        partition_result(attr_instantiations)
     }
 
     pub fn safely_instantiate_attrs(

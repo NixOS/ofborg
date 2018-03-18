@@ -70,6 +70,19 @@ pub mod ofborg {
     pub use easyamqp;
 
     pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
+    pub fn partition_result<A,B>(results: Vec<Result<A,B>>) -> (Vec<A>, Vec<B>) {
+        let mut ok = Vec::new();
+        let mut err = Vec::new();
+        for result in results.into_iter() {
+            match result {
+                Ok(x) => { ok.push(x); }
+                Err(x) => { err.push(x); }
+            }
+        }
+
+        (ok, err)
+    }
 }
 
 pub fn setup_log() {
