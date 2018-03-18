@@ -97,10 +97,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
     }
 
     pub fn log_snippet(&self) -> Vec<String> {
-        self.snippet_log
-            .clone()
-            .into_iter()
-            .collect::<Vec<String>>()
+        self.snippet_log.clone().into()
     }
 
     pub fn commit_missing(&mut self) {
