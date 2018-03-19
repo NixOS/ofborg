@@ -44,6 +44,7 @@ fn main() {
             Some(String::from("build.log")),
         )),
         statusreport: Some((Some(String::from("build-results")), None)),
+        request_id: "bogus-request-id".to_owned(),
     };
 
     loop {

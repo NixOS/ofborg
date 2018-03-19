@@ -1,6 +1,8 @@
 extern crate amqp;
 extern crate env_logger;
+extern crate uuid;
 
+use uuid::Uuid;
 use ofborg::ghevent;
 use ofborg::acl;
 use serde_json;
@@ -115,6 +117,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                             attrs,
                             None,
                             None,
+                            format!("{}", Uuid::new_v4()),
                         );
 
                         for (exch, rk) in build_destinations.clone() {
