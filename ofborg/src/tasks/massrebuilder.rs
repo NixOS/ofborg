@@ -267,7 +267,20 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
             );
 
             info!("Failed to merge {}", job.pr.head_sha);
+
+            update_labels(
+                &issue,
+                vec!["2.status: merge conflict".to_owned()],
+                vec![],
+            );
+
             return self.actions().skip(&job);
+        } else {
+            update_labels(
+                &issue,
+                vec![],
+                vec!["2.status: merge conflict".to_owned()],
+            );
         }
 
         overall_status.set_with_description(
