@@ -6,7 +6,13 @@ pub struct ACL {
 }
 
 impl ACL {
-    pub fn new(repos: Vec<String>, trusted_users: Vec<String>, known_users: Vec<String>) -> ACL {
+    pub fn new(
+        repos: Vec<String>,
+        mut trusted_users: Vec<String>,
+        mut known_users: Vec<String>
+    ) -> ACL {
+        trusted_users.iter_mut().map(|x| *x = x.to_lowercase()).last();
+        known_users.iter_mut().map(|x| *x = x.to_lowercase()).last();
         return ACL {
             trusted_users: trusted_users,
             known_users: known_users,
