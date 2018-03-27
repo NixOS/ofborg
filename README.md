@@ -177,6 +177,15 @@ $ GC_INITIAL_HEAP_SIZE=4g nix-env -f ./outpaths.nix -qaP --no-name --out-path --
 
 # Running a builder
 
+It is recommended to create a special user for the ofBorg operation.
+This user should have git configuration for default username/email for
+non-interactive merges. For example:
+```
+git config --global user.email "graham+cofborg@example.com"
+git config --global user.name "GrahamCOfBorg"
+```
+
+
 ```
 nix-shell ./shell.nix
 $ cd ofborg
@@ -208,6 +217,17 @@ config file of credentials. These files contain some special keys like
 they are only used in the backend processing tasks, and there is no
 need for them on builders. However, to update the list in
 config.known-users.json, run `./scripts/update-known-users.sh`.
+
+In case you have a non-trivial setup on Linux, make sure that the ofborg
+user has access to `dev/kvm`, as it is needed for running tests.
+
+If you want to run multiple builder instances on the same physical 
+machine please make sure they use different configs with different
+instance identity (same username/password is OK) and different 
+repository paths. Running two builders with the same config risks data
+corruption.
+
+See also: https://github.com/NixOS/ofborg/wiki/Operating-a-Builder
 
 ## old php stuff...
 

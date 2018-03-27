@@ -1,6 +1,6 @@
 {
     "runner": {
-        "identity": "grahamc-laptop"
+        "identity": "..."
     },
     "checkout": {
         "root": "/home/grahamc/.nix-test-rs"
@@ -16,5 +16,8 @@
         "virtualhost": "ofborg",
         "username": "...",
         "password": "..."
+    },
+    "feedback": {
+        "full_logs": true
     }
 }
