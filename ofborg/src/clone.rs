@@ -76,7 +76,7 @@ pub trait GitClonable {
         if result.success() {
             return Ok(());
         } else {
-            return Err(Error::new(ErrorKind::Other, "Failed to clone"));
+            return Err(Error::new(ErrorKind::Other, format!("Failed to clone from {:?} to {:?}", self.clone_from(), self.clone_to())));
         }
     }
 
