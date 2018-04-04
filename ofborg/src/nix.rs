@@ -275,7 +275,8 @@ fn lines_from_file(file: File) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     fn nix() -> Nix {
-        Nix::new("x86_64-linux".to_owned(), "daemon".to_owned(), 1800, None)
+        let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
+        Nix::new("x86_64-linux".to_owned(), remote, 1800, None)
     }
 
     fn noop(operation: Operation) -> Operation {
@@ -502,7 +503,8 @@ mod tests {
 
     #[test]
     fn safe_command_custom_gc() {
-        let nix = Nix::new("x86_64-linux".to_owned(), "daemon".to_owned(), 1800, Some("4g".to_owned()));
+        let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
+        let nix = Nix::new("x86_64-linux".to_owned(), remote, 1800, Some("4g".to_owned()));
 
         let ret: Result<File, File> =
             nix.run(

@@ -400,6 +400,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::env;
     use std::path::{Path, PathBuf};
     use ofborg::message::{Pr, Repo};
     use notifyworker::SimpleNotifyWorker;
@@ -408,7 +409,8 @@ mod tests {
     use ofborg::test_scratch::TestScratch;
 
     fn nix() -> nix::Nix {
-        nix::Nix::new("x86_64-linux".to_owned(), "daemon".to_owned(), 1800, None)
+        let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
+        nix::Nix::new("x86_64-linux".to_owned(), remote, 1800, None)
     }
 
     fn tpath(component: &str) -> PathBuf {
