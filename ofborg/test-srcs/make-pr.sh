@@ -15,7 +15,7 @@ co=$2
         cp build/* "$co/"
         cd  "$co/"
         git add .
-        git commit --no-gpg-sign -m "initial repo commit"
+        git commit --no-gpg-sign --author "GrahamCOfBorg <graham+cofborg@example.com>" -m "initial repo commit"
         git push origin master
     )
 
@@ -24,7 +24,7 @@ co=$2
         cd "$co/"
         git checkout -b my-cool-pr
         git add .
-        git commit --no-gpg-sign -m "check out this cool PR"
+        git commit --no-gpg-sign --author "GrahamCOfBorg <graham+cofborg@example.com>" -m "check out this cool PR"
         git push origin my-cool-pr:refs/pull/1/head
 
     )
