@@ -135,6 +135,9 @@
             "pkgs/build-support/rust",
             "doc/languages-frameworks/rust.md"
         ],
+        "6.topic: stdenv": [
+            "pkgs/stdenv"
+        ],
         "6.topic: steam": [
             "pkgs/games/steam"
         ],
