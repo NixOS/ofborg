@@ -304,6 +304,14 @@ mod tests {
         return cwd;
     }
 
+    fn strip_ansi(string: &str) -> String {
+        string
+            .replace("‘", "'")
+            .replace("’", "'")
+            .replace("\u{1b}[31;1m", "") // red
+            .replace("\u{1b}[0m", "") // reset
+    }
+
     #[derive(Debug)]
     enum Expect {
         Pass,
@@ -325,7 +333,7 @@ mod tests {
 
         let buildlog = lines
             .into_iter()
-            .map(|line| line.replace("\u{1b}[0m", "")) // ANSI reset
+            .map(|line| strip_ansi(&line))
             .map(|line| format!("   | {}", line))
             .collect::<Vec<String>>()
             .join("\n");
@@ -588,10 +596,10 @@ mod tests {
         assert_eq!(ret.0, vec!["passes-instantiation"]);
 
         assert_eq!(ret.1[0].0, "fails-instantiation");
-        assert_eq!(ret.1[0].1[0], "trace: You just can\'t frooble the frozz on this particular system.");
+        assert_eq!(ret.1[0].1[0], "trace: You just can't frooble the frozz on this particular system.");
 
         assert_eq!(ret.1[1].0, "missing-attr");
-        assert_eq!(ret.1[1].1[0], "error: attribute ‘missing-attr’ in selection path ‘missing-attr’ not found");
+        assert_eq!(strip_ansi(&ret.1[1].1[0]), "error: attribute 'missing-attr' in selection path 'missing-attr' not found");
     }
 
     #[test]

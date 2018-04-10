@@ -397,7 +397,6 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -442,22 +441,31 @@ mod tests {
         return hash.trim().to_owned();
     }
 
+    fn strip_escaped_ansi(string: &str) -> String {
+        string
+            .replace("‘", "'")
+            .replace("’", "'")
+            .replace("\\u001b[31;1m", "") // red
+            .replace("\\u001b[0m", "") // reset
+    }
+
     fn assert_contains_job(actions: &mut IntoIter<worker::Action>, text_to_match: &str) {
-        println!("\n\nSearching for {:?}", text_to_match);
+        println!("\n\n   Searching: {:?}", text_to_match);
         actions
             .position(|job| match job {
                 worker::Action::Publish(ref body) => {
-                    let mystr = String::from_utf8(body.content.clone()).unwrap();
-                    if mystr.contains(text_to_match) {
-                        println!("    Matched: {:?}", mystr);
+                    let content = String::from_utf8(body.content.clone()).unwrap();
+                    let text = strip_escaped_ansi(&content);
+                    if text.contains(text_to_match) {
+                        println!(" ok");
                         return true;
                     } else {
-                        println!("    miss: {:?}", mystr);
+                        println!(" notContains: {:?}", text);
                         return false;
                     }
                 }
                 e => {
-                    println!("    notPublish: {:?}", e);
+                    println!(" notPublish: {:?}", e);
                     return false;
                 }
             })
@@ -554,7 +562,7 @@ mod tests {
         println!("Total actions: {:?}", dummyreceiver.actions.len());
         let mut actions = dummyreceiver.actions.into_iter();
         assert_contains_job(&mut actions, "\"line_number\":1,\"output\":\"Cannot nix-instantiate `not-real\' because:\"");
-        assert_contains_job(&mut actions, "\"line_number\":2,\"output\":\"error: attribute ‘not-real’ in selection path ‘not-real’ not found\"}");
+        assert_contains_job(&mut actions, "\"line_number\":2,\"output\":\"error: attribute 'not-real' in selection path 'not-real' not found\"}");
         assert_contains_job(&mut actions, "skipped_attrs\":[\"not-real"); // First one to the github poster
         assert_contains_job(&mut actions, "skipped_attrs\":[\"not-real"); // This one to the logs
         assert_eq!(actions.next(), Some(worker::Action::Ack));
