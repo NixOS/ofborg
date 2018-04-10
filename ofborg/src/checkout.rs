@@ -269,10 +269,14 @@ mod tests {
             .current_dir(tpath("./test-srcs"))
             .arg(bare)
             .arg(co)
-            .stderr(Stdio::null())
             .stdout(Stdio::piped())
             .output()
             .expect("building the test PR failed");
+
+        let stderr = String::from_utf8(output.stderr)
+            .unwrap_or_else(|err| format!("warning: {}", err));
+        println!("{}", stderr);
+
         let hash = String::from_utf8(output.stdout).expect("Should just be a hash");
         return hash.trim().to_owned();
     }
