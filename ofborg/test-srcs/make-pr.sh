@@ -1,7 +1,5 @@
 #!/bin/sh
-
-set -eux
-set -o pipefail
+set -eu
 
 bare=$1
 co=$2
