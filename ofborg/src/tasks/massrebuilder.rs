@@ -786,6 +786,7 @@ fn parse_commit_messages(messages: Vec<String>) -> Vec<String> {
 mod tests {
 
     use super::*;
+    use std::env;
     use std::process::Command;
 
     #[test]
@@ -798,7 +799,8 @@ mod tests {
         let nixpkgs = String::from_utf8(output.stdout)
             .expect("nixpkgs required");
 
-        let nix = nix::Nix::new(String::from("x86_64-linux"), String::from("daemon"), 1200, None);
+        let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
+        let nix = nix::Nix::new(String::from("x86_64-linux"), remote, 1200, None);
         let mut stdenv =
             Stdenvs::new(
                 nix.clone(),

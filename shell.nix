@@ -1,7 +1,6 @@
+{ pkgs ? import ./nix {}, useNix1 ? true }:
+
 let
-  pkgs = import ./nix {};
-
-
   inherit (pkgs) stdenv;
 
   phpEnv = stdenv.mkDerivation rec {
@@ -11,12 +10,12 @@ let
       nix-prefetch-git
       php
       phpPackages.composer
-      nix
       git
       php
       curl
       bash
-    ];
+    ]
+      ++ stdenv.lib.optional useNix1 nix;
 
     # HISTFILE = "${src}/.bash_hist";
   };
@@ -32,7 +31,9 @@ let
       openssl.dev
       pkgconfig
       git
-    ] ++ (lib.optional stdenv.isDarwin pkgs.darwin.Security);
+    ]
+      ++ stdenv.lib.optional useNix1 nix
+      ++ stdenv.lib.optional stdenv.isDarwin pkgs.darwin.Security;
 
     HISTFILE = "${toString ./.}/.bash_hist";
     passthru.phpEnv = phpEnv;
