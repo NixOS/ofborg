@@ -518,16 +518,19 @@ impl MetricCollector {
         .map(|mtype| {
             let fields: Vec<String> = mtype.enum_field_names();
 
-            let variant_match: String;
-            if fields.len() > 0 {
-                variant_match = format!("{}({})", &mtype.variant(), fields.join(", "));
+            let variant_match = if fields.len() > 0 {
+                format!("{}({})", &mtype.variant(), fields.join(", "))
             } else {
-                variant_match = format!("{}", &mtype.variant());
+                format!("{}", &mtype.variant())
+            };
+
+            let mut index_names: Vec<String> = mtype.enum_index_names();
+            index_names.push("instance".to_owned());
+
+            let mut index_fields = index_names.join(", ");
+            if index_names.len() > 1 {
+                index_fields = format!("({})", index_fields);
             }
-
-            let mut index_fields: Vec<String> = mtype.enum_index_names();
-            index_fields.push("instance".to_owned());
-
 
             format!("
       Event::{} => {{
@@ -535,7 +538,7 @@ impl MetricCollector {
           .lock()
           .expect(\"Failed to unwrap metric mutex for {}\");
         let accum = accum_table
-          .entry(({}))
+          .entry({})
           .or_insert(0);
         *accum += {};
       }}
@@ -543,7 +546,7 @@ impl MetricCollector {
                     variant_match,
                     &mtype.metric_name(),
                     &mtype.metric_name(),
-                    index_fields.join(", "),
+                    index_fields,
                     &mtype.record_value(),
             )
         }).collect();
