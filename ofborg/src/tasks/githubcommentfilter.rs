@@ -136,7 +136,9 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                             &msg,
                         ));
                     }
-
+                    commentparser::Instruction::Label(add_labels, remove_labels) => {
+                        unimplemented!()
+                    }
                 }
             }
         }

@@ -34,6 +34,22 @@ named!(parse_line_impl(CompleteStr) -> Option<Vec<Instruction>>, alt!(
                     tests: ws!(many1!(map!(normal_token, |s| format!("tests.{}", s.0)))) >>
                     (Some(Instruction::Build(Subset::NixOS, tests)))
                 )) |
+                ws!(do_parse!(
+                    tag!("label") >>
+                    // `labels` is a list of (add, remove), with both values Options
+                    labels: ws!(many1!(do_parse!(
+                        op: opt!(alt!(tag!("+") | tag!("-"))) >>
+                        tag: normal_token >>
+                        (match op {
+                            Some(s) if s.0 == "-" => (None, Some(tag.0)),
+                            _                     => (Some(tag.0), None),
+                        })
+                    ))) >>
+                    (Some(Instruction::Label(
+                        labels.iter().filter_map(|x| x.0.map(|y| y.to_owned())).collect(),
+                        labels.iter().filter_map(|x| x.1.map(|y| y.to_owned())).collect(),
+                    )))
+                )) |
                 value!(Some(Instruction::Eval), tag!("eval")) |
                 // TODO: Currently keeping previous behaviour of ignoring unknown commands. Maybe
                 // it would be better to return an error so that the caller would know one of the
@@ -61,6 +77,7 @@ pub fn parse_line(text: &str) -> Option<Vec<Instruction>> {
 pub enum Instruction {
     Build(Subset, Vec<String>),
     Eval,
+    Label(Vec<String>, Vec<String>), // (add, remove)
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -116,6 +133,22 @@ mod tests {
                 ),
             ]),
             parse("@grahamcofborg eval @grahamcofborg build foo")
+        );
+    }
+
+    #[test]
+    fn label_and_eval_comment() {
+        assert_eq!(
+            Some(vec![
+                 Instruction::Label(vec![
+                    "darwin".to_owned(),
+                    "feature".to_owned(),
+                 ], vec![
+                    "wontfix".to_owned(),
+                 ]),
+                 Instruction::Eval,
+            ]),
+            parse("@grahamcofborg label darwin +feature -wontfix @grahamcofborg eval")
         );
     }
 
