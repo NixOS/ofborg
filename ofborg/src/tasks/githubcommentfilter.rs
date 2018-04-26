@@ -8,7 +8,7 @@ use ofborg::acl;
 use serde_json;
 
 use hubcaps;
-use ofborg::message::{Repo, Pr, buildjob, massrebuildjob};
+use ofborg::message::{Repo, Pr, buildjob, labeljob, massrebuildjob};
 use ofborg::worker;
 use ofborg::commentparser;
 use amqp::protocol::basic::{Deliver, BasicProperties};
@@ -137,7 +137,18 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                         ));
                     }
                     commentparser::Instruction::Label(add_labels, remove_labels) => {
-                        unimplemented!()
+                        let msg = labeljob::LabelJob {
+                            repo: repo_msg.clone(),
+                            pr: pr_msg.clone(),
+                            add_labels,
+                            remove_labels,
+                        };
+
+                        response.push(worker::publish_serde_action(
+                            None,
+                            Some("label-jobs".to_owned()),
+                            &msg,
+                        ));
                     }
                 }
             }
