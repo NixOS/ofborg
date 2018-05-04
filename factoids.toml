@@ -10,3 +10,4 @@
 "!tofu" = "To get a sha256 hash of a new source, you can use the Trust On First Use model: use probably-wrong hash (for example: 0000000000000000000000000000000000000000000000000000) then replace it with the correct hash Nix expected."
 "!unfree" = "You cannot install your unfree software? See https://nixos.wiki/wiki/FAQ/unfree"
 "!notfound" = "nix-env -qaP does not show the package you are looking for but you are sure it should be there? Check out https://nixos.wiki/wiki/FAQ/notfound" 
+"!stateVersion" = "Do not update `system.stateVersion`. See https://nixos.wiki/wiki/FAQ/stateVersion for details."
