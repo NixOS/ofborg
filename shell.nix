@@ -39,6 +39,8 @@ let
       checkPhase() {
           ( cd "${builtins.toString ./.}/ofborg" && cargo test --lib )
       }
+
+      export NIX_REMOTE=daemon
     '';
 
     HISTFILE = "${toString ./.}/.bash_hist";
