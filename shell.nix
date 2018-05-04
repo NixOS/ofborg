@@ -15,7 +15,7 @@ let
       curl
       bash
     ]
-      ++ stdenv.lib.optional useNix1 nix;
+      ++ stdenv.lib.optional useNix1 nix1;
 
     # HISTFILE = "${src}/.bash_hist";
   };
@@ -32,10 +32,18 @@ let
       pkgconfig
       git
     ]
-      ++ stdenv.lib.optional useNix1 nix
+      ++ stdenv.lib.optional useNix1 nix1
       ++ stdenv.lib.optional stdenv.isDarwin pkgs.darwin.Security;
 
+    postHook = ''
+      checkPhase() {
+          ( cd "${builtins.toString ./.}/ofborg" && cargo test --lib )
+      }
+    '';
+
     HISTFILE = "${toString ./.}/.bash_hist";
+    RUSTFLAGS = "-D warnings";
+
     passthru.phpEnv = phpEnv;
   };
 

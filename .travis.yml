@@ -2,5 +2,6 @@ language: nix
 matrix:
   include:
   - script:
-    - nix-shell --run 'cd ofborg && cargo test --lib -- --nocapture'
-    - nix-shell --run 'cd ofborg && cargo test --lib -- --nocapture' --arg useNix1 true
+    - nix-shell --run checkPhase
+    - nix-shell --run checkPhase --arg useNix1 true
+    - nix-build -A ofborg.rs
