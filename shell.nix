@@ -1,4 +1,4 @@
-{ pkgs ? import ./nix {}, useNix1 ? true }:
+{ pkgs ? import ./nix {}, useNix1 ? false }:
 
 let
   inherit (pkgs) stdenv;
