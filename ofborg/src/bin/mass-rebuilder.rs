@@ -1,9 +1,11 @@
 extern crate ofborg;
 extern crate amqp;
 extern crate env_logger;
+extern crate sys_info;
 
 use std::env;
 use std::path::Path;
+use std::process;
 use ofborg::tasks;
 use ofborg::config;
 use ofborg::checkout;
@@ -15,12 +17,18 @@ use ofborg::easyamqp;
 use ofborg::easyamqp::TypedWrappers;
 
 fn main() {
+    let memory_info = sys_info::mem_info().expect("Unable to get memory information from OS");
+
+    if memory_info.avail < 8 * 1024 * 1024 { // seems this stuff is in kilobytes?
+        println!("Less than 8Gb of memory available (got {:.2}Gb). Aborting.", (memory_info.avail as f32) / 1024.0 / 1024.0 );
+        process::exit(1);
+    };
+
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
 
     ofborg::setup_log();
 
     println!("Hello, world!");
-
 
     let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
     println!("Connected to rabbitmq");
