@@ -7,6 +7,8 @@ extern crate hubcaps;
 extern crate hyper_native_tls;
 
 use std::env;
+use std::fs;
+use std::io::Read;
 
 use amqp::protocol::basic::{BasicProperties};
 
@@ -17,8 +19,19 @@ use ofborg::notifyworker;
 use ofborg::notifyworker::NotificationReceiver;
 
 fn main () {
+    let usage = "Missing parameters\nUSAGE: github-event-faker path/to/config.json path/to/prFixtures\n";
+    if env::args().nth(1).is_none() || env::args().nth(2).is_none() {
+        panic!(usage);
+    }
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
+    let fixtures_root = env::args().nth(2).unwrap();
     ofborg::setup_log();
+
+    let mut pr_changed = Vec::new();
+    let _ = match fs::File::open(format!("{}/pr-changed-base.json", fixtures_root)) {
+        Ok(mut file) => file.read_to_end(&mut pr_changed),
+        Err(_) => panic!("Missing pr changed fixture."),
+    };
 
     let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
     println!("Connected to rabbitmq");
@@ -28,14 +41,13 @@ fn main () {
         content_type: Some("application/json".to_string()),
         ..Default::default()
     };
-    let content = "{}".to_string();
     let action = worker::Action::Publish(worker::QueueMsg {
         exchange: Some("github-events".to_string()),
         routing_key: Some("pull_request.nixos/nixpkgs".to_string()),
         mandatory: false,
         immediate: false,
         properties: Some(props),
-        content: content.into_bytes(),
+        content: pr_changed,
     });
     {
         let mut recv = notifyworker::ChannelNotificationReceiver::new(&mut channel, 0);
