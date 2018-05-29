@@ -28,7 +28,7 @@ fn main () {
     ofborg::setup_log();
 
     let mut pr_changed = Vec::new();
-    let _ = match fs::File::open(format!("{}/pr-changed-base.json", fixtures_root)) {
+    let _ = match fs::File::open(format!("{}/pr-changed.json", fixtures_root)) {
         Ok(mut file) => file.read_to_end(&mut pr_changed),
         Err(_) => panic!("Missing pr changed fixture."),
     };
