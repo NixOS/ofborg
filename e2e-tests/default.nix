@@ -4,8 +4,8 @@ import <nixpkgs/nixos/tests/make-test.nix> ({ pkgs, ...}: rec {
                 mkdir -p $out
                 cp -r $src/fixtures $out
                 cp $src/config.test.json $out
-								cp $src/testGhPR.sh $out
-            '';
+                cp $src/testGhPR.sh $out
+             '';
   machine =
     { config, pkgs, ... }:
     { 
@@ -29,7 +29,7 @@ import <nixpkgs/nixos/tests/make-test.nix> ({ pkgs, ...}: rec {
   testScript = 
     ''
       startAll;
-			$machine->waitForUnit("rabbitmq");
+      $machine->waitForUnit("rabbitmq");
       $machine->execute("${testData}/testGhPR.sh ${testData}/config.test.json ${testData}/fixtures");
     '';
 })

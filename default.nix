@@ -65,4 +65,6 @@ in {
       cd ..
       mv ofborg $out
     '';
+
+  ofborg.integrationTests = pkgs.callPackage ./e2e-tests/default.nix {};
 }
