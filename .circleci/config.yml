@@ -1,0 +1,15 @@
+version: 1
+jobs:
+  build:
+    dependencies: 
+      cache_directories:
+        - "/nix"
+    machine: true
+    steps:
+      - checkout
+      - run:
+          name: Install Nix
+          command: 'sudo mkdir -p /nix && sudo chown circleci /nix && curl https://nixos.org/nix/install | sh && echo "source ~/.nix-profile/etc/profile.d/nix.sh" >> ~/.circlerc'
+      - run:
+          name: Github integration test
+          command: 'source ~/.circlerc && nix-build default.nix -A ofborg.integrationTests'
