@@ -3,8 +3,8 @@ import <nixpkgs/nixos/tests/make-test.nix> ({ pkgs, ...}: rec {
   testData = pkgs.runCommand "ofborg-gh-test" { src = ./.; } ''
                 mkdir -p $out
                 cp -r $src/fixtures $out
+                cp -r $src/tests $out
                 cp $src/config.test.json $out
-                cp $src/testGhPR.sh $out
              '';
   machine =
     { config, pkgs, ... }:
@@ -24,12 +24,10 @@ import <nixpkgs/nixos/tests/make-test.nix> ({ pkgs, ...}: rec {
       };
     };
 
-  
-
   testScript = 
     ''
       startAll;
       $machine->waitForUnit("rabbitmq");
-      $machine->execute("${testData}/testGhPR.sh ${testData}/config.test.json ${testData}/fixtures");
+      $machine->execute("${testData}/tests/test-gh-pr-correctly-named.sh ${testData}/config.test.json ${testData}/fixtures");
     '';
 })

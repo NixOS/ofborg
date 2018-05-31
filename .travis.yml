@@ -5,4 +5,3 @@ matrix:
     - nix-shell --run checkPhase
     - nix-shell --run checkPhase --arg useNix1 true
     - nix-build -A ofborg.rs
-    - nix-build -A ofborg.integrationTests
