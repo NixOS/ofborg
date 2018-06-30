@@ -608,6 +608,16 @@ rec {
     sha256 = "1pimp7fpvillhz06xz0k6450h9nis3ab6h1j2hzrzykrpxs2qnyg";
     inherit dependencies buildDependencies features;
   };
+  sys_info_0_5_6_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+    crateName = "sys-info";
+    version = "0.5.6";
+    authors = [ "Siyu Wang <FillZpp.pub@gmail.com>" ];
+    sha256 = "118ma1x3gnlm5jxxgi0bp8bskka5npnwn4f8m93zncbrbmzic2ff";
+    libPath = "lib.rs";
+    libName = "sys_info";
+    build = "build.rs";
+    inherit dependencies buildDependencies features;
+  };
   tempdir_0_3_7_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
     crateName = "tempdir";
     version = "0.3.7";
@@ -1440,7 +1450,7 @@ rec {
     num_cpus_1_8_0.default = (f.num_cpus_1_8_0.default or true);
   }) [ libc_0_2_40_features ];
   ofborg_0_1_5 = { features?(ofborg_0_1_5_features {}) }: ofborg_0_1_5_ {
-    dependencies = mapFeatures features ([ amqp_0_1_0 either_1_5_0 env_logger_0_4_3 fs2_0_4_3 hubcaps_0_3_16 hyper_0_10_13 hyper_native_tls_0_2_4 log_0_3_8 lru_cache_0_1_1 md5_0_3_7 nom_4_0_0_beta3 serde_1_0_43 serde_derive_1_0_43 serde_json_1_0_16 tempfile_2_2_0 uuid_0_4_0 ]);
+    dependencies = mapFeatures features ([ amqp_0_1_0 either_1_5_0 env_logger_0_4_3 fs2_0_4_3 hubcaps_0_3_16 hyper_0_10_13 hyper_native_tls_0_2_4 log_0_3_8 lru_cache_0_1_1 md5_0_3_7 nom_4_0_0_beta3 serde_1_0_43 serde_derive_1_0_43 serde_json_1_0_16 sys_info_0_5_6 tempfile_2_2_0 uuid_0_4_0 ]);
   };
   ofborg_0_1_5_features = f: updateFeatures f (rec {
     amqp_0_1_0.default = true;
@@ -1458,10 +1468,11 @@ rec {
     serde_1_0_43.default = true;
     serde_derive_1_0_43.default = true;
     serde_json_1_0_16.default = true;
+    sys_info_0_5_6.default = true;
     tempfile_2_2_0.default = true;
     uuid_0_4_0.default = true;
     uuid_0_4_0.v4 = true;
-  }) [ amqp_0_1_0_features either_1_5_0_features env_logger_0_4_3_features fs2_0_4_3_features hubcaps_0_3_16_features hyper_0_10_13_features hyper_native_tls_0_2_4_features log_0_3_8_features lru_cache_0_1_1_features md5_0_3_7_features nom_4_0_0_beta3_features serde_1_0_43_features serde_derive_1_0_43_features serde_json_1_0_16_features tempfile_2_2_0_features uuid_0_4_0_features ];
+  }) [ amqp_0_1_0_features either_1_5_0_features env_logger_0_4_3_features fs2_0_4_3_features hubcaps_0_3_16_features hyper_0_10_13_features hyper_native_tls_0_2_4_features log_0_3_8_features lru_cache_0_1_1_features md5_0_3_7_features nom_4_0_0_beta3_features serde_1_0_43_features serde_derive_1_0_43_features serde_json_1_0_16_features sys_info_0_5_6_features tempfile_2_2_0_features uuid_0_4_0_features ];
   openssl_0_9_24 = { features?(openssl_0_9_24_features {}) }: openssl_0_9_24_ {
     dependencies = mapFeatures features ([ bitflags_0_9_1 foreign_types_0_3_2 lazy_static_1_0_0 libc_0_2_40 openssl_sys_0_9_28 ]);
     features = mkFeatures (features.openssl_0_9_24 or {});
@@ -1822,6 +1833,15 @@ rec {
       (syn_0_13_1.printing or false);
     unicode_xid_0_1_0.default = true;
   }) [ proc_macro2_0_3_7_features quote_0_5_2_features unicode_xid_0_1_0_features ];
+  sys_info_0_5_6 = { features?(sys_info_0_5_6_features {}) }: sys_info_0_5_6_ {
+    dependencies = mapFeatures features ([ libc_0_2_40 ]);
+    buildDependencies = mapFeatures features ([ cc_1_0_10 ]);
+  };
+  sys_info_0_5_6_features = f: updateFeatures f (rec {
+    cc_1_0_10.default = true;
+    libc_0_2_40.default = true;
+    sys_info_0_5_6.default = (f.sys_info_0_5_6.default or true);
+  }) [ libc_0_2_40_features cc_1_0_10_features ];
   tempdir_0_3_7 = { features?(tempdir_0_3_7_features {}) }: tempdir_0_3_7_ {
     dependencies = mapFeatures features ([ rand_0_4_2 remove_dir_all_0_5_1 ]);
   };
