@@ -1,3 +1,4 @@
+/// This is what evaluates every pull-requests
 extern crate amqp;
 extern crate env_logger;
 extern crate uuid;
@@ -6,8 +7,6 @@ use uuid::Uuid;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
-use std::io::BufRead;
-use std::io::BufReader;
 use std::path::Path;
 use std::path::PathBuf;
 use ofborg::checkout;
@@ -643,11 +642,14 @@ impl Stdenvs {
         }
     }
 
+    /// This is used to find out what the output path of the stdenv for the
+    /// given system.
     fn evalstdenv(&self, system: &str) -> Option<String> {
         let result = self.nix.with_system(system.to_owned()).safely(
-            nix::Operation::Instantiate,
+            nix::Operation::QueryPackagesOutputs,
             &self.co,
             vec![
+                String::from("-f"),
                 String::from("."),
                 String::from("-A"),
                 String::from("stdenv"),
@@ -658,7 +660,7 @@ impl Stdenvs {
         println!("{:?}", result);
 
         return match result {
-            Ok(mut out) => file_to_drv(&mut out),
+            Ok(mut out) => Some(file_to_str(&mut out)),
             Err(mut out) => {
                 println!("{:?}", file_to_str(&mut out));
                 None
@@ -722,37 +724,6 @@ pub fn update_labels(issue: &hubcaps::issues::IssueRef, add: Vec<String>, remove
 
     for label in to_remove {
         l.remove(&label).expect("Failed to remove tag");
-    }
-}
-
-fn file_to_drv(f: &mut File) -> Option<String> {
-    let r = BufReader::new(f);
-    let matches: Vec<String>;
-    matches = r.lines()
-        .filter_map(|x| match x {
-            Ok(line) => {
-                if !line.starts_with("/nix/store/") {
-                    debug!("Skipping line, not /nix/store: {}", line);
-                    return None;
-                }
-
-                if !line.ends_with(".drv") {
-                    debug!("Skipping line, not .drv: {}", line);
-                    return None;
-                }
-
-                return Some(line);
-            }
-            Err(_) => None,
-        })
-        .collect();
-
-    if matches.len() == 1 {
-        return Some(matches.first().unwrap().clone());
-    } else {
-        info!("Got wrong number of matches: {}", matches.len());
-        info!("Matches: {:?}", matches);
-        return None;
     }
 }
 
