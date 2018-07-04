@@ -675,7 +675,7 @@ mod tests {
     }
 
     #[test]
-    fn instantiation() {
+    fn instantiation_success() {
         let ret: Result<File, File> = nix().safely(
             Operation::Instantiate,
             passing_eval_path().as_path(),
@@ -690,6 +690,25 @@ mod tests {
                 "the result might be removed by the garbage collector",
                 "-failed.drv",
                 "-success.drv",
+            ],
+        );
+    }
+
+    #[test]
+    fn instantiation_nixpkgs_restricted_mode() {
+        let ret: Result<File, File> = nix().safely(
+            Operation::Instantiate,
+            individual_eval_path().as_path(),
+            vec![String::from("-A"), String::from("nixpkgs-restricted-mode")],
+            true,
+        );
+
+        assert_run(
+            ret,
+            Expect::Fail,
+            vec![
+                "access to path '/fake'",
+                "is forbidden in restricted mode",
             ],
         );
     }
