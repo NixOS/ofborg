@@ -99,7 +99,25 @@ fn result_to_comment(result: &BuildResult) -> String {
     reply.push("".to_owned());
 
     if let Some(ref attempted) = result.attempted_attrs {
-        reply.extend(list_segment("Attempted", attempted.clone()));
+        let jobset =
+            match result.pr.target_branch {
+                None => "trunk",
+                Some(ref s) =>
+                    match s.as_ref() {
+                        "staging" => "staging",
+                        _ => "trunk",
+                    },
+            };
+        reply.extend(list_segment(
+            "Attempted",
+            attempted.iter().map( |attempt| {
+                format!(
+                    "[{}](https://hydra.nixos.org/job/nixpkgs/{}/{}.{})",
+                    attempt,
+                    jobset,
+                    attempt,
+                    result.system)
+            }).collect()));
     }
 
     if let Some(ref skipped) = result.skipped_attrs {
@@ -192,7 +210,7 @@ mod tests {
             &result_to_comment(&result),
             "Success on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
 
-Attempted: foo
+Attempted: [foo](https://hydra.nixos.org/job/nixpkgs/trunk/foo.x86_64-linux)
 
 The following builds were skipped because they don't evaluate on x86_64-linux: bar
 
@@ -254,7 +272,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             &result_to_comment(&result),
             "Failure on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
 
-Attempted: foo
+Attempted: [foo](https://hydra.nixos.org/job/nixpkgs/trunk/foo.x86_64-linux)
 
 <details><summary>Partial log (click to expand)</summary><p>
 
