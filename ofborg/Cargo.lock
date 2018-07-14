@@ -395,7 +395,7 @@ dependencies = [
 
 [[package]]
 name = "ofborg"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "amqp 0.1.0 (git+https://github.com/grahamc/rust-amqp.git)",
  "either 1.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
