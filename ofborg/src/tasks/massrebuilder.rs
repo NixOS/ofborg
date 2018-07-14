@@ -62,7 +62,10 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
 
     fn tag_from_title(&self, issue: &hubcaps::issues::IssueRef) {
         let darwin = issue.get()
-            .map(|iss| iss.title.to_lowercase().contains("darwin"))
+            .map(|iss| {
+                iss.title.to_lowercase().contains("darwin") ||
+                iss.title.to_lowercase().contains("macos")
+            })
             .unwrap_or(false);
 
         if darwin {
