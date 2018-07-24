@@ -16,6 +16,7 @@ let
           allowBroken = true;
           allowUnfree = true;
           allowInsecurePredicate = x: true;
+          allowAliases = false;
           checkMeta = checkMeta;
 
           handleEvalIssue = reason: errormsg:
