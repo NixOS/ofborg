@@ -8,7 +8,9 @@ use std::process::{Command, Stdio};
 use tempfile::tempfile;
 use std::io::BufReader;
 use std::io::BufRead;
+use ofborg::asynccmd::{AsyncCmd, SpawnedAsyncCmd};
 use ofborg::partition_result;
+
 
 #[derive(Clone, Debug)]
 pub enum Operation {
@@ -162,7 +164,17 @@ impl Nix {
         return self.run(cmd, true);
     }
 
-    pub fn safely_build_attrs_cmd(
+    pub fn safely_build_attrs_async(
+        &self,
+        nixpkgs: &Path,
+        file: &str,
+        attrs: Vec<String>,
+    ) -> SpawnedAsyncCmd {
+        AsyncCmd::new(self.safely_build_attrs_cmd(nixpkgs, file, attrs))
+            .spawn()
+    }
+
+    fn safely_build_attrs_cmd(
         &self,
         nixpkgs: &Path,
         file: &str,
@@ -175,7 +187,7 @@ impl Nix {
             attrargs.push(attr);
         }
 
-        return self.safe_command(Operation::Build, nixpkgs, attrargs);
+        self.safe_command(Operation::Build, nixpkgs, attrargs)
     }
 
     pub fn safely(

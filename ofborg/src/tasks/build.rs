@@ -5,7 +5,6 @@ extern crate env_logger;
 use uuid::Uuid;
 
 use std::collections::VecDeque;
-use ofborg::asynccmd::AsyncCmd;
 use ofborg::checkout;
 use ofborg::message::buildjob;
 use ofborg::message::buildresult;
@@ -364,15 +363,11 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             return;
         }
 
-        let cmd = self.nix.safely_build_attrs_cmd(
+        let mut spawned = self.nix.safely_build_attrs_async(
             refpath.as_ref(),
             buildfile,
             can_build.clone(),
         );
-
-        println!("About to execute {:?}", cmd);
-        let acmd = AsyncCmd::new(cmd);
-        let mut spawned = acmd.spawn();
 
         for line in spawned.lines().iter() {
             actions.log_line(&line);
