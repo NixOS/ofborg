@@ -3,9 +3,10 @@ use std::thread;
 use std::collections::HashMap;
 use std::process::Stdio;
 use std::process::ExitStatus;
-use std::sync::mpsc::sync_channel;
 use std::process::Command;
 use std::io::Read;
+use std::sync::mpsc;
+use std::sync::mpsc::sync_channel;
 use std::sync::mpsc::{SyncSender, Receiver};
 use std::io::BufReader;
 use std::io::BufRead;
@@ -188,12 +189,15 @@ impl AsyncCmd {
 
 
 impl SpawnedAsyncCmd {
-    pub fn lines<'a>(&'a mut self) -> &'a Receiver<String> {
-        &self.rx
+    pub fn lines<'a>(&'a mut self) -> mpsc::Iter<'a, String> {
+        self.rx.iter()
     }
 
-    pub fn wait(self) -> thread::Result<Option<Result<ExitStatus, io::Error>>> {
+    pub fn wait(self) -> Result<ExitStatus, io::Error> {
         self.waiter.join()
+            .map_err(|_err| io::Error::new(io::ErrorKind::Other, "Couldn't join thread."))
+            .and_then(|opt| opt.ok_or(io::Error::new(io::ErrorKind::Other, "Thread didn't return an exit status.")))
+            .and_then(|res| res)
     }
 }
 
@@ -214,9 +218,9 @@ mod tests {
         let acmd = AsyncCmd::new(cmd);
 
         let mut spawned = acmd.spawn();
-        let lines: Vec<String> = spawned.lines().into_iter().collect();
+        let lines: Vec<String> = spawned.lines().collect();
         assert_eq!(lines, vec!["hi"]);
-        let ret = spawned.wait().unwrap().unwrap().unwrap().success();
+        let ret = spawned.wait().unwrap().success();
         assert_eq!(true, ret);
     }
 
@@ -234,9 +238,9 @@ mod tests {
         let acmd = AsyncCmd::new(cmd);
 
         let mut spawned = acmd.spawn();
-        let lines: Vec<String> = spawned.lines().into_iter().collect();
+        let lines: Vec<String> = spawned.lines().collect();
         assert_eq!(lines, vec!["stdout", "stderr", "stdout2", "stderr2"]);
-        let ret = spawned.wait().unwrap().unwrap().unwrap().success();
+        let ret = spawned.wait().unwrap().success();
         assert_eq!(true, ret);
     }
 
@@ -250,14 +254,10 @@ mod tests {
         let acmd = AsyncCmd::new(cmd);
 
         let mut spawned = acmd.spawn();
-        let lines: Vec<String> = spawned.lines().into_iter().collect();
+        let lines: Vec<String> = spawned.lines().collect();
         assert_eq!(lines.len(), 20000);
         let thread_result = spawned.wait();
-        let child_result_opt = thread_result.expect("Thread should exit correctly");
-        let child_result = child_result_opt.expect(
-            "Thread should have properly properly returned the child's status",
-        );
-        let exit_status = child_result.expect("The child should have no problem exiting");
+        let exit_status = thread_result.expect("Thread should exit correctly");
         assert_eq!(true, exit_status.success());
     }
 
@@ -270,14 +270,10 @@ mod tests {
         let acmd = AsyncCmd::new(cmd);
 
         let mut spawned = acmd.spawn();
-        let lines: Vec<String> = spawned.lines().into_iter().collect();
+        let lines: Vec<String> = spawned.lines().collect();
         assert_eq!(lines.len(), 200000);
         let thread_result = spawned.wait();
-        let child_result_opt = thread_result.expect("Thread should exit correctly");
-        let child_result = child_result_opt.expect(
-            "Thread should have properly properly returned the child's status",
-        );
-        let exit_status = child_result.expect("The child should have no problem exiting");
+        let exit_status = thread_result.expect("Thread should exit correctly");
         assert_eq!(true, exit_status.success());
     }
 
@@ -293,12 +289,12 @@ mod tests {
         let acmd = AsyncCmd::new(cmd);
 
         let mut spawned = acmd.spawn();
-        let lines: Vec<String> = spawned.lines().into_iter().collect();
+        let lines: Vec<String> = spawned.lines().collect();
         assert_eq!(
             lines,
             vec!["hi", "Non-UTF8 data omitted from the log.", "there"]
         );
-        let ret = spawned.wait().unwrap().unwrap().unwrap().success();
+        let ret = spawned.wait().unwrap().success();
         assert_eq!(true, ret);
     }
 }

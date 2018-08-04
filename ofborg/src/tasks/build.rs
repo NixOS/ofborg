@@ -369,12 +369,12 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             can_build.clone(),
         );
 
-        for line in spawned.lines().iter() {
+        for line in spawned.lines() {
             actions.log_line(&line);
         }
 
         let success = match spawned.wait() {
-            Ok(Some(Ok(status))) => status.success(),
+            Ok(status) => status.success(),
             e => {
                 println!("Failed on the interior command: {:?}", e);
                 false
