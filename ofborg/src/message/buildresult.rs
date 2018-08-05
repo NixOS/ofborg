@@ -1,5 +1,15 @@
 use ofborg::message::{Pr, Repo};
 
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum BuildStatus {
+    Skipped,
+    Success,
+    Failure,
+    TimedOut,
+    UnexpectedError { err: String },
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BuildResult {
     pub repo: Repo,
@@ -8,7 +18,8 @@ pub struct BuildResult {
     pub output: Vec<String>,
     pub attempt_id: String,
     pub request_id: Option<String>,
-    pub success: Option<bool>,
+    pub success: Option<bool>, // replaced by status
+    pub status: Option<BuildStatus>,
     pub skipped_attrs: Option<Vec<String>>,
     pub attempted_attrs: Option<Vec<String>>,
 }

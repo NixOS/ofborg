@@ -7,7 +7,7 @@ use uuid::Uuid;
 use std::collections::VecDeque;
 use ofborg::checkout;
 use ofborg::message::buildjob;
-use ofborg::message::buildresult;
+use ofborg::message::buildresult::{BuildResult, BuildStatus};
 use ofborg::message::buildlogmsg;
 use ofborg::nix;
 use ofborg::commentparser;
@@ -112,7 +112,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
     }
 
     pub fn merge_failed(&mut self) {
-        let msg = buildresult::BuildResult {
+        let msg = BuildResult {
             repo: self.job.repo.clone(),
             pr: self.job.pr.clone(),
             system: self.system.clone(),
@@ -121,6 +121,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             request_id: Some(self.job.request_id.clone()),
             attempted_attrs: None,
             skipped_attrs: None,
+            status: Some(BuildStatus::Failure),
             success: Some(false),
         };
 
@@ -195,7 +196,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
     pub fn build_not_attempted(&mut self, not_attempted_attrs: Vec<String>,
 
     ) {
-        let msg = buildresult::BuildResult {
+        let msg = BuildResult {
             repo: self.job.repo.clone(),
             pr: self.job.pr.clone(),
             system: self.system.clone(),
@@ -204,6 +205,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             request_id: Some(self.job.request_id.clone()),
             skipped_attrs: Some(not_attempted_attrs),
             attempted_attrs: None,
+            status: None,
             success: None,
         };
 
@@ -226,18 +228,23 @@ impl<'a, 'b> JobActions<'a, 'b> {
         self.tell(worker::Action::Ack);
     }
 
-    pub fn build_finished(&mut self, success: bool,
+    pub fn build_finished(&mut self, status: BuildStatus,
                           attempted_attrs: Vec<String>,
                           not_attempted_attrs: Vec<String>,
 
     ) {
-        let msg = buildresult::BuildResult {
+        let success = match status {
+            BuildStatus::Success => true,
+            _ => false,
+        };
+        let msg = BuildResult {
             repo: self.job.repo.clone(),
             pr: self.job.pr.clone(),
             system: self.system.clone(),
             output: self.log_snippet(),
             attempt_id: self.attempt_id.clone(),
             request_id: Some(self.job.request_id.clone()),
+            status: Some(status),
             success: Some(success),
             attempted_attrs: Some(attempted_attrs),
             skipped_attrs: Some(not_attempted_attrs),
@@ -373,21 +380,30 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             actions.log_line(&line);
         }
 
-        let success = match spawned.wait() {
-            Ok(status) => status.success(),
-            e => {
-                println!("Failed on the interior command: {:?}", e);
-                false
+        // TODO: this belongs in the nix module.
+        let status = match spawned.wait() {
+            Ok(s) => match s.code() {
+                Some(0) => BuildStatus::Success,
+                Some(100) => BuildStatus::Failure, // nix permanent failure
+                Some(101) => BuildStatus::TimedOut, // nix build timedout
+                Some(i) => BuildStatus::UnexpectedError {
+                    err: format!("command failed with exit code {}", i),
+                },
+                None => BuildStatus::UnexpectedError {
+                    err: "unexpected build failure".into(),
+                },
+            },
+            e => BuildStatus::UnexpectedError {
+                err: format!("failed on interior command {:?}", e),
             }
         };
 
-        println!("ok built ({:?}), building", success);
+        println!("ok built ({:?}), building", status);
         println!("Lines:\n-----8<-----");
         actions.log_snippet().iter().inspect(|x| println!("{}", x)).last();
         println!("----->8-----");
 
-
-        actions.build_finished(success, can_build, cannot_build_attrs);
+        actions.build_finished(status, can_build, cannot_build_attrs);
         println!("Done!");
     }
 }

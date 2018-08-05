@@ -4,7 +4,7 @@ extern crate env_logger;
 use serde_json;
 
 use hubcaps;
-use ofborg::message::buildresult::BuildResult;
+use ofborg::message::buildresult::{BuildStatus, BuildResult};
 use ofborg::worker;
 use amqp::protocol::basic::{Deliver, BasicProperties};
 
@@ -86,13 +86,27 @@ fn result_to_comment(result: &BuildResult) -> String {
         "".to_owned()
     };
 
+    let status = match result.status {
+        None => {
+            // Fallback for old format.
+            match result.success {
+                None => &BuildStatus::Skipped,
+                Some(true) => &BuildStatus::Success,
+                Some(false) => &BuildStatus::Failure,
+            }
+        },
+        Some(ref s) => s,
+    };
+
     reply.push(format!(
         "{} on {}{}",
-        (match result.success {
-            Some(true) => "Success",
-            Some(false) => "Failure",
-            None => "No attempt",
-         }),
+        (match *status {
+            BuildStatus::Skipped => "No attempt".into(),
+            BuildStatus::Success => "Success".into(),
+            BuildStatus::Failure => "Failure".into(),
+            BuildStatus::TimedOut => "Timed out, unknown build status".into(),
+            BuildStatus::UnexpectedError { ref err } => format!("Unexpected error: {}", err),
+        }),
         result.system,
         log_link
     ));
@@ -185,7 +199,8 @@ mod tests {
             system: "x86_64-linux".to_owned(),
             attempted_attrs: Some(vec!["foo".to_owned()]),
             skipped_attrs: Some(vec!["bar".to_owned()]),
-            success: Some(true),
+            status: Some(BuildStatus::Success),
+            success: None,
         };
 
         assert_eq!(
@@ -247,7 +262,8 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             system: "x86_64-linux".to_owned(),
             attempted_attrs: Some(vec!["foo".to_owned()]),
             skipped_attrs: None,
-            success: Some(false),
+            status: Some(BuildStatus::Failure),
+            success: None,
         };
 
         assert_eq!(
@@ -276,6 +292,64 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
         );
     }
 
+    #[test]
+    pub fn test_timedout_build() {
+        let result = BuildResult {
+            repo: Repo {
+                clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
+                full_name: "NixOS/nixpkgs".to_owned(),
+                owner: "NixOS".to_owned(),
+                name: "nixpkgs".to_owned(),
+            },
+            pr: Pr {
+                head_sha: "abc123".to_owned(),
+                number: 2345,
+                target_branch: Some("master".to_owned()),
+            },
+            output: vec![
+                "make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
+                "make[2]: Nothing to be done for 'install'.".to_owned(),
+                "make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
+                "make[1]: Nothing to be done for 'install-target'.".to_owned(),
+                "make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'".to_owned(),
+                "removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'".to_owned(),
+                "post-installation fixup".to_owned(),
+                "building of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' timed out after 1 seconds".to_owned(),
+                "error: build of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' failed".to_owned(),
+            ],
+            attempt_id: "neatattemptid".to_owned(),
+            request_id: Some("bogus-request-id".to_owned()),
+            system: "x86_64-linux".to_owned(),
+            attempted_attrs: Some(vec!["foo".to_owned()]),
+            skipped_attrs: None,
+            status: Some(BuildStatus::TimedOut),
+            success: None,
+        };
+
+        assert_eq!(
+            &result_to_comment(&result),
+            "Timed out, unknown build status on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
+
+Attempted: foo
+
+<details><summary>Partial log (click to expand)</summary><p>
+
+```
+make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
+make[2]: Nothing to be done for 'install'.
+make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
+make[1]: Nothing to be done for 'install-target'.
+make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'
+removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'
+post-installation fixup
+building of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' timed out after 1 seconds
+error: build of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' failed
+```
+</p></details>
+
+"
+        );
+    }
 
     #[test]
     pub fn test_passing_build_unspecified_attributes() {
@@ -308,7 +382,8 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             system: "x86_64-linux".to_owned(),
             attempted_attrs: None,
             skipped_attrs: None,
-            success: Some(true),
+            status: Some(BuildStatus::Success),
+            success: None,
         };
 
         assert_eq!(
@@ -366,7 +441,8 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             system: "x86_64-linux".to_owned(),
             attempted_attrs: None,
             skipped_attrs: None,
-            success: Some(false),
+            status: Some(BuildStatus::Failure),
+            success: None,
         };
 
         assert_eq!(
@@ -413,6 +489,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             system: "x86_64-linux".to_owned(),
             attempted_attrs: None,
             skipped_attrs: Some(vec!["not-attempted".to_owned()]),
+            status: Some(BuildStatus::Skipped),
             success: None,
         };
 
@@ -453,6 +530,7 @@ foo
             system: "x86_64-linux".to_owned(),
             attempted_attrs: None,
             skipped_attrs: Some(vec!["not-attempted".to_owned()]),
+            status: Some(BuildStatus::Skipped),
             success: None,
         };
 
@@ -463,6 +541,69 @@ foo
 The following builds were skipped because they don't evaluate on x86_64-linux: not-attempted
 
 No partial log is available.
+"
+        );
+    }
+
+    #[test]
+    pub fn test_no_status_compatibility() {
+        let result = BuildResult {
+            repo: Repo {
+                clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
+                full_name: "NixOS/nixpkgs".to_owned(),
+                owner: "NixOS".to_owned(),
+                name: "nixpkgs".to_owned(),
+            },
+            pr: Pr {
+                head_sha: "abc123".to_owned(),
+                number: 2345,
+                target_branch: Some("master".to_owned()),
+            },
+            output: vec![
+                "make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
+                "make[2]: Nothing to be done for 'install'.".to_owned(),
+                "make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
+                "make[1]: Nothing to be done for 'install-target'.".to_owned(),
+                "make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'".to_owned(),
+                "removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'".to_owned(),
+                "post-installation fixup".to_owned(),
+                "strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip".to_owned(),
+                "patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
+                "/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
+            ],
+            attempt_id: "neatattemptid".to_owned(),
+            request_id: Some("bogus-request-id".to_owned()),
+            system: "x86_64-linux".to_owned(),
+            attempted_attrs: Some(vec!["foo".to_owned()]),
+            skipped_attrs: Some(vec!["bar".to_owned()]),
+            status: None,
+            success: Some(true),
+        };
+
+        assert_eq!(
+            &result_to_comment(&result),
+            "Success on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
+
+Attempted: foo
+
+The following builds were skipped because they don't evaluate on x86_64-linux: bar
+
+<details><summary>Partial log (click to expand)</summary><p>
+
+```
+make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
+make[2]: Nothing to be done for 'install'.
+make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
+make[1]: Nothing to be done for 'install-target'.
+make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'
+removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'
+post-installation fixup
+strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip
+patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
+/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
+```
+</p></details>
+
 "
         );
     }
