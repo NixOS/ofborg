@@ -45,8 +45,6 @@ in {
     test -e $out/bin/evaluation_filter
   '';
 
-  ircbot = stripDeps ((pkgs.callPackage ./nix/ircbot-carnix.nix {}).ircbot {});
-
   ofborg.php = pkgs.runCommand
     "ofborg"
     {

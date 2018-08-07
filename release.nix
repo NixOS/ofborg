@@ -55,7 +55,6 @@ let
     (attrsForAllSystems [ "ofborg" "rs" ])
 
     (x8664LinuxOnly [ "ofborg" "php" ])
-    (x8664LinuxOnly [ "ircbot" ])
   ];
 in jobs // {
   release = pkgs.releaseTools.aggregate {
@@ -66,7 +65,6 @@ in jobs // {
       jobs.ofborg.rs.x86_64-darwin
       # jobs.ofborg.rs.aarch64-linux
       jobs.ofborg.php.x86_64-linux
-      jobs.ircbot.x86_64-linux
     ];
   };
 }

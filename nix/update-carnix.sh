@@ -11,4 +11,3 @@ patched_carnix() {
 }
 
 patched_carnix ./../ofborg/Cargo.lock ./ofborg-carnix.nix
-patched_carnix ./../ircbot/Cargo.lock ./ircbot-carnix.nix
