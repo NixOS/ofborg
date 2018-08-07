@@ -9,7 +9,7 @@ use std::io::Write;
 
 use ofborg::writetoline::LineWriter;
 use ofborg::message::buildlogmsg::{BuildLogStart, BuildLogMsg};
-use ofborg::message::buildresult::BuildResult;
+use ofborg::message::buildresult::{BuildStatus, BuildResult};
 use ofborg::worker;
 use amqp::protocol::basic::{Deliver, BasicProperties};
 
@@ -445,6 +445,7 @@ mod tests {
                                                output: vec![],
                                                attempt_id: "attempt-id-foo".to_owned(),
                                                request_id: Some("bogus-request-id".to_owned()),
+                                               status: Some(BuildStatus::Success),
                                                success: Some(true),
                                                attempted_attrs: Some(vec!["foo".to_owned()]),
                                                skipped_attrs: Some(vec!["bar".to_owned()]),
@@ -478,6 +479,6 @@ mod tests {
         let mut s = String::new();
         pr.push("routing-key-foo/attempt-id-foo.result.json");
         File::open(pr).unwrap().read_to_string(&mut s).unwrap();
-        assert_eq!(&s, "{\"repo\":{\"owner\":\"NixOS\",\"name\":\"ofborg\",\"full_name\":\"NixOS/ofborg\",\"clone_url\":\"https://github.com/nixos/ofborg.git\"},\"pr\":{\"target_branch\":\"scratch\",\"number\":42,\"head_sha\":\"6dd9f0265d52b946dd13daf996f30b64e4edb446\"},\"system\":\"x86_64-linux\",\"output\":[],\"attempt_id\":\"attempt-id-foo\",\"request_id\":\"bogus-request-id\",\"success\":true,\"skipped_attrs\":[\"bar\"],\"attempted_attrs\":[\"foo\"]}");
+        assert_eq!(&s, "{\"repo\":{\"owner\":\"NixOS\",\"name\":\"ofborg\",\"full_name\":\"NixOS/ofborg\",\"clone_url\":\"https://github.com/nixos/ofborg.git\"},\"pr\":{\"target_branch\":\"scratch\",\"number\":42,\"head_sha\":\"6dd9f0265d52b946dd13daf996f30b64e4edb446\"},\"system\":\"x86_64-linux\",\"output\":[],\"attempt_id\":\"attempt-id-foo\",\"request_id\":\"bogus-request-id\",\"success\":true,\"status\":\"Success\",\"skipped_attrs\":[\"bar\"],\"attempted_attrs\":[\"foo\"]}");
     }
 }
