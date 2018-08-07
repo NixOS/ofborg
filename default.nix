@@ -23,9 +23,6 @@ in {
   in pkgs.runCommand "ofborg-rs-symlink-compat" {
     src = stripDeps build;
   } ''
-
-    set -x
-
     mkdir -p $out/bin
     for f in $(find $src -type f); do
       bn=$(basename "$f")
@@ -43,6 +40,32 @@ in {
     test -e $out/bin/github_comment_poster
     test -e $out/bin/log_message_collector
     test -e $out/bin/evaluation_filter
+
+    # Verify that the outpath contains the version number matching the
+    # Cargo.toml
+    if ! grep -q 'version = "${drv.crateVersion}"' ${./ofborg/Cargo.toml}; then
+      cat <<EOF
+
+
+
+
+
+Build failed because you bumped the Cargo
+version without regenerating the carnix
+file.
+
+Run:
+
+
+
+    nix-shell --run ./nix/update-carnix.sh
+
+
+and commit those changes.
+
+
+EOF
+    fi
   '';
 
   ofborg.php = pkgs.runCommand
