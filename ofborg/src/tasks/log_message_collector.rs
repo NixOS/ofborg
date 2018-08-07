@@ -9,7 +9,7 @@ use std::io::Write;
 
 use ofborg::writetoline::LineWriter;
 use ofborg::message::buildlogmsg::{BuildLogStart, BuildLogMsg};
-use ofborg::message::buildresult::{BuildStatus, BuildResult};
+use ofborg::message::buildresult::BuildResult;
 use ofborg::worker;
 use amqp::protocol::basic::{Deliver, BasicProperties};
 
