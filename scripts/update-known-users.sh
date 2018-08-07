@@ -15,7 +15,7 @@ function fetch_users() {
         | jq 'map(.login | ascii_downcase)'
 }
 
-cp ./config.extra-known-users.json "$accumulator"
+jq "map(ascii_downcase)" ./config.extra-known-users.json > "$accumulator"
 
 page=0
 while true; do
@@ -34,4 +34,7 @@ jq -s '{ "runner": { "known_users": .[0]}}' "$accumulator" > "$dest"
 
 rm -f "$result" "$scratch" "$accumulator"
 
-jq -s '.[0] * .[1] * .[2]' ./config.public.json ./config.known-users.json ./config.private.json > ./config.prod.json
+jq -s '.[0] * .[1] * .[2]' \
+   ./config.public.json \
+   ./config.known-users.json \
+   ./config.private.json > ./config.prod.json
