@@ -248,7 +248,7 @@ mod tests {
     use std::path::PathBuf;
     use ofborg::worker::SimpleWorker;
     use ofborg::test_scratch::TestScratch;
-    use ofborg::message::buildresult::BuildResult;
+    use ofborg::message::buildresult::BuildStatus;
     use ofborg::message::{Pr,Repo};
 
     fn make_worker(path: PathBuf) -> LogMessageCollector {
