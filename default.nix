@@ -68,22 +68,5 @@ EOF
     fi
   '';
 
-  ofborg.php = pkgs.runCommand
-    "ofborg"
-    {
-      src = builtins.filterSource
-        (path: type: !(
-             (type == "symlink" && baseNameOf path == "result")
-          || (type == "directory" && baseNameOf path == ".git")
-        ))
-        ./php;
-    }
-    ''
-      cp -r $src ./ofborg
-      chmod -R u+w ./ofborg
-      cd ofborg
-      ls -la
-      cd ..
-      mv ofborg $out
-    '';
+  ofborg.php = import ./php { inherit pkgs; };
 }
