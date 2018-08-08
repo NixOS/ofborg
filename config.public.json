@@ -180,6 +180,6 @@
         "system": "x86_64-linux",
         "remote": "daemon",
         "build_timeout_seconds": 3600,
-        "initial_heap_size": "10g"
+        "initial_heap_size": "4g"
     }
 }
