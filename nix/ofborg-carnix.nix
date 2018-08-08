@@ -45,7 +45,7 @@ let kernel = buildPlatform.parsed.kernel.name;
     ) [] (builtins.attrNames feat);
 in
 rec {
-  ofborg = f: ofborg_0_1_6 { features = ofborg_0_1_6_features { ofborg_0_1_6 = f; }; };
+  ofborg = f: ofborg_0_1_7 { features = ofborg_0_1_7_features { ofborg_0_1_7 = f; }; };
   aho_corasick_0_5_3_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
     crateName = "aho-corasick";
     version = "0.5.3";
@@ -427,9 +427,9 @@ rec {
     sha256 = "1y6qnd9r8ga6y8mvlabdrr73nc8cshjjlzbvnanzyj9b8zzkfwk2";
     inherit dependencies buildDependencies features;
   };
-  ofborg_0_1_6_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
+  ofborg_0_1_7_ = { dependencies?[], buildDependencies?[], features?[] }: buildRustCrate {
     crateName = "ofborg";
-    version = "0.1.6";
+    version = "0.1.7";
     authors = [ "Graham Christensen <graham@grahamc.com>" ];
     src = include [ "Cargo.toml" "Cargo.lock" "src" "test-srcs" "build.rs" ] ./../ofborg;
     build = "build.rs";
@@ -1449,10 +1449,10 @@ rec {
     libc_0_2_40.default = true;
     num_cpus_1_8_0.default = (f.num_cpus_1_8_0.default or true);
   }) [ libc_0_2_40_features ];
-  ofborg_0_1_6 = { features?(ofborg_0_1_6_features {}) }: ofborg_0_1_6_ {
+  ofborg_0_1_7 = { features?(ofborg_0_1_7_features {}) }: ofborg_0_1_7_ {
     dependencies = mapFeatures features ([ amqp_0_1_0 either_1_5_0 env_logger_0_4_3 fs2_0_4_3 hubcaps_0_3_16 hyper_0_10_13 hyper_native_tls_0_2_4 log_0_3_8 lru_cache_0_1_1 md5_0_3_7 nom_4_0_0_beta3 serde_1_0_43 serde_derive_1_0_43 serde_json_1_0_16 sys_info_0_5_6 tempfile_2_2_0 uuid_0_4_0 ]);
   };
-  ofborg_0_1_6_features = f: updateFeatures f (rec {
+  ofborg_0_1_7_features = f: updateFeatures f (rec {
     amqp_0_1_0.default = true;
     either_1_5_0.default = true;
     env_logger_0_4_3.default = true;
@@ -1464,7 +1464,7 @@ rec {
     lru_cache_0_1_1.default = true;
     md5_0_3_7.default = true;
     nom_4_0_0_beta3.default = true;
-    ofborg_0_1_6.default = (f.ofborg_0_1_6.default or true);
+    ofborg_0_1_7.default = (f.ofborg_0_1_7.default or true);
     serde_1_0_43.default = true;
     serde_derive_1_0_43.default = true;
     serde_json_1_0_16.default = true;
