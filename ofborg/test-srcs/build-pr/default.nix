@@ -4,7 +4,7 @@ in {
   success = derivation {
     name = "success";
     system = builtins.currentSystem;
-    builder = nix.shell;
+    builder = builtins.storePath nix.shell;
     args = [
       "-c"
       "echo hi; printf '1\n2\n3\n4\n'; echo ${toString builtins.currentTime} > $out" ];
@@ -13,7 +13,7 @@ in {
   failed = derivation {
     name = "failed";
     system = builtins.currentSystem;
-    builder = nix.shell;
+    builder = builtins.storePath nix.shell;
     args = [
       "-c"
       "echo hi; echo ${toString builtins.currentTime}" ];
