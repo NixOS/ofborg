@@ -99,7 +99,8 @@ fn result_to_comment(result: &BuildResult) -> String {
     };
 
     reply.push(format!(
-        "{} on {}{}",
+        "<!--REQUEST_ID={}-->{} on {}{}",
+        result.request_id,
         (match *status {
             BuildStatus::Skipped => "No attempt".into(),
             BuildStatus::Success => "Success".into(),
@@ -205,7 +206,7 @@ mod tests {
 
         assert_eq!(
             &result_to_comment(&result),
-            "Success on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
+            "<!--REQUEST_ID=bogus-request-id-->Success on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
 
 Attempted: foo
 
@@ -268,7 +269,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
 
         assert_eq!(
             &result_to_comment(&result),
-            "Failure on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
+            "<!--REQUEST_ID=bogus-request-id-->Failure on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
 
 Attempted: foo
 
@@ -328,7 +329,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
 
         assert_eq!(
             &result_to_comment(&result),
-            "Timed out, unknown build status on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
+            "<!--REQUEST_ID=bogus-request-id-->Timed out, unknown build status on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
 
 Attempted: foo
 
@@ -388,7 +389,7 @@ error: build of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' failed
 
         assert_eq!(
             &result_to_comment(&result),
-            "Success on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
+            "<!--REQUEST_ID=bogus-request-id-->Success on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
 
 <details><summary>Partial log (click to expand)</summary><p>
 
@@ -447,7 +448,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
 
         assert_eq!(
             &result_to_comment(&result),
-            "Failure on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
+            "<!--REQUEST_ID=bogus-request-id-->Failure on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
 
 <details><summary>Partial log (click to expand)</summary><p>
 
@@ -495,7 +496,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
 
         assert_eq!(
             &result_to_comment(&result),
-            "No attempt on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=foo)
+            "<!--REQUEST_ID=bogus-request-id-->No attempt on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=foo)
 
 The following builds were skipped because they don't evaluate on x86_64-linux: not-attempted
 
@@ -536,7 +537,7 @@ foo
 
         assert_eq!(
             &result_to_comment(&result),
-            "No attempt on x86_64-linux
+            "<!--REQUEST_ID=bogus-request-id-->No attempt on x86_64-linux
 
 The following builds were skipped because they don't evaluate on x86_64-linux: not-attempted
 
@@ -582,7 +583,7 @@ No partial log is available.
 
         assert_eq!(
             &result_to_comment(&result),
-            "Success on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
+            "<!--REQUEST_ID=bogus-request-id-->Success on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
 
 Attempted: foo
 
