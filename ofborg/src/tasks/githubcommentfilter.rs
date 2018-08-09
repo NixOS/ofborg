@@ -50,6 +50,10 @@ impl worker::SimpleWorker for GitHubCommentWorker {
     }
 
     fn consumer(&mut self, job: &ghevent::IssueComment) -> worker::Actions {
+        if job.action == ghevent::IssueCommentAction::Deleted {
+            return vec![worker::Action::Ack];
+        }
+
         let instructions = commentparser::parse(&job.comment.body);
         if instructions == None {
             return vec![worker::Action::Ack];
