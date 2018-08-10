@@ -112,7 +112,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
     }
 
     pub fn merge_failed(&mut self) {
-        let msg = BuildResult {
+        let msg = BuildResult::Legacy {
             repo: self.job.repo.clone(),
             pr: self.job.pr.clone(),
             system: self.system.clone(),
@@ -196,7 +196,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
     pub fn build_not_attempted(&mut self, not_attempted_attrs: Vec<String>,
 
     ) {
-        let msg = BuildResult {
+        let msg = BuildResult::Legacy {
             repo: self.job.repo.clone(),
             pr: self.job.pr.clone(),
             system: self.system.clone(),
@@ -237,7 +237,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             BuildStatus::Success => true,
             _ => false,
         };
-        let msg = BuildResult {
+        let msg = BuildResult::Legacy {
             repo: self.job.repo.clone(),
             pr: self.job.pr.clone(),
             system: self.system.clone(),

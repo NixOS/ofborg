@@ -204,7 +204,7 @@ impl worker::SimpleWorker for LogMessageCollector {
             } else {
                 let decode_msg: Result<BuildResult, _> = serde_json::from_slice(body);
                 if let Ok(msg) = decode_msg {
-                    attempt_id = msg.attempt_id.clone();
+                    attempt_id = msg.legacy().attempt_id.clone();
                     message = MsgType::Finish(msg);
                 } else {
                     return Err(format!("failed to decode job: {:?}", decode_msg));
@@ -430,7 +430,7 @@ mod tests {
                        worker.consumer(&
                                        LogMessage {
                                            from: make_from("foo"),
-                                           message: MsgType::Finish(BuildResult {
+                                           message: MsgType::Finish(BuildResult::Legacy {
                                                repo: Repo {
                                                    clone_url: "https://github.com/nixos/ofborg.git".to_owned(),
                                                    full_name: "NixOS/ofborg".to_owned(),
