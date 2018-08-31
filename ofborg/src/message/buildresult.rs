@@ -17,7 +17,7 @@ pub struct BuildResult {
     pub system: String,
     pub output: Vec<String>,
     pub attempt_id: String,
-    pub request_id: Option<String>,
+    pub request_id: String,
     pub success: Option<bool>, // replaced by status
     pub status: Option<BuildStatus>,
     pub skipped_attrs: Option<Vec<String>>,

@@ -445,7 +445,7 @@ mod tests {
                                                system: "x86_64-linux".to_owned(),
                                                output: vec![],
                                                attempt_id: "attempt-id-foo".to_owned(),
-                                               request_id: Some("bogus-request-id".to_owned()),
+                                               request_id: "bogus-request-id".to_owned(),
                                                status: Some(BuildStatus::Success),
                                                success: Some(true),
                                                attempted_attrs: Some(vec!["foo".to_owned()]),
