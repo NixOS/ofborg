@@ -5,13 +5,12 @@ extern crate uuid;
 
 use uuid::Uuid;
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
 use ofborg::checkout;
 use ofborg::message::{massrebuildjob, buildjob};
 use std::time::Instant;
+use ofborg::files::file_to_str;
 use ofborg::nix;
 use ofborg::acl::ACL;
 use ofborg::stats;
@@ -728,12 +727,6 @@ pub fn update_labels(issue: &hubcaps::issues::IssueRef, add: Vec<String>, remove
     for label in to_remove {
         l.remove(&label).expect("Failed to remove tag");
     }
-}
-
-fn file_to_str(f: &mut File) -> String {
-    let mut buffer = Vec::new();
-    f.read_to_end(&mut buffer).expect("Reading eval output");
-    return String::from(String::from_utf8_lossy(&buffer));
 }
 
 fn parse_commit_messages(messages: Vec<String>) -> Vec<String> {
