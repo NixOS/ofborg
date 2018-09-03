@@ -1,4 +1,5 @@
 language: nix
+nix: 2.1
 matrix:
   include:
     - name: checkPhase - Nix 2
