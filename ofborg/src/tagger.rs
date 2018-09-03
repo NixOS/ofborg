@@ -21,13 +21,13 @@ impl StdenvTagger {
         return t;
     }
 
-    pub fn changed(&mut self, systems: Vec<tasks::massrebuilder::System>) {
+    pub fn changed(&mut self, systems: Vec<tasks::eval::stdenvs::System>) {
         for system in systems {
             match system {
-                tasks::massrebuilder::System::X8664Darwin => {
+                tasks::eval::stdenvs::System::X8664Darwin => {
                     self.selected.push(String::from("10.rebuild-darwin-stdenv"));
                 }
-                tasks::massrebuilder::System::X8664Linux => {
+                tasks::eval::stdenvs::System::X8664Linux => {
                     self.selected.push(String::from("10.rebuild-linux-stdenv"));
                 }
             }
