@@ -1,4 +1,5 @@
 
+pub mod eval;
 pub mod build;
 pub mod massrebuilder;
 pub mod githubcommentfilter;

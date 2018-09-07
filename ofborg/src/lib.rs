@@ -36,6 +36,7 @@ pub mod config;
 pub mod message;
 pub mod tasks;
 pub mod evalchecker;
+pub mod files;
 pub mod nix;
 pub mod stats;
 pub mod ghevent;
@@ -61,6 +62,7 @@ pub mod ofborg {
     pub use message;
     pub use tasks;
     pub use evalchecker;
+    pub use files;
     pub use commitstatus;
     pub use ghevent;
     pub use nix;
