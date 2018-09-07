@@ -58,6 +58,7 @@ let
     LOCALE_ARCHIVE_2_21 = "${oldpkgs.glibcLocales}/lib/locale/locale-archive";
     LOCALE_ARCHIVE_2_27 = "${pkgs.glibcLocales}/lib/locale/locale-archive";
     RUST_BACKTRACE = "1";
+    RUST_LOG = "ofborg=debug";
     passthru.phpEnv = phpEnv;
   };
 
