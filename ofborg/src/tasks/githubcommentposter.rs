@@ -4,7 +4,7 @@ extern crate env_logger;
 use serde_json;
 
 use hubcaps;
-use ofborg::message::buildresult::{BuildStatus, BuildResult};
+use ofborg::message::buildresult::{BuildStatus, BuildResult, LegacyBuildResult};
 use ofborg::worker;
 use amqp::protocol::basic::{Deliver, BasicProperties};
 
@@ -41,28 +41,28 @@ impl worker::SimpleWorker for GitHubCommentPoster {
     }
 
     fn consumer(&mut self, job: &BuildResult) -> worker::Actions {
-        let comment = hubcaps::comments::CommentOptions { body: result_to_comment(&job) };
+        let result = job.legacy();
+        let comment = hubcaps::comments::CommentOptions { body: result_to_comment(&result) };
 
         let comment_attempt = self.github
-            .repo(job.repo.owner.clone(), job.repo.name.clone())
+            .repo(result.repo.owner.clone(), result.repo.name.clone())
             .pulls()
-            .get(job.pr.number)
+            .get(result.pr.number)
             .comments()
             .create(&comment);
 
         match comment_attempt {
             Ok(comment) => {
-                info!(
-                "Successfully sent {:?} to {}",
+                info!("Successfully sent {:?} to {}",
                 comment,
-                job.pr.number,
+                result.pr.number,
             )
             }
             Err(err) => {
                 info!(
                 "Failed to send comment {:?} to {}",
                 err,
-                job.pr.number,
+                result.pr.number,
             )
             }
         }
@@ -71,7 +71,7 @@ impl worker::SimpleWorker for GitHubCommentPoster {
     }
 }
 
-fn result_to_comment(result: &BuildResult) -> String {
+fn result_to_comment(result: &LegacyBuildResult) -> String {
     let mut reply: Vec<String> = vec![];
 
     let log_link = if result.output.len() > 0 {
@@ -86,21 +86,9 @@ fn result_to_comment(result: &BuildResult) -> String {
         "".to_owned()
     };
 
-    let status = match result.status {
-        None => {
-            // Fallback for old format.
-            match result.success {
-                None => &BuildStatus::Skipped,
-                Some(true) => &BuildStatus::Success,
-                Some(false) => &BuildStatus::Failure,
-            }
-        },
-        Some(ref s) => s,
-    };
-
     reply.push(format!("<!--REQUEST_ID={}-->", result.request_id));
     reply.push(format!("{} on {}{}",
-        (match *status {
+        (match result.status {
             BuildStatus::Skipped => "No attempt".into(),
             BuildStatus::Success => "Success".into(),
             BuildStatus::Failure => "Failure".into(),
@@ -170,7 +158,7 @@ mod tests {
 
     #[test]
     pub fn test_passing_build() {
-        let result = BuildResult {
+        let result = LegacyBuildResult {
             repo: Repo {
                 clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
                 full_name: "NixOS/nixpkgs".to_owned(),
@@ -199,8 +187,7 @@ mod tests {
             system: "x86_64-linux".to_owned(),
             attempted_attrs: Some(vec!["foo".to_owned()]),
             skipped_attrs: Some(vec!["bar".to_owned()]),
-            status: Some(BuildStatus::Success),
-            success: None,
+            status: BuildStatus::Success,
         };
 
         assert_eq!(
@@ -234,7 +221,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
 
     #[test]
     pub fn test_failing_build() {
-        let result = BuildResult {
+        let result = LegacyBuildResult {
             repo: Repo {
                 clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
                 full_name: "NixOS/nixpkgs".to_owned(),
@@ -263,8 +250,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             system: "x86_64-linux".to_owned(),
             attempted_attrs: Some(vec!["foo".to_owned()]),
             skipped_attrs: None,
-            status: Some(BuildStatus::Failure),
-            success: None,
+            status: BuildStatus::Failure,
         };
 
         assert_eq!(
@@ -296,7 +282,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
 
     #[test]
     pub fn test_timedout_build() {
-        let result = BuildResult {
+        let result = LegacyBuildResult {
             repo: Repo {
                 clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
                 full_name: "NixOS/nixpkgs".to_owned(),
@@ -324,8 +310,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             system: "x86_64-linux".to_owned(),
             attempted_attrs: Some(vec!["foo".to_owned()]),
             skipped_attrs: None,
-            status: Some(BuildStatus::TimedOut),
-            success: None,
+            status: BuildStatus::TimedOut,
         };
 
         assert_eq!(
@@ -356,7 +341,7 @@ error: build of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' failed
 
     #[test]
     pub fn test_passing_build_unspecified_attributes() {
-        let result = BuildResult {
+        let result = LegacyBuildResult {
             repo: Repo {
                 clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
                 full_name: "NixOS/nixpkgs".to_owned(),
@@ -385,8 +370,7 @@ error: build of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' failed
             system: "x86_64-linux".to_owned(),
             attempted_attrs: None,
             skipped_attrs: None,
-            status: Some(BuildStatus::Success),
-            success: None,
+            status: BuildStatus::Success,
         };
 
         assert_eq!(
@@ -416,7 +400,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
 
     #[test]
     pub fn test_failing_build_unspecified_attributes() {
-        let result = BuildResult {
+        let result = LegacyBuildResult {
             repo: Repo {
                 clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
                 full_name: "NixOS/nixpkgs".to_owned(),
@@ -445,8 +429,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             system: "x86_64-linux".to_owned(),
             attempted_attrs: None,
             skipped_attrs: None,
-            status: Some(BuildStatus::Failure),
-            success: None,
+            status: BuildStatus::Failure,
         };
 
         assert_eq!(
@@ -476,7 +459,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
 
     #[test]
     pub fn test_no_attempt() {
-        let result = BuildResult {
+        let result = LegacyBuildResult {
             repo: Repo {
                 clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
                 full_name: "NixOS/nixpkgs".to_owned(),
@@ -494,8 +477,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             system: "x86_64-linux".to_owned(),
             attempted_attrs: None,
             skipped_attrs: Some(vec!["not-attempted".to_owned()]),
-            status: Some(BuildStatus::Skipped),
-            success: None,
+            status: BuildStatus::Skipped,
         };
 
         assert_eq!(
@@ -518,7 +500,7 @@ foo
 
     #[test]
     pub fn test_no_attempt_no_log() {
-        let result = BuildResult {
+        let result = LegacyBuildResult {
             repo: Repo {
                 clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
                 full_name: "NixOS/nixpkgs".to_owned(),
@@ -536,8 +518,7 @@ foo
             system: "x86_64-linux".to_owned(),
             attempted_attrs: None,
             skipped_attrs: Some(vec!["not-attempted".to_owned()]),
-            status: Some(BuildStatus::Skipped),
-            success: None,
+            status: BuildStatus::Skipped,
         };
 
         assert_eq!(
@@ -548,70 +529,6 @@ No attempt on x86_64-linux
 The following builds were skipped because they don't evaluate on x86_64-linux: not-attempted
 
 No partial log is available.
-"
-        );
-    }
-
-    #[test]
-    pub fn test_no_status_compatibility() {
-        let result = BuildResult {
-            repo: Repo {
-                clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
-                full_name: "NixOS/nixpkgs".to_owned(),
-                owner: "NixOS".to_owned(),
-                name: "nixpkgs".to_owned(),
-            },
-            pr: Pr {
-                head_sha: "abc123".to_owned(),
-                number: 2345,
-                target_branch: Some("master".to_owned()),
-            },
-            output: vec![
-                "make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
-                "make[2]: Nothing to be done for 'install'.".to_owned(),
-                "make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
-                "make[1]: Nothing to be done for 'install-target'.".to_owned(),
-                "make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'".to_owned(),
-                "removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'".to_owned(),
-                "post-installation fixup".to_owned(),
-                "strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip".to_owned(),
-                "patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
-                "/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
-            ],
-            attempt_id: "neatattemptid".to_owned(),
-            request_id: "bogus-request-id".to_owned(),
-            system: "x86_64-linux".to_owned(),
-            attempted_attrs: Some(vec!["foo".to_owned()]),
-            skipped_attrs: Some(vec!["bar".to_owned()]),
-            status: None,
-            success: Some(true),
-        };
-
-        assert_eq!(
-            &result_to_comment(&result),
-            "<!--REQUEST_ID=bogus-request-id-->
-Success on x86_64-linux [(full log)](https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid)
-
-Attempted: foo
-
-The following builds were skipped because they don't evaluate on x86_64-linux: bar
-
-<details><summary>Partial log (click to expand)</summary><p>
-
-```
-make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
-make[2]: Nothing to be done for 'install'.
-make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
-make[1]: Nothing to be done for 'install-target'.
-make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'
-removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'
-post-installation fixup
-strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip
-patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
-/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
-```
-</p></details>
-
 "
         );
     }

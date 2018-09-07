@@ -7,7 +7,7 @@ use uuid::Uuid;
 use std::collections::VecDeque;
 use ofborg::checkout;
 use ofborg::message::buildjob;
-use ofborg::message::buildresult::{BuildResult, BuildStatus};
+use ofborg::message::buildresult::{BuildResult, BuildStatus, V1Tag};
 use ofborg::message::buildlogmsg;
 use ofborg::nix;
 use ofborg::commentparser;
@@ -112,7 +112,8 @@ impl<'a, 'b> JobActions<'a, 'b> {
     }
 
     pub fn merge_failed(&mut self) {
-        let msg = BuildResult {
+        let msg = BuildResult::V1 {
+            tag: V1Tag::V1,
             repo: self.job.repo.clone(),
             pr: self.job.pr.clone(),
             system: self.system.clone(),
@@ -121,8 +122,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             request_id: self.job.request_id.clone(),
             attempted_attrs: None,
             skipped_attrs: None,
-            status: Some(BuildStatus::Failure),
-            success: Some(false),
+            status: BuildStatus::Failure,
         };
 
         let result_exchange = self.result_exchange.clone();
@@ -196,7 +196,8 @@ impl<'a, 'b> JobActions<'a, 'b> {
     pub fn build_not_attempted(&mut self, not_attempted_attrs: Vec<String>,
 
     ) {
-        let msg = BuildResult {
+        let msg = BuildResult::V1 {
+            tag: V1Tag::V1,
             repo: self.job.repo.clone(),
             pr: self.job.pr.clone(),
             system: self.system.clone(),
@@ -205,8 +206,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             request_id: self.job.request_id.clone(),
             skipped_attrs: Some(not_attempted_attrs),
             attempted_attrs: None,
-            status: None,
-            success: None,
+            status: BuildStatus::Skipped,
         };
 
         let result_exchange = self.result_exchange.clone();
@@ -233,19 +233,15 @@ impl<'a, 'b> JobActions<'a, 'b> {
                           not_attempted_attrs: Vec<String>,
 
     ) {
-        let success = match status {
-            BuildStatus::Success => true,
-            _ => false,
-        };
-        let msg = BuildResult {
+        let msg = BuildResult::V1 {
+            tag: V1Tag::V1,
             repo: self.job.repo.clone(),
             pr: self.job.pr.clone(),
             system: self.system.clone(),
             output: self.log_snippet(),
             attempt_id: self.attempt_id.clone(),
             request_id: self.job.request_id.clone(),
-            status: Some(status),
-            success: Some(success),
+            status: status,
             attempted_attrs: Some(attempted_attrs),
             skipped_attrs: Some(not_attempted_attrs),
         };
@@ -531,8 +527,8 @@ mod tests {
         assert_contains_job(&mut actions, "output\":\"2");
         assert_contains_job(&mut actions, "output\":\"3");
         assert_contains_job(&mut actions, "output\":\"4");
-        assert_contains_job(&mut actions, "success\":true"); // First one to the github poster
-        assert_contains_job(&mut actions, "success\":true"); // This one to the logs
+        assert_contains_job(&mut actions, "status\":\"Success\""); // First one to the github poster
+        assert_contains_job(&mut actions, "status\":\"Success\""); // This one to the logs
         assert_eq!(actions.next(), Some(worker::Action::Ack));
     }
 
