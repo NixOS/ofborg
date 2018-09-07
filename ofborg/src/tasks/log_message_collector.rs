@@ -393,7 +393,7 @@ mod tests {
             message: MsgType::Msg(logmsg.clone()),
         };
 
-        let p = TestScratch::new_dir("log-message-collector-path_for_log");
+        let p = TestScratch::new_dir("log-message-collector-logs_collector");
 
         {
             let mut worker = make_worker(p.path());
