@@ -19,7 +19,11 @@ let
           checkMeta = checkMeta;
 
           handleEvalIssue = reason: errormsg:
-            if reason == "unknown-meta"
+            let
+              fatalErrors = [
+                "unknown-meta" "broken-outputs"
+              ];
+            in if builtins.elem reason fatalErrors
               then abort errormsg
               else true;
 
