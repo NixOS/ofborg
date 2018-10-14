@@ -332,6 +332,19 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
             ),
 
             EvalChecker::new(
+                "package-list-no-aliases",
+                nix::Operation::QueryPackagesJSON,
+                vec![
+                    String::from("--file"),
+                    String::from("."),
+                    String::from("--arg"),
+                    String::from("config"),
+                    String::from("{ allowAliases = false; }"),
+                ],
+                self.nix.clone()
+            ),
+
+            EvalChecker::new(
                 "nixos-options",
                 nix::Operation::Instantiate,
                 vec![
