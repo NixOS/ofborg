@@ -345,6 +345,19 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
             ),
 
             EvalChecker::new(
+                "package-list-no-extend",
+                nix::Operation::QueryPackagesJSON,
+                vec![
+                    String::from("--file"),
+                    String::from("."),
+                    String::from("--arg"),
+                    String::from("overlays"),
+                    String::from("[(self: super: { extend = abort ''The pkgs.extend function should not be used inside Nixpkgs. Extensive use decreases performance and complicates the package set. If absolutely necessary, this restriction may be lifted.''; })]"),
+                ],
+                self.nix.clone()
+            ),
+
+            EvalChecker::new(
                 "nixos-options",
                 nix::Operation::Instantiate,
                 vec![
