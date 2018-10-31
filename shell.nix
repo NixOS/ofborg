@@ -31,7 +31,7 @@ let
     # HISTFILE = "${src}/.bash_hist";
   };
 
-  rustEnv = stdenv.mkDerivation rec {
+  rustEnv = stdenv.mkDerivation (rec {
     name = "gh-event-forwarder";
     buildInputs = with pkgs; [
       bash
@@ -55,12 +55,13 @@ let
 
     HISTFILE = "${toString ./.}/.bash_hist";
     RUSTFLAGS = "-D warnings";
-    LOCALE_ARCHIVE_2_21 = "${oldpkgs.glibcLocales}/lib/locale/locale-archive";
-    LOCALE_ARCHIVE_2_27 = "${pkgs.glibcLocales}/lib/locale/locale-archive";
     RUST_BACKTRACE = "1";
     RUST_LOG = "ofborg=debug";
     passthru.phpEnv = phpEnv;
-  };
-
+  }
+  // stdenv.lib.optionalAttrs stdenv.isLinux {
+    LOCALE_ARCHIVE_2_21 = "${oldpkgs.glibcLocales}/lib/locale/locale-archive";
+    LOCALE_ARCHIVE_2_27 = "${pkgs.glibcLocales}/lib/locale/locale-archive";
+  });
 
 in rustEnv
