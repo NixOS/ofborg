@@ -348,9 +348,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                 "nixos-options",
                 nix::Operation::Instantiate,
                 vec![
-                    String::from("--arg"),
-                    String::from("nixpkgs"),
-                    String::from("./."),
                     String::from("./nixos/release.nix"),
                     String::from("-A"),
                     String::from("options"),
@@ -362,9 +359,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                 "nixos-manual",
                 nix::Operation::Instantiate,
                 vec![
-                    String::from("--arg"),
-                    String::from("nixpkgs"),
-                    String::from("./."),
                     String::from("./nixos/release.nix"),
                     String::from("-A"),
                     String::from("manual"),
@@ -376,9 +370,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                 "nixpkgs-manual",
                 nix::Operation::Instantiate,
                 vec![
-                    String::from("--arg"),
-                    String::from("nixpkgs"),
-                    String::from("./."),
                     String::from("./pkgs/top-level/release.nix"),
                     String::from("-A"),
                     String::from("manual"),
@@ -390,9 +381,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                 "nixpkgs-tarball",
                 nix::Operation::Instantiate,
                 vec![
-                    String::from("--arg"),
-                    String::from("nixpkgs"),
-                    String::from("./."),
                     String::from("./pkgs/top-level/release.nix"),
                     String::from("-A"),
                     String::from("tarball"),
@@ -404,9 +392,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                 "nixpkgs-unstable-jobset",
                 nix::Operation::Instantiate,
                 vec![
-                    String::from("--arg"),
-                    String::from("nixpkgs"),
-                    String::from("./."),
                     String::from("./pkgs/top-level/release.nix"),
                     String::from("-A"),
                     String::from("unstable"),
