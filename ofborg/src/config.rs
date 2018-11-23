@@ -1,11 +1,11 @@
 use serde_json;
 use std::fs::File;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::io::Read;
 use hyper::Client;
 use hyper::net::HttpsConnector;
 use hyper_native_tls::NativeTlsClient;
-use hubcaps::{Credentials, Github};
+use hubcaps::{Credentials, Github, InstallationTokenGenerator, JWTCredentials};
 use nix::Nix;
 use std::collections::HashMap;
 
@@ -20,6 +20,7 @@ pub struct Config {
     pub nix: NixConfig,
     pub rabbitmq: RabbitMQConfig,
     pub github: Option<GithubConfig>,
+    pub github_app: Option<GithubAppConfig>,
     pub log_storage: Option<LogStorage>,
     pub tag_paths: Option<HashMap<String, Vec<String>>>,
 }
@@ -49,6 +50,13 @@ pub struct NixConfig {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GithubConfig {
     pub token: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GithubAppConfig {
+    pub app_id: i32,
+    pub installation_id: i32,
+    pub private_key: PathBuf,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -102,6 +110,24 @@ impl Config {
             // tls configured hyper client
             Client::with_connector(HttpsConnector::new(NativeTlsClient::new().unwrap())),
             Credentials::Token(self.github.clone().unwrap().token),
+        )
+    }
+
+    pub fn github_app(&self) -> Github {
+        let conf = self.github_app.clone().unwrap();
+        Github::new(
+            "github.com/grahamc/ofborg (app)",
+            // tls configured hyper client
+            Client::with_connector(HttpsConnector::new(NativeTlsClient::new().unwrap())),
+            Credentials::InstallationToken(
+                InstallationTokenGenerator::new(
+                    conf.installation_id,
+                    JWTCredentials::new(
+                        conf.app_id,
+                        conf.private_key
+                    )
+                )
+            )
         )
     }
 

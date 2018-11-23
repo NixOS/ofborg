@@ -64,7 +64,7 @@ fn main() {
     channel
         .consume(
             worker::new(tasks::githubcommentposter::GitHubCommentPoster::new(
-                cfg.github(),
+                cfg.github_app(),
             )),
             easyamqp::ConsumeConfig {
                 queue: "build-results".to_owned(),
