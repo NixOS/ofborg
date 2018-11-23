@@ -45,12 +45,12 @@ Commands:
 
 ### test (added: 2017-11-24)
 
+Tests can be build by using the `nixosTests` package:
+
 ```
-@grahamcofborg test list of tests
+@grahamcofborg build nixosTests.firewall
 ```
 
-This will run `nix-build ./nixos/release.nix -A tests.list -A tests.of -A tests.tests` in
-the nixpkgs checkout. Note: this will only run on x86_64-linux machines.
 
 ### eval
 
