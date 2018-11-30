@@ -85,23 +85,63 @@ fn result_to_check(result: &LegacyBuildResult) -> CheckRunOptions {
         .collect();
     all_attrs.sort();
 
+    let conclusion = match result.status {
+        BuildStatus::Skipped => Conclusion::Cancelled,
+        BuildStatus::Success => Conclusion::Success,
+        BuildStatus::Failure => Conclusion::Neutral,
+        BuildStatus::TimedOut => Conclusion::TimedOut,
+        BuildStatus::UnexpectedError { err: _ } => Conclusion::Neutral,
+    };
+
+    let mut summary: Vec<String> = vec![];
+    if let Some(ref attempted) = result.attempted_attrs {
+        summary.extend(list_segment("Attempted", attempted.clone()));
+    }
+
+    if let Some(ref skipped) = result.skipped_attrs {
+        summary.extend(list_segment(
+            &format!(
+                "The following builds were skipped because they don't evaluate on {}",
+                result.system
+            ),
+            skipped.clone()));
+    }
+
+    let text: String;
+
+    if result.output.len() > 0 {
+        text = partial_log_segment(&result.output).join("\n");
+    } else {
+        text = String::from("No partial log is available.");
+    }
+
 
     CheckRunOptions{
-        name: format!("nix-build {}", all_attrs.join(" ")),
+        name: format!(
+            "nix-build {} --argstr system {}",
+            all_attrs.join(" "),
+            result.system
+        ),
         actions: None,
         completed_at: Some("2018-01-01T01:01:01Z".to_string()),
         started_at: None,
-        conclusion: Some(Conclusion::Neutral),
-        details_url: Some("https://nix.ci/status/hi".to_string()),
-        external_id: Some("heyyy".to_string()),
-        head_sha: "263376dd4c872fbaa976f4055ec6269ab66e3a73".to_string(),
+        conclusion: Some(conclusion),
+        details_url: Some(format!(
+            "https://logs.nix.ci/?key={}/{}.{}&attempt_id={}",
+            &result.repo.owner.to_lowercase(),
+            &result.repo.name.to_lowercase(),
+            result.pr.number,
+            result.attempt_id,
+        )),
+        external_id: Some(result.request_id.clone()),
+        head_sha: result.pr.head_sha.clone(),
 
         output: Some(Output {
             annotations: None,
             images: None,
-            summary: "build failed".to_string(),
-            text: Some("texthere\n  is\n   some\n    text".to_string()),
-            title: "build failed".to_string()
+            summary: summary.join("\n"),
+            text: Some(text),
+            title: "Build Results".to_string()
         }),
         status: Some(CheckRunState::Completed),
     }
@@ -151,6 +191,8 @@ fn result_to_comment(result: &LegacyBuildResult) -> String {
 
     if result.output.len() > 0 {
         reply.extend(partial_log_segment(&result.output));
+        reply.push("".to_owned());
+        reply.push("".to_owned());
     } else {
         reply.push("No partial log is available.".to_owned());
         reply.push("".to_owned());
@@ -181,8 +223,6 @@ fn partial_log_segment(output: &Vec<String>) -> Vec<String> {
     reply.extend(output.clone());
     reply.push("```".to_owned());
     reply.push("</p></details>".to_owned());
-    reply.push("".to_owned());
-    reply.push("".to_owned());
 
     return reply;
 }
@@ -569,23 +609,6 @@ No partial log is available.
         );
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     #[test]
     pub fn test_check_passing_build() {
         let result = LegacyBuildResult {
@@ -623,22 +646,22 @@ No partial log is available.
         assert_eq!(
             result_to_check(&result),
             CheckRunOptions {
-                name: "nix-build -A bar -A foo --argstr system x86_64-linux ".to_string(),
+                name: "nix-build -A bar -A foo --argstr system x86_64-linux".to_string(),
                 actions: None,
                 started_at: None,
                 completed_at: Some("2018-01-01T01:01:01Z".to_string()),
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Success),
-                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=foo".to_string()),
+                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
                 external_id: Some("bogus-request-id".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
                     title: "Build Results".to_string(),
                     summary: "Attempted: foo
 
-The following builds were skipped because they don't evaluate on x86_64-linux: bar".to_string(),
-                    text: Some("
-<details><summary>Partial log (click to expand)</summary><p>
+The following builds were skipped because they don't evaluate on x86_64-linux: bar
+".to_string(),
+                    text: Some("<details><summary>Partial log (click to expand)</summary><p>
 
 ```
 make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
@@ -652,9 +675,7 @@ strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin
 patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
 /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
 ```
-</p></details>
-
-".to_string()),
+</p></details>".to_string()),
                     annotations: None,
                     images: None,
                 }),
