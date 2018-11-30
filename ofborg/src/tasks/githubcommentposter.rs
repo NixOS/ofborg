@@ -92,13 +92,17 @@ fn result_to_check(result: &LegacyBuildResult) -> CheckRunOptions {
         BuildStatus::Skipped => Conclusion::Cancelled,
         BuildStatus::Success => Conclusion::Success,
         BuildStatus::Failure => Conclusion::Neutral,
-        BuildStatus::TimedOut => Conclusion::TimedOut,
+        BuildStatus::TimedOut => Conclusion::Cancelled,
         BuildStatus::UnexpectedError { err: _ } => Conclusion::Neutral,
     };
 
     let mut summary: Vec<String> = vec![];
     if let Some(ref attempted) = result.attempted_attrs {
         summary.extend(list_segment("Attempted", attempted.clone()));
+    }
+
+    if result.status == BuildStatus::TimedOut {
+        summary.push(String::from("Build timed out."));
     }
 
     if let Some(ref skipped) = result.skipped_attrs {
@@ -805,14 +809,15 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 started_at: None,
                 completed_at: Some("2018-01-01T01:01:01Z".to_string()),
                 status: Some(CheckRunState::Completed),
-                conclusion: Some(Conclusion::TimedOut),
+                conclusion: Some(Conclusion::Cancelled),
                 details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
                 external_id: Some("bogus-request-id".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
                     title: "Build Results".to_string(),
                     summary: "Attempted: foo
-".to_string(),
+
+Build timed out.".to_string(),
                     text: Some("## Partial log
 
 ```
