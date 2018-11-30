@@ -19,8 +19,8 @@ serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 tempfile = "2.2.0"
-#hubcaps = { git = "https://github.com/grahamc/hubcaps.git", tag = "0.3.9.2" }
-hubcaps = { path = "../hubcaps/" } # for testing patches
+hubcaps = { git = "https://github.com/grahamc/hubcaps.git", tag = "0.3.9.3" }
+#hubcaps = { path = "../hubcaps/" } # for testing patches
 hyper = "0.10.*"
 hyper-native-tls = "0.2.4"
 lru-cache = "0.1.1"
