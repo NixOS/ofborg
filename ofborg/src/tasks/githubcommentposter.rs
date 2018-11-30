@@ -46,15 +46,14 @@ impl worker::SimpleWorker for GitHubCommentPoster {
         let comment = hubcaps::comments::CommentOptions { body: result_to_comment(&result) };
         let check = result_to_check(&result);
         println!(":{:?}", check);
+        println!(":{:?}", comment);
 
-        let comment_attempt = self.github
+        let check_create_attempt = self.github
             .repo(result.repo.owner.clone(), result.repo.name.clone())
-            .pulls()
-            .get(result.pr.number)
-            .comments()
-            .create(&comment);
+            .checkruns()
+            .create(&check);
 
-        match comment_attempt {
+        match check_create_attempt {
             Ok(comment) => {
                 info!("Successfully sent {:?} to {}",
                 comment,
@@ -63,7 +62,7 @@ impl worker::SimpleWorker for GitHubCommentPoster {
             }
             Err(err) => {
                 info!(
-                "Failed to send comment {:?} to {}",
+                "Failed to send check {:?} to {}",
                 err,
                 result.pr.number,
             )
