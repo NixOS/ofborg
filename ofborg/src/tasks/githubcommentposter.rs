@@ -113,7 +113,15 @@ fn result_to_check(result: &LegacyBuildResult) -> CheckRunOptions {
     let text: String;
 
     if result.output.len() > 0 {
-        text = partial_log_segment(&result.output).join("\n");
+        let mut reply: Vec<String> = vec![];
+
+        reply.push("## Partial log".to_owned());
+        reply.push("".to_owned());
+        reply.push("```".to_owned());
+        reply.extend(result.output.clone());
+        reply.push("```".to_owned());
+
+        text = reply.join("\n");
     } else {
         text = String::from("No partial log is available.");
     }
@@ -664,7 +672,7 @@ No partial log is available.
 
 The following builds were skipped because they don't evaluate on x86_64-linux: bar
 ".to_string(),
-                    text: Some("<details><summary>Partial log (click to expand)</summary><p>
+                    text: Some("## Partial log
 
 ```
 make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
@@ -677,8 +685,7 @@ post-installation fixup
 strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip
 patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
 /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
-```
-</p></details>".to_string()),
+```".to_string()),
                     annotations: None,
                     images: None,
                 })
@@ -736,7 +743,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                     title: "Build Results".to_string(),
                     summary: "Attempted: foo
 ".to_string(),
-                    text: Some("<details><summary>Partial log (click to expand)</summary><p>
+                    text: Some("## Partial log
 
 ```
 make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
@@ -749,8 +756,7 @@ post-installation fixup
 strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip
 patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
 /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
-```
-</p></details>".to_string()),
+```".to_string()),
                     annotations: None,
                     images: None,
                 })
@@ -807,7 +813,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                     title: "Build Results".to_string(),
                     summary: "Attempted: foo
 ".to_string(),
-                    text: Some("<details><summary>Partial log (click to expand)</summary><p>
+                    text: Some("## Partial log
 
 ```
 make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
@@ -819,8 +825,7 @@ removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info
 post-installation fixup
 building of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' timed out after 1 seconds
 error: build of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' failed
-```
-</p></details>".to_string()),
+```".to_string()),
                     annotations: None,
                     images: None,
                 })
@@ -877,7 +882,7 @@ error: build of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' failed
                 output: Some(Output {
                     title: "Build Results".to_string(),
                     summary: "".to_string(),
-                    text: Some("<details><summary>Partial log (click to expand)</summary><p>
+                    text: Some("## Partial log
 
 ```
 make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
@@ -890,8 +895,7 @@ post-installation fixup
 strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip
 patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
 /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
-```
-</p></details>".to_string()),
+```".to_string()),
                     annotations: None,
                     images: None,
                 })
@@ -948,7 +952,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 output: Some(Output {
                     title: "Build Results".to_string(),
                     summary: "".to_string(),
-                    text: Some("<details><summary>Partial log (click to expand)</summary><p>
+                    text: Some("## Partial log
 
 ```
 make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
@@ -961,8 +965,7 @@ post-installation fixup
 strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip
 patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
 /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
-```
-</p></details>".to_string()),
+```".to_string()),
                     annotations: None,
                     images: None,
                 })
@@ -1009,12 +1012,11 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                     title: "Build Results".to_string(),
                     summary: "The following builds were skipped because they don\'t evaluate on x86_64-linux: not-attempted
 ".to_string(),
-                    text: Some("<details><summary>Partial log (click to expand)</summary><p>
+                    text: Some("## Partial log
 
 ```
 foo
-```
-</p></details>".to_string()),
+```".to_string()),
                     annotations: None,
                     images: None,
                 })
