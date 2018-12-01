@@ -57,6 +57,7 @@ let
     RUSTFLAGS = "-D warnings";
     RUST_BACKTRACE = "1";
     RUST_LOG = "ofborg=debug";
+    NIX_PATH = "nixpkgs=${pkgs.path}";
     passthru.phpEnv = phpEnv;
   }
   // stdenv.lib.optionalAttrs stdenv.isLinux {

@@ -11,17 +11,11 @@ let
   '';
 in {
   ofborg.rs = let
-    drv = (pkgs.callPackage ./nix/ofborg-carnix.nix {}).ofborg {};
-    build = drv.override {
-      crateOverrides = pkgs.defaultCrateOverrides // {
-        ofborg = attrs: {
-          buildInputs = pkgs.lib.optionals pkgs.stdenv.isDarwin
-                     [ pkgs.darwin.apple_sdk.frameworks.Security ];
-        };
-      };
-    };
+    drv = (pkgs.callPackage ./ofborg/Cargo.nix {
+      cratesIO = pkgs.callPackage ./ofborg/crates-io.nix {};
+    }).ofborg {};
   in pkgs.runCommand "ofborg-rs-symlink-compat" {
-    src = stripDeps build;
+    src = stripDeps drv;
   } ''
     mkdir -p $out/bin
     for f in $(find $src -type f); do

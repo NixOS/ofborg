@@ -2,19 +2,7 @@
 
 set -eu
 
-cd nix
+cd ofborg
 
-patched_carnix() {
-    src=$1
-    result=$2
-
-    (
-        cd "$(dirname "$src")"
-        cargo build
-    )
-
-    carnix "$src"  --output "$result"
-    patch -p1 "$result" ./carnix.patch
-}
-
-patched_carnix ./../ofborg/Cargo.lock ./ofborg-carnix.nix
+cargo build
+carnix generate-nix --src .
