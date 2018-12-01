@@ -4,6 +4,7 @@ extern crate env_logger;
 use serde_json;
 
 use hubcaps;
+use hubcaps::checks::{CheckRunOptions, Output, Conclusion, CheckRunState};
 use ofborg::message::buildresult::{BuildStatus, BuildResult, LegacyBuildResult};
 use ofborg::worker;
 use amqp::protocol::basic::{Deliver, BasicProperties};
@@ -43,15 +44,16 @@ impl worker::SimpleWorker for GitHubCommentPoster {
     fn consumer(&mut self, job: &BuildResult) -> worker::Actions {
         let result = job.legacy();
         let comment = hubcaps::comments::CommentOptions { body: result_to_comment(&result) };
+        let check = result_to_check(&result);
+        println!(":{:?}", check);
+        println!(":{:?}", comment);
 
-        let comment_attempt = self.github
+        let check_create_attempt = self.github
             .repo(result.repo.owner.clone(), result.repo.name.clone())
-            .pulls()
-            .get(result.pr.number)
-            .comments()
-            .create(&comment);
+            .checkruns()
+            .create(&check);
 
-        match comment_attempt {
+        match check_create_attempt {
             Ok(comment) => {
                 info!("Successfully sent {:?} to {}",
                 comment,
@@ -60,7 +62,7 @@ impl worker::SimpleWorker for GitHubCommentPoster {
             }
             Err(err) => {
                 info!(
-                "Failed to send comment {:?} to {}",
+                "Failed to send check {:?} to {}",
                 err,
                 result.pr.number,
             )
@@ -68,6 +70,95 @@ impl worker::SimpleWorker for GitHubCommentPoster {
         }
 
         return vec![worker::Action::Ack];
+    }
+}
+
+fn result_to_check(result: &LegacyBuildResult) -> CheckRunOptions {
+    let mut all_attrs: Vec<String> = vec![
+        result.attempted_attrs.clone(),
+        result.skipped_attrs.clone()
+    ]
+        .into_iter()
+        .map(|opt| opt.unwrap_or(vec![]))
+        .flat_map(|list| list.into_iter().map(|attr| format!("-A {}", attr)))
+        .collect();
+    all_attrs.sort();
+
+    if all_attrs.len() == 0{
+        all_attrs = vec![String::from("(unknown attributes)")];
+    }
+
+    let conclusion = match result.status {
+        BuildStatus::Skipped => Conclusion::Neutral,
+        BuildStatus::Success => Conclusion::Success,
+        BuildStatus::Failure => Conclusion::Neutral,
+        BuildStatus::TimedOut => Conclusion::Neutral,
+        BuildStatus::UnexpectedError { err: _ } => Conclusion::Neutral,
+    };
+
+    let mut summary: Vec<String> = vec![];
+    if let Some(ref attempted) = result.attempted_attrs {
+        summary.extend(list_segment("Attempted", attempted.clone()));
+    }
+
+    if result.status == BuildStatus::TimedOut {
+        summary.push(String::from("Build timed out."));
+    }
+
+    if let Some(ref skipped) = result.skipped_attrs {
+        summary.extend(list_segment(
+            &format!(
+                "The following builds were skipped because they don't evaluate on {}",
+                result.system
+            ),
+            skipped.clone()));
+    }
+
+    let text: String;
+
+    if result.output.len() > 0 {
+        let mut reply: Vec<String> = vec![];
+
+        reply.push("## Partial log".to_owned());
+        reply.push("".to_owned());
+        reply.push("```".to_owned());
+        reply.extend(result.output.clone());
+        reply.push("```".to_owned());
+
+        text = reply.join("\n");
+    } else {
+        text = String::from("No partial log is available.");
+    }
+
+
+    CheckRunOptions{
+        name: format!(
+            "nix-build {} --argstr system {}",
+            all_attrs.join(" "),
+            result.system
+        ),
+        actions: None,
+        completed_at: Some("2018-01-01T01:01:01Z".to_string()),
+        started_at: None,
+        conclusion: Some(conclusion),
+        details_url: Some(format!(
+            "https://logs.nix.ci/?key={}/{}.{}&attempt_id={}",
+            &result.repo.owner.to_lowercase(),
+            &result.repo.name.to_lowercase(),
+            result.pr.number,
+            result.attempt_id,
+        )),
+        external_id: Some(result.attempt_id.clone()),
+        head_sha: result.pr.head_sha.clone(),
+
+        output: Some(Output {
+            annotations: None,
+            images: None,
+            summary: summary.join("\n"),
+            text: Some(text),
+            title: "Build Results".to_string()
+        }),
+        status: Some(CheckRunState::Completed),
     }
 }
 
@@ -115,6 +206,8 @@ fn result_to_comment(result: &LegacyBuildResult) -> String {
 
     if result.output.len() > 0 {
         reply.extend(partial_log_segment(&result.output));
+        reply.push("".to_owned());
+        reply.push("".to_owned());
     } else {
         reply.push("No partial log is available.".to_owned());
         reply.push("".to_owned());
@@ -145,8 +238,6 @@ fn partial_log_segment(output: &Vec<String>) -> Vec<String> {
     reply.extend(output.clone());
     reply.push("```".to_owned());
     reply.push("</p></details>".to_owned());
-    reply.push("".to_owned());
-    reply.push("".to_owned());
 
     return reply;
 }
@@ -530,6 +621,458 @@ The following builds were skipped because they don't evaluate on x86_64-linux: n
 
 No partial log is available.
 "
+        );
+    }
+
+    #[test]
+    pub fn test_check_passing_build() {
+        let result = LegacyBuildResult {
+            repo: Repo {
+                clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
+                full_name: "NixOS/nixpkgs".to_owned(),
+                owner: "NixOS".to_owned(),
+                name: "nixpkgs".to_owned(),
+            },
+            pr: Pr {
+                head_sha: "abc123".to_owned(),
+                number: 2345,
+                target_branch: Some("master".to_owned()),
+            },
+            output: vec![
+                "make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
+                "make[2]: Nothing to be done for 'install'.".to_owned(),
+                "make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
+                "make[1]: Nothing to be done for 'install-target'.".to_owned(),
+                "make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'".to_owned(),
+                "removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'".to_owned(),
+                "post-installation fixup".to_owned(),
+                "strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip".to_owned(),
+                "patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
+                "/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
+            ],
+            attempt_id: "neatattemptid".to_owned(),
+            request_id: "bogus-request-id".to_owned(),
+            system: "x86_64-linux".to_owned(),
+            attempted_attrs: Some(vec!["foo".to_owned()]),
+            skipped_attrs: Some(vec!["bar".to_owned()]),
+            status: BuildStatus::Success,
+        };
+
+        assert_eq!(
+            result_to_check(&result),
+            CheckRunOptions {
+                name: "nix-build -A bar -A foo --argstr system x86_64-linux".to_string(),
+                actions: None,
+                started_at: None,
+                completed_at: Some("2018-01-01T01:01:01Z".to_string()),
+                status: Some(CheckRunState::Completed),
+                conclusion: Some(Conclusion::Success),
+                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
+                external_id: Some("neatattemptid".to_string()),
+                head_sha: "abc123".to_string(),
+                output: Some(Output {
+                    title: "Build Results".to_string(),
+                    summary: "Attempted: foo
+
+The following builds were skipped because they don't evaluate on x86_64-linux: bar
+".to_string(),
+                    text: Some("## Partial log
+
+```
+make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
+make[2]: Nothing to be done for 'install'.
+make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
+make[1]: Nothing to be done for 'install-target'.
+make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'
+removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'
+post-installation fixup
+strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip
+patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
+/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
+```".to_string()),
+                    annotations: None,
+                    images: None,
+                })
+            }
+        );
+    }
+
+    #[test]
+    pub fn test_check_failing_build() {
+        let result = LegacyBuildResult {
+            repo: Repo {
+                clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
+                full_name: "NixOS/nixpkgs".to_owned(),
+                owner: "NixOS".to_owned(),
+                name: "nixpkgs".to_owned(),
+            },
+            pr: Pr {
+                head_sha: "abc123".to_owned(),
+                number: 2345,
+                target_branch: Some("master".to_owned()),
+            },
+            output: vec![
+                "make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
+                "make[2]: Nothing to be done for 'install'.".to_owned(),
+                "make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
+                "make[1]: Nothing to be done for 'install-target'.".to_owned(),
+                "make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'".to_owned(),
+                "removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'".to_owned(),
+                "post-installation fixup".to_owned(),
+                "strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip".to_owned(),
+                "patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
+                "/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
+            ],
+            attempt_id: "neatattemptid".to_owned(),
+            request_id: "bogus-request-id".to_owned(),
+            system: "x86_64-linux".to_owned(),
+            attempted_attrs: Some(vec!["foo".to_owned()]),
+            skipped_attrs: None,
+            status: BuildStatus::Failure,
+        };
+
+        assert_eq!(
+            result_to_check(&result),
+            CheckRunOptions {
+                name: "nix-build -A foo --argstr system x86_64-linux".to_string(),
+                actions: None,
+                started_at: None,
+                completed_at: Some("2018-01-01T01:01:01Z".to_string()),
+                status: Some(CheckRunState::Completed),
+                conclusion: Some(Conclusion::Neutral),
+                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
+                external_id: Some("neatattemptid".to_string()),
+                head_sha: "abc123".to_string(),
+                output: Some(Output {
+                    title: "Build Results".to_string(),
+                    summary: "Attempted: foo
+".to_string(),
+                    text: Some("## Partial log
+
+```
+make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
+make[2]: Nothing to be done for 'install'.
+make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
+make[1]: Nothing to be done for 'install-target'.
+make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'
+removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'
+post-installation fixup
+strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip
+patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
+/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
+```".to_string()),
+                    annotations: None,
+                    images: None,
+                })
+            }
+        );
+    }
+
+    #[test]
+    pub fn test_check_timedout_build() {
+        let result = LegacyBuildResult {
+            repo: Repo {
+                clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
+                full_name: "NixOS/nixpkgs".to_owned(),
+                owner: "NixOS".to_owned(),
+                name: "nixpkgs".to_owned(),
+            },
+            pr: Pr {
+                head_sha: "abc123".to_owned(),
+                number: 2345,
+                target_branch: Some("master".to_owned()),
+            },
+            output: vec![
+                "make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
+                "make[2]: Nothing to be done for 'install'.".to_owned(),
+                "make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
+                "make[1]: Nothing to be done for 'install-target'.".to_owned(),
+                "make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'".to_owned(),
+                "removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'".to_owned(),
+                "post-installation fixup".to_owned(),
+                "building of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' timed out after 1 seconds".to_owned(),
+                "error: build of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' failed".to_owned(),
+            ],
+            attempt_id: "neatattemptid".to_owned(),
+            request_id: "bogus-request-id".to_owned(),
+            system: "x86_64-linux".to_owned(),
+            attempted_attrs: Some(vec!["foo".to_owned()]),
+            skipped_attrs: None,
+            status: BuildStatus::TimedOut,
+        };
+
+        assert_eq!(
+            result_to_check(&result),
+            CheckRunOptions {
+                name: "nix-build -A foo --argstr system x86_64-linux".to_string(),
+                actions: None,
+                started_at: None,
+                completed_at: Some("2018-01-01T01:01:01Z".to_string()),
+                status: Some(CheckRunState::Completed),
+                conclusion: Some(Conclusion::Neutral),
+                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
+                external_id: Some("neatattemptid".to_string()),
+                head_sha: "abc123".to_string(),
+                output: Some(Output {
+                    title: "Build Results".to_string(),
+                    summary: "Attempted: foo
+
+Build timed out.".to_string(),
+                    text: Some("## Partial log
+
+```
+make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
+make[2]: Nothing to be done for 'install'.
+make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
+make[1]: Nothing to be done for 'install-target'.
+make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'
+removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'
+post-installation fixup
+building of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' timed out after 1 seconds
+error: build of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' failed
+```".to_string()),
+                    annotations: None,
+                    images: None,
+                })
+            }
+        );
+    }
+
+    #[test]
+    pub fn test_check_passing_build_unspecified_attributes() {
+        let result = LegacyBuildResult {
+            repo: Repo {
+                clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
+                full_name: "NixOS/nixpkgs".to_owned(),
+                owner: "NixOS".to_owned(),
+                name: "nixpkgs".to_owned(),
+            },
+            pr: Pr {
+                head_sha: "abc123".to_owned(),
+                number: 2345,
+                target_branch: Some("master".to_owned()),
+            },
+            output: vec![
+                "make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
+                "make[2]: Nothing to be done for 'install'.".to_owned(),
+                "make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
+                "make[1]: Nothing to be done for 'install-target'.".to_owned(),
+                "make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'".to_owned(),
+                "removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'".to_owned(),
+                "post-installation fixup".to_owned(),
+                "strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip".to_owned(),
+                "patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
+                "/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
+            ],
+            attempt_id: "neatattemptid".to_owned(),
+            request_id: "bogus-request-id".to_owned(),
+            system: "x86_64-linux".to_owned(),
+            attempted_attrs: None,
+            skipped_attrs: None,
+            status: BuildStatus::Success,
+        };
+
+        assert_eq!(
+            result_to_check(&result),
+            CheckRunOptions {
+                name: "nix-build (unknown attributes) --argstr system x86_64-linux".to_string(),
+                actions: None,
+                started_at: None,
+                completed_at: Some("2018-01-01T01:01:01Z".to_string()),
+                status: Some(CheckRunState::Completed),
+                conclusion: Some(Conclusion::Success),
+                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
+                external_id: Some("neatattemptid".to_string()),
+                head_sha: "abc123".to_string(),
+                output: Some(Output {
+                    title: "Build Results".to_string(),
+                    summary: "".to_string(),
+                    text: Some("## Partial log
+
+```
+make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
+make[2]: Nothing to be done for 'install'.
+make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
+make[1]: Nothing to be done for 'install-target'.
+make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'
+removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'
+post-installation fixup
+strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip
+patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
+/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
+```".to_string()),
+                    annotations: None,
+                    images: None,
+                })
+            }
+        );
+    }
+
+    #[test]
+    pub fn test_check_failing_build_unspecified_attributes() {
+        let result = LegacyBuildResult {
+            repo: Repo {
+                clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
+                full_name: "NixOS/nixpkgs".to_owned(),
+                owner: "NixOS".to_owned(),
+                name: "nixpkgs".to_owned(),
+            },
+            pr: Pr {
+                head_sha: "abc123".to_owned(),
+                number: 2345,
+                target_branch: Some("master".to_owned()),
+            },
+            output: vec![
+                "make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
+                "make[2]: Nothing to be done for 'install'.".to_owned(),
+                "make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'".to_owned(),
+                "make[1]: Nothing to be done for 'install-target'.".to_owned(),
+                "make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'".to_owned(),
+                "removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'".to_owned(),
+                "post-installation fixup".to_owned(),
+                "strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip".to_owned(),
+                "patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
+                "/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1".to_owned(),
+            ],
+            attempt_id: "neatattemptid".to_owned(),
+            request_id: "bogus-request-id".to_owned(),
+            system: "x86_64-linux".to_owned(),
+            attempted_attrs: None,
+            skipped_attrs: None,
+            status: BuildStatus::Failure,
+        };
+
+        assert_eq!(
+            result_to_check(&result),
+            CheckRunOptions {
+                name: "nix-build (unknown attributes) --argstr system x86_64-linux".to_string(),
+                actions: None,
+                started_at: None,
+                completed_at: Some("2018-01-01T01:01:01Z".to_string()),
+                status: Some(CheckRunState::Completed),
+                conclusion: Some(Conclusion::Neutral),
+                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
+                external_id: Some("neatattemptid".to_string()),
+                head_sha: "abc123".to_string(),
+                output: Some(Output {
+                    title: "Build Results".to_string(),
+                    summary: "".to_string(),
+                    text: Some("## Partial log
+
+```
+make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
+make[2]: Nothing to be done for 'install'.
+make[2]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
+make[1]: Nothing to be done for 'install-target'.
+make[1]: Leaving directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1'
+removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info'
+post-installation fixup
+strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip
+patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
+/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
+```".to_string()),
+                    annotations: None,
+                    images: None,
+                })
+            }
+        );
+    }
+
+    #[test]
+    pub fn test_check_no_attempt() {
+        let result = LegacyBuildResult {
+            repo: Repo {
+                clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
+                full_name: "NixOS/nixpkgs".to_owned(),
+                owner: "NixOS".to_owned(),
+                name: "nixpkgs".to_owned(),
+            },
+            pr: Pr {
+                head_sha: "abc123".to_owned(),
+                number: 2345,
+                target_branch: Some("master".to_owned()),
+            },
+            output: vec!["foo".to_owned()],
+            attempt_id: "neatattemptid".to_owned(),
+            request_id: "bogus-request-id".to_owned(),
+            system: "x86_64-linux".to_owned(),
+            attempted_attrs: None,
+            skipped_attrs: Some(vec!["not-attempted".to_owned()]),
+            status: BuildStatus::Skipped,
+        };
+
+        assert_eq!(
+            result_to_check(&result),
+            CheckRunOptions {
+                name: "nix-build -A not-attempted --argstr system x86_64-linux".to_string(),
+                actions: None,
+                started_at: None,
+                completed_at: Some("2018-01-01T01:01:01Z".to_string()),
+                status: Some(CheckRunState::Completed),
+                conclusion: Some(Conclusion::Neutral),
+                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
+                external_id: Some("neatattemptid".to_string()),
+                head_sha: "abc123".to_string(),
+                output: Some(Output {
+                    title: "Build Results".to_string(),
+                    summary: "The following builds were skipped because they don\'t evaluate on x86_64-linux: not-attempted
+".to_string(),
+                    text: Some("## Partial log
+
+```
+foo
+```".to_string()),
+                    annotations: None,
+                    images: None,
+                })
+            }
+        );
+    }
+
+    #[test]
+    pub fn test_check_no_attempt_no_log() {
+        let result = LegacyBuildResult {
+            repo: Repo {
+                clone_url: "https://github.com/nixos/nixpkgs.git".to_owned(),
+                full_name: "NixOS/nixpkgs".to_owned(),
+                owner: "NixOS".to_owned(),
+                name: "nixpkgs".to_owned(),
+            },
+            pr: Pr {
+                head_sha: "abc123".to_owned(),
+                number: 2345,
+                target_branch: Some("master".to_owned()),
+            },
+            output: vec![],
+            attempt_id: "neatattemptid".to_owned(),
+            request_id: "bogus-request-id".to_owned(),
+            system: "x86_64-linux".to_owned(),
+            attempted_attrs: None,
+            skipped_attrs: Some(vec!["not-attempted".to_owned()]),
+            status: BuildStatus::Skipped,
+        };
+
+        assert_eq!(
+            result_to_check(&result),
+            CheckRunOptions {
+                name: "nix-build -A not-attempted --argstr system x86_64-linux".to_string(),
+                actions: None,
+                started_at: None,
+                completed_at: Some("2018-01-01T01:01:01Z".to_string()),
+                status: Some(CheckRunState::Completed),
+                conclusion: Some(Conclusion::Neutral),
+                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
+                external_id: Some("neatattemptid".to_string()),
+                head_sha: "abc123".to_string(),
+                output: Some(Output {
+                    title: "Build Results".to_string(),
+                    summary: "The following builds were skipped because they don\'t evaluate on x86_64-linux: not-attempted
+".to_string(),
+                    text: Some("No partial log is available.".to_string()),
+                    annotations: None,
+                    images: None,
+                })
+            }
         );
     }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "ofborg"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["Graham Christensen <graham@grahamc.com>"]
 include = ["Cargo.toml", "Cargo.lock", "src", "test-srcs", "build.rs"]
 build = "build.rs"
@@ -20,12 +20,13 @@ serde_derive = "1.0"
 serde_json = "1.0"
 tempfile = "2.2.0"
 hubcaps = { git = "https://github.com/grahamc/hubcaps.git" }
-# hubcaps = { path = "./hubcaps/" } # for testing patches
+#hubcaps = { path = "../hubcaps/" } # for testing patches
 hyper = "0.10.*"
 hyper-native-tls = "0.2.4"
 lru-cache = "0.1.1"
 nom = "4.0.0-beta3"
 sys-info = "0.5.6"
 
-#[patch.crates-io]
+[patch.crates-io]
+#hubcaps = { path = "../hubcaps" }
 #amq-proto = { path = "rust-amq-proto" }
