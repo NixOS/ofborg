@@ -64,8 +64,8 @@ let crates = cratesIO // rec {
     authors = [ "softprops <d.tangren@gmail.com>" ];
     src = fetchgit {
        url = "https://github.com/grahamc/hubcaps.git";
-       rev = "e8a181cb08f94c32e06595330775815a798990d9";
-       sha256 = "0g1qsp7gqyf5rrl73xdk20jv2kqhgnfric5kk93j1j853wj69jf0";
+       rev = "4ed98f02cf6214f4da1be238f1edaba14eb1fc80";
+       sha256 = "0z1xc4a00khrlvnzc3c6c9a6ci6jfgvg1bqh1m3xv6b64i81kkiv";
        fetchSubmodules = false;
     };
     dependencies = mapFeatures features ([
