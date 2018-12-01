@@ -1,5 +1,6 @@
 language: nix
 nix: 2.1
+sudo: true
 matrix:
   include:
     - name: checkPhase - Nix 2
