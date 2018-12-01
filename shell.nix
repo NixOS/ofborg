@@ -49,7 +49,7 @@ let
 
     postHook = ''
       checkPhase() {
-          ( cd "${builtins.toString ./.}/ofborg" && cargo test --lib )
+          ( cd "${builtins.toString ./.}/ofborg" && cargo test --lib -vvvvvvv )
       }
     '';
 
