@@ -89,10 +89,10 @@ fn result_to_check(result: &LegacyBuildResult) -> CheckRunOptions {
     }
 
     let conclusion = match result.status {
-        BuildStatus::Skipped => Conclusion::Cancelled,
+        BuildStatus::Skipped => Conclusion::Neutral,
         BuildStatus::Success => Conclusion::Success,
         BuildStatus::Failure => Conclusion::Neutral,
-        BuildStatus::TimedOut => Conclusion::Cancelled,
+        BuildStatus::TimedOut => Conclusion::Neutral,
         BuildStatus::UnexpectedError { err: _ } => Conclusion::Neutral,
     };
 
@@ -809,7 +809,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 started_at: None,
                 completed_at: Some("2018-01-01T01:01:01Z".to_string()),
                 status: Some(CheckRunState::Completed),
-                conclusion: Some(Conclusion::Cancelled),
+                conclusion: Some(Conclusion::Neutral),
                 details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
                 external_id: Some("bogus-request-id".to_string()),
                 head_sha: "abc123".to_string(),
@@ -1009,7 +1009,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 started_at: None,
                 completed_at: Some("2018-01-01T01:01:01Z".to_string()),
                 status: Some(CheckRunState::Completed),
-                conclusion: Some(Conclusion::Cancelled),
+                conclusion: Some(Conclusion::Neutral),
                 details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=foo".to_string()),
                 external_id: Some("bogus-request-id".to_string()),
                 head_sha: "abc123".to_string(),
@@ -1060,7 +1060,7 @@ foo
                 started_at: None,
                 completed_at: Some("2018-01-01T01:01:01Z".to_string()),
                 status: Some(CheckRunState::Completed),
-                conclusion: Some(Conclusion::Cancelled),
+                conclusion: Some(Conclusion::Neutral),
                 details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=foo".to_string()),
                 external_id: Some("bogus-request-id".to_string()),
                 head_sha: "abc123".to_string(),
