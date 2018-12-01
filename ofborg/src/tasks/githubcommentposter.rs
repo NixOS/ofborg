@@ -148,7 +148,7 @@ fn result_to_check(result: &LegacyBuildResult) -> CheckRunOptions {
             result.pr.number,
             result.attempt_id,
         )),
-        external_id: Some(result.request_id.clone()),
+        external_id: Some(result.attempt_id.clone()),
         head_sha: result.pr.head_sha.clone(),
 
         output: Some(Output {
@@ -668,7 +668,7 @@ No partial log is available.
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Success),
                 details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
-                external_id: Some("bogus-request-id".to_string()),
+                external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
                     title: "Build Results".to_string(),
@@ -741,7 +741,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Neutral),
                 details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
-                external_id: Some("bogus-request-id".to_string()),
+                external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
                     title: "Build Results".to_string(),
@@ -811,7 +811,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Neutral),
                 details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
-                external_id: Some("bogus-request-id".to_string()),
+                external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
                     title: "Build Results".to_string(),
@@ -882,7 +882,7 @@ error: build of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' failed
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Success),
                 details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
-                external_id: Some("bogus-request-id".to_string()),
+                external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
                     title: "Build Results".to_string(),
@@ -952,7 +952,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Neutral),
                 details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
-                external_id: Some("bogus-request-id".to_string()),
+                external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
                     title: "Build Results".to_string(),
@@ -993,7 +993,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 target_branch: Some("master".to_owned()),
             },
             output: vec!["foo".to_owned()],
-            attempt_id: "foo".to_owned(),
+            attempt_id: "neatattemptid".to_owned(),
             request_id: "bogus-request-id".to_owned(),
             system: "x86_64-linux".to_owned(),
             attempted_attrs: None,
@@ -1010,8 +1010,8 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 completed_at: Some("2018-01-01T01:01:01Z".to_string()),
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Neutral),
-                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=foo".to_string()),
-                external_id: Some("bogus-request-id".to_string()),
+                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
+                external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
                     title: "Build Results".to_string(),
@@ -1044,7 +1044,7 @@ foo
                 target_branch: Some("master".to_owned()),
             },
             output: vec![],
-            attempt_id: "foo".to_owned(),
+            attempt_id: "neatattemptid".to_owned(),
             request_id: "bogus-request-id".to_owned(),
             system: "x86_64-linux".to_owned(),
             attempted_attrs: None,
@@ -1061,8 +1061,8 @@ foo
                 completed_at: Some("2018-01-01T01:01:01Z".to_string()),
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Neutral),
-                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=foo".to_string()),
-                external_id: Some("bogus-request-id".to_string()),
+                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
+                external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
                     title: "Build Results".to_string(),
