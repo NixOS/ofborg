@@ -26,7 +26,7 @@ let
       curl
       bash
     ]
-      ++ stdenv.lib.optional useNix1 nix1;
+      ++ stdenv.lib.optional useNix1 oldpkgs.nix1;
 
     # HISTFILE = "${src}/.bash_hist";
   };
@@ -38,13 +38,13 @@ let
       nix-prefetch-git
       rust.rustc
       rust.cargo
-      rustfmt
-      carnix
+      #rustfmt
+      #carnix
       openssl.dev
       pkgconfig
       git
     ]
-      ++ stdenv.lib.optional useNix1 nix1
+      ++ stdenv.lib.optional useNix1 oldpkgs.nix1
       ++ stdenv.lib.optional stdenv.isDarwin pkgs.darwin.Security;
 
     postHook = ''
