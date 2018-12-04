@@ -1,6 +1,21 @@
-{ pkgs ? import ./nix {}
-}:
+{ pkgs ? import ./nix {} }:
+
 let
+  ofborgOverrides = {
+    crateOverrides = pkgs.defaultCrateOverrides // {
+      ofborg = attrs: {
+        buildInputs = pkgs.lib.optional pkgs.stdenv.isDarwin
+          pkgs.darwin.apple_sdk.frameworks.Security;
+      };
+    };
+  };
+
+  drv = (pkgs.callPackage ./ofborg/Cargo.nix {
+    cratesIO = pkgs.callPackage ./ofborg/crates-io.nix {};
+  }).ofborg {};
+
+  src = stripDeps (drv.override ofborgOverrides);
+
   stripDeps = pkg: pkgs.runCommand "${pkg.name}-deps-stripped" {}
   ''
     cp -r ${pkg} $out
@@ -9,14 +24,10 @@ let
     find $out/bin -name '*.d' -delete
     chmod -R a-w $out
   '';
-in {
-  ofborg.rs = let
-    drv = (pkgs.callPackage ./ofborg/Cargo.nix {
-      cratesIO = pkgs.callPackage ./ofborg/crates-io.nix {};
-    }).ofborg {};
-  in pkgs.runCommand "ofborg-rs-symlink-compat" {
-    src = stripDeps drv;
-  } ''
+in
+
+{
+  ofborg.rs = pkgs.runCommand "ofborg-rs-symlink-compat" { inherit src; } ''
     mkdir -p $out/bin
     for f in $(find $src -type f); do
       bn=$(basename "$f")
@@ -44,21 +55,21 @@ in {
 
 
 
-Build failed because you bumped the Cargo
-version without regenerating the carnix
-file.
+    Build failed because you bumped the Cargo
+    version without regenerating the carnix
+    file.
 
-Run:
-
-
-
-    nix-shell --run ./nix/update-carnix.sh
+    Run:
 
 
-and commit those changes.
+
+        nix-shell --run ./nix/update-carnix.sh
 
 
-EOF
+    and commit those changes.
+
+
+    EOF
     fi
   '';
 
