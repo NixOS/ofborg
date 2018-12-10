@@ -388,6 +388,43 @@ rec {
 
 
 # end
+# chrono-0.4.6
+
+  crates.chrono."0.4.6" = deps: { features?(features_.chrono."0.4.6" deps {}) }: buildRustCrate {
+    crateName = "chrono";
+    version = "0.4.6";
+    authors = [ "Kang Seonghoon <public+rust@mearie.org>" "Brandon W Maister <quodlibetor@gmail.com>" ];
+    sha256 = "0cxgqgf4lknsii1k806dpmzapi2zccjpa350ns5wpb568mij096x";
+    dependencies = mapFeatures features ([
+      (crates."num_integer"."${deps."chrono"."0.4.6"."num_integer"}" deps)
+      (crates."num_traits"."${deps."chrono"."0.4.6"."num_traits"}" deps)
+    ]
+      ++ (if features.chrono."0.4.6".time or false then [ (crates.time."${deps."chrono"."0.4.6".time}" deps) ] else []));
+    features = mkFeatures (features."chrono"."0.4.6" or {});
+  };
+  features_.chrono."0.4.6" = deps: f: updateFeatures f (rec {
+    chrono = fold recursiveUpdate {} [
+      { "0.4.6".clock =
+        (f.chrono."0.4.6".clock or false) ||
+        (f.chrono."0.4.6".default or false) ||
+        (chrono."0.4.6"."default" or false); }
+      { "0.4.6".default = (f.chrono."0.4.6".default or true); }
+      { "0.4.6".time =
+        (f.chrono."0.4.6".time or false) ||
+        (f.chrono."0.4.6".clock or false) ||
+        (chrono."0.4.6"."clock" or false); }
+    ];
+    num_integer."${deps.chrono."0.4.6".num_integer}".default = (f.num_integer."${deps.chrono."0.4.6".num_integer}".default or false);
+    num_traits."${deps.chrono."0.4.6".num_traits}".default = (f.num_traits."${deps.chrono."0.4.6".num_traits}".default or false);
+    time."${deps.chrono."0.4.6".time}".default = true;
+  }) [
+    (features_.num_integer."${deps."chrono"."0.4.6"."num_integer"}" deps)
+    (features_.num_traits."${deps."chrono"."0.4.6"."num_traits"}" deps)
+    (features_.time."${deps."chrono"."0.4.6"."time"}" deps)
+  ];
+
+
+# end
 # core-foundation-0.2.3
 
   crates.core_foundation."0.2.3" = deps: { features?(features_.core_foundation."0.2.3" deps {}) }: buildRustCrate {
@@ -1289,6 +1326,44 @@ rec {
     ];
   }) [
     (features_.memchr."${deps."nom"."4.1.1"."memchr"}" deps)
+  ];
+
+
+# end
+# num-integer-0.1.39
+
+  crates.num_integer."0.1.39" = deps: { features?(features_.num_integer."0.1.39" deps {}) }: buildRustCrate {
+    crateName = "num-integer";
+    version = "0.1.39";
+    authors = [ "The Rust Project Developers" ];
+    sha256 = "1f42ls46cghs13qfzgbd7syib2zc6m7hlmv1qlar6c9mdxapvvbg";
+    build = "build.rs";
+    dependencies = mapFeatures features ([
+      (crates."num_traits"."${deps."num_integer"."0.1.39"."num_traits"}" deps)
+    ]);
+    features = mkFeatures (features."num_integer"."0.1.39" or {});
+  };
+  features_.num_integer."0.1.39" = deps: f: updateFeatures f (rec {
+    num_integer = fold recursiveUpdate {} [
+      { "0.1.39".default = (f.num_integer."0.1.39".default or true); }
+      { "0.1.39".std =
+        (f.num_integer."0.1.39".std or false) ||
+        (f.num_integer."0.1.39".default or false) ||
+        (num_integer."0.1.39"."default" or false); }
+    ];
+    num_traits = fold recursiveUpdate {} [
+      { "${deps.num_integer."0.1.39".num_traits}"."i128" =
+        (f.num_traits."${deps.num_integer."0.1.39".num_traits}"."i128" or false) ||
+        (num_integer."0.1.39"."i128" or false) ||
+        (f."num_integer"."0.1.39"."i128" or false); }
+      { "${deps.num_integer."0.1.39".num_traits}"."std" =
+        (f.num_traits."${deps.num_integer."0.1.39".num_traits}"."std" or false) ||
+        (num_integer."0.1.39"."std" or false) ||
+        (f."num_integer"."0.1.39"."std" or false); }
+      { "${deps.num_integer."0.1.39".num_traits}".default = (f.num_traits."${deps.num_integer."0.1.39".num_traits}".default or false); }
+    ];
+  }) [
+    (features_.num_traits."${deps."num_integer"."0.1.39"."num_traits"}" deps)
   ];
 
 

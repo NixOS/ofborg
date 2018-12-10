@@ -112,6 +112,7 @@ let crates = cratesIO // rec {
     build = "build.rs";
     dependencies = mapFeatures features ([
       (crates."amqp"."${deps."ofborg"."0.1.8"."amqp"}" deps)
+      (cratesIO.crates."chrono"."${deps."ofborg"."0.1.8"."chrono"}" deps)
       (cratesIO.crates."either"."${deps."ofborg"."0.1.8"."either"}" deps)
       (cratesIO.crates."env_logger"."${deps."ofborg"."0.1.8"."env_logger"}" deps)
       (cratesIO.crates."fs2"."${deps."ofborg"."0.1.8"."fs2"}" deps)
@@ -132,6 +133,7 @@ let crates = cratesIO // rec {
   };
   features_.ofborg."0.1.8" = deps: f: updateFeatures f (rec {
     amqp."${deps.ofborg."0.1.8".amqp}".default = true;
+    chrono."${deps.ofborg."0.1.8".chrono}".default = true;
     either."${deps.ofborg."0.1.8".either}".default = true;
     env_logger."${deps.ofborg."0.1.8".env_logger}".default = true;
     fs2."${deps.ofborg."0.1.8".fs2}".default = true;
@@ -154,6 +156,7 @@ let crates = cratesIO // rec {
     ];
   }) [
     (features_.amqp."${deps."ofborg"."0.1.8"."amqp"}" deps)
+    (cratesIO.features_.chrono."${deps."ofborg"."0.1.8"."chrono"}" deps)
     (cratesIO.features_.either."${deps."ofborg"."0.1.8"."either"}" deps)
     (cratesIO.features_.env_logger."${deps."ofborg"."0.1.8"."env_logger"}" deps)
     (cratesIO.features_.fs2."${deps."ofborg"."0.1.8"."fs2"}" deps)
@@ -225,6 +228,11 @@ rec {
   deps.byteorder."1.2.7" = {};
   deps.cc."1.0.25" = {};
   deps.cfg_if."0.1.6" = {};
+  deps.chrono."0.4.6" = {
+    num_integer = "0.1.39";
+    num_traits = "0.2.6";
+    time = "0.1.40";
+  };
   deps.core_foundation."0.2.3" = {
     core_foundation_sys = "0.2.3";
     libc = "0.2.44";
@@ -339,6 +347,9 @@ rec {
   deps.nom."4.1.1" = {
     memchr = "2.1.1";
   };
+  deps.num_integer."0.1.39" = {
+    num_traits = "0.2.6";
+  };
   deps.num_traits."0.1.43" = {
     num_traits = "0.2.6";
   };
@@ -348,6 +359,7 @@ rec {
   };
   deps.ofborg."0.1.8" = {
     amqp = "0.1.0";
+    chrono = "0.4.6";
     either = "1.5.0";
     env_logger = "0.4.3";
     fs2 = "0.4.3";
