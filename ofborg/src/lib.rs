@@ -24,6 +24,7 @@ extern crate fs2;
 extern crate md5;
 extern crate uuid;
 extern crate env_logger;
+extern crate chrono;
 
 use std::env;
 

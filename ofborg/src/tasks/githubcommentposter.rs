@@ -8,6 +8,7 @@ use hubcaps::checks::{CheckRunOptions, Output, Conclusion, CheckRunState};
 use ofborg::message::buildresult::{BuildStatus, BuildResult, LegacyBuildResult};
 use ofborg::worker;
 use amqp::protocol::basic::{Deliver, BasicProperties};
+use chrono::{DateTime, Utc};
 
 
 pub struct GitHubCommentPoster {
@@ -44,7 +45,7 @@ impl worker::SimpleWorker for GitHubCommentPoster {
     fn consumer(&mut self, job: &BuildResult) -> worker::Actions {
         let result = job.legacy();
         let comment = hubcaps::comments::CommentOptions { body: result_to_comment(&result) };
-        let check = result_to_check(&result);
+        let check = result_to_check(&result, Utc::now());
         println!(":{:?}", check);
         println!(":{:?}", comment);
 
@@ -73,7 +74,7 @@ impl worker::SimpleWorker for GitHubCommentPoster {
     }
 }
 
-fn result_to_check(result: &LegacyBuildResult) -> CheckRunOptions {
+fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> CheckRunOptions {
     let mut all_attrs: Vec<String> = vec![
         result.attempted_attrs.clone(),
         result.skipped_attrs.clone()
@@ -138,7 +139,7 @@ fn result_to_check(result: &LegacyBuildResult) -> CheckRunOptions {
             result.system
         ),
         actions: None,
-        completed_at: Some("2018-01-01T01:01:01Z".to_string()),
+        completed_at: Some(timestamp.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)),
         started_at: None,
         conclusion: Some(conclusion),
         details_url: Some(format!(
@@ -246,6 +247,7 @@ fn partial_log_segment(output: &Vec<String>) -> Vec<String> {
 mod tests {
     use super::*;
     use message::{Pr, Repo};
+    use chrono::TimeZone;
 
     #[test]
     pub fn test_passing_build() {
@@ -658,13 +660,15 @@ No partial log is available.
             status: BuildStatus::Success,
         };
 
+        let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
+
         assert_eq!(
-            result_to_check(&result),
+            result_to_check(&result, timestamp),
             CheckRunOptions {
                 name: "nix-build -A bar -A foo --argstr system x86_64-linux".to_string(),
                 actions: None,
                 started_at: None,
-                completed_at: Some("2018-01-01T01:01:01Z".to_string()),
+                completed_at: Some("2023-04-20T13:37:42Z".to_string()),
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Success),
                 details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
@@ -731,13 +735,15 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             status: BuildStatus::Failure,
         };
 
+        let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
+
         assert_eq!(
-            result_to_check(&result),
+            result_to_check(&result, timestamp),
             CheckRunOptions {
                 name: "nix-build -A foo --argstr system x86_64-linux".to_string(),
                 actions: None,
                 started_at: None,
-                completed_at: Some("2018-01-01T01:01:01Z".to_string()),
+                completed_at: Some("2023-04-20T13:37:42Z".to_string()),
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Neutral),
                 details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
@@ -801,13 +807,15 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             status: BuildStatus::TimedOut,
         };
 
+        let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
+
         assert_eq!(
-            result_to_check(&result),
+            result_to_check(&result, timestamp),
             CheckRunOptions {
                 name: "nix-build -A foo --argstr system x86_64-linux".to_string(),
                 actions: None,
                 started_at: None,
-                completed_at: Some("2018-01-01T01:01:01Z".to_string()),
+                completed_at: Some("2023-04-20T13:37:42Z".to_string()),
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Neutral),
                 details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
@@ -872,13 +880,15 @@ error: build of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' failed
             status: BuildStatus::Success,
         };
 
+        let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
+
         assert_eq!(
-            result_to_check(&result),
+            result_to_check(&result, timestamp),
             CheckRunOptions {
                 name: "nix-build (unknown attributes) --argstr system x86_64-linux".to_string(),
                 actions: None,
                 started_at: None,
-                completed_at: Some("2018-01-01T01:01:01Z".to_string()),
+                completed_at: Some("2023-04-20T13:37:42Z".to_string()),
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Success),
                 details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
@@ -942,13 +952,15 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             status: BuildStatus::Failure,
         };
 
+        let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
+
         assert_eq!(
-            result_to_check(&result),
+            result_to_check(&result, timestamp),
             CheckRunOptions {
                 name: "nix-build (unknown attributes) --argstr system x86_64-linux".to_string(),
                 actions: None,
                 started_at: None,
-                completed_at: Some("2018-01-01T01:01:01Z".to_string()),
+                completed_at: Some("2023-04-20T13:37:42Z".to_string()),
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Neutral),
                 details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
@@ -1001,13 +1013,15 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             status: BuildStatus::Skipped,
         };
 
+        let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
+
         assert_eq!(
-            result_to_check(&result),
+            result_to_check(&result, timestamp),
             CheckRunOptions {
                 name: "nix-build -A not-attempted --argstr system x86_64-linux".to_string(),
                 actions: None,
                 started_at: None,
-                completed_at: Some("2018-01-01T01:01:01Z".to_string()),
+                completed_at: Some("2023-04-20T13:37:42Z".to_string()),
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Neutral),
                 details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
@@ -1052,13 +1066,15 @@ foo
             status: BuildStatus::Skipped,
         };
 
+        let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
+
         assert_eq!(
-            result_to_check(&result),
+            result_to_check(&result, timestamp),
             CheckRunOptions {
                 name: "nix-build -A not-attempted --argstr system x86_64-linux".to_string(),
                 actions: None,
                 started_at: None,
-                completed_at: Some("2018-01-01T01:01:01Z".to_string()),
+                completed_at: Some("2023-04-20T13:37:42Z".to_string()),
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Neutral),
                 details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
