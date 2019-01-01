@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 #[derive(Deserialize, Debug, Eq, PartialEq)]
-struct ImpactedMaintainers(HashMap<Maintainer, Vec<Package>>);
+pub struct ImpactedMaintainers(HashMap<Maintainer, Vec<Package>>);
 #[derive(Deserialize, Debug, Eq, PartialEq, Hash)]
 struct Maintainer(String);
 impl<'a> From<&'a str> for Maintainer {
@@ -20,7 +20,7 @@ impl<'a> From<&'a str> for Package {
 }
 
 #[derive(Debug)]
-enum CalculationError {
+pub enum CalculationError {
     DeserializeError(serde_json::Error),
     Io(std::io::Error),
     Utf8(std::string::FromUtf8Error),
