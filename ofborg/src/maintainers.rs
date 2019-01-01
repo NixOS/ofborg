@@ -19,15 +19,37 @@ impl<'a> From<&'a str> for Package {
     }
 }
 
+#[derive(Debug)]
+enum CalculationError {
+    DeserializeError(serde_json::Error),
+    Io(std::io::Error),
+    Utf8(std::string::FromUtf8Error),
+}
+impl From<serde_json::Error> for CalculationError {
+    fn from(e: serde_json::Error) -> CalculationError {
+        CalculationError::DeserializeError(e)
+    }
+}
+impl From<std::io::Error> for CalculationError {
+    fn from(e: std::io::Error) -> CalculationError {
+        CalculationError::Io(e)
+    }
+}
+impl From<std::string::FromUtf8Error> for CalculationError {
+    fn from(e: std::string::FromUtf8Error) -> CalculationError {
+        CalculationError::Utf8(e)
+    }
+}
+
 impl ImpactedMaintainers {
     pub fn calculate(
         nix: &Nix,
         checkout: &Path,
         paths: &[String],
         attributes: &[Vec<&str>],
-    ) -> ImpactedMaintainers {
-        let pathstr = serde_json::to_string(&paths).unwrap();
-        let attrstr = serde_json::to_string(&attributes).unwrap();
+    ) -> Result<ImpactedMaintainers, CalculationError> {
+        let pathstr = serde_json::to_string(&paths)?;
+        let attrstr = serde_json::to_string(&attributes)?;
 
         let mut argstrs: HashMap<&str, &str> = HashMap::new();
         argstrs.insert("changedattrsjson", &attrstr);
@@ -35,10 +57,9 @@ impl ImpactedMaintainers {
 
         let ret = nix
             .safely_evaluate_expr_cmd(&checkout, include_str!("./maintainers.nix"), argstrs)
-            .output()
-            .unwrap();
+            .output()?;
 
-        serde_json::from_str(&String::from_utf8(ret.stdout).unwrap()).unwrap()
+        Ok(serde_json::from_str(&String::from_utf8(ret.stdout)?)?)
     }
 }
 
@@ -112,6 +133,6 @@ mod tests {
             vec![Package::from("pkgs.foo.bar.packageA")],
         );
 
-        assert_eq!(parsed, expect);
+        assert_eq!(parsed.unwrap(), expect);
     }
 }
