@@ -63,6 +63,28 @@ impl ImpactedMaintainers {
     }
 }
 
+impl std::fmt::Display for ImpactedMaintainers {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let d = self
+            .0
+            .iter()
+            .map(|(maintainer, packages)| {
+                format!(
+                    "{}: {}",
+                    maintainer.0,
+                    packages
+                        .iter()
+                        .map(|pkg| pkg.0.clone())
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                )
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+        write!(f, "{}", d)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
