@@ -3,7 +3,9 @@
 
 set -euxo pipefail
 
-statuses_url=$(curl --fail -L "https://api.github.com/repos/nixos/nixpkgs/pulls/$1" \
+PRNUM=$1
+
+statuses_url=$(curl --fail -L "https://api.github.com/repos/nixos/nixpkgs/pulls/$PRNUM" \
                    | jq -r .statuses_url)
 
 changed_url=$(curl --fail -L "$statuses_url" \
@@ -33,7 +35,7 @@ EOF
 
 changedpaths = ['
 
-    curl --fail -L "https://github.com/NixOS/nixpkgs/pull/$1.patch" \
+    curl --fail -L "https://github.com/NixOS/nixpkgs/pull/$PRNUM.patch" \
         | grep "^+++ b/"  | sed -e "s/^+++ b//" \
         | sed -e 's/^/"/' | sed -e 's/$/"/' \
         | sort | uniq
