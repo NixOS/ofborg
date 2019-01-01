@@ -2,8 +2,8 @@
 let
   pkgs = import ./. {};
 
-  changedattrs = builtins.fromJSON changedattrsjson;
-  changedpaths = builtins.fromJSON changedpathsjson;
+  changedattrs = builtins.fromJSON (builtins.readFile changedattrsjson);
+  changedpaths = builtins.fromJSON (builtins.readFile changedpathsjson);
 
   anyMatchingFile = filename:
     let

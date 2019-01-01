@@ -1,6 +1,8 @@
 use ofborg::nix::Nix;
 use std::collections::HashMap;
+use std::io::Write;
 use std::path::Path;
+use tempfile::NamedTempFile;
 
 #[derive(Deserialize, Debug, Eq, PartialEq)]
 pub struct ImpactedMaintainers(HashMap<Maintainer, Vec<Package>>);
@@ -48,16 +50,26 @@ impl ImpactedMaintainers {
         paths: &[String],
         attributes: &[Vec<&str>],
     ) -> Result<ImpactedMaintainers, CalculationError> {
+        let mut path_file = NamedTempFile::new()?;
         let pathstr = serde_json::to_string(&paths)?;
+        write!(path_file, "{}", pathstr)?;
+
+        let mut attr_file = NamedTempFile::new()?;
         let attrstr = serde_json::to_string(&attributes)?;
+        write!(attr_file, "{}", attrstr)?;
 
         let mut argstrs: HashMap<&str, &str> = HashMap::new();
-        argstrs.insert("changedattrsjson", &attrstr);
-        argstrs.insert("changedpathsjson", &pathstr);
+        argstrs.insert("changedattrsjson", attr_file.path().to_str().unwrap());
+        argstrs.insert("changedpathsjson", path_file.path().to_str().unwrap());
 
-        let ret = nix
-            .safely_evaluate_expr_cmd(&checkout, include_str!("./maintainers.nix"), argstrs)
-            .output()?;
+        let mut cmd = nix.safely_evaluate_expr_cmd(
+            &checkout,
+            include_str!("./maintainers.nix"),
+            argstrs,
+            &[path_file.path(), attr_file.path()],
+        );
+
+        let ret = cmd.output()?;
 
         Ok(serde_json::from_str(&String::from_utf8(ret.stdout)?)?)
     }
