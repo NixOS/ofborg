@@ -39,6 +39,7 @@ pub mod evalchecker;
 pub mod files;
 pub mod ghevent;
 pub mod locks;
+pub mod maintainers;
 pub mod message;
 pub mod nix;
 pub mod notifyworker;
