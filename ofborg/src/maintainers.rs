@@ -23,35 +23,59 @@ mod tests {
     use checkout::cached_cloner;
     use clone::GitClonable;
     use ofborg::nix::Nix;
+    use ofborg::test_scratch::TestScratch;
     use std::env;
     use std::ffi::OsStr;
     use std::path::{Path, PathBuf};
+    use std::process::Command;
+    use std::process::Stdio;
 
     fn tpath(component: &str) -> PathBuf {
         return Path::new(env!("CARGO_MANIFEST_DIR")).join(component);
     }
 
+    fn make_pr_repo(bare: &Path, co: &Path) -> String {
+        let output = Command::new("./make-maintainer-pr.sh")
+            .current_dir(tpath("./test-srcs"))
+            .arg(bare)
+            .arg(co)
+            .stdout(Stdio::piped())
+            .output()
+            .expect("building the test PR failed");
+
+        let stderr =
+            String::from_utf8(output.stderr).unwrap_or_else(|err| format!("warning: {}", err));
+        println!("{}", stderr);
+
+        let hash = String::from_utf8(output.stdout).expect("Should just be a hash");
+        return hash.trim().to_owned();
+    }
+
     #[test]
     fn example() {
-        let attributes = vec![vec!["kgpg"], vec!["qrencode"], vec!["pass"]];
+        let workingdir = TestScratch::new_dir("test-maintainers-example");
 
-        let cloner = cached_cloner(&tpath("nixpkgs"));
-        let project = cloner.project(
-            "commit-msg-list".to_owned(),
-            "https://github.com/nixos/nixpkgs.git".to_owned(),
-        );
+        let bare = TestScratch::new_dir("test-maintainers-example-bare");
+        let mk_co = TestScratch::new_dir("test-maintainers-example-co");
+        let hash = make_pr_repo(&bare.path(), &mk_co.path());
+
+        let attributes = vec![vec!["foo", "bar", "packageA"]];
+
+        let cloner = cached_cloner(&workingdir.path());
+        let project = cloner.project("maintainer-test", bare.string());
 
         let working_co = project
-            .clone_for("testing-commit-msgs".to_owned(), "123".to_owned())
+            .clone_for("testing-maintainer-list".to_owned(), "123".to_owned())
             .expect("clone should work");
 
         working_co
-            .checkout_origin_ref(OsStr::new("master"))
+            .checkout_origin_ref(&OsStr::new("master"))
             .unwrap();
 
-        working_co.fetch_pr(53149).unwrap();
+        let paths = working_co.files_changed_from_head(&hash).unwrap();
 
-        let paths = working_co.files_changed_from_head("pr").unwrap();
+        working_co.checkout_ref(&OsStr::new(&hash)).unwrap();
+
         let pathstr = serde_json::to_string(&paths).unwrap();
         let attrstr = serde_json::to_string(&attributes).unwrap();
 
@@ -75,8 +99,8 @@ mod tests {
 
         let mut expect = ImpactedMaintainers(HashMap::new());
         expect.0.insert(
-            Maintainer::from("yegortimoshenko"),
-            vec![Package::from("pkgs.qrencode")],
+            Maintainer::from("test"),
+            vec![Package::from("pkgs.foo.bar.packageA")],
         );
 
         assert_eq!(parsed, expect);
