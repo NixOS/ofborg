@@ -15,7 +15,6 @@ in import (hostpkgs.stdenv.mkDerivation {
   };
 
   patches = [
-    ./nixpkgs-pr50452.patch
   ];
 
   moveToOut = ''
