@@ -16,13 +16,11 @@ impl LineWriter {
         let buf = LineWriter::load_buffer(&mut rw);
         let len = buf.len();
 
-        let writer = LineWriter {
+        LineWriter {
             file: rw,
             buffer: buf,
             last_line: len,
-        };
-
-        writer
+        }
     }
 
     fn load_buffer(file: &mut File) -> Vec<String> {
