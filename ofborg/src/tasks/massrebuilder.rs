@@ -654,7 +654,7 @@ fn parse_commit_messages(messages: &[String]) -> Vec<String> {
         .iter()
         .filter_map(|line| {
             // Convert "foo: some notes" in to "foo"
-            let parts: Vec<&str> = line.splitn(2, ":").collect();
+            let parts: Vec<&str> = line.splitn(2, ':').collect();
             if parts.len() == 2 {
                 Some(parts[0])
             } else {
@@ -662,7 +662,7 @@ fn parse_commit_messages(messages: &[String]) -> Vec<String> {
             }
         })
         .flat_map(|line| {
-            let pkgs: Vec<&str> = line.split(",").collect();
+            let pkgs: Vec<&str> = line.split(',').collect();
             pkgs
         })
         .map(|line| line.trim().to_owned())

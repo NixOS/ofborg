@@ -196,7 +196,7 @@ fn parse_lines(data: &mut BufRead) -> PackageOutPaths {
             if split.len() == 2 {
                 let outpaths = String::from(split[1]);
 
-                let path: Vec<&str> = split[0].rsplitn(2, ".").collect();
+                let path: Vec<&str> = split[0].rsplitn(2, '.').collect();
                 if path.len() == 2 {
                     Some((
                         PackageArch {
