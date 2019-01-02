@@ -158,7 +158,7 @@ impl RabbitMQConfig {
             self.username,
             self.password,
             self.host,
-            self.virtualhost.clone().unwrap_or("/".to_owned()),
+            self.virtualhost.clone().unwrap_or_else(|| "/".to_owned()),
         )
     }
 }

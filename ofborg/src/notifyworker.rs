@@ -72,8 +72,8 @@ impl<'a> NotificationReceiver for ChannelNotificationReceiver<'a> {
                     .unwrap();
             }
             Action::Publish(msg) => {
-                let exch = msg.exchange.clone().unwrap_or("".to_owned());
-                let key = msg.routing_key.clone().unwrap_or("".to_owned());
+                let exch = msg.exchange.clone().unwrap_or_else(|| "".to_owned());
+                let key = msg.routing_key.clone().unwrap_or_else(|| "".to_owned());
 
                 let props = msg.properties.unwrap_or(
                     BasicProperties { ..Default::default() },

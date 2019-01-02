@@ -216,7 +216,7 @@ impl Nix {
         let status = cmd.stdout(Stdio::from(stdout))
             .stderr(Stdio::from(stderr))
             .status()
-            .expect(format!("Running a program ...").as_ref());
+            .expect("Running a program ...");
 
         reader.seek(SeekFrom::Start(0)).expect(
             "Seeking to Start(0)",

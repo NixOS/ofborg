@@ -80,7 +80,7 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
         result.skipped_attrs.clone()
     ]
         .into_iter()
-        .map(|opt| opt.unwrap_or(vec![]))
+        .map(|opt| opt.unwrap_or_else(|| vec![]))
         .flat_map(|list| list.into_iter().map(|attr| format!("-A {}", attr)))
         .collect();
     all_attrs.sort();

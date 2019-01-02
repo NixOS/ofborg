@@ -251,13 +251,13 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
         }
 
         let possibly_touched_packages =
-            parse_commit_messages(&co.commit_messages_from_head(&job.pr.head_sha).unwrap_or(
+            parse_commit_messages(&co.commit_messages_from_head(&job.pr.head_sha).unwrap_or_else(|_|
                 vec!["".to_owned()],
             ));
 
         self.tag_from_paths(
             &issue,
-            co.files_changed_from_head(&job.pr.head_sha).unwrap_or(vec![])
+            co.files_changed_from_head(&job.pr.head_sha).unwrap_or_else(|_| vec![])
         );
 
         overall_status.set_with_description("Merging PR", hubcaps::statuses::State::Pending);
