@@ -53,10 +53,8 @@ impl ACL {
     pub fn can_build_unrestricted(&self, user: &str, repo: &str) -> bool {
         if repo.to_lowercase() == "nixos/nixpkgs" {
             self.trusted_users.contains(&user.to_lowercase())
-        } else if user == "grahamc" {
-            true
         } else {
-            false
+            user == "grahamc"
         }
     }
 }
