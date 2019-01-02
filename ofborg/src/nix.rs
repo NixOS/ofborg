@@ -29,7 +29,7 @@ impl Operation {
             Operation::Build => Command::new("nix-build"),
             Operation::QueryPackagesJSON => Command::new("nix-env"),
             Operation::QueryPackagesOutputs => Command::new("nix-env"),
-            Operation::NoOp { operation: _ } => Command::new("echo"),
+            Operation::NoOp { .. } => Command::new("echo"),
             Operation::Unknown { ref program } => Command::new(program),
         }
     }

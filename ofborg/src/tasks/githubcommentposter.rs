@@ -94,7 +94,7 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
         BuildStatus::Success => Conclusion::Success,
         BuildStatus::Failure => Conclusion::Neutral,
         BuildStatus::TimedOut => Conclusion::Neutral,
-        BuildStatus::UnexpectedError { err: _ } => Conclusion::Neutral,
+        BuildStatus::UnexpectedError { .. } => Conclusion::Neutral,
     };
 
     let mut summary: Vec<String> = vec![];
