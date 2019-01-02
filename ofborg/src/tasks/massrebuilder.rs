@@ -487,7 +487,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                     try_build.sort();
                     try_build.dedup();
 
-                    if try_build.len() > 0 && try_build.len() <= 10 {
+                    if !try_build.is_empty() && try_build.len() <= 10 {
                         // In the case of trying to merge master in to
                         // a stable branch, we don't want to do this.
                         // Therefore, only schedule builds if there
@@ -550,7 +550,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
 
             let mut rebuild_tags = RebuildTagger::new();
             if let Some(attrs) = rebuildsniff.calculate_rebuild() {
-                if attrs.len() > 0 {
+                if !attrs.is_empty() {
                     let gist_url = make_gist(
                         &gists,
                         "Changed Paths",

@@ -166,7 +166,7 @@ impl AsyncCmd {
                     }
                 }
 
-                if waiters.len() == 0 {
+                if waiters.is_empty() {
                     debug!("Closing up the waiter receiver thread, no more waiters.");
                     break;
                 }

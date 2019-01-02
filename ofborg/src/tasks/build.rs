@@ -295,7 +295,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
     ) {
         let mut actions = self.actions(&job, notifier);
 
-        if job.attrs.len() == 0 {
+        if job.attrs.is_empty() {
             actions.nothing_to_do();
             return;
         }
@@ -360,7 +360,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         actions.log_started(can_build.clone(), cannot_build_attrs.clone());
         actions.log_instantiation_errors(cannot_build);
 
-        if can_build.len() == 0 {
+        if can_build.is_empty() {
             actions.build_not_attempted(cannot_build_attrs);
             return;
         }

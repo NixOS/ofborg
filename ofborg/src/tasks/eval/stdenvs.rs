@@ -51,7 +51,7 @@ impl Stdenvs {
     }
 
     pub fn are_same(&self) -> bool {
-        self.changed().len() == 0
+        self.changed().is_empty()
     }
 
     pub fn changed(&self) -> Vec<System> {

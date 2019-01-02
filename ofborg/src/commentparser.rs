@@ -8,7 +8,7 @@ pub fn parse(text: &str) -> Option<Vec<Instruction>> {
         })
         .collect();
 
-    if instructions.len() == 0 {
+    if instructions.is_empty() {
         None
     } else {
         Some(instructions)

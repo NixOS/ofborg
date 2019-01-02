@@ -85,7 +85,7 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
         .collect();
     all_attrs.sort();
 
-    if all_attrs.len() == 0{
+    if all_attrs.is_empty() {
         all_attrs = vec![String::from("(unknown attributes)")];
     }
 
@@ -117,7 +117,7 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
 
     let text: String;
 
-    if result.output.len() > 0 {
+    if !result.output.is_empty() {
         let mut reply: Vec<String> = vec![];
 
         reply.push("## Partial log".to_owned());
@@ -166,7 +166,7 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
 fn result_to_comment(result: &LegacyBuildResult) -> String {
     let mut reply: Vec<String> = vec![];
 
-    let log_link = if result.output.len() > 0 {
+    let log_link = if !result.output.is_empty() {
         format!(
             " [(full log)](https://logs.nix.ci/?key={}/{}.{}&attempt_id={})",
             &result.repo.owner.to_lowercase(),
@@ -205,7 +205,7 @@ fn result_to_comment(result: &LegacyBuildResult) -> String {
             &skipped));
     }
 
-    if result.output.len() > 0 {
+    if !result.output.is_empty() {
         reply.extend(partial_log_segment(result.output.clone()));
         reply.push("".to_owned());
         reply.push("".to_owned());
@@ -220,7 +220,7 @@ fn result_to_comment(result: &LegacyBuildResult) -> String {
 fn list_segment(name: &str, things: &[String]) -> Vec<String> {
     let mut reply: Vec<String> = vec![];
 
-    if things.len() > 0 {
+    if !things.is_empty() {
         reply.push(format!("{}: {}", name, things.join(", ")));
         reply.push("".to_owned());
     }

@@ -78,11 +78,11 @@ impl PkgsAddedRemovedTagger {
     }
 
     pub fn changed(&mut self, removed: &[PackageArch], added: &[PackageArch]) {
-        if removed.len() > 0 {
+        if !removed.is_empty() {
             self.selected.push(String::from("8.has: clean-up"));
         }
 
-        if added.len() > 0 {
+        if !added.is_empty() {
             self.selected.push(String::from("8.has: package (new)"));
         }
     }
