@@ -16,9 +16,9 @@ impl EvalChecker {
     pub fn new(name: &str, op: nix::Operation, args: Vec<String>, nix: nix::Nix) -> EvalChecker {
         EvalChecker {
             name: name.to_owned(),
-            op: op,
-            args: args,
-            nix: nix,
+            op,
+            args,
+            nix,
         }
     }
 

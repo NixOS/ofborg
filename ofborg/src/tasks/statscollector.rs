@@ -14,8 +14,8 @@ pub struct StatCollectorWorker<E> {
 impl<E: stats::SysEvents + 'static> StatCollectorWorker<E> {
     pub fn new(events: E, collector: stats::MetricCollector) -> StatCollectorWorker<E> {
         StatCollectorWorker {
-            events: events,
-            collector: collector,
+            events,
+            collector,
         }
     }
 }

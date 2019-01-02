@@ -304,8 +304,8 @@ pub fn session_from_config(config: &RabbitMQConfig) -> Result<amqp::Session, amq
         vhost: config.virtualhost.clone().unwrap_or("/".to_owned()),
         login: config.username.clone(),
         password: config.password.clone(),
-        scheme: scheme,
-        properties: properties,
+        scheme,
+        properties,
         ..amqp::Options::default()
     };
 

@@ -62,7 +62,7 @@ impl LogMessageCollector {
     pub fn new(log_root: PathBuf, max_open: usize) -> LogMessageCollector {
         return LogMessageCollector {
             handles: LruCache::new(max_open),
-            log_root: log_root,
+            log_root,
         };
     }
 
@@ -215,9 +215,9 @@ impl worker::SimpleWorker for LogMessageCollector {
         return Ok(LogMessage {
             from: LogFrom {
                 routing_key: deliver.routing_key.clone(),
-                attempt_id: attempt_id,
+                attempt_id,
             },
-            message: message
+            message,
         });
     }
 

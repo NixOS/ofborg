@@ -14,9 +14,9 @@ impl ACL {
         trusted_users.iter_mut().map(|x| *x = x.to_lowercase()).last();
         known_users.iter_mut().map(|x| *x = x.to_lowercase()).last();
         return ACL {
-            trusted_users: trusted_users,
-            known_users: known_users,
-            repos: repos,
+            trusted_users,
+            known_users,
+            repos,
         };
     }
 

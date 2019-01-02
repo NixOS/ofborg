@@ -45,8 +45,8 @@ where
     };
 
     return Action::Publish(QueueMsg {
-        exchange: exchange,
-        routing_key: routing_key,
+        exchange,
+        routing_key,
         mandatory: false,
         immediate: false,
         properties: Some(props),

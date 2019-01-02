@@ -122,9 +122,9 @@ pub struct OutPaths {
 impl OutPaths {
     pub fn new(nix: nix::Nix, path: PathBuf, check_meta: bool) -> OutPaths {
         OutPaths {
-            nix: nix,
-            path: path,
-            check_meta: check_meta,
+            nix,
+            path,
+            check_meta,
         }
     }
 

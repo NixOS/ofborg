@@ -22,8 +22,8 @@ pub struct GitHubCommentWorker {
 impl GitHubCommentWorker {
     pub fn new(acl: acl::ACL, github: hubcaps::Github) -> GitHubCommentWorker {
         return GitHubCommentWorker {
-            acl: acl,
-            github: github,
+            acl,
+            github,
         };
     }
 }

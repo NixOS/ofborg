@@ -20,10 +20,10 @@ impl<'a> CommitStatus<'a> {
         url: Option<String>,
     ) -> CommitStatus<'a> {
         let mut stat = CommitStatus {
-            api: api,
-            sha: sha,
-            context: context,
-            description: description,
+            api,
+            sha,
+            context,
+            description,
             url: "".to_owned(),
         };
 

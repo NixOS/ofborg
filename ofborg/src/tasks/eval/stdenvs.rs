@@ -29,8 +29,8 @@ pub struct Stdenvs {
 impl Stdenvs {
     pub fn new(nix: nix::Nix, co: PathBuf) -> Stdenvs {
         return Stdenvs {
-            nix: nix,
-            co: co,
+            nix,
+            co,
 
             linux_stdenv_before: None,
             linux_stdenv_after: None,

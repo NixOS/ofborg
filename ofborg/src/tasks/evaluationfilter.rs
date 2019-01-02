@@ -17,7 +17,7 @@ pub struct EvaluationFilterWorker {
  impl EvaluationFilterWorker {
     pub fn new(acl: acl::ACL) -> EvaluationFilterWorker {
         return EvaluationFilterWorker {
-            acl: acl,
+            acl,
         };
     }
 }

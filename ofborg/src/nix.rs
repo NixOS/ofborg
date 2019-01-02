@@ -76,10 +76,10 @@ pub struct Nix {
 impl Nix {
     pub fn new(system: String, remote: String, build_timeout: u16, initial_heap_size: Option<String>) -> Nix {
         return Nix {
-            system: system,
-            remote: remote,
-            build_timeout: build_timeout,
-            initial_heap_size: initial_heap_size,
+            system,
+            remote,
+            build_timeout,
+            initial_heap_size,
             limit_supported_systems: true,
         };
     }

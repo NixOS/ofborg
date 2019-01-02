@@ -32,10 +32,10 @@ impl BuildWorker {
         identity: String,
     ) -> BuildWorker {
         return BuildWorker {
-            cloner: cloner,
-            nix: nix,
-            system: system,
-            identity: identity,
+            cloner,
+            nix,
+            system,
+            identity,
         };
     }
 
@@ -83,15 +83,15 @@ impl<'a, 'b> JobActions<'a, 'b> {
         return JobActions {
             system: system.to_owned(),
             identity: identity.to_owned(),
-            receiver: receiver,
-            job: job,
+            receiver,
+            job,
             line_counter: 0,
             snippet_log: VecDeque::with_capacity(10),
             attempt_id: format!("{}", Uuid::new_v4()),
-            log_exchange: log_exchange,
-            log_routing_key: log_routing_key,
-            result_exchange: result_exchange,
-            result_routing_key: result_routing_key,
+            log_exchange,
+            log_routing_key,
+            result_exchange,
+            result_routing_key,
         };
     }
 
@@ -241,7 +241,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             output: self.log_snippet(),
             attempt_id: self.attempt_id.clone(),
             request_id: self.job.request_id.clone(),
-            status: status,
+            status,
             attempted_attrs: Some(attempted_attrs),
             skipped_attrs: Some(not_attempted_attrs),
         };
@@ -496,7 +496,7 @@ mod tests {
         let job = buildjob::BuildJob {
             attrs: vec!["success".to_owned()],
             pr: Pr {
-                head_sha: head_sha,
+                head_sha,
                 number: 1,
                 target_branch: Some("master".to_owned()),
             },
@@ -545,7 +545,7 @@ mod tests {
         let job = buildjob::BuildJob {
             attrs: vec!["not-real".to_owned()],
             pr: Pr {
-                head_sha: head_sha,
+                head_sha,
                 number: 1,
                 target_branch: Some("master".to_owned()),
             },

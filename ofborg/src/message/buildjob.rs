@@ -35,15 +35,15 @@ impl BuildJob {
         ).to_lowercase();
 
         BuildJob {
-            repo: repo,
-            pr: pr,
+            repo,
+            pr,
             subset: Some(subset),
-            attrs: attrs,
+            attrs,
             logs: Some(logs.unwrap_or((Some("logs".to_owned()), Some(logbackrk)))),
             statusreport: Some(statusreport.unwrap_or(
                 (Some("build-results".to_owned()), None),
             )),
-            request_id: request_id,
+            request_id,
         }
     }
 }

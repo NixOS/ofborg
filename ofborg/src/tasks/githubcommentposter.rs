@@ -17,7 +17,7 @@ pub struct GitHubCommentPoster {
 
 impl GitHubCommentPoster {
     pub fn new(github: hubcaps::Github) -> GitHubCommentPoster {
-        return GitHubCommentPoster { github: github };
+        return GitHubCommentPoster { github };
     }
 }
 

@@ -46,13 +46,13 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
         tag_paths: HashMap<String, Vec<String>>,
     ) -> MassRebuildWorker<E> {
         return MassRebuildWorker {
-            cloner: cloner,
+            cloner,
             nix: nix.without_limited_supported_systems(),
-            github: github,
-            acl: acl,
-            identity: identity,
-            events: events,
-            tag_paths: tag_paths
+            github,
+            acl,
+            identity,
+            events,
+            tag_paths,
         };
     }
 
@@ -609,9 +609,9 @@ fn make_gist<'a>(
     return Some(
         gists
             .create(&hubcaps::gists::GistOptions {
-                description: description,
+                description,
                 public: Some(true),
-                files: files,
+                files,
             })
             .expect("Failed to create gist!")
             .html_url,

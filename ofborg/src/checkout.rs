@@ -41,7 +41,7 @@ impl CachedCloner {
 
         return CachedProject {
             root: new_root,
-            clone_url: clone_url,
+            clone_url,
         };
     }
 }
@@ -55,7 +55,7 @@ impl CachedProject {
 
         return Ok(CachedProjectCo {
             root: new_root,
-            id: id,
+            id,
             clone_url: self.clone_from().clone(),
             local_reference: self.clone_to().clone(),
         });

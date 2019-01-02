@@ -29,7 +29,7 @@ pub struct RabbitMQ {
 
 impl RabbitMQ {
     pub fn new(identity: &str, channel: Channel) -> RabbitMQ {
-        RabbitMQ { identity: identity.to_owned(), channel: channel }
+        RabbitMQ { identity: identity.to_owned(), channel, }
     }
 }
 
