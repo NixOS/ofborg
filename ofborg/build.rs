@@ -429,7 +429,7 @@ pub enum Event {
     f.write_all("\n}\n\n".as_bytes()).unwrap();
 
     f.write_all(b"pub fn event_metric_name(event: &Event) -> String {
-  match event {
+  match *event {
 ").unwrap();
 
     let variants: Vec<String> = events()
@@ -452,7 +452,7 @@ pub enum Event {
             }
 
 
-            format!("    &Event::{} => String::from(\"{}\")",
+            format!("    Event::{} => String::from(\"{}\")",
                     &variant_match,
                     &mtype.metric_name(),
             )

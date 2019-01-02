@@ -63,8 +63,8 @@ impl BuildResult {
         // TODO: replace this with simpler structs for specific usecases, since
         // it's decouples the structs from serialization.  These can be changed
         // as long as we can translate all enum variants.
-        match self {
-            &BuildResult::Legacy { ref repo, ref pr, ref system, ref output, ref attempt_id, ref request_id, ref attempted_attrs, ref skipped_attrs, .. } =>
+        match *self {
+            BuildResult::Legacy { ref repo, ref pr, ref system, ref output, ref attempt_id, ref request_id, ref attempted_attrs, ref skipped_attrs, .. } =>
                 LegacyBuildResult {
                     repo: repo.to_owned(),
                     pr: pr.to_owned(),
@@ -76,7 +76,7 @@ impl BuildResult {
                     attempted_attrs: attempted_attrs.to_owned(),
                     skipped_attrs: skipped_attrs.to_owned(),
                 },
-            &BuildResult::V1 { ref repo, ref pr, ref system, ref output, ref attempt_id, ref request_id, ref attempted_attrs, ref skipped_attrs, .. } =>
+            BuildResult::V1 { ref repo, ref pr, ref system, ref output, ref attempt_id, ref request_id, ref attempted_attrs, ref skipped_attrs, .. } =>
                 LegacyBuildResult {
                     repo: repo.to_owned(),
                     pr: pr.to_owned(),
@@ -92,17 +92,17 @@ impl BuildResult {
     }
 
     pub fn status(&self) -> BuildStatus {
-        match self {
-            &BuildResult::Legacy { ref status, ref success, .. } =>
+        match *self {
+            BuildResult::Legacy { ref status, ref success, .. } =>
                 status.to_owned().unwrap_or_else(|| {
                     // Fallback for old format.
-                    match success {
-                        &None => BuildStatus::Skipped,
-                        &Some(true) => BuildStatus::Success,
-                        &Some(false) => BuildStatus::Failure,
+                    match *success {
+                        None => BuildStatus::Skipped,
+                        Some(true) => BuildStatus::Success,
+                        Some(false) => BuildStatus::Failure,
                     }
                 }),
-            &BuildResult::V1 { ref status, .. } =>
+            BuildResult::V1 { ref status, .. } =>
                 status.to_owned(),
         }
     }
