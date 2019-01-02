@@ -638,7 +638,7 @@ pub fn update_labels(issue: &hubcaps::issues::IssueRef, add: &[String], remove: 
     let to_remove: Vec<String> = remove
         .iter()
         .filter(|l| existing.contains(l)) // Remove labels already on the issue
-        .map(|l| l.clone())
+        .cloned()
         .collect();
     info!("Removing labels: {:?}", to_remove);
 
