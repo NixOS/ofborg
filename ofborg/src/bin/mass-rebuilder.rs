@@ -45,7 +45,7 @@ fn main() {
 
     let mrw = tasks::massrebuilder::MassRebuildWorker::new(
         cloner,
-        nix,
+        &nix,
         cfg.github(),
         cfg.acl(),
         cfg.runner.identity.clone(),

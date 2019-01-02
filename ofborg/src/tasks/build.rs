@@ -302,7 +302,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
 
         info!("Working on {}", job.pr.number);
         let project = self.cloner.project(
-            job.repo.full_name.clone(),
+            &job.repo.full_name,
             job.repo.clone_url.clone(),
         );
         let co = project

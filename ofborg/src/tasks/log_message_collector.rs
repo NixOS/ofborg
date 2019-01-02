@@ -68,7 +68,7 @@ impl LogMessageCollector {
 
     pub fn write_metadata(&mut self, from: &LogFrom, data: &BuildLogStart) -> Result<(), String>{
         let metapath = self.path_for_metadata(&from)?;
-        let mut fp = self.open_file(metapath)?;
+        let mut fp = self.open_file(&metapath)?;
 
         match serde_json::to_string(data) {
             Ok(data) => {
@@ -87,7 +87,7 @@ impl LogMessageCollector {
 
     pub fn write_result(&mut self, from: &LogFrom, data: &BuildResult) -> Result<(), String>{
         let path = self.path_for_result(&from)?;
-        let mut fp = self.open_file(path)?;
+        let mut fp = self.open_file(&path)?;
 
         match serde_json::to_string(data) {
             Ok(data) => {
@@ -110,7 +110,7 @@ impl LogMessageCollector {
             ))
         } else {
             let logpath = self.path_for_log(&from)?;
-            let fp = self.open_file(logpath)?;
+            let fp = self.open_file(&logpath)?;
             let writer = LineWriter::new(fp);
             self.handles.insert(from.clone(), writer);
             if let Some(handle) = self.handles.get_mut(&from) {
@@ -157,7 +157,7 @@ impl LogMessageCollector {
         }
     }
 
-    fn open_file(&self, path: PathBuf) -> Result<File, String> {
+    fn open_file(&self, path: &PathBuf) -> Result<File, String> {
         let dir = path.parent().unwrap();
         fs::create_dir_all(dir).unwrap();
 
@@ -369,12 +369,12 @@ mod tests {
 
         assert!(
             worker
-                .open_file(worker.path_for_log(&make_from("a")).unwrap())
+                .open_file(&worker.path_for_log(&make_from("a")).unwrap())
                 .is_ok()
         );
         assert!(
             worker
-                .open_file(worker.path_for_log(&make_from("b.foo/123")).unwrap())
+                .open_file(&worker.path_for_log(&make_from("b.foo/123")).unwrap())
                 .is_ok()
         );
     }

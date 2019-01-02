@@ -29,7 +29,7 @@ pub struct CachedProjectCo {
 }
 
 impl CachedCloner {
-    pub fn project(&self, name: String, clone_url: String) -> CachedProject {
+    pub fn project(&self, name: &str, clone_url: String) -> CachedProject {
         // <root>/repo/<hash>/clone
         // <root>/repo/<hash>/clone.lock
         // <root>/repo/<hash>/<type>/<id>
@@ -290,7 +290,7 @@ mod tests {
         let hash = make_pr_repo(&bare.path(), &mk_co.path());
 
         let cloner = cached_cloner(&workingdir.path());
-        let project = cloner.project("commit-msg-list".to_owned(), bare.string());
+        let project = cloner.project("commit-msg-list", bare.string());
         let working_co = project
             .clone_for("testing-commit-msgs".to_owned(), "123".to_owned())
             .expect("clone should work");
@@ -317,7 +317,7 @@ mod tests {
         let hash = make_pr_repo(&bare.path(), &mk_co.path());
 
         let cloner = cached_cloner(&workingdir.path());
-        let project = cloner.project("commit-files-changed-list".to_owned(), bare.string());
+        let project = cloner.project("commit-files-changed-list", bare.string());
         let working_co = project
             .clone_for("testing-files-changed".to_owned(), "123".to_owned())
             .expect("clone should work");

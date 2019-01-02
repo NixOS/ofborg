@@ -99,7 +99,7 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
 
     let mut summary: Vec<String> = vec![];
     if let Some(ref attempted) = result.attempted_attrs {
-        summary.extend(list_segment("Attempted", attempted.clone()));
+        summary.extend(list_segment("Attempted", &attempted));
     }
 
     if result.status == BuildStatus::TimedOut {
@@ -112,7 +112,7 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
                 "The following builds were skipped because they don't evaluate on {}",
                 result.system
             ),
-            skipped.clone()));
+            &skipped));
     }
 
     let text: String;
@@ -193,7 +193,7 @@ fn result_to_comment(result: &LegacyBuildResult) -> String {
     reply.push("".to_owned());
 
     if let Some(ref attempted) = result.attempted_attrs {
-        reply.extend(list_segment("Attempted", attempted.clone()));
+        reply.extend(list_segment("Attempted", &attempted));
     }
 
     if let Some(ref skipped) = result.skipped_attrs {
@@ -202,7 +202,7 @@ fn result_to_comment(result: &LegacyBuildResult) -> String {
                 "The following builds were skipped because they don't evaluate on {}",
                 result.system
             ),
-            skipped.clone()));
+            &skipped));
     }
 
     if result.output.len() > 0 {
@@ -217,7 +217,7 @@ fn result_to_comment(result: &LegacyBuildResult) -> String {
     reply.join("\n")
 }
 
-fn list_segment(name: &str, things: Vec<String>) -> Vec<String> {
+fn list_segment(name: &str, things: &[String]) -> Vec<String> {
     let mut reply: Vec<String> = vec![];
 
     if things.len() > 0 {

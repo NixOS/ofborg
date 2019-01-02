@@ -77,7 +77,7 @@ impl PkgsAddedRemovedTagger {
         t
     }
 
-    pub fn changed(&mut self, removed: Vec<PackageArch>, added: Vec<PackageArch>) {
+    pub fn changed(&mut self, removed: &[PackageArch], added: &[PackageArch]) {
         if removed.len() > 0 {
             self.selected.push(String::from("8.has: clean-up"));
         }

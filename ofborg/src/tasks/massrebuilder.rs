@@ -38,7 +38,7 @@ pub struct MassRebuildWorker<E> {
 impl<E: stats::SysEvents> MassRebuildWorker<E> {
     pub fn new(
         cloner: checkout::CachedCloner,
-        nix: nix::Nix,
+        nix: &nix::Nix,
         github: hubcaps::Github,
         acl: ACL,
         identity: String,
@@ -71,8 +71,8 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
         if darwin {
             update_labels(
                 &issue,
-                vec![String::from("6.topic: darwin")],
-                vec![],
+                &vec![String::from("6.topic: darwin")],
+                &vec![],
             );
         }
     }
@@ -86,8 +86,8 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
 
         update_labels(
             &issue,
-            tagger.tags_to_add(),
-            tagger.tags_to_remove(),
+            &tagger.tags_to_add(),
+            &tagger.tags_to_remove(),
         );
     }
 }
@@ -167,7 +167,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
         overall_status.set_with_description("Starting", hubcaps::statuses::State::Pending);
 
         let project = self.cloner.project(
-            job.repo.full_name.clone(),
+            &job.repo.full_name,
             job.repo.clone_url.clone(),
         );
 
@@ -211,7 +211,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
         if let Err(mut output) = rebuildsniff.find_before() {
             overall_status.set_url(make_gist(
                 &gists,
-                "Output path comparison".to_owned(),
+                "Output path comparison",
                 Some("".to_owned()),
                 file_to_str(&mut output),
             ));
@@ -251,7 +251,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
         }
 
         let possibly_touched_packages =
-            parse_commit_messages(co.commit_messages_from_head(&job.pr.head_sha).unwrap_or(
+            parse_commit_messages(&co.commit_messages_from_head(&job.pr.head_sha).unwrap_or(
                 vec!["".to_owned()],
             ));
 
@@ -272,16 +272,16 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
 
             update_labels(
                 &issue,
-                vec!["2.status: merge conflict".to_owned()],
-                vec![],
+                &vec!["2.status: merge conflict".to_owned()],
+                &vec![],
             );
 
             return self.actions().skip(&job);
         } else {
             update_labels(
                 &issue,
-                vec![],
-                vec!["2.status: merge conflict".to_owned()],
+                &vec![],
+                &vec!["2.status: merge conflict".to_owned()],
             );
         }
 
@@ -300,7 +300,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
         if let Err(mut output) = rebuildsniff.find_after() {
             overall_status.set_url(make_gist(
                 &gists,
-                "Output path comparison".to_owned(),
+                "Output path comparison",
                 Some("".to_owned()),
                 file_to_str(&mut output),
             ));
@@ -439,7 +439,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                         state = hubcaps::statuses::State::Failure;
                         gist_url = make_gist(
                             &gists,
-                            check.name(),
+                            &check.name(),
                             Some(format!("{:?}", state)),
                             file_to_str(&mut out),
                         );
@@ -511,7 +511,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                     state = hubcaps::statuses::State::Failure;
                     gist_url = make_gist(
                         &gists,
-                        String::from("Meta Check"),
+                        "Meta Check",
                         Some(format!("{:?}", state)),
                         file_to_str(&mut out),
                     );
@@ -534,17 +534,17 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
             }
             update_labels(
                 &issue,
-                stdenvtagger.tags_to_add(),
-                stdenvtagger.tags_to_remove(),
+                &stdenvtagger.tags_to_add(),
+                &stdenvtagger.tags_to_remove(),
             );
 
             if let Some((removed, added)) = rebuildsniff.package_diff() {
             let mut addremovetagger = PkgsAddedRemovedTagger::new();
-                addremovetagger.changed(removed, added);
+                addremovetagger.changed(&removed, &added);
                 update_labels(
                     &issue,
-                    addremovetagger.tags_to_add(),
-                    addremovetagger.tags_to_remove(),
+                    &addremovetagger.tags_to_add(),
+                    &addremovetagger.tags_to_remove(),
                 );
             }
 
@@ -553,7 +553,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                 if attrs.len() > 0 {
                     let gist_url = make_gist(
                         &gists,
-                        String::from("Changed Paths"),
+                        "Changed Paths",
                         Some("".to_owned()),
                         attrs
                             .iter()
@@ -570,8 +570,8 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
 
             update_labels(
                 &issue,
-                rebuild_tags.tags_to_add(),
-                rebuild_tags.tags_to_remove(),
+                &rebuild_tags.tags_to_add(),
+                &rebuild_tags.tags_to_remove(),
             );
 
             overall_status.set_with_description("^.^!", hubcaps::statuses::State::Success);
@@ -593,15 +593,15 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
 
 fn make_gist<'a>(
     gists: &hubcaps::gists::Gists<'a>,
-    name: String,
+    name: &str,
     description: Option<String>,
     contents: String,
 ) -> Option<String> {
-    let mut files = HashMap::new();
+    let mut files: HashMap<String, hubcaps::gists::Content> = HashMap::new();
     files.insert(
-        name.clone(),
+        name.to_string(),
         hubcaps::gists::Content {
-            filename: Some(name.clone()),
+            filename: Some(name.to_string()),
             content: contents,
         },
     );
@@ -618,7 +618,7 @@ fn make_gist<'a>(
     )
 }
 
-pub fn update_labels(issue: &hubcaps::issues::IssueRef, add: Vec<String>, remove: Vec<String>) {
+pub fn update_labels(issue: &hubcaps::issues::IssueRef, add: &Vec<String>, remove: &Vec<String>) {
     let l = issue.labels();
 
     let existing: Vec<String> = issue
@@ -649,7 +649,7 @@ pub fn update_labels(issue: &hubcaps::issues::IssueRef, add: Vec<String>, remove
     }
 }
 
-fn parse_commit_messages(messages: Vec<String>) -> Vec<String> {
+fn parse_commit_messages(messages: &[String]) -> Vec<String> {
     messages
         .iter()
         .filter_map(|line| {
@@ -689,7 +689,7 @@ mod tests {
         ];
         assert_eq!(
             parse_commit_messages(
-                "
+                &"
               firefox{-esr,}: fix failing build due to the google-api-key
               Merge pull request #34483 from andir/dovecot-cve-2017-15132
               firefox: enable official branding
@@ -705,7 +705,7 @@ mod tests {
             "
                     .lines()
                     .map(|l| l.to_owned())
-                    .collect(),
+                    .collect::<Vec<String>>(),
             ),
             expect
         );
