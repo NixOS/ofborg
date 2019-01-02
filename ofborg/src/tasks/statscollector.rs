@@ -27,13 +27,13 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for StatCollectorWorker
         &mut self,
         _: &Deliver,
         _: &BasicProperties,
-        body: &Vec<u8>,
+        body: &[u8],
     ) -> Result<Self::J, String> {
         match serde_json::from_slice(body) {
             Ok(e) => Ok(e),
             Err(_) => {
                 let mut modified_body: Vec<u8> = vec!["\"".as_bytes()[0]];
-                modified_body.append(&mut body.clone());
+                modified_body.append(&mut body.to_vec());
                 modified_body.push("\"".as_bytes()[0]);
 
                 match serde_json::from_slice(&modified_body) {
@@ -48,7 +48,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for StatCollectorWorker
                         self.events.notify(stats::Event::StatCollectorBogusEvent);
                         error!(
                             "Failed to decode message: {:?}, Err: {:?}",
-                            String::from_utf8(body.clone()),
+                            String::from_utf8(body.to_vec()),
                             e
                         );
                         Err("Failed to decode message".to_owned())

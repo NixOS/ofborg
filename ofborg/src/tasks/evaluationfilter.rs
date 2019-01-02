@@ -29,7 +29,7 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
         &mut self,
         _: &Deliver,
         _: &BasicProperties,
-        body: &Vec<u8>,
+        body: &[u8],
     ) -> Result<Self::J, String> {
         match serde_json::from_slice(body) {
             Ok(e) => Ok(e),
@@ -37,7 +37,7 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
                 Err(format!(
                     "Failed to deserialize job {:?}: {:?}",
                     e,
-                    String::from_utf8(body.clone())
+                    String::from_utf8(body.to_vec())
                 ))
             }
         }

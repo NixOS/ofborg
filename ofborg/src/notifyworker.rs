@@ -17,7 +17,7 @@ pub trait SimpleNotifyWorker {
         &self,
         method: &Deliver,
         headers: &BasicProperties,
-        body: &Vec<u8>,
+        body: &[u8],
     ) -> Result<Self::J, String>;
 }
 

@@ -276,13 +276,13 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         &self,
         _: &Deliver,
         _: &BasicProperties,
-        body: &Vec<u8>,
+        body: &[u8],
     ) -> Result<Self::J, String> {
         println!("lmao I got a job?");
         match buildjob::from(body) {
             Ok(e) => Ok(e),
             Err(e) => {
-                println!("{:?}", String::from_utf8(body.clone()));
+                println!("{:?}", String::from_utf8(body.to_vec()));
                 panic!("{:?}", e);
             }
         }

@@ -186,7 +186,7 @@ impl worker::SimpleWorker for LogMessageCollector {
         &mut self,
         deliver: &Deliver,
         _: &BasicProperties,
-        body: &Vec<u8>,
+        body: &[u8],
     ) -> Result<Self::J, String> {
 
         let message: MsgType;

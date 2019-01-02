@@ -28,14 +28,14 @@ impl worker::SimpleWorker for GitHubCommentPoster {
         &mut self,
         _: &Deliver,
         _: &BasicProperties,
-        body: &Vec<u8>,
+        body: &[u8],
     ) -> Result<Self::J, String> {
         match serde_json::from_slice(body) {
             Ok(e) => Ok(e),
             Err(e) => {
                 Err(format!(
                     "Failed to deserialize BuildResult: {:?}, err: {:}",
-                    String::from_utf8_lossy(&body.clone()),
+                    String::from_utf8_lossy(&body.to_vec()),
                     e
                 ))
             }
@@ -206,7 +206,7 @@ fn result_to_comment(result: &LegacyBuildResult) -> String {
     }
 
     if result.output.len() > 0 {
-        reply.extend(partial_log_segment(&result.output));
+        reply.extend(partial_log_segment(result.output.clone()));
         reply.push("".to_owned());
         reply.push("".to_owned());
     } else {
@@ -228,7 +228,7 @@ fn list_segment(name: &str, things: &[String]) -> Vec<String> {
     reply
 }
 
-fn partial_log_segment(output: &Vec<String>) -> Vec<String> {
+fn partial_log_segment(output: Vec<String>) -> Vec<String> {
     let mut reply: Vec<String> = vec![];
 
     reply.push(

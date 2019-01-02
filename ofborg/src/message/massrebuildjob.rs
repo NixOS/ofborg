@@ -3,7 +3,7 @@ use ofborg::worker;
 use serde_json;
 
 
-pub fn from(data: &Vec<u8>) -> Result<MassRebuildJob, serde_json::error::Error> {
+pub fn from(data: &[u8]) -> Result<MassRebuildJob, serde_json::error::Error> {
     serde_json::from_slice(&data)
 }
 

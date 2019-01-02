@@ -48,7 +48,7 @@ impl BuildJob {
     }
 }
 
-pub fn from(data: &Vec<u8>) -> Result<BuildJob, serde_json::error::Error> {
+pub fn from(data: &[u8]) -> Result<BuildJob, serde_json::error::Error> {
     serde_json::from_slice(&data)
 }
 

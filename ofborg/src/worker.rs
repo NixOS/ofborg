@@ -63,7 +63,7 @@ pub trait SimpleWorker: Send + 'static {
         &mut self,
         method: &Deliver,
         headers: &BasicProperties,
-        body: &Vec<u8>,
+        body: &[u8],
     ) -> Result<Self::J, String>;
 }
 

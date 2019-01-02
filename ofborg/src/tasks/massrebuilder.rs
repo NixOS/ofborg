@@ -99,7 +99,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
         &mut self,
         _: &Deliver,
         _: &BasicProperties,
-        body: &Vec<u8>,
+        body: &[u8],
     ) -> Result<Self::J, String> {
         self.events.notify(Event::JobReceived);
         match massrebuildjob::from(body) {
@@ -111,7 +111,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                 self.events.notify(Event::JobDecodeFailure);
                 error!(
                     "Failed to decode message: {:?}, Err: {:?}",
-                    String::from_utf8(body.clone()),
+                    String::from_utf8(body.to_vec()),
                     e
                 );
                 Err("Failed to decode message".to_owned())
@@ -618,7 +618,7 @@ fn make_gist<'a>(
     )
 }
 
-pub fn update_labels(issue: &hubcaps::issues::IssueRef, add: &Vec<String>, remove: &Vec<String>) {
+pub fn update_labels(issue: &hubcaps::issues::IssueRef, add: &[String], remove: &[String]) {
     let l = issue.labels();
 
     let existing: Vec<String> = issue
