@@ -333,7 +333,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             return;
         }
 
-        if let Err(_) = co.merge_commit(job.pr.head_sha.as_ref()) {
+        if co.merge_commit(job.pr.head_sha.as_ref()).is_err() {
             info!("Failed to merge {}", job.pr.head_sha);
             actions.merge_failed();
             return;

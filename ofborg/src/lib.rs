@@ -92,7 +92,7 @@ pub mod ofborg {
 }
 
 pub fn setup_log() {
-    if let Err(_) = env::var("RUST_LOG") {
+    if env::var("RUST_LOG").is_err() {
         env::set_var("RUST_LOG", "info");
         env_logger::init().unwrap();
         info!("Defaulting RUST_LOG environment variable to info");

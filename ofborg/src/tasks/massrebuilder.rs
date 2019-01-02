@@ -262,7 +262,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
 
         overall_status.set_with_description("Merging PR", hubcaps::statuses::State::Pending);
 
-        if let Err(_) = co.merge_commit(job.pr.head_sha.as_ref()) {
+        if co.merge_commit(job.pr.head_sha.as_ref()).is_err() {
             overall_status.set_with_description(
                 "Failed to merge",
                 hubcaps::statuses::State::Failure,
