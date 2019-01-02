@@ -164,7 +164,7 @@ mod tests {
         let mut expect = ImpactedMaintainers(HashMap::new());
         expect.0.insert(
             Maintainer::from("test"),
-            vec![Package::from("pkgs.foo.bar.packageA")],
+            vec![Package::from("foo.bar.packageA")],
         );
 
         assert_eq!(parsed.unwrap(), expect);

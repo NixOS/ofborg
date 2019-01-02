@@ -18,7 +18,7 @@ let
   enrichedAttrs = builtins.map
     (path: {
       path = path;
-      name = "pkgs.${builtins.concatStringsSep "." path}";
+      name = builtins.concatStringsSep "." path;
     })
     changedattrs;
 
