@@ -71,8 +71,8 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
         if darwin {
             update_labels(
                 &issue,
-                &vec![String::from("6.topic: darwin")],
-                &vec![],
+                &[String::from("6.topic: darwin")],
+                &[],
             );
         }
     }
@@ -272,16 +272,16 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
 
             update_labels(
                 &issue,
-                &vec!["2.status: merge conflict".to_owned()],
-                &vec![],
+                &["2.status: merge conflict".to_owned()],
+                &[],
             );
 
             return self.actions().skip(&job);
         } else {
             update_labels(
                 &issue,
-                &vec![],
-                &vec!["2.status: merge conflict".to_owned()],
+                &[],
+                &["2.status: merge conflict".to_owned()],
             );
         }
 
