@@ -54,7 +54,7 @@ impl LineWriter {
             self.file
                 .write_all(self.buffer.join("\n").as_bytes())
                 .unwrap();
-            self.file.write(b"\n").unwrap();
+            self.file.write_all(b"\n").unwrap();
         } else {
             // println!("taking the append option");
             // println!("Writing {:?} to line {}", data, line);
@@ -69,8 +69,8 @@ impl LineWriter {
             // we have to use one more than the range we want for the
             // end
             // println!("selected buffer: {:?}", to_write);
-            self.file.write(to_write.as_bytes()).unwrap();
-            self.file.write(b"\n").unwrap();
+            self.file.write_all(to_write.as_bytes()).unwrap();
+            self.file.write_all(b"\n").unwrap();
         }
 
         self.last_line = line;
