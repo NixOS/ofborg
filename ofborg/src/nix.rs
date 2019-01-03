@@ -157,7 +157,7 @@ impl Nix {
             attrargs.push(attr);
         }
 
-        self.safe_command(Operation::Instantiate, nixpkgs, attrargs)
+        self.safe_command(&Operation::Instantiate, nixpkgs, attrargs)
     }
 
     pub fn safely_build_attrs(
@@ -188,17 +188,17 @@ impl Nix {
             attrargs.push(attr);
         }
 
-        self.safe_command(Operation::Build, nixpkgs, attrargs)
+        self.safe_command(&Operation::Build, nixpkgs, attrargs)
     }
 
     pub fn safely(
         &self,
-        op: Operation,
+        op: &Operation,
         nixpkgs: &Path,
         args: Vec<String>,
         keep_stdout: bool,
     ) -> Result<File, File> {
-        self.run(self.safe_command(op, nixpkgs, args), keep_stdout)
+        self.run(self.safe_command(&op, nixpkgs, args), keep_stdout)
     }
 
     pub fn run(&self, mut cmd: Command, keep_stdout: bool) -> Result<File, File> {
@@ -228,7 +228,7 @@ impl Nix {
         }
     }
 
-    pub fn safe_command(&self, op: Operation, nixpkgs: &Path, args: Vec<String>) -> Command {
+    pub fn safe_command(&self, op: &Operation, nixpkgs: &Path, args: Vec<String>) -> Command {
         let nixpath = format!("nixpkgs={}", nixpkgs.display());
 
         let mut command = op.command();
@@ -419,7 +419,7 @@ mod tests {
         assert_eq!(op.to_string(), "nix-build");
 
         let ret: Result<File, File> = nix.run(
-            nix.safe_command(op, build_path().as_path(), vec![String::from("--version")]),
+            nix.safe_command(&op, build_path().as_path(), vec![String::from("--version")]),
             true,
         );
 
@@ -437,7 +437,7 @@ mod tests {
         assert_eq!(op.to_string(), "nix-instantiate");
 
         let ret: Result<File, File> = nix.run(
-            nix.safe_command(op, build_path().as_path(), vec![String::from("--version")]),
+            nix.safe_command(&op, build_path().as_path(), vec![String::from("--version")]),
             true,
         );
 
@@ -451,7 +451,7 @@ mod tests {
         assert_eq!(op.to_string(), "nix-env -qa --json");
 
         let ret: Result<File, File> = nix.run(
-            nix.safe_command(op, build_path().as_path(), vec![String::from("--version")]),
+            nix.safe_command(&op, build_path().as_path(), vec![String::from("--version")]),
             true,
         );
 
@@ -469,7 +469,7 @@ mod tests {
         assert_eq!(op.to_string(), "nix-env -qaP --no-name --out-path");
 
         let ret: Result<File, File> = nix.run(
-            nix.safe_command(op, build_path().as_path(), vec![String::from("--version")]),
+            nix.safe_command(&op, build_path().as_path(), vec![String::from("--version")]),
             true,
         );
 
@@ -488,7 +488,7 @@ mod tests {
         let nix = nix();
 
         let ret: Result<File, File> = nix.run(
-            nix.safe_command(env_noop(), build_path().as_path(), vec![]),
+            nix.safe_command(&env_noop(), build_path().as_path(), vec![]),
             true,
         );
 
@@ -515,7 +515,7 @@ mod tests {
         );
 
         let ret: Result<File, File> = nix.run(
-            nix.safe_command(env_noop(), build_path().as_path(), vec![]),
+            nix.safe_command(&env_noop(), build_path().as_path(), vec![]),
             true,
         );
 
@@ -538,7 +538,7 @@ mod tests {
         let op = noop(Operation::Build);
 
         let ret: Result<File, File> =
-            nix.run(nix.safe_command(op, build_path().as_path(), vec![]), true);
+            nix.run(nix.safe_command(&op, build_path().as_path(), vec![]), true);
 
         assert_run(
             ret,
@@ -668,7 +668,7 @@ mod tests {
     #[test]
     fn instantiation_success() {
         let ret: Result<File, File> = nix().safely(
-            Operation::Instantiate,
+            &Operation::Instantiate,
             passing_eval_path().as_path(),
             vec![],
             true,
@@ -688,7 +688,7 @@ mod tests {
     #[test]
     fn instantiation_nixpkgs_restricted_mode() {
         let ret: Result<File, File> = nix().safely(
-            Operation::Instantiate,
+            &Operation::Instantiate,
             individual_eval_path().as_path(),
             vec![String::from("-A"), String::from("nixpkgs-restricted-mode")],
             true,

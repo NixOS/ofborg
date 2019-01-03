@@ -174,7 +174,7 @@ impl OutPaths {
         };
 
         self.nix.safely(
-            nix::Operation::QueryPackagesOutputs,
+            &nix::Operation::QueryPackagesOutputs,
             &self.path,
             vec![
                 String::from("-f"),

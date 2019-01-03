@@ -89,7 +89,7 @@ impl Stdenvs {
     /// given system.
     fn evalstdenv(&self, system: &str) -> Option<String> {
         let result = self.nix.with_system(system.to_owned()).safely(
-            nix::Operation::QueryPackagesOutputs,
+            &nix::Operation::QueryPackagesOutputs,
             &self.co,
             vec![
                 String::from("-f"),
