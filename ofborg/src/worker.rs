@@ -18,7 +18,7 @@ pub enum Action {
     Ack,
     NackRequeue,
     NackDump,
-    Publish(QueueMsg),
+    Publish(Box<QueueMsg>),
 }
 
 #[derive(Debug, PartialEq)]
@@ -44,14 +44,14 @@ where
         ..Default::default()
     };
 
-    Action::Publish(QueueMsg {
+    Action::Publish(Box::new(QueueMsg {
         exchange,
         routing_key,
         mandatory: false,
         immediate: false,
         properties: Some(props),
         content: serde_json::to_string(&msg).unwrap().into_bytes(),
-    })
+    }))
 }
 
 pub trait SimpleWorker: Send + 'static {
@@ -102,11 +102,11 @@ impl<T: SimpleWorker + Send> Consumer for Worker<T> {
                         .basic_nack(method.delivery_tag, false, false)
                         .unwrap();
                 }
-                Action::Publish(msg) => {
-                    let exch = msg.exchange.clone().unwrap_or_else(|| "".to_owned());
-                    let key = msg.routing_key.clone().unwrap_or_else(|| "".to_owned());
+                Action::Publish(mut msg) => {
+                    let exch = msg.exchange.take().unwrap_or_else(|| "".to_owned());
+                    let key = msg.routing_key.take().unwrap_or_else(|| "".to_owned());
 
-                    let props = msg.properties.unwrap_or(BasicProperties {
+                    let props = msg.properties.take().unwrap_or(BasicProperties {
                         ..Default::default()
                     });
                     channel

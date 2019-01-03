@@ -72,11 +72,11 @@ impl<'a> NotificationReceiver for ChannelNotificationReceiver<'a> {
                     .basic_nack(self.delivery_tag, false, false)
                     .unwrap();
             }
-            Action::Publish(msg) => {
-                let exch = msg.exchange.clone().unwrap_or_else(|| "".to_owned());
-                let key = msg.routing_key.clone().unwrap_or_else(|| "".to_owned());
+            Action::Publish(mut msg) => {
+                let exch = msg.exchange.take().unwrap_or_else(|| "".to_owned());
+                let key = msg.routing_key.take().unwrap_or_else(|| "".to_owned());
 
-                let props = msg.properties.unwrap_or(BasicProperties {
+                let props = msg.properties.take().unwrap_or(BasicProperties {
                     ..Default::default()
                 });
                 self.channel
