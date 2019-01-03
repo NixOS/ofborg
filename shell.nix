@@ -36,33 +36,35 @@ let
   };
 
   mozilla-rust-overlay = stdenv.mkDerivation (rec {
-    name = "gh-event-forwarder";
+    name = "mozilla-rust-overlay";
     buildInputs = with pkgs; [
-      bash
-      nix-prefetch-git
-      rust.rustc
-      rust.cargo
-      #rustfmt
-      #carnix
-      openssl.dev
-      pkgconfig
+      latest.rustChannels.stable.rust
       git
+      pkgconfig
+      openssl.dev
     ]
-      ++ stdenv.lib.optional useNix1 oldpkgs.nix1
       ++ stdenv.lib.optional stdenv.isDarwin pkgs.darwin.Security;
 
     postHook = ''
-      checkPhase() {
-          ( cd "${builtins.toString ./.}/ofborg" && cargo build && cargo test)
-      }
+      checkPhase() (
+        cd "${builtins.toString ./.}/ofborg"
+
+        cargo fmt
+        git diff --exit-code
+        cargofmtexit=$?
+
+        cargo clippy
+        cargoclippyexit=$?
+
+
+        sum=$((cargofmtexit + cargoclippyexit))
+        exit $sum
+      )
     '';
 
-    HISTFILE = "${toString ./.}/.bash_hist";
     RUSTFLAGS = "-D warnings";
     RUST_BACKTRACE = "1";
-    RUST_LOG = "ofborg=debug";
     NIX_PATH = "nixpkgs=${pkgs.path}";
-    passthru.phpEnv = phpEnv;
   }
   // stdenv.lib.optionalAttrs stdenv.isLinux {
     LOCALE_ARCHIVE_2_21 = "${oldpkgs.glibcLocales}/lib/locale/locale-archive";
@@ -97,6 +99,7 @@ let
     RUST_LOG = "ofborg=debug";
     NIX_PATH = "nixpkgs=${pkgs.path}";
     passthru.phpEnv = phpEnv;
+    passthru.mozilla-rust-overlay = mozilla-rust-overlay;
   }
   // stdenv.lib.optionalAttrs stdenv.isLinux {
     LOCALE_ARCHIVE_2_21 = "${oldpkgs.glibcLocales}/lib/locale/locale-archive";

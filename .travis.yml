@@ -10,4 +10,4 @@ matrix:
     - name: checkPhase - Nix 1
       script: nix-shell --run checkPhase --arg useNix1 true
     - name: cargo pedantry
-      script: nix-shell --run pedantryPhase --arg useNix1 false -A mozilla-rust-overlay
+      script: nix-shell --run checkPhase --arg useNix1 false -A mozilla-rust-overlay
