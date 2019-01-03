@@ -49,6 +49,8 @@ let
       checkPhase() (
         cd "${builtins.toString ./.}/ofborg"
 
+        set -x
+
         cargo fmt
         git diff --exit-code
         cargofmtexit=$?
