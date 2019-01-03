@@ -1,7 +1,7 @@
-use serde_json;
-use amqp::Channel;
 use amqp::protocol::basic::BasicProperties;
 use amqp::Basic;
+use amqp::Channel;
+use serde_json;
 
 include!(concat!(env!("OUT_DIR"), "/events.rs"));
 
@@ -14,7 +14,6 @@ mod macros {
 pub trait SysEvents: Send {
     fn notify(&mut self, event: Event);
 }
-
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EventMessage {
@@ -29,13 +28,18 @@ pub struct RabbitMQ {
 
 impl RabbitMQ {
     pub fn new(identity: &str, channel: Channel) -> RabbitMQ {
-        RabbitMQ { identity: identity.to_owned(), channel: channel }
+        RabbitMQ {
+            identity: identity.to_owned(),
+            channel,
+        }
     }
 }
 
 impl SysEvents for RabbitMQ {
     fn notify(&mut self, event: Event) {
-        let props = BasicProperties { ..Default::default() };
+        let props = BasicProperties {
+            ..Default::default()
+        };
         self.channel
             .basic_publish(
                 String::from("stats"),
@@ -46,7 +50,9 @@ impl SysEvents for RabbitMQ {
                 serde_json::to_string(&EventMessage {
                     sender: self.identity.clone(),
                     events: vec![event],
-                }).unwrap().into_bytes(),
+                })
+                .unwrap()
+                .into_bytes(),
             )
             .unwrap();
     }

@@ -1,5 +1,5 @@
-use ofborg::message::{Pr, Repo};
 use ofborg::commentparser::Subset;
+use ofborg::message::{Pr, Repo};
 use serde_json;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -27,29 +27,22 @@ impl BuildJob {
         statusreport: Option<ExchangeQueue>,
         request_id: String,
     ) -> BuildJob {
-
-        let logbackrk = format!(
-            "{}.{}",
-            repo.full_name.clone(),
-            pr.number,
-        ).to_lowercase();
+        let logbackrk = format!("{}.{}", repo.full_name.clone(), pr.number,).to_lowercase();
 
         BuildJob {
-            repo: repo,
-            pr: pr,
+            repo,
+            pr,
             subset: Some(subset),
-            attrs: attrs,
+            attrs,
             logs: Some(logs.unwrap_or((Some("logs".to_owned()), Some(logbackrk)))),
-            statusreport: Some(statusreport.unwrap_or(
-                (Some("build-results".to_owned()), None),
-            )),
-            request_id: request_id,
+            statusreport: Some(statusreport.unwrap_or((Some("build-results".to_owned()), None))),
+            request_id,
         }
     }
 }
 
-pub fn from(data: &Vec<u8>) -> Result<BuildJob, serde_json::error::Error> {
-    return serde_json::from_slice(&data);
+pub fn from(data: &[u8]) -> Result<BuildJob, serde_json::error::Error> {
+    serde_json::from_slice(&data)
 }
 
 pub struct Actions {

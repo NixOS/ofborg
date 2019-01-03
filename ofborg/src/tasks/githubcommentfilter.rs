@@ -2,17 +2,16 @@ extern crate amqp;
 extern crate env_logger;
 extern crate uuid;
 
-use uuid::Uuid;
-use ofborg::ghevent;
 use ofborg::acl;
+use ofborg::ghevent;
 use serde_json;
+use uuid::Uuid;
 
+use amqp::protocol::basic::{BasicProperties, Deliver};
 use hubcaps;
-use ofborg::message::{Repo, Pr, buildjob, massrebuildjob};
-use ofborg::worker;
 use ofborg::commentparser;
-use amqp::protocol::basic::{Deliver, BasicProperties};
-
+use ofborg::message::{buildjob, massrebuildjob, Pr, Repo};
+use ofborg::worker;
 
 pub struct GitHubCommentWorker {
     acl: acl::ACL,
@@ -21,10 +20,7 @@ pub struct GitHubCommentWorker {
 
 impl GitHubCommentWorker {
     pub fn new(acl: acl::ACL, github: hubcaps::Github) -> GitHubCommentWorker {
-        return GitHubCommentWorker {
-            acl: acl,
-            github: github,
-        };
+        GitHubCommentWorker { acl, github }
     }
 }
 
@@ -35,18 +31,18 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         &mut self,
         _: &Deliver,
         _: &BasicProperties,
-        body: &Vec<u8>,
+        body: &[u8],
     ) -> Result<Self::J, String> {
-        return match serde_json::from_slice(body) {
+        match serde_json::from_slice(body) {
             Ok(e) => Ok(e),
             Err(e) => {
                 println!(
                     "Failed to deserialize IsssueComment: {:?}",
-                    String::from_utf8(body.clone())
+                    String::from_utf8(body.to_vec())
                 );
                 panic!("{:?}", e);
             }
-        };
+        }
     }
 
     fn consumer(&mut self, job: &ghevent::IssueComment) -> worker::Actions {
@@ -64,7 +60,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
             &job.repository.full_name,
         );
 
-        if build_destinations.len() == 0 {
+        if build_destinations.is_empty() {
             println!("No build destinations for: {:?}", job);
             // Don't process comments if they can't build anything
             return vec![worker::Action::Ack];
@@ -75,7 +71,8 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         let instructions = commentparser::parse(&job.comment.body);
         println!("Instructions: {:?}", instructions);
 
-        let pr = self.github
+        let pr = self
+            .github
             .repo(
                 job.repository.owner.login.clone(),
                 job.repository.name.clone(),
@@ -87,9 +84,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         if let Err(x) = pr {
             info!(
                 "fetching PR {}#{} from GitHub yielded error {}",
-                job.repository.full_name,
-                job.issue.number,
-                x
+                job.repository.full_name, job.issue.number, x
             );
             return vec![worker::Action::Ack];
         }
@@ -104,7 +99,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         };
 
         let pr_msg = Pr {
-            number: job.issue.number.clone(),
+            number: job.issue.number,
             head_sha: pr.head.sha.clone(),
             target_branch: Some(pr.base.commit_ref.clone()),
         };
@@ -140,12 +135,11 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                             &msg,
                         ));
                     }
-
                 }
             }
         }
 
         response.push(worker::Action::Ack);
-        return response;
+        response
     }
 }

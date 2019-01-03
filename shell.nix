@@ -1,4 +1,8 @@
-{ pkgs ? import ./nix {}, useNix1 ? false }:
+{ pkgs ? import ./nix {
+  overlays = [
+    (import (builtins.fetchTarball https://github.com/mozilla/nixpkgs-mozilla/archive/master.tar.gz))
+  ];
+}, useNix1 ? false }:
 
 let
   # A random Nixpkgs revision *before* the default glibc
@@ -31,6 +35,43 @@ let
     # HISTFILE = "${src}/.bash_hist";
   };
 
+  mozilla-rust-overlay = stdenv.mkDerivation (rec {
+    name = "mozilla-rust-overlay";
+    buildInputs = with pkgs; [
+      latest.rustChannels.stable.rust
+      git
+      pkgconfig
+      openssl.dev
+    ]
+      ++ stdenv.lib.optional stdenv.isDarwin pkgs.darwin.Security;
+
+    postHook = ''
+      checkPhase() (
+        cd "${builtins.toString ./.}/ofborg"
+
+        set -x
+
+        cargo fmt
+        git diff --exit-code
+        cargofmtexit=$?
+
+        cargo clippy
+        cargoclippyexit=$?
+
+        sum=$((cargofmtexit + cargoclippyexit))
+        exit $sum
+      )
+    '';
+
+    RUSTFLAGS = "-D warnings";
+    RUST_BACKTRACE = "1";
+    NIX_PATH = "nixpkgs=${pkgs.path}";
+  }
+  // stdenv.lib.optionalAttrs stdenv.isLinux {
+    LOCALE_ARCHIVE_2_21 = "${oldpkgs.glibcLocales}/lib/locale/locale-archive";
+    LOCALE_ARCHIVE_2_27 = "${pkgs.glibcLocales}/lib/locale/locale-archive";
+  });
+
   rustEnv = stdenv.mkDerivation (rec {
     name = "gh-event-forwarder";
     buildInputs = with pkgs; [
@@ -59,6 +100,7 @@ let
     RUST_LOG = "ofborg=debug";
     NIX_PATH = "nixpkgs=${pkgs.path}";
     passthru.phpEnv = phpEnv;
+    passthru.mozilla-rust-overlay = mozilla-rust-overlay;
   }
   // stdenv.lib.optionalAttrs stdenv.isLinux {
     LOCALE_ARCHIVE_2_21 = "${oldpkgs.glibcLocales}/lib/locale/locale-archive";

@@ -1,21 +1,20 @@
-extern crate ofborg;
 extern crate amqp;
 extern crate env_logger;
+extern crate ofborg;
 
 #[macro_use]
 extern crate log;
 
 use std::env;
 
-use std::path::Path;
 use amqp::Basic;
-use ofborg::config;
 use ofborg::checkout;
-use ofborg::notifyworker;
-use ofborg::tasks;
+use ofborg::config;
 use ofborg::easyamqp;
 use ofborg::easyamqp::TypedWrappers;
-
+use ofborg::notifyworker;
+use ofborg::tasks;
+use std::path::Path;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
@@ -51,9 +50,8 @@ fn main() {
         })
         .unwrap();
 
-    let queue_name: String;
-    if cfg.runner.build_all_jobs != Some(true) {
-        queue_name = channel
+    let queue_name: String = if cfg.runner.build_all_jobs != Some(true) {
+        channel
             .declare_queue(easyamqp::QueueConfig {
                 queue: format!("build-inputs-{}", cfg.nix.system.clone()),
                 passive: false,
@@ -63,11 +61,12 @@ fn main() {
                 no_wait: false,
                 arguments: None,
             })
-            .unwrap().queue;
+            .unwrap()
+            .queue
     } else {
         warn!("Building all jobs, please don't use this unless you're");
         warn!("developing and have Graham's permission!");
-        queue_name = channel
+        channel
             .declare_queue(easyamqp::QueueConfig {
                 queue: "".to_owned(),
                 passive: false,
@@ -77,8 +76,9 @@ fn main() {
                 no_wait: false,
                 arguments: None,
             })
-            .unwrap().queue;
-    }
+            .unwrap()
+            .queue
+    };
 
     channel
         .bind_queue(easyamqp::BindQueueConfig {

@@ -1,8 +1,7 @@
-
-use ofborg;
-use ofborg::config::RabbitMQConfig;
 use amqp;
 use amqp::Basic;
+use ofborg;
+use ofborg::config::RabbitMQConfig;
 
 pub struct ConsumeConfig {
     /// Specifies the name of the queue to consume from.
@@ -301,18 +300,18 @@ pub fn session_from_config(config: &RabbitMQConfig) -> Result<amqp::Session, amq
             amqp::AMQPScheme::AMQPS => 5671,
             amqp::AMQPScheme::AMQP => 5672,
         },
-        vhost: config.virtualhost.clone().unwrap_or("/".to_owned()),
+        vhost: config.virtualhost.clone().unwrap_or_else(|| "/".to_owned()),
         login: config.username.clone(),
         password: config.password.clone(),
-        scheme: scheme,
-        properties: properties,
+        scheme,
+        properties,
         ..amqp::Options::default()
     };
 
     let session = try!(amqp::Session::new(options));
 
     info!("Connected to {}", &config.host);
-    return Ok(session);
+    Ok(session)
 }
 
 pub trait TypedWrappers {
@@ -349,7 +348,7 @@ impl TypedWrappers for amqp::Channel {
             config.no_ack,
             config.exclusive,
             config.no_wait,
-            config.arguments.unwrap_or(amqp::Table::new()),
+            config.arguments.unwrap_or_else(amqp::Table::new),
         )
     }
 
@@ -365,10 +364,9 @@ impl TypedWrappers for amqp::Channel {
             config.auto_delete,
             config.internal,
             config.no_wait,
-            config.arguments.unwrap_or(amqp::Table::new()),
+            config.arguments.unwrap_or_else(amqp::Table::new),
         )
     }
-
 
     fn declare_queue(
         &mut self,
@@ -381,7 +379,7 @@ impl TypedWrappers for amqp::Channel {
             config.exclusive,
             config.auto_delete,
             config.no_wait,
-            config.arguments.unwrap_or(amqp::Table::new()),
+            config.arguments.unwrap_or_else(amqp::Table::new),
         )
     }
 
@@ -392,9 +390,9 @@ impl TypedWrappers for amqp::Channel {
         self.queue_bind(
             config.queue,
             config.exchange,
-            config.routing_key.unwrap_or("".to_owned()),
+            config.routing_key.unwrap_or_else(|| "".to_owned()),
             config.no_wait,
-            config.arguments.unwrap_or(amqp::Table::new()),
+            config.arguments.unwrap_or_else(amqp::Table::new),
         )
     }
 }

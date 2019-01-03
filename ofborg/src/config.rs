@@ -1,14 +1,13 @@
-use serde_json;
-use std::fs::File;
-use std::path::{Path, PathBuf};
-use std::io::Read;
-use hyper::Client;
-use hyper::net::HttpsConnector;
-use hyper_native_tls::NativeTlsClient;
 use hubcaps::{Credentials, Github, InstallationTokenGenerator, JWTCredentials};
+use hyper::net::HttpsConnector;
+use hyper::Client;
+use hyper_native_tls::NativeTlsClient;
 use nix::Nix;
+use serde_json;
 use std::collections::HashMap;
-
+use std::fs::File;
+use std::io::Read;
+use std::path::{Path, PathBuf};
 
 use ofborg::acl;
 
@@ -44,7 +43,7 @@ pub struct NixConfig {
     pub system: String,
     pub remote: String,
     pub build_timeout_seconds: u16,
-    pub initial_heap_size: Option<String>
+    pub initial_heap_size: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -77,7 +76,7 @@ pub struct RunnerConfig {
     /// architecture.
     ///
     /// This should only be turned on for development.
-    pub build_all_jobs: Option<bool>
+    pub build_all_jobs: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -87,21 +86,24 @@ pub struct CheckoutConfig {
 
 impl Config {
     pub fn whoami(&self) -> String {
-        return format!("{}-{}", self.runner.identity, self.nix.system);
+        format!("{}-{}", self.runner.identity, self.nix.system)
     }
 
     pub fn acl(&self) -> acl::ACL {
-        return acl::ACL::new(
-            self.runner.repos.clone().expect(
-                "fetching config's runner.repos",
-            ),
-            self.runner.trusted_users.clone().expect(
-                "fetching config's runner.trusted_users",
-            ),
-            self.runner.known_users.clone().expect(
-                "fetching config's runner.known_users",
-            ),
-        );
+        acl::ACL::new(
+            self.runner
+                .repos
+                .clone()
+                .expect("fetching config's runner.repos"),
+            self.runner
+                .trusted_users
+                .clone()
+                .expect("fetching config's runner.trusted_users"),
+            self.runner
+                .known_users
+                .clone()
+                .expect("fetching config's runner.known_users"),
+        )
     }
 
     pub fn github(&self) -> Github {
@@ -119,15 +121,10 @@ impl Config {
             "github.com/grahamc/ofborg (app)",
             // tls configured hyper client
             Client::with_connector(HttpsConnector::new(NativeTlsClient::new().unwrap())),
-            Credentials::InstallationToken(
-                InstallationTokenGenerator::new(
-                    conf.installation_id,
-                    JWTCredentials::new(
-                        conf.app_id,
-                        conf.private_key
-                    )
-                )
-            )
+            Credentials::InstallationToken(InstallationTokenGenerator::new(
+                conf.installation_id,
+                JWTCredentials::new(conf.app_id, conf.private_key),
+            )),
         )
     }
 
@@ -141,25 +138,25 @@ impl Config {
             panic!();
         }
 
-        return Nix::new(
+        Nix::new(
             self.nix.system.clone(),
             self.nix.remote.clone(),
             self.nix.build_timeout_seconds,
             self.nix.initial_heap_size.clone(),
-        );
+        )
     }
 }
 
 impl RabbitMQConfig {
     pub fn as_uri(&self) -> String {
-        return format!(
+        format!(
             "{}://{}:{}@{}/{}",
             if self.ssl { "amqps" } else { "amqp" },
             self.username,
             self.password,
             self.host,
-            self.virtualhost.clone().unwrap_or("/".to_owned()),
-        );
+            self.virtualhost.clone().unwrap_or_else(|| "/".to_owned()),
+        )
     }
 }
 
@@ -170,5 +167,5 @@ pub fn load(filename: &Path) -> Config {
 
     let deserialized: Config = serde_json::from_str(&contents).unwrap();
 
-    return deserialized;
+    deserialized
 }

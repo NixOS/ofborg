@@ -1,9 +1,9 @@
-use std::io::BufReader;
+use std::fs::File;
 use std::io::BufRead;
-use std::io::Write;
+use std::io::BufReader;
 use std::io::Seek;
 use std::io::SeekFrom;
-use std::fs::File;
+use std::io::Write;
 
 pub struct LineWriter {
     file: File,
@@ -16,13 +16,11 @@ impl LineWriter {
         let buf = LineWriter::load_buffer(&mut rw);
         let len = buf.len();
 
-        let writer = LineWriter {
+        LineWriter {
             file: rw,
             buffer: buf,
             last_line: len,
-        };
-
-        return writer;
+        }
     }
 
     fn load_buffer(file: &mut File) -> Vec<String> {
@@ -56,7 +54,7 @@ impl LineWriter {
             self.file
                 .write_all(self.buffer.join("\n").as_bytes())
                 .unwrap();
-            self.file.write("\n".as_bytes()).unwrap();
+            self.file.write_all(b"\n").unwrap();
         } else {
             // println!("taking the append option");
             // println!("Writing {:?} to line {}", data, line);
@@ -71,8 +69,8 @@ impl LineWriter {
             // we have to use one more than the range we want for the
             // end
             // println!("selected buffer: {:?}", to_write);
-            self.file.write(to_write.as_bytes()).unwrap();
-            self.file.write("\n".as_bytes()).unwrap();
+            self.file.write_all(to_write.as_bytes()).unwrap();
+            self.file.write_all(b"\n").unwrap();
         }
 
         self.last_line = line;
@@ -83,15 +81,14 @@ impl LineWriter {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::Path;
-    use std::fs::File;
-    use std::io::Read;
-    use std::fs::OpenOptions;
     use ofborg::test_scratch::TestScratch;
+    use std::fs::File;
+    use std::fs::OpenOptions;
+    use std::io::Read;
+    use std::path::Path;
     use std::time::Instant;
 
     fn testfile(path: &Path) -> File {

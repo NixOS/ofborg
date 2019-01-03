@@ -1,4 +1,3 @@
-
 pub struct ACL {
     trusted_users: Vec<String>,
     known_users: Vec<String>,
@@ -9,15 +8,19 @@ impl ACL {
     pub fn new(
         repos: Vec<String>,
         mut trusted_users: Vec<String>,
-        mut known_users: Vec<String>
+        mut known_users: Vec<String>,
     ) -> ACL {
-        trusted_users.iter_mut().map(|x| *x = x.to_lowercase()).last();
+        trusted_users
+            .iter_mut()
+            .map(|x| *x = x.to_lowercase())
+            .last();
         known_users.iter_mut().map(|x| *x = x.to_lowercase()).last();
-        return ACL {
-            trusted_users: trusted_users,
-            known_users: known_users,
-            repos: repos,
-        };
+
+        ACL {
+            trusted_users,
+            known_users,
+            repos,
+        }
     }
 
     pub fn is_repo_eligible(&self, name: &str) -> bool {
@@ -46,16 +49,14 @@ impl ACL {
             return false;
         }
 
-        return self.known_users.contains(&user.to_lowercase());
+        self.known_users.contains(&user.to_lowercase())
     }
 
     pub fn can_build_unrestricted(&self, user: &str, repo: &str) -> bool {
         if repo.to_lowercase() == "nixos/nixpkgs" {
-            return self.trusted_users.contains(&user.to_lowercase());
-        } else if user == "grahamc" {
-            return true;
+            self.trusted_users.contains(&user.to_lowercase())
         } else {
-            return false;
+            user == "grahamc"
         }
     }
 }

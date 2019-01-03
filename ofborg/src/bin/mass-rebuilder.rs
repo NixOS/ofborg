@@ -1,26 +1,30 @@
-extern crate ofborg;
 extern crate amqp;
 extern crate env_logger;
+extern crate ofborg;
 extern crate sys_info;
 
+use ofborg::checkout;
+use ofborg::config;
+use ofborg::tasks;
 use std::env;
 use std::path::Path;
 use std::process;
-use ofborg::tasks;
-use ofborg::config;
-use ofborg::checkout;
 
-use ofborg::stats;
-use ofborg::worker;
 use amqp::Basic;
 use ofborg::easyamqp;
 use ofborg::easyamqp::TypedWrappers;
+use ofborg::stats;
+use ofborg::worker;
 
 fn main() {
     let memory_info = sys_info::mem_info().expect("Unable to get memory information from OS");
 
-    if memory_info.avail < 8 * 1024 * 1024 { // seems this stuff is in kilobytes?
-        println!("Less than 8Gb of memory available (got {:.2}Gb). Aborting.", (memory_info.avail as f32) / 1024.0 / 1024.0 );
+    if memory_info.avail < 8 * 1024 * 1024 {
+        // seems this stuff is in kilobytes?
+        println!(
+            "Less than 8Gb of memory available (got {:.2}Gb). Aborting.",
+            (memory_info.avail as f32) / 1024.0 / 1024.0
+        );
         process::exit(1);
     };
 
@@ -40,12 +44,12 @@ fn main() {
 
     let events = stats::RabbitMQ::new(
         &format!("{}-{}", cfg.runner.identity.clone(), cfg.nix.system.clone()),
-        session.open_channel(3).unwrap()
+        session.open_channel(3).unwrap(),
     );
 
     let mrw = tasks::massrebuilder::MassRebuildWorker::new(
         cloner,
-        nix,
+        &nix,
         cfg.github(),
         cfg.acl(),
         cfg.runner.identity.clone(),

@@ -1,8 +1,7 @@
-use std::path::PathBuf;
 use fs2::FileExt;
 use std::fs;
 use std::io::Error;
-
+use std::path::PathBuf;
 
 pub trait Lockable {
     fn lock_path(&self) -> PathBuf;
@@ -10,7 +9,7 @@ pub trait Lockable {
     fn lock(&self) -> Result<Lock, Error> {
         let lock = fs::File::create(self.lock_path())?;
         lock.lock_exclusive()?;
-        return Ok(Lock { lock: Some(lock) });
+        Ok(Lock { lock: Some(lock) })
     }
 }
 

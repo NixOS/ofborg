@@ -3,13 +3,12 @@ extern crate env_logger;
 
 use serde_json;
 
-use hubcaps;
-use hubcaps::checks::{CheckRunOptions, Output, Conclusion, CheckRunState};
-use ofborg::message::buildresult::{BuildStatus, BuildResult, LegacyBuildResult};
-use ofborg::worker;
-use amqp::protocol::basic::{Deliver, BasicProperties};
+use amqp::protocol::basic::{BasicProperties, Deliver};
 use chrono::{DateTime, Utc};
-
+use hubcaps;
+use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
+use ofborg::message::buildresult::{BuildResult, BuildStatus, LegacyBuildResult};
+use ofborg::worker;
 
 pub struct GitHubCommentPoster {
     github: hubcaps::Github,
@@ -17,7 +16,7 @@ pub struct GitHubCommentPoster {
 
 impl GitHubCommentPoster {
     pub fn new(github: hubcaps::Github) -> GitHubCommentPoster {
-        return GitHubCommentPoster { github: github };
+        GitHubCommentPoster { github }
     }
 }
 
@@ -28,64 +27,52 @@ impl worker::SimpleWorker for GitHubCommentPoster {
         &mut self,
         _: &Deliver,
         _: &BasicProperties,
-        body: &Vec<u8>,
+        body: &[u8],
     ) -> Result<Self::J, String> {
-        return match serde_json::from_slice(body) {
+        match serde_json::from_slice(body) {
             Ok(e) => Ok(e),
-            Err(e) => {
-                Err(format!(
-                    "Failed to deserialize BuildResult: {:?}, err: {:}",
-                    String::from_utf8_lossy(&body.clone()),
-                    e
-                ))
-            }
-        };
+            Err(e) => Err(format!(
+                "Failed to deserialize BuildResult: {:?}, err: {:}",
+                String::from_utf8_lossy(&body.to_vec()),
+                e
+            )),
+        }
     }
 
     fn consumer(&mut self, job: &BuildResult) -> worker::Actions {
         let result = job.legacy();
-        let comment = hubcaps::comments::CommentOptions { body: result_to_comment(&result) };
+        let comment = hubcaps::comments::CommentOptions {
+            body: result_to_comment(&result),
+        };
         let check = result_to_check(&result, Utc::now());
         println!(":{:?}", check);
         println!(":{:?}", comment);
 
-        let check_create_attempt = self.github
+        let check_create_attempt = self
+            .github
             .repo(result.repo.owner.clone(), result.repo.name.clone())
             .checkruns()
             .create(&check);
 
         match check_create_attempt {
-            Ok(comment) => {
-                info!("Successfully sent {:?} to {}",
-                comment,
-                result.pr.number,
-            )
-            }
-            Err(err) => {
-                info!(
-                "Failed to send check {:?} to {}",
-                err,
-                result.pr.number,
-            )
-            }
+            Ok(comment) => info!("Successfully sent {:?} to {}", comment, result.pr.number,),
+            Err(err) => info!("Failed to send check {:?} to {}", err, result.pr.number,),
         }
 
-        return vec![worker::Action::Ack];
+        vec![worker::Action::Ack]
     }
 }
 
 fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> CheckRunOptions {
-    let mut all_attrs: Vec<String> = vec![
-        result.attempted_attrs.clone(),
-        result.skipped_attrs.clone()
-    ]
-        .into_iter()
-        .map(|opt| opt.unwrap_or(vec![]))
-        .flat_map(|list| list.into_iter().map(|attr| format!("-A {}", attr)))
-        .collect();
+    let mut all_attrs: Vec<String> =
+        vec![result.attempted_attrs.clone(), result.skipped_attrs.clone()]
+            .into_iter()
+            .map(|opt| opt.unwrap_or_else(|| vec![]))
+            .flat_map(|list| list.into_iter().map(|attr| format!("-A {}", attr)))
+            .collect();
     all_attrs.sort();
 
-    if all_attrs.len() == 0{
+    if all_attrs.is_empty() {
         all_attrs = vec![String::from("(unknown attributes)")];
     }
 
@@ -94,12 +81,12 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
         BuildStatus::Success => Conclusion::Success,
         BuildStatus::Failure => Conclusion::Neutral,
         BuildStatus::TimedOut => Conclusion::Neutral,
-        BuildStatus::UnexpectedError { err: _ } => Conclusion::Neutral,
+        BuildStatus::UnexpectedError { .. } => Conclusion::Neutral,
     };
 
     let mut summary: Vec<String> = vec![];
     if let Some(ref attempted) = result.attempted_attrs {
-        summary.extend(list_segment("Attempted", attempted.clone()));
+        summary.extend(list_segment("Attempted", &attempted));
     }
 
     if result.status == BuildStatus::TimedOut {
@@ -112,12 +99,11 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
                 "The following builds were skipped because they don't evaluate on {}",
                 result.system
             ),
-            skipped.clone()));
+            &skipped,
+        ));
     }
 
-    let text: String;
-
-    if result.output.len() > 0 {
+    let text: String = if !result.output.is_empty() {
         let mut reply: Vec<String> = vec![];
 
         reply.push("## Partial log".to_owned());
@@ -126,13 +112,12 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
         reply.extend(result.output.clone());
         reply.push("```".to_owned());
 
-        text = reply.join("\n");
+        reply.join("\n")
     } else {
-        text = String::from("No partial log is available.");
-    }
+        String::from("No partial log is available.")
+    };
 
-
-    CheckRunOptions{
+    CheckRunOptions {
         name: format!(
             "nix-build {} --argstr system {}",
             all_attrs.join(" "),
@@ -157,7 +142,7 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
             images: None,
             summary: summary.join("\n"),
             text: Some(text),
-            title: "Build Results".to_string()
+            title: "Build Results".to_string(),
         }),
         status: Some(CheckRunState::Completed),
     }
@@ -166,7 +151,7 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
 fn result_to_comment(result: &LegacyBuildResult) -> String {
     let mut reply: Vec<String> = vec![];
 
-    let log_link = if result.output.len() > 0 {
+    let log_link = if !result.output.is_empty() {
         format!(
             " [(full log)](https://logs.nix.ci/?key={}/{}.{}&attempt_id={})",
             &result.repo.owner.to_lowercase(),
@@ -179,7 +164,8 @@ fn result_to_comment(result: &LegacyBuildResult) -> String {
     };
 
     reply.push(format!("<!--REQUEST_ID={}-->", result.request_id));
-    reply.push(format!("{} on {}{}",
+    reply.push(format!(
+        "{} on {}{}",
         (match result.status {
             BuildStatus::Skipped => "No attempt".into(),
             BuildStatus::Success => "Success".into(),
@@ -193,7 +179,7 @@ fn result_to_comment(result: &LegacyBuildResult) -> String {
     reply.push("".to_owned());
 
     if let Some(ref attempted) = result.attempted_attrs {
-        reply.extend(list_segment("Attempted", attempted.clone()));
+        reply.extend(list_segment("Attempted", &attempted));
     }
 
     if let Some(ref skipped) = result.skipped_attrs {
@@ -202,10 +188,11 @@ fn result_to_comment(result: &LegacyBuildResult) -> String {
                 "The following builds were skipped because they don't evaluate on {}",
                 result.system
             ),
-            skipped.clone()));
+            &skipped,
+        ));
     }
 
-    if result.output.len() > 0 {
+    if !result.output.is_empty() {
         reply.extend(partial_log_segment(&result.output));
         reply.push("".to_owned());
         reply.push("".to_owned());
@@ -217,37 +204,35 @@ fn result_to_comment(result: &LegacyBuildResult) -> String {
     reply.join("\n")
 }
 
-fn list_segment(name: &str, things: Vec<String>) -> Vec<String> {
+fn list_segment(name: &str, things: &[String]) -> Vec<String> {
     let mut reply: Vec<String> = vec![];
 
-    if things.len() > 0 {
+    if !things.is_empty() {
         reply.push(format!("{}: {}", name, things.join(", ")));
         reply.push("".to_owned());
     }
 
-    return reply;
+    reply
 }
 
-fn partial_log_segment(output: &Vec<String>) -> Vec<String> {
+fn partial_log_segment(output: &[String]) -> Vec<String> {
     let mut reply: Vec<String> = vec![];
 
-    reply.push(
-        "<details><summary>Partial log (click to expand)</summary><p>".to_owned(),
-    );
+    reply.push("<details><summary>Partial log (click to expand)</summary><p>".to_owned());
     reply.push("".to_owned());
     reply.push("```".to_owned());
-    reply.extend(output.clone());
+    reply.extend(output.to_vec());
     reply.push("```".to_owned());
     reply.push("</p></details>".to_owned());
 
-    return reply;
+    reply
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use message::{Pr, Repo};
     use chrono::TimeZone;
+    use message::{Pr, Repo};
 
     #[test]
     pub fn test_passing_build() {
@@ -671,7 +656,10 @@ No partial log is available.
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Success),
-                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
+                details_url: Some(
+                    "https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid"
+                        .to_string()
+                ),
                 external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
@@ -679,8 +667,10 @@ No partial log is available.
                     summary: "Attempted: foo
 
 The following builds were skipped because they don't evaluate on x86_64-linux: bar
-".to_string(),
-                    text: Some("## Partial log
+"
+                    .to_string(),
+                    text: Some(
+                        "## Partial log
 
 ```
 make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
@@ -693,7 +683,9 @@ post-installation fixup
 strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip
 patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
 /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
-```".to_string()),
+```"
+                        .to_string()
+                    ),
                     annotations: None,
                     images: None,
                 })
@@ -746,14 +738,19 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Neutral),
-                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
+                details_url: Some(
+                    "https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid"
+                        .to_string()
+                ),
                 external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
                     title: "Build Results".to_string(),
                     summary: "Attempted: foo
-".to_string(),
-                    text: Some("## Partial log
+"
+                    .to_string(),
+                    text: Some(
+                        "## Partial log
 
 ```
 make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
@@ -766,7 +763,9 @@ post-installation fixup
 strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip
 patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
 /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
-```".to_string()),
+```"
+                        .to_string()
+                    ),
                     annotations: None,
                     images: None,
                 })
@@ -818,15 +817,20 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Neutral),
-                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
+                details_url: Some(
+                    "https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid"
+                        .to_string()
+                ),
                 external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
                     title: "Build Results".to_string(),
                     summary: "Attempted: foo
 
-Build timed out.".to_string(),
-                    text: Some("## Partial log
+Build timed out."
+                        .to_string(),
+                    text: Some(
+                        "## Partial log
 
 ```
 make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
@@ -838,7 +842,9 @@ removed '/nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1/share/info/bfd.info
 post-installation fixup
 building of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' timed out after 1 seconds
 error: build of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' failed
-```".to_string()),
+```"
+                        .to_string()
+                    ),
                     annotations: None,
                     images: None,
                 })
@@ -891,13 +897,17 @@ error: build of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' failed
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Success),
-                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
+                details_url: Some(
+                    "https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid"
+                        .to_string()
+                ),
                 external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
                     title: "Build Results".to_string(),
                     summary: "".to_string(),
-                    text: Some("## Partial log
+                    text: Some(
+                        "## Partial log
 
 ```
 make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
@@ -910,7 +920,9 @@ post-installation fixup
 strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip
 patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
 /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
-```".to_string()),
+```"
+                        .to_string()
+                    ),
                     annotations: None,
                     images: None,
                 })
@@ -963,13 +975,17 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Neutral),
-                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
+                details_url: Some(
+                    "https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid"
+                        .to_string()
+                ),
                 external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
                     title: "Build Results".to_string(),
                     summary: "".to_string(),
-                    text: Some("## Partial log
+                    text: Some(
+                        "## Partial log
 
 ```
 make[2]: Entering directory '/private/tmp/nix-build-gdb-8.1.drv-0/gdb-8.1/readline'
@@ -982,7 +998,9 @@ post-installation fixup
 strip is /nix/store/5a88zk3jgimdmzg8rfhvm93kxib3njf9-cctools-binutils-darwin/bin/strip
 patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
 /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29-gdb-8.1
-```".to_string()),
+```"
+                        .to_string()
+                    ),
                     annotations: None,
                     images: None,
                 })

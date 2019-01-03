@@ -1,14 +1,14 @@
 extern crate amqp;
 extern crate env_logger;
 
-use std::collections::{HashSet, HashMap};
-use std::fs::File;
+use ofborg::nix;
+use std::collections::{HashMap, HashSet};
 use std::fs;
+use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::path::PathBuf;
-use ofborg::nix;
 use std::io::Write;
+use std::path::PathBuf;
 
 pub struct OutPathDiff {
     calculator: OutPaths,
@@ -30,11 +30,11 @@ impl OutPathDiff {
         match x {
             Ok(f) => {
                 self.original = Some(f);
-                return Ok(true);
+                Ok(true)
             }
             Err(e) => {
                 info!("Failed to find Before list");
-                return Err(e);
+                Err(e)
             }
         }
     }
@@ -49,11 +49,11 @@ impl OutPathDiff {
         match x {
             Ok(f) => {
                 self.current = Some(f);
-                return Ok(true);
+                Ok(true)
             }
             Err(e) => {
                 info!("Failed to find After list");
-                return Err(e);
+                Err(e)
             }
         }
     }
@@ -64,14 +64,20 @@ impl OutPathDiff {
                 let orig_set: HashSet<&PackageArch> = orig.keys().collect();
                 let cur_set: HashSet<&PackageArch> = cur.keys().collect();
 
-                let removed: Vec<PackageArch> = orig_set.difference(&cur_set).map(|ref p| (**p).clone()).collect();
-                let added: Vec<PackageArch> = cur_set.difference(&orig_set).map(|ref p| (**p).clone()).collect();
-                return Some((removed, added));
+                let removed: Vec<PackageArch> = orig_set
+                    .difference(&cur_set)
+                    .map(|ref p| (**p).clone())
+                    .collect();
+                let added: Vec<PackageArch> = cur_set
+                    .difference(&orig_set)
+                    .map(|ref p| (**p).clone())
+                    .collect();
+                Some((removed, added))
             } else {
-                return None;
+                None
             }
         } else {
-            return None;
+            None
         }
     }
 
@@ -94,7 +100,7 @@ impl OutPathDiff {
             }
         }
 
-        return None;
+        None
     }
 
     fn run(&mut self) -> Result<PackageOutPaths, File> {
@@ -122,9 +128,9 @@ pub struct OutPaths {
 impl OutPaths {
     pub fn new(nix: nix::Nix, path: PathBuf, check_meta: bool) -> OutPaths {
         OutPaths {
-            nix: nix,
-            path: path,
-            check_meta: check_meta,
+            nix,
+            path,
+            check_meta,
         }
     }
 
@@ -145,7 +151,7 @@ impl OutPaths {
 
     fn place_nix(&self) {
         let mut file = File::create(self.nix_path()).expect("Failed to create nix out path check");
-        file.write_all(include_str!("outpaths.nix").as_bytes())
+        file.write_all(include_bytes!("outpaths.nix"))
             .expect("Failed to place outpaths.nix");
     }
 
@@ -161,16 +167,14 @@ impl OutPaths {
     }
 
     fn execute(&self) -> Result<File, File> {
-        let check_meta: String;
-
-        if self.check_meta {
-            check_meta = String::from("true");
+        let check_meta: String = if self.check_meta {
+            String::from("true")
         } else {
-            check_meta = String::from("false");
-        }
+            String::from("false")
+        };
 
         self.nix.safely(
-            nix::Operation::QueryPackagesOutputs,
+            &nix::Operation::QueryPackagesOutputs,
             &self.path,
             vec![
                 String::from("-f"),
@@ -184,7 +188,6 @@ impl OutPaths {
     }
 }
 
-
 fn parse_lines(data: &mut BufRead) -> PackageOutPaths {
     data.lines()
         .filter_map(|line| match line {
@@ -196,7 +199,7 @@ fn parse_lines(data: &mut BufRead) -> PackageOutPaths {
             if split.len() == 2 {
                 let outpaths = String::from(split[1]);
 
-                let path: Vec<&str> = split[0].rsplitn(2, ".").collect();
+                let path: Vec<&str> = split[0].rsplitn(2, '.').collect();
                 if path.len() == 2 {
                     Some((
                         PackageArch {
@@ -213,7 +216,6 @@ fn parse_lines(data: &mut BufRead) -> PackageOutPaths {
                 info!("Warning: not 2 word segments in {:?}", split);
                 None
             }
-
         })
         .collect()
 }

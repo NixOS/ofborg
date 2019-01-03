@@ -1,7 +1,6 @@
-
-use std::path::PathBuf;
-use ofborg::nix;
 use ofborg::files::file_to_str;
+use ofborg::nix;
+use std::path::PathBuf;
 
 enum StdenvFrom {
     Before,
@@ -28,16 +27,16 @@ pub struct Stdenvs {
 
 impl Stdenvs {
     pub fn new(nix: nix::Nix, co: PathBuf) -> Stdenvs {
-        return Stdenvs {
-            nix: nix,
-            co: co,
+        Stdenvs {
+            nix,
+            co,
 
             linux_stdenv_before: None,
             linux_stdenv_after: None,
 
             darwin_stdenv_before: None,
             darwin_stdenv_after: None,
-        };
+        }
     }
 
     pub fn identify_before(&mut self) {
@@ -51,7 +50,7 @@ impl Stdenvs {
     }
 
     pub fn are_same(&self) -> bool {
-        return self.changed().len() == 0;
+        self.changed().is_empty()
     }
 
     pub fn changed(&self) -> Vec<System> {
@@ -65,8 +64,7 @@ impl Stdenvs {
             changed.push(System::X8664Darwin);
         }
 
-
-        return changed;
+        changed
     }
 
     fn identify(&mut self, system: System, from: StdenvFrom) {
@@ -91,7 +89,7 @@ impl Stdenvs {
     /// given system.
     fn evalstdenv(&self, system: &str) -> Option<String> {
         let result = self.nix.with_system(system.to_owned()).safely(
-            nix::Operation::QueryPackagesOutputs,
+            &nix::Operation::QueryPackagesOutputs,
             &self.co,
             vec![
                 String::from("-f"),
@@ -104,13 +102,13 @@ impl Stdenvs {
 
         println!("{:?}", result);
 
-        return match result {
+        match result {
             Ok(mut out) => Some(file_to_str(&mut out)),
             Err(mut out) => {
                 println!("{:?}", file_to_str(&mut out));
                 None
             }
-        };
+        }
     }
 }
 
@@ -128,16 +126,11 @@ mod tests {
             .output()
             .expect("nix-instantiate required");
 
-        let nixpkgs = String::from_utf8(output.stdout)
-            .expect("nixpkgs required");
+        let nixpkgs = String::from_utf8(output.stdout).expect("nixpkgs required");
 
         let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
         let nix = nix::Nix::new(String::from("x86_64-linux"), remote, 1200, None);
-        let mut stdenv =
-            Stdenvs::new(
-                nix.clone(),
-                PathBuf::from(nixpkgs.trim_right()),
-            );
+        let mut stdenv = Stdenvs::new(nix.clone(), PathBuf::from(nixpkgs.trim_right()));
         stdenv.identify(System::X8664Linux, StdenvFrom::Before);
         stdenv.identify(System::X8664Darwin, StdenvFrom::Before);
 

@@ -1,6 +1,6 @@
+use amqp::protocol::basic::{BasicProperties, Deliver};
 use amqp::Basic;
-use amqp::{Consumer, Channel};
-use amqp::protocol::basic::{Deliver, BasicProperties};
+use amqp::{Channel, Consumer};
 use std::marker::Send;
 use worker::Action;
 
@@ -17,7 +17,7 @@ pub trait SimpleNotifyWorker {
         &self,
         method: &Deliver,
         headers: &BasicProperties,
-        body: &Vec<u8>,
+        body: &[u8],
     ) -> Result<Self::J, String>;
 }
 
@@ -25,13 +25,14 @@ pub trait NotificationReceiver {
     fn tell(&mut self, action: Action);
 }
 
+#[derive(Default)]
 pub struct DummyNotificationReceiver {
     pub actions: Vec<Action>,
 }
 
 impl DummyNotificationReceiver {
     pub fn new() -> DummyNotificationReceiver {
-        DummyNotificationReceiver { actions: vec![] }
+        Default::default()
     }
 }
 
@@ -48,10 +49,10 @@ pub struct ChannelNotificationReceiver<'a> {
 
 impl<'a> ChannelNotificationReceiver<'a> {
     pub fn new(channel: &'a mut Channel, delivery_tag: u64) -> ChannelNotificationReceiver<'a> {
-        return ChannelNotificationReceiver {
-            channel: channel,
-            delivery_tag: delivery_tag,
-        };
+        ChannelNotificationReceiver {
+            channel,
+            delivery_tag,
+        }
     }
 }
 
@@ -71,13 +72,13 @@ impl<'a> NotificationReceiver for ChannelNotificationReceiver<'a> {
                     .basic_nack(self.delivery_tag, false, false)
                     .unwrap();
             }
-            Action::Publish(msg) => {
-                let exch = msg.exchange.clone().unwrap_or("".to_owned());
-                let key = msg.routing_key.clone().unwrap_or("".to_owned());
+            Action::Publish(mut msg) => {
+                let exch = msg.exchange.take().unwrap_or_else(|| "".to_owned());
+                let key = msg.routing_key.take().unwrap_or_else(|| "".to_owned());
 
-                let props = msg.properties.unwrap_or(
-                    BasicProperties { ..Default::default() },
-                );
+                let props = msg.properties.take().unwrap_or(BasicProperties {
+                    ..Default::default()
+                });
                 self.channel
                     .basic_publish(exch, key, msg.mandatory, msg.immediate, props, msg.content)
                     .unwrap();
@@ -87,7 +88,7 @@ impl<'a> NotificationReceiver for ChannelNotificationReceiver<'a> {
 }
 
 pub fn new<T: SimpleNotifyWorker>(worker: T) -> NotifyWorker<T> {
-    return NotifyWorker { internal: worker };
+    NotifyWorker { internal: worker }
 }
 
 impl<T: SimpleNotifyWorker + Send> Consumer for NotifyWorker<T> {

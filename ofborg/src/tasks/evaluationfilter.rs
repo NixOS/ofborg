@@ -1,24 +1,21 @@
 extern crate amqp;
 extern crate env_logger;
 
-use ofborg::ghevent;
 use ofborg::acl;
+use ofborg::ghevent;
 use serde_json;
 
-use ofborg::message::{Repo, Pr, massrebuildjob};
+use amqp::protocol::basic::{BasicProperties, Deliver};
+use ofborg::message::{massrebuildjob, Pr, Repo};
 use ofborg::worker;
-use amqp::protocol::basic::{Deliver, BasicProperties};
-
 
 pub struct EvaluationFilterWorker {
     acl: acl::ACL,
 }
 
- impl EvaluationFilterWorker {
+impl EvaluationFilterWorker {
     pub fn new(acl: acl::ACL) -> EvaluationFilterWorker {
-        return EvaluationFilterWorker {
-            acl: acl,
-        };
+        EvaluationFilterWorker { acl }
     }
 }
 
@@ -29,18 +26,16 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
         &mut self,
         _: &Deliver,
         _: &BasicProperties,
-        body: &Vec<u8>,
+        body: &[u8],
     ) -> Result<Self::J, String> {
-        return match serde_json::from_slice(body) {
+        match serde_json::from_slice(body) {
             Ok(e) => Ok(e),
-            Err(e) => {
-                Err(format!(
-                    "Failed to deserialize job {:?}: {:?}",
-                    e,
-                    String::from_utf8(body.clone())
-                ))
-            }
-        };
+            Err(e) => Err(format!(
+                "Failed to deserialize job {:?}: {:?}",
+                e,
+                String::from_utf8(body.to_vec())
+            )),
+        }
     }
 
     fn consumer(&mut self, job: &ghevent::PullRequestEvent) -> worker::Actions {
@@ -50,7 +45,10 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
         }
 
         if job.pull_request.state != ghevent::PullRequestState::Open {
-            info!("PR is not open ({}#{})", job.repository.full_name, job.number);
+            info!(
+                "PR is not open ({}#{})",
+                job.repository.full_name, job.number
+            );
             return vec![worker::Action::Ack];
         }
 
@@ -64,22 +62,22 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
                 } else {
                     false
                 }
-            },
+            }
             _ => false,
         };
 
         if !interesting {
-            info!("Not interesting: {}#{} because of {:?}",
-                  job.repository.full_name, job.number, job.action
+            info!(
+                "Not interesting: {}#{} because of {:?}",
+                job.repository.full_name, job.number, job.action
             );
 
-            return vec![
-                worker::Action::Ack
-            ];
+            return vec![worker::Action::Ack];
         }
 
-        info!("Found {}#{} to be interesting because of {:?}",
-              job.repository.full_name, job.number, job.action
+        info!(
+            "Found {}#{} to be interesting because of {:?}",
+            job.repository.full_name, job.number, job.action
         );
         let repo_msg = Repo {
             clone_url: job.repository.clone_url.clone(),
@@ -89,7 +87,7 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
         };
 
         let pr_msg = Pr {
-            number: job.number.clone(),
+            number: job.number,
             head_sha: job.pull_request.head.sha.clone(),
             target_branch: Some(job.pull_request.base.git_ref.clone()),
         };
@@ -100,28 +98,23 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
         };
 
         return vec![
-            worker::publish_serde_action(
-                None,
-                Some("mass-rebuild-check-jobs".to_owned()),
-                &msg
-            ),
-            worker::Action::Ack
+            worker::publish_serde_action(None, Some("mass-rebuild-check-jobs".to_owned()), &msg),
+            worker::Action::Ack,
         ];
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use worker::SimpleWorker;
     use super::*;
+    use worker::SimpleWorker;
 
     #[test]
     fn changed_base() {
         let data = include_str!("../../test-srcs/events/pr-changed-base.json");
 
         let job: ghevent::PullRequestEvent =
-            serde_json::from_str(&data.to_string())
-            .expect("Should properly deserialize");
+            serde_json::from_str(&data.to_string()).expect("Should properly deserialize");
 
         let mut worker = EvaluationFilterWorker::new(acl::ACL::new(
             vec!["nixos/nixpkgs".to_owned()],

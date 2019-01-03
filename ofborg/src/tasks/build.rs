@@ -1,21 +1,20 @@
 extern crate amqp;
-extern crate uuid;
 extern crate env_logger;
+extern crate uuid;
 
 use uuid::Uuid;
 
-use std::collections::VecDeque;
 use ofborg::checkout;
-use ofborg::message::buildjob;
-use ofborg::message::buildresult::{BuildResult, BuildStatus, V1Tag};
-use ofborg::message::buildlogmsg;
-use ofborg::nix;
 use ofborg::commentparser;
+use ofborg::message::buildjob;
+use ofborg::message::buildlogmsg;
+use ofborg::message::buildresult::{BuildResult, BuildStatus, V1Tag};
+use ofborg::nix;
+use std::collections::VecDeque;
 
-use ofborg::worker;
+use amqp::protocol::basic::{BasicProperties, Deliver};
 use ofborg::notifyworker;
-use amqp::protocol::basic::{Deliver, BasicProperties};
-
+use ofborg::worker;
 
 pub struct BuildWorker {
     cloner: checkout::CachedCloner,
@@ -31,12 +30,12 @@ impl BuildWorker {
         system: String,
         identity: String,
     ) -> BuildWorker {
-        return BuildWorker {
-            cloner: cloner,
-            nix: nix,
-            system: system,
-            identity: identity,
-        };
+        BuildWorker {
+            cloner,
+            nix,
+            system,
+            identity,
+        }
     }
 
     fn actions<'a, 'b>(
@@ -69,30 +68,29 @@ impl<'a, 'b> JobActions<'a, 'b> {
         job: &'b buildjob::BuildJob,
         receiver: &'a mut notifyworker::NotificationReceiver,
     ) -> JobActions<'a, 'b> {
-        let (log_exchange, log_routing_key) = job.logs.clone().unwrap_or((
-            Some(String::from("logs")),
-            Some(String::from("build.log")),
-        ));
+        let (log_exchange, log_routing_key) = job
+            .logs
+            .clone()
+            .unwrap_or((Some(String::from("logs")), Some(String::from("build.log"))));
 
-        let (result_exchange, result_routing_key) =
-            job.statusreport.clone().unwrap_or((
-                Some(String::from("build-results")),
-                None,
-            ));
+        let (result_exchange, result_routing_key) = job
+            .statusreport
+            .clone()
+            .unwrap_or((Some(String::from("build-results")), None));
 
-        return JobActions {
+        JobActions {
             system: system.to_owned(),
             identity: identity.to_owned(),
-            receiver: receiver,
-            job: job,
+            receiver,
+            job,
             line_counter: 0,
             snippet_log: VecDeque::with_capacity(10),
             attempt_id: format!("{}", Uuid::new_v4()),
-            log_exchange: log_exchange,
-            log_routing_key: log_routing_key,
-            result_exchange: result_exchange,
-            result_routing_key: result_routing_key,
-        };
+            log_exchange,
+            log_routing_key,
+            result_exchange,
+            result_routing_key,
+        }
     }
 
     pub fn log_snippet(&self) -> Vec<String> {
@@ -127,7 +125,6 @@ impl<'a, 'b> JobActions<'a, 'b> {
 
         let result_exchange = self.result_exchange.clone();
         let result_routing_key = self.result_routing_key.clone();
-
 
         self.tell(worker::publish_serde_action(
             result_exchange,
@@ -193,9 +190,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
         ));
     }
 
-    pub fn build_not_attempted(&mut self, not_attempted_attrs: Vec<String>,
-
-    ) {
+    pub fn build_not_attempted(&mut self, not_attempted_attrs: Vec<String>) {
         let msg = BuildResult::V1 {
             tag: V1Tag::V1,
             repo: self.job.repo.clone(),
@@ -228,10 +223,11 @@ impl<'a, 'b> JobActions<'a, 'b> {
         self.tell(worker::Action::Ack);
     }
 
-    pub fn build_finished(&mut self, status: BuildStatus,
-                          attempted_attrs: Vec<String>,
-                          not_attempted_attrs: Vec<String>,
-
+    pub fn build_finished(
+        &mut self,
+        status: BuildStatus,
+        attempted_attrs: Vec<String>,
+        not_attempted_attrs: Vec<String>,
     ) {
         let msg = BuildResult::V1 {
             tag: V1Tag::V1,
@@ -241,7 +237,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             output: self.log_snippet(),
             attempt_id: self.attempt_id.clone(),
             request_id: self.job.request_id.clone(),
-            status: status,
+            status,
             attempted_attrs: Some(attempted_attrs),
             skipped_attrs: Some(not_attempted_attrs),
         };
@@ -273,20 +269,15 @@ impl<'a, 'b> JobActions<'a, 'b> {
 impl notifyworker::SimpleNotifyWorker for BuildWorker {
     type J = buildjob::BuildJob;
 
-    fn msg_to_job(
-        &self,
-        _: &Deliver,
-        _: &BasicProperties,
-        body: &Vec<u8>,
-    ) -> Result<Self::J, String> {
+    fn msg_to_job(&self, _: &Deliver, _: &BasicProperties, body: &[u8]) -> Result<Self::J, String> {
         println!("lmao I got a job?");
-        return match buildjob::from(body) {
+        match buildjob::from(body) {
             Ok(e) => Ok(e),
             Err(e) => {
-                println!("{:?}", String::from_utf8(body.clone()));
+                println!("{:?}", String::from_utf8(body.to_vec()));
                 panic!("{:?}", e);
             }
-        };
+        }
     }
 
     fn consumer(
@@ -296,16 +287,15 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
     ) {
         let mut actions = self.actions(&job, notifier);
 
-        if job.attrs.len() == 0 {
+        if job.attrs.is_empty() {
             actions.nothing_to_do();
             return;
         }
 
         info!("Working on {}", job.pr.number);
-        let project = self.cloner.project(
-            job.repo.full_name.clone(),
-            job.repo.clone_url.clone(),
-        );
+        let project = self
+            .cloner
+            .project(&job.repo.full_name, job.repo.clone_url.clone());
         let co = project
             .clone_for("builder".to_string(), self.identity.clone())
             .unwrap();
@@ -334,13 +324,16 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             return;
         }
 
-        if let Err(_) = co.merge_commit(job.pr.head_sha.as_ref()) {
+        if co.merge_commit(job.pr.head_sha.as_ref()).is_err() {
             info!("Failed to merge {}", job.pr.head_sha);
             actions.merge_failed();
             return;
         }
 
-        println!("Got path: {:?}, determining which ones we can build ", refpath);
+        println!(
+            "Got path: {:?}, determining which ones we can build ",
+            refpath
+        );
         let (can_build, cannot_build) = self.nix.safely_partition_instantiable_attrs(
             refpath.as_ref(),
             buildfile,
@@ -350,27 +343,26 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         let cannot_build_attrs: Vec<String> = cannot_build
             .clone()
             .into_iter()
-            .map(|(attr,_)| attr)
+            .map(|(attr, _)| attr)
             .collect();
 
-        println!("Can build: '{}', Cannot build: '{}'",
-                 can_build.join(", "),
-                 cannot_build_attrs.join(", "));
-
+        println!(
+            "Can build: '{}', Cannot build: '{}'",
+            can_build.join(", "),
+            cannot_build_attrs.join(", ")
+        );
 
         actions.log_started(can_build.clone(), cannot_build_attrs.clone());
         actions.log_instantiation_errors(cannot_build);
 
-        if can_build.len() == 0 {
+        if can_build.is_empty() {
             actions.build_not_attempted(cannot_build_attrs);
             return;
         }
 
-        let mut spawned = self.nix.safely_build_attrs_async(
-            refpath.as_ref(),
-            buildfile,
-            can_build.clone(),
-        );
+        let mut spawned =
+            self.nix
+                .safely_build_attrs_async(refpath.as_ref(), buildfile, can_build.clone());
 
         for line in spawned.lines() {
             actions.log_line(&line);
@@ -391,12 +383,16 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             },
             e => BuildStatus::UnexpectedError {
                 err: format!("failed on interior command {:?}", e),
-            }
+            },
         };
 
         println!("ok built ({:?}), building", status);
         println!("Lines:\n-----8<-----");
-        actions.log_snippet().iter().inspect(|x| println!("{}", x)).last();
+        actions
+            .log_snippet()
+            .iter()
+            .inspect(|x| println!("{}", x))
+            .last();
         println!("----->8-----");
 
         actions.build_finished(status, can_build, cannot_build_attrs);
@@ -407,13 +403,13 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use notifyworker::SimpleNotifyWorker;
+    use ofborg::message::{Pr, Repo};
+    use ofborg::test_scratch::TestScratch;
     use std::env;
     use std::path::{Path, PathBuf};
-    use ofborg::message::{Pr, Repo};
-    use notifyworker::SimpleNotifyWorker;
     use std::process::{Command, Stdio};
     use std::vec::IntoIter;
-    use ofborg::test_scratch::TestScratch;
 
     fn nix() -> nix::Nix {
         let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
@@ -421,7 +417,7 @@ mod tests {
     }
 
     fn tpath(component: &str) -> PathBuf {
-        return Path::new(env!("CARGO_MANIFEST_DIR")).join(component);
+        Path::new(env!("CARGO_MANIFEST_DIR")).join(component)
     }
 
     fn make_worker(path: &Path) -> BuildWorker {
@@ -434,7 +430,7 @@ mod tests {
             "cargo-test-build".to_owned(),
         );
 
-        return worker;
+        worker
     }
 
     fn make_pr_repo(bare: &Path, co: &Path) -> String {
@@ -447,7 +443,8 @@ mod tests {
             .output()
             .expect("building the test PR failed");
         let hash = String::from_utf8(output.stdout).expect("Should just be a hash");
-        return hash.trim().to_owned();
+
+        hash.trim().to_owned()
     }
 
     fn strip_escaped_ansi(string: &str) -> String {
@@ -496,7 +493,7 @@ mod tests {
         let job = buildjob::BuildJob {
             attrs: vec!["success".to_owned()],
             pr: Pr {
-                head_sha: head_sha,
+                head_sha,
                 number: 1,
                 target_branch: Some("master".to_owned()),
             },
@@ -507,10 +504,7 @@ mod tests {
                 owner: "ofborg-test".to_owned(),
             },
             subset: None,
-            logs: Some((
-                Some(String::from("logs")),
-                Some(String::from("build.log")),
-            )),
+            logs: Some((Some(String::from("logs")), Some(String::from("build.log")))),
             statusreport: Some((Some(String::from("build-results")), None)),
             request_id: "bogus-request-id".to_owned(),
         };
@@ -532,7 +526,6 @@ mod tests {
         assert_eq!(actions.next(), Some(worker::Action::Ack));
     }
 
-
     #[test]
     pub fn test_all_jobs_skipped() {
         let p = TestScratch::new_dir("no-attempt");
@@ -545,7 +538,7 @@ mod tests {
         let job = buildjob::BuildJob {
             attrs: vec!["not-real".to_owned()],
             pr: Pr {
-                head_sha: head_sha,
+                head_sha,
                 number: 1,
                 target_branch: Some("master".to_owned()),
             },
@@ -556,10 +549,7 @@ mod tests {
                 owner: "ofborg-test".to_owned(),
             },
             subset: None,
-            logs: Some((
-                Some(String::from("logs")),
-                Some(String::from("build.log")),
-            )),
+            logs: Some((Some(String::from("logs")), Some(String::from("build.log")))),
             statusreport: Some((Some(String::from("build-results")), None)),
             request_id: "bogus-request-id".to_owned(),
         };
@@ -570,7 +560,10 @@ mod tests {
 
         println!("Total actions: {:?}", dummyreceiver.actions.len());
         let mut actions = dummyreceiver.actions.into_iter();
-        assert_contains_job(&mut actions, "\"line_number\":1,\"output\":\"Cannot nix-instantiate `not-real\' because:\"");
+        assert_contains_job(
+            &mut actions,
+            "\"line_number\":1,\"output\":\"Cannot nix-instantiate `not-real\' because:\"",
+        );
         assert_contains_job(&mut actions, "\"line_number\":2,\"output\":\"error: attribute 'not-real' in selection path 'not-real' not found\"}");
         assert_contains_job(&mut actions, "skipped_attrs\":[\"not-real"); // First one to the github poster
         assert_contains_job(&mut actions, "skipped_attrs\":[\"not-real"); // This one to the logs

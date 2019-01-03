@@ -17,7 +17,7 @@ impl TestScratch {
 
         TestScratch::create_dir(&scratch);
 
-        return scratch;
+        scratch
     }
 
     pub fn new_file(ident: &str) -> TestScratch {
@@ -29,7 +29,7 @@ impl TestScratch {
         };
 
         TestScratch::create_dir(&scratch);
-        return scratch;
+        scratch
     }
 
     fn create_dir(path: &TestScratch) {

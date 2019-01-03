@@ -1,9 +1,9 @@
+use amqp::protocol::basic::{BasicProperties, Deliver};
 use amqp::Basic;
-use amqp::{Consumer, Channel};
-use amqp::protocol::basic::{Deliver, BasicProperties};
-use std::marker::Send;
+use amqp::{Channel, Consumer};
 use serde::Serialize;
 use serde_json;
+use std::marker::Send;
 
 pub struct Worker<T: SimpleWorker> {
     internal: T,
@@ -18,7 +18,7 @@ pub enum Action {
     Ack,
     NackRequeue,
     NackDump,
-    Publish(QueueMsg),
+    Publish(Box<QueueMsg>),
 }
 
 #[derive(Debug, PartialEq)]
@@ -44,14 +44,14 @@ where
         ..Default::default()
     };
 
-    return Action::Publish(QueueMsg {
-        exchange: exchange,
-        routing_key: routing_key,
+    Action::Publish(Box::new(QueueMsg {
+        exchange,
+        routing_key,
         mandatory: false,
         immediate: false,
         properties: Some(props),
         content: serde_json::to_string(&msg).unwrap().into_bytes(),
-    });
+    }))
 }
 
 pub trait SimpleWorker: Send + 'static {
@@ -63,15 +63,13 @@ pub trait SimpleWorker: Send + 'static {
         &mut self,
         method: &Deliver,
         headers: &BasicProperties,
-        body: &Vec<u8>,
+        body: &[u8],
     ) -> Result<Self::J, String>;
 }
 
 pub fn new<T: SimpleWorker>(worker: T) -> Worker<T> {
-    return Worker { internal: worker };
+    Worker { internal: worker }
 }
-
-
 
 impl<T: SimpleWorker + Send> Consumer for Worker<T> {
     fn handle_delivery(
@@ -104,13 +102,13 @@ impl<T: SimpleWorker + Send> Consumer for Worker<T> {
                         .basic_nack(method.delivery_tag, false, false)
                         .unwrap();
                 }
-                Action::Publish(msg) => {
-                    let exch = msg.exchange.clone().unwrap_or("".to_owned());
-                    let key = msg.routing_key.clone().unwrap_or("".to_owned());
+                Action::Publish(mut msg) => {
+                    let exch = msg.exchange.take().unwrap_or_else(|| "".to_owned());
+                    let key = msg.routing_key.take().unwrap_or_else(|| "".to_owned());
 
-                    let props = msg.properties.unwrap_or(
-                        BasicProperties { ..Default::default() },
-                    );
+                    let props = msg.properties.take().unwrap_or(BasicProperties {
+                        ..Default::default()
+                    });
                     channel
                         .basic_publish(exch, key, msg.mandatory, msg.immediate, props, msg.content)
                         .unwrap();

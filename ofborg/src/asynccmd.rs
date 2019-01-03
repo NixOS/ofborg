@@ -1,17 +1,17 @@
 use std::thread;
 
 use std::collections::HashMap;
-use std::process::Stdio;
-use std::process::ExitStatus;
-use std::process::Command;
+use std::io;
+use std::io::BufRead;
+use std::io::BufReader;
 use std::io::Read;
+use std::process::Child;
+use std::process::Command;
+use std::process::ExitStatus;
+use std::process::Stdio;
 use std::sync::mpsc;
 use std::sync::mpsc::sync_channel;
-use std::sync::mpsc::{SyncSender, Receiver};
-use std::io::BufReader;
-use std::io::BufRead;
-use std::io;
-use std::process::Child;
+use std::sync::mpsc::{Receiver, SyncSender};
 use std::thread::JoinHandle;
 
 // Specifically set to fall under 1/2 of the AMQP library's
@@ -48,35 +48,32 @@ enum WaitResult<T> {
 fn reader_tx<R: 'static + Read + Send>(read: R, tx: SyncSender<String>) -> thread::JoinHandle<()> {
     let read = BufReader::new(read);
 
-    thread::spawn(move || for line in read.lines() {
-        let to_send: String = match line {
-            Ok(line) => line,
-            Err(e) => {
-                error!("Error reading data in reader_tx: {:?}", e);
-                "Non-UTF8 data omitted from the log.".to_owned()
-            }
-        };
+    thread::spawn(move || {
+        for line in read.lines() {
+            let to_send: String = match line {
+                Ok(line) => line,
+                Err(e) => {
+                    error!("Error reading data in reader_tx: {:?}", e);
+                    "Non-UTF8 data omitted from the log.".to_owned()
+                }
+            };
 
-        if let Err(e) = tx.send(to_send) {
-            error!("Failed to send log line: {:?}", e);
+            if let Err(e) = tx.send(to_send) {
+                error!("Failed to send log line: {:?}", e);
+            }
         }
     })
 }
-
 
 fn spawn_join<T: Send + 'static>(
     id: WaitTarget,
     tx: SyncSender<(WaitTarget, WaitResult<T>)>,
     waiting_on: thread::JoinHandle<T>,
 ) -> thread::JoinHandle<()> {
-    thread::spawn(move || if let Err(e) = tx.send((
-        id,
-        WaitResult::Thread(
-            waiting_on.join(),
-        ),
-    ))
-    {
-        error!("Failed to send message to the thread waiter: {:?}", e);
+    thread::spawn(move || {
+        if let Err(e) = tx.send((id, WaitResult::Thread(waiting_on.join()))) {
+            error!("Failed to send message to the thread waiter: {:?}", e);
+        }
     })
 }
 
@@ -85,14 +82,10 @@ fn child_wait<T: Send + 'static>(
     tx: SyncSender<(WaitTarget, WaitResult<T>)>,
     mut waiting_on: Child,
 ) -> thread::JoinHandle<()> {
-    thread::spawn(move || if let Err(e) = tx.send((
-        id,
-        WaitResult::Process(
-            waiting_on.wait(),
-        ),
-    ))
-    {
-        error!("Failed to send message to the thread waiter: {:?}", e);
+    thread::spawn(move || {
+        if let Err(e) = tx.send((id, WaitResult::Process(waiting_on.wait()))) {
+            error!("Failed to send message to the thread waiter: {:?}", e);
+        }
     })
 }
 
@@ -102,7 +95,8 @@ impl AsyncCmd {
     }
 
     pub fn spawn(mut self) -> SpawnedAsyncCmd {
-        let mut child = self.command
+        let mut child = self
+            .command
             .stdin(Stdio::null())
             .stderr(Stdio::piped())
             .stdout(Stdio::piped())
@@ -156,7 +150,6 @@ impl AsyncCmd {
                                 return_status = Some(t);
                             }
                         }
-
                     }
                     None => {
                         error!(
@@ -166,7 +159,7 @@ impl AsyncCmd {
                     }
                 }
 
-                if waiters.len() == 0 {
+                if waiters.is_empty() {
                     debug!("Closing up the waiter receiver thread, no more waiters.");
                     break;
                 }
@@ -177,7 +170,7 @@ impl AsyncCmd {
                 waiters.len()
             );
 
-            return return_status;
+            return_status
         });
 
         SpawnedAsyncCmd {
@@ -187,28 +180,30 @@ impl AsyncCmd {
     }
 }
 
-
 impl SpawnedAsyncCmd {
-    pub fn lines<'a>(&'a mut self) -> mpsc::Iter<'a, String> {
+    pub fn lines(&mut self) -> mpsc::Iter<'_, String> {
         self.rx.iter()
     }
 
     pub fn wait(self) -> Result<ExitStatus, io::Error> {
-        self.waiter.join()
+        self.waiter
+            .join()
             .map_err(|_err| io::Error::new(io::ErrorKind::Other, "Couldn't join thread."))
-            .and_then(|opt| opt.ok_or(io::Error::new(io::ErrorKind::Other, "Thread didn't return an exit status.")))
+            .and_then(|opt| {
+                opt.ok_or_else(|| {
+                    io::Error::new(io::ErrorKind::Other, "Thread didn't return an exit status.")
+                })
+            })
             .and_then(|res| res)
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::AsyncCmd;
-    use std::process::Command;
     use std::ffi::{OsStr, OsString};
     use std::os::unix::ffi::OsStrExt;
+    use std::process::Command;
 
     #[test]
     fn basic_echo_test() {
@@ -248,9 +243,7 @@ mod tests {
     fn lots_of_small_ios_test() {
         let mut cmd = Command::new("/bin/sh");
         cmd.arg("-c");
-        cmd.arg(
-            "for i in `seq 1 100`; do (seq 1 100)& (seq 1 100 >&2)& wait; wait; done",
-        );
+        cmd.arg("for i in `seq 1 100`; do (seq 1 100)& (seq 1 100 >&2)& wait; wait; done");
         let acmd = AsyncCmd::new(cmd);
 
         let mut spawned = acmd.spawn();
@@ -260,7 +253,6 @@ mod tests {
         let exit_status = thread_result.expect("Thread should exit correctly");
         assert_eq!(true, exit_status.success());
     }
-
 
     #[test]
     fn lots_of_io_test() {

@@ -1,14 +1,13 @@
-extern crate ofborg;
 extern crate amqp;
 extern crate env_logger;
+extern crate ofborg;
 
 use std::env;
 
-use std::path::Path;
+use ofborg::config;
 use std::fs::File;
 use std::io::Read;
-use ofborg::config;
-
+use std::path::Path;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
@@ -32,5 +31,5 @@ fn main() {
 fn file_to_str(f: &mut File) -> String {
     let mut buffer = Vec::new();
     f.read_to_end(&mut buffer).expect("Reading eval output");
-    return String::from(String::from_utf8_lossy(&buffer));
+    String::from(String::from_utf8_lossy(&buffer))
 }

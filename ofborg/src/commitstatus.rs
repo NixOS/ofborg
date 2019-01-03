@@ -20,20 +20,20 @@ impl<'a> CommitStatus<'a> {
         url: Option<String>,
     ) -> CommitStatus<'a> {
         let mut stat = CommitStatus {
-            api: api,
-            sha: sha,
-            context: context,
-            description: description,
+            api,
+            sha,
+            context,
+            description,
             url: "".to_owned(),
         };
 
         stat.set_url(url);
 
-        return stat;
+        stat
     }
 
     pub fn set_url(&mut self, url: Option<String>) {
-        self.url = url.unwrap_or(String::from(""))
+        self.url = url.unwrap_or_else(|| String::from(""))
     }
 
     pub fn set_with_description(&mut self, description: &str, state: hubcaps::statuses::State) {

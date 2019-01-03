@@ -1,16 +1,15 @@
-extern crate ofborg;
 extern crate amqp;
 extern crate env_logger;
+extern crate ofborg;
 
 use std::env;
 use std::path::PathBuf;
 
 use ofborg::config;
-use ofborg::worker;
-use ofborg::tasks;
 use ofborg::easyamqp;
 use ofborg::easyamqp::TypedWrappers;
-
+use ofborg::tasks;
+use ofborg::worker;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
@@ -75,7 +74,6 @@ fn main() {
         )
         .unwrap();
 
-
     channel.start_consuming();
 
     println!("Finished consuming?");
@@ -84,5 +82,4 @@ fn main() {
     println!("Closed the channel");
     session.close(200, "Good Bye");
     println!("Closed the session... EOF");
-
 }

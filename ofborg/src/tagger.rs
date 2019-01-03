@@ -1,5 +1,5 @@
-use ofborg::tasks;
 use ofborg::outpathdiff::PackageArch;
+use ofborg::tasks;
 use std::collections::HashMap;
 
 pub struct StdenvTagger {
@@ -7,8 +7,8 @@ pub struct StdenvTagger {
     selected: Vec<String>,
 }
 
-impl StdenvTagger {
-    pub fn new() -> StdenvTagger {
+impl Default for StdenvTagger {
+    fn default() -> StdenvTagger {
         let mut t = StdenvTagger {
             possible: vec![
                 String::from("10.rebuild-linux-stdenv"),
@@ -18,7 +18,13 @@ impl StdenvTagger {
         };
         t.possible.sort();
 
-        return t;
+        t
+    }
+}
+
+impl StdenvTagger {
+    pub fn new() -> StdenvTagger {
+        Default::default()
     }
 
     pub fn changed(&mut self, systems: Vec<tasks::eval::stdenvs::System>) {
@@ -54,7 +60,7 @@ impl StdenvTagger {
             remove.remove(pos);
         }
 
-        return remove;
+        remove
     }
 }
 
@@ -63,8 +69,8 @@ pub struct PkgsAddedRemovedTagger {
     selected: Vec<String>,
 }
 
-impl PkgsAddedRemovedTagger {
-    pub fn new() -> PkgsAddedRemovedTagger {
+impl Default for PkgsAddedRemovedTagger {
+    fn default() -> PkgsAddedRemovedTagger {
         let mut t = PkgsAddedRemovedTagger {
             possible: vec![
                 String::from("8.has: package (new)"),
@@ -74,15 +80,21 @@ impl PkgsAddedRemovedTagger {
         };
         t.possible.sort();
 
-        return t;
+        t
+    }
+}
+
+impl PkgsAddedRemovedTagger {
+    pub fn new() -> PkgsAddedRemovedTagger {
+        Default::default()
     }
 
-    pub fn changed(&mut self, removed: Vec<PackageArch>, added: Vec<PackageArch>) {
-        if removed.len() > 0 {
+    pub fn changed(&mut self, removed: &[PackageArch], added: &[PackageArch]) {
+        if !removed.is_empty() {
             self.selected.push(String::from("8.has: clean-up"));
         }
 
-        if added.len() > 0 {
+        if !added.is_empty() {
             self.selected.push(String::from("8.has: package (new)"));
         }
     }
@@ -93,7 +105,7 @@ impl PkgsAddedRemovedTagger {
 
     pub fn tags_to_remove(&self) -> Vec<String> {
         // The cleanup tag is too vague to automatically remove.
-        return vec![];
+        vec![]
     }
 }
 
@@ -102,8 +114,8 @@ pub struct RebuildTagger {
     selected: Vec<String>,
 }
 
-impl RebuildTagger {
-    pub fn new() -> RebuildTagger {
+impl Default for RebuildTagger {
+    fn default() -> RebuildTagger {
         let mut t = RebuildTagger {
             possible: vec![
                 String::from("10.rebuild-linux: 501+"),
@@ -111,7 +123,6 @@ impl RebuildTagger {
                 String::from("10.rebuild-linux: 11-100"),
                 String::from("10.rebuild-linux: 1-10"),
                 String::from("10.rebuild-linux: 0"),
-
                 String::from("10.rebuild-darwin: 501+"),
                 String::from("10.rebuild-darwin: 101-500"),
                 String::from("10.rebuild-darwin: 11-100"),
@@ -122,7 +133,13 @@ impl RebuildTagger {
         };
         t.possible.sort();
 
-        return t;
+        t
+    }
+}
+
+impl RebuildTagger {
+    pub fn new() -> RebuildTagger {
+        Default::default()
     }
 
     pub fn parse_attrs(&mut self, attrs: Vec<PackageArch>) {
@@ -145,14 +162,10 @@ impl RebuildTagger {
             }
         }
 
-        self.selected =
-            vec![
-                String::from(format!("10.rebuild-linux: {}", self.bucket(counter_linux))),
-                String::from(format!(
-                    "10.rebuild-darwin: {}",
-                    self.bucket(counter_darwin)
-                )),
-            ];
+        self.selected = vec![
+            format!("10.rebuild-linux: {}", self.bucket(counter_linux)),
+            format!("10.rebuild-darwin: {}", self.bucket(counter_darwin)),
+        ];
 
         for tag in &self.selected {
             if !self.possible.contains(&tag) {
@@ -175,22 +188,21 @@ impl RebuildTagger {
             remove.remove(pos);
         }
 
-        return remove;
+        remove
     }
 
     fn bucket(&self, count: u64) -> &str {
         if count > 500 {
-            return "501+";
+            "501+"
         } else if count > 100 {
-            return "101-500";
+            "101-500"
         } else if count > 10 {
-            return "11-100";
+            "11-100"
         } else if count > 0 {
-            return "1-10";
+            "1-10"
         } else {
-            return "0";
+            "0"
         }
-
     }
 }
 
@@ -208,12 +220,11 @@ impl PathsTagger {
     }
 
     pub fn path_changed(&mut self, path: &str) {
-        let mut tags_to_add: Vec<String> = self.possible
+        let mut tags_to_add: Vec<String> = self
+            .possible
             .iter()
             .filter(|&(ref tag, ref _paths)| !self.selected.contains(&tag))
-            .filter(|&(ref _tag, ref paths)| {
-                paths.iter().any(|tp| path.contains(tp))
-            })
+            .filter(|&(ref _tag, ref paths)| paths.iter().any(|tp| path.contains(tp)))
             .map(|(tag, _paths)| tag.clone())
             .collect();
         self.selected.append(&mut tags_to_add);
@@ -232,7 +243,7 @@ impl PathsTagger {
             remove.remove(pos);
         }
 
-        return remove;
+        remove
     }
 }
 
@@ -267,7 +278,6 @@ mod tests {
                 vec!["topic: python".to_owned(), "topic: ruby".to_owned()]
             );
 
-
             tagger.path_changed("pkgs/development/interpreters/ruby/default.nix");
             assert_eq!(tagger.tags_to_add(), vec!["topic: ruby".to_owned()]);
             assert_eq!(tagger.tags_to_remove(), vec!["topic: python".to_owned()]);
@@ -275,7 +285,6 @@ mod tests {
             tagger.path_changed("pkgs/development/interpreters/ruby/foobar.nix");
             assert_eq!(tagger.tags_to_add(), vec!["topic: ruby".to_owned()]);
             assert_eq!(tagger.tags_to_remove(), vec!["topic: python".to_owned()]);
-
 
             tagger.path_changed("pkgs/top-level/python-packages.nix");
             assert_eq!(

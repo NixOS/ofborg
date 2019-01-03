@@ -1,4 +1,4 @@
-use ofborg::ghevent::{Comment, Repository, Issue};
+use ofborg::ghevent::{Comment, Issue, Repository};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct IssueComment {
@@ -9,7 +9,7 @@ pub struct IssueComment {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-#[serde(rename_all="snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum IssueCommentAction {
     Created,
     Edited,
