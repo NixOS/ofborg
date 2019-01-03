@@ -56,7 +56,6 @@ let
         cargo clippy
         cargoclippyexit=$?
 
-
         sum=$((cargofmtexit + cargoclippyexit))
         exit $sum
       )
