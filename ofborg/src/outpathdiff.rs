@@ -145,7 +145,7 @@ impl OutPaths {
 
     fn place_nix(&self) {
         let mut file = File::create(self.nix_path()).expect("Failed to create nix out path check");
-        file.write_all(include_str!("outpaths.nix").as_bytes())
+        file.write_all(include_bytes!("outpaths.nix"))
             .expect("Failed to place outpaths.nix");
     }
 

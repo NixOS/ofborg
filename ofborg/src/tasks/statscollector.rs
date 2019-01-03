@@ -32,9 +32,9 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for StatCollectorWorker
         match serde_json::from_slice(body) {
             Ok(e) => Ok(e),
             Err(_) => {
-                let mut modified_body: Vec<u8> = vec!["\"".as_bytes()[0]];
+                let mut modified_body: Vec<u8> = vec![b"\""[0]];
                 modified_body.append(&mut body.to_vec());
-                modified_body.push("\"".as_bytes()[0]);
+                modified_body.push(b"\""[0]);
 
                 match serde_json::from_slice(&modified_body) {
                     Ok(e) => {
