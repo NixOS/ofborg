@@ -54,10 +54,10 @@ impl Operation {
 impl fmt::Display for Operation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Operation::Build => write!(f, "{}", "nix-build"),
-            Operation::Instantiate => write!(f, "{}", "nix-instantiate"),
-            Operation::QueryPackagesJSON => write!(f, "{}", "nix-env -qa --json"),
-            Operation::QueryPackagesOutputs => write!(f, "{}", "nix-env -qaP --no-name --out-path"),
+            Operation::Build => write!(f, "nix-build"),
+            Operation::Instantiate => write!(f, "nix-instantiate"),
+            Operation::QueryPackagesJSON => write!(f, "nix-env -qa --json"),
+            Operation::QueryPackagesOutputs => write!(f, "nix-env -qaP --no-name --out-path"),
             Operation::NoOp { ref operation } => operation.fmt(f),
             Operation::Unknown { ref program } => write!(f, "{}", program),
         }
