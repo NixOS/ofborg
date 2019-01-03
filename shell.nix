@@ -1,4 +1,8 @@
-{ pkgs ? import ./nix {}, useNix1 ? false }:
+{ pkgs ? import ./nix {
+  overlays = [
+    (import (builtins.fetchTarball https://github.com/mozilla/nixpkgs-mozilla/archive/master.tar.gz))
+  ];
+}, useNix1 ? false }:
 
 let
   # A random Nixpkgs revision *before* the default glibc
