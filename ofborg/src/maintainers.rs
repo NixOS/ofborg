@@ -73,6 +73,13 @@ impl ImpactedMaintainers {
 
         Ok(serde_json::from_str(&String::from_utf8(ret.stdout)?)?)
     }
+
+    pub fn maintainers(&self) -> Vec<String> {
+        self.0
+            .iter()
+            .map(|(maintainer, _)| maintainer.0.clone())
+            .collect()
+    }
 }
 
 impl std::fmt::Display for ImpactedMaintainers {

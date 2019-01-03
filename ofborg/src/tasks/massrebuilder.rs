@@ -3,6 +3,7 @@ extern crate amqp;
 extern crate env_logger;
 extern crate uuid;
 
+use crate::maintainers;
 use crate::maintainers::ImpactedMaintainers;
 use amqp::protocol::basic::{BasicProperties, Deliver};
 use hubcaps;
@@ -118,6 +119,8 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
             .github
             .repo(job.repo.owner.clone(), job.repo.name.clone());
         let gists = self.github.gists();
+        let pulls = repo.pulls();
+        let pull = pulls.get(job.pr.number);
         let issue = repo.issue(job.pr.number);
 
         let auto_schedule_build_archs: Vec<buildjob::ExchangeQueue>;
@@ -541,10 +544,12 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                         "Potential Maintainers",
                         Some("".to_owned()),
                         match m {
-                            Ok(maintainers) => format!("Maintainers:\n{}", maintainers),
-                            Err(e) => format!("Ignorable calculation error:\n{:?}", e),
+                            Ok(ref maintainers) => format!("Maintainers:\n{}", maintainers),
+                            Err(ref e) => format!("Ignorable calculation error:\n{:?}", e),
                         },
                     );
+
+                    request_reviews(&m, &pull);
 
                     let mut status = CommitStatus::new(
                         repo.statuses(),
@@ -724,4 +729,27 @@ fn indicates_wip(text: &str) -> bool {
     }
 
     false
+}
+
+fn request_reviews(
+    m: &Result<maintainers::ImpactedMaintainers, maintainers::CalculationError>,
+    pull: &hubcaps::pulls::PullRequest,
+) {
+    if let Ok(ref maint) = m {
+        if maint.maintainers().len() < 10 {
+            if let Err(e) =
+                pull.review_requests()
+                    .create(&hubcaps::review_requests::ReviewRequestOptions {
+                        reviewers: maint.maintainers(),
+                        team_reviewers: vec![],
+                    })
+            {
+                println!(
+                    "Failure adding review requests for maintainers ({:?}): {:#?}",
+                    maint.maintainers(),
+                    e,
+                );
+            }
+        }
+    }
 }
