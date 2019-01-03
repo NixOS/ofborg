@@ -430,7 +430,7 @@ pub enum Event {
     // Create a struct to hold all the possible metrics
     f.write_all(
         b"
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct MetricCollector {
 ",
     )
@@ -457,32 +457,12 @@ pub struct MetricCollector {
     // Create a struct to hold all the possible metrics
     f.write_all(
         b"
+
 impl MetricCollector {
   pub fn new() -> MetricCollector {
-    MetricCollector {
-",
-    )
-    .unwrap();
+    Default::default()
+  }
 
-    let variants: Vec<String> = events()
-        .iter()
-        .map(|mtype| {
-            let mut fields: Vec<String> = mtype.enum_field_types();
-            fields.push("String".to_owned()); // Instance
-
-            format!(
-                "      {}: Arc::new(Mutex::new(HashMap::new()))",
-                &mtype.metric_name(),
-            )
-        })
-        .collect();
-
-    f.write_all(variants.join(",\n").as_bytes()).unwrap();
-    f.write_all("\n    }\n".as_bytes()).unwrap();
-    f.write_all("\n  }\n".as_bytes()).unwrap();
-
-    f.write_all(
-        b"
   pub fn record(&self, instance: String, event: Event) {
     match event {
 ",

@@ -25,13 +25,14 @@ pub trait NotificationReceiver {
     fn tell(&mut self, action: Action);
 }
 
+#[derive(Default)]
 pub struct DummyNotificationReceiver {
     pub actions: Vec<Action>,
 }
 
 impl DummyNotificationReceiver {
     pub fn new() -> DummyNotificationReceiver {
-        DummyNotificationReceiver { actions: vec![] }
+        Default::default()
     }
 }
 

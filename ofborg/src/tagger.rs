@@ -7,8 +7,8 @@ pub struct StdenvTagger {
     selected: Vec<String>,
 }
 
-impl StdenvTagger {
-    pub fn new() -> StdenvTagger {
+impl Default for StdenvTagger {
+    fn default() -> StdenvTagger {
         let mut t = StdenvTagger {
             possible: vec![
                 String::from("10.rebuild-linux-stdenv"),
@@ -19,6 +19,12 @@ impl StdenvTagger {
         t.possible.sort();
 
         t
+    }
+}
+
+impl StdenvTagger {
+    pub fn new() -> StdenvTagger {
+        Default::default()
     }
 
     pub fn changed(&mut self, systems: Vec<tasks::eval::stdenvs::System>) {
@@ -63,8 +69,8 @@ pub struct PkgsAddedRemovedTagger {
     selected: Vec<String>,
 }
 
-impl PkgsAddedRemovedTagger {
-    pub fn new() -> PkgsAddedRemovedTagger {
+impl Default for PkgsAddedRemovedTagger {
+    fn default() -> PkgsAddedRemovedTagger {
         let mut t = PkgsAddedRemovedTagger {
             possible: vec![
                 String::from("8.has: package (new)"),
@@ -75,6 +81,12 @@ impl PkgsAddedRemovedTagger {
         t.possible.sort();
 
         t
+    }
+}
+
+impl PkgsAddedRemovedTagger {
+    pub fn new() -> PkgsAddedRemovedTagger {
+        Default::default()
     }
 
     pub fn changed(&mut self, removed: &[PackageArch], added: &[PackageArch]) {
@@ -102,8 +114,8 @@ pub struct RebuildTagger {
     selected: Vec<String>,
 }
 
-impl RebuildTagger {
-    pub fn new() -> RebuildTagger {
+impl Default for RebuildTagger {
+    fn default() -> RebuildTagger {
         let mut t = RebuildTagger {
             possible: vec![
                 String::from("10.rebuild-linux: 501+"),
@@ -122,6 +134,12 @@ impl RebuildTagger {
         t.possible.sort();
 
         t
+    }
+}
+
+impl RebuildTagger {
+    pub fn new() -> RebuildTagger {
+        Default::default()
     }
 
     pub fn parse_attrs(&mut self, attrs: Vec<PackageArch>) {
