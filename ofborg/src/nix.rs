@@ -210,7 +210,7 @@ impl Nix {
             Stdio::null()
         };
 
-        let status = cmd.stdout(Stdio::from(stdout))
+        let status = cmd.stdout(stdout)
             .stderr(Stdio::from(stderr))
             .status()
             .expect("Running a program ...");
@@ -275,7 +275,6 @@ impl Nix {
 fn lines_from_file(file: File) -> Vec<String> {
     BufReader::new(file)
         .lines()
-        .into_iter()
         .filter(|line| line.is_ok())
         .map(|line| line.unwrap())
         .collect()

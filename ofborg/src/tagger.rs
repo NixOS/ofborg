@@ -147,11 +147,11 @@ impl RebuildTagger {
 
         self.selected =
             vec![
-                String::from(format!("10.rebuild-linux: {}", self.bucket(counter_linux))),
-                String::from(format!(
+                format!("10.rebuild-linux: {}", self.bucket(counter_linux)),
+                format!(
                     "10.rebuild-darwin: {}",
                     self.bucket(counter_darwin)
-                )),
+                ),
             ];
 
         for tag in &self.selected {
