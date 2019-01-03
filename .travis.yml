@@ -5,7 +5,9 @@ matrix:
   include:
     - name: checkPhase - Nix 2
       script: nix-shell --run checkPhase --arg useNix1 false
+    - name: checkPhase - Nix 2
+      script: nix-shell --run checkPhase --arg useNix1 false
     - name: checkPhase - Nix 1
       script: nix-shell --run checkPhase --arg useNix1 true
-    - name: nix-build
-      script: nix-build -A ofborg.rs
+    - name: cargo pedantry
+      script: nix-shell --run pedantryPhase --arg useNix1 false -A mozilla-rust-overlay
