@@ -28,7 +28,7 @@ pub struct LogMessageCollector {
 enum MsgType {
     Start(BuildLogStart),
     Msg(BuildLogMsg),
-    Finish(BuildResult),
+    Finish(Box<BuildResult>),
 }
 
 #[derive(Debug)]
@@ -197,7 +197,7 @@ impl worker::SimpleWorker for LogMessageCollector {
                 let decode_msg: Result<BuildResult, _> = serde_json::from_slice(body);
                 if let Ok(msg) = decode_msg {
                     attempt_id = msg.legacy().attempt_id.clone();
-                    message = MsgType::Finish(msg);
+                    message = MsgType::Finish(Box::new(msg));
                 } else {
                     return Err(format!("failed to decode job: {:?}", decode_msg));
                 }
