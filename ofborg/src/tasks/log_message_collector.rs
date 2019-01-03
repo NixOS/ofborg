@@ -419,7 +419,7 @@ mod tests {
                 vec![worker::Action::Ack],
                 worker.consumer(&LogMessage {
                     from: make_from("foo"),
-                    message: MsgType::Finish(BuildResult::V1 {
+                    message: MsgType::Finish(Box::new(BuildResult::V1 {
                         tag: V1Tag::V1,
                         repo: Repo {
                             clone_url: "https://github.com/nixos/ofborg.git".to_owned(),
@@ -439,7 +439,7 @@ mod tests {
                         status: BuildStatus::Success,
                         attempted_attrs: Some(vec!["foo".to_owned()]),
                         skipped_attrs: Some(vec!["bar".to_owned()]),
-                    })
+                    }))
                 })
             );
         }
