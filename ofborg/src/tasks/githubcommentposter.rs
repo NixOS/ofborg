@@ -193,7 +193,7 @@ fn result_to_comment(result: &LegacyBuildResult) -> String {
     }
 
     if !result.output.is_empty() {
-        reply.extend(partial_log_segment(result.output.clone()));
+        reply.extend(partial_log_segment(&result.output));
         reply.push("".to_owned());
         reply.push("".to_owned());
     } else {
@@ -215,13 +215,13 @@ fn list_segment(name: &str, things: &[String]) -> Vec<String> {
     reply
 }
 
-fn partial_log_segment(output: Vec<String>) -> Vec<String> {
+fn partial_log_segment(output: &[String]) -> Vec<String> {
     let mut reply: Vec<String> = vec![];
 
     reply.push("<details><summary>Partial log (click to expand)</summary><p>".to_owned());
     reply.push("".to_owned());
     reply.push("```".to_owned());
-    reply.extend(output.clone());
+    reply.extend(output.to_vec());
     reply.push("```".to_owned());
     reply.push("</p></details>".to_owned());
 
