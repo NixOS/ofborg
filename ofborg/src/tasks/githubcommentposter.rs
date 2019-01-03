@@ -17,7 +17,7 @@ pub struct GitHubCommentPoster {
 
 impl GitHubCommentPoster {
     pub fn new(github: hubcaps::Github) -> GitHubCommentPoster {
-        return GitHubCommentPoster { github };
+        GitHubCommentPoster { github }
     }
 }
 
@@ -30,7 +30,7 @@ impl worker::SimpleWorker for GitHubCommentPoster {
         _: &BasicProperties,
         body: &Vec<u8>,
     ) -> Result<Self::J, String> {
-        return match serde_json::from_slice(body) {
+        match serde_json::from_slice(body) {
             Ok(e) => Ok(e),
             Err(e) => {
                 Err(format!(
@@ -39,7 +39,7 @@ impl worker::SimpleWorker for GitHubCommentPoster {
                     e
                 ))
             }
-        };
+        }
     }
 
     fn consumer(&mut self, job: &BuildResult) -> worker::Actions {
@@ -70,7 +70,7 @@ impl worker::SimpleWorker for GitHubCommentPoster {
             }
         }
 
-        return vec![worker::Action::Ack];
+        vec![worker::Action::Ack]
     }
 }
 
@@ -225,7 +225,7 @@ fn list_segment(name: &str, things: Vec<String>) -> Vec<String> {
         reply.push("".to_owned());
     }
 
-    return reply;
+    reply
 }
 
 fn partial_log_segment(output: &Vec<String>) -> Vec<String> {
@@ -240,7 +240,7 @@ fn partial_log_segment(output: &Vec<String>) -> Vec<String> {
     reply.push("```".to_owned());
     reply.push("</p></details>".to_owned());
 
-    return reply;
+    reply
 }
 
 #[cfg(test)]

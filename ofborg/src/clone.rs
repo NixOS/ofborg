@@ -28,7 +28,7 @@ pub trait GitClonable {
         match fs::File::create(self.lock_path()) {
             Err(e) => {
                 warn!("Failed to create lock file {:?}: {}", self.lock_path(), e);
-                return Err(e);
+                Err(e)
             }
             Ok(lock) => {
                 match lock.lock_exclusive() {
@@ -38,11 +38,11 @@ pub trait GitClonable {
                             self.lock_path(),
                             e
                         );
-                        return Err(e);
+                        Err(e)
                     }
                     Ok(_) => {
                         debug!("Got lock on {:?}", self.lock_path());
-                        return Ok(Lock { lock: Some(lock) });
+                        Ok(Lock { lock: Some(lock) })
                     }
                 }
             }
@@ -74,9 +74,9 @@ pub trait GitClonable {
         lock.unlock();
 
         if result.success() {
-            return Ok(());
+            Ok(())
         } else {
-            return Err(Error::new(ErrorKind::Other, format!("Failed to clone from {:?} to {:?}", self.clone_from(), self.clone_to())));
+            Err(Error::new(ErrorKind::Other, format!("Failed to clone from {:?} to {:?}", self.clone_from(), self.clone_to())))
         }
     }
 
@@ -93,9 +93,9 @@ pub trait GitClonable {
         lock.unlock();
 
         if result.success() {
-            return Ok(());
+            Ok(())
         } else {
-            return Err(Error::new(ErrorKind::Other, "Failed to fetch"));
+            Err(Error::new(ErrorKind::Other, "Failed to fetch"))
         }
     }
 
@@ -125,7 +125,7 @@ pub trait GitClonable {
 
         lock.unlock();
 
-        return Ok(());
+        Ok(())
     }
 
     fn checkout(&self, git_ref: &OsStr) -> Result<(), Error> {
@@ -142,9 +142,9 @@ pub trait GitClonable {
         lock.unlock();
 
         if result.success() {
-            return Ok(());
+            Ok(())
         } else {
-            return Err(Error::new(ErrorKind::Other, "Failed to checkout"));
+            Err(Error::new(ErrorKind::Other, "Failed to checkout"))
         }
     }
 }

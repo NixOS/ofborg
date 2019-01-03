@@ -177,7 +177,7 @@ impl AsyncCmd {
                 waiters.len()
             );
 
-            return return_status;
+            return_status
         });
 
         SpawnedAsyncCmd {

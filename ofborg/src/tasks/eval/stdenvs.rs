@@ -28,7 +28,7 @@ pub struct Stdenvs {
 
 impl Stdenvs {
     pub fn new(nix: nix::Nix, co: PathBuf) -> Stdenvs {
-        return Stdenvs {
+        Stdenvs {
             nix,
             co,
 
@@ -37,7 +37,7 @@ impl Stdenvs {
 
             darwin_stdenv_before: None,
             darwin_stdenv_after: None,
-        };
+        }
     }
 
     pub fn identify_before(&mut self) {
@@ -51,7 +51,7 @@ impl Stdenvs {
     }
 
     pub fn are_same(&self) -> bool {
-        return self.changed().len() == 0;
+        self.changed().len() == 0
     }
 
     pub fn changed(&self) -> Vec<System> {
@@ -65,8 +65,7 @@ impl Stdenvs {
             changed.push(System::X8664Darwin);
         }
 
-
-        return changed;
+        changed
     }
 
     fn identify(&mut self, system: System, from: StdenvFrom) {
@@ -104,13 +103,13 @@ impl Stdenvs {
 
         println!("{:?}", result);
 
-        return match result {
+        match result {
             Ok(mut out) => Some(file_to_str(&mut out)),
             Err(mut out) => {
                 println!("{:?}", file_to_str(&mut out));
                 None
             }
-        };
+        }
     }
 }
 

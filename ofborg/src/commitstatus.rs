@@ -29,7 +29,7 @@ impl<'a> CommitStatus<'a> {
 
         stat.set_url(url);
 
-        return stat;
+        stat
     }
 
     pub fn set_url(&mut self, url: Option<String>) {

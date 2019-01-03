@@ -615,7 +615,7 @@ impl MetricCollector {
 
 
     f.write_all(variants.join("\n").as_bytes()).unwrap();
-    f.write_all("return output;\n  }".as_bytes()).unwrap();
+    f.write_all("output\n  }".as_bytes()).unwrap();
     f.write_all("\n}".as_bytes()).unwrap();
 
 }

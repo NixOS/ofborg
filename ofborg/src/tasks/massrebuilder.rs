@@ -45,7 +45,7 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
         events: E,
         tag_paths: HashMap<String, Vec<String>>,
     ) -> MassRebuildWorker<E> {
-        return MassRebuildWorker {
+        MassRebuildWorker {
             cloner,
             nix: nix.without_limited_supported_systems(),
             github,
@@ -53,11 +53,11 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
             identity,
             events,
             tag_paths,
-        };
+        }
     }
 
     fn actions(&self) -> massrebuildjob::Actions {
-        return massrebuildjob::Actions {};
+        massrebuildjob::Actions {}
     }
 
     fn tag_from_title(&self, issue: &hubcaps::issues::IssueRef) {
@@ -102,7 +102,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
         body: &Vec<u8>,
     ) -> Result<Self::J, String> {
         self.events.notify(Event::JobReceived);
-        return match massrebuildjob::from(body) {
+        match massrebuildjob::from(body) {
             Ok(e) => {
                 self.events.notify(Event::JobDecodeSuccess);
                 Ok(e)
@@ -116,7 +116,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                 );
                 Err("Failed to decode message".to_owned())
             }
-        };
+        }
     }
 
     fn consumer(&mut self, job: &massrebuildjob::MassRebuildJob) -> worker::Actions {
@@ -450,9 +450,9 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                 status.set(state.clone());
 
                 if state == hubcaps::statuses::State::Success {
-                    return Ok(());
+                    Ok(())
                 } else {
-                    return Err(());
+                    Err(())
                 }
             })
             .all(|status| status == Ok(()));
@@ -585,7 +585,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
 
         self.events.notify(Event::TaskEvaluationCheckComplete);
 
-        return self.actions().done(&job, response);
+        self.actions().done(&job, response)
     }
 }
 
@@ -606,7 +606,7 @@ fn make_gist<'a>(
         },
     );
 
-    return Some(
+    Some(
         gists
             .create(&hubcaps::gists::GistOptions {
                 description,
@@ -615,7 +615,7 @@ fn make_gist<'a>(
             })
             .expect("Failed to create gist!")
             .html_url,
-    );
+    )
 }
 
 pub fn update_labels(issue: &hubcaps::issues::IssueRef, add: Vec<String>, remove: Vec<String>) {
@@ -735,5 +735,5 @@ fn indicates_wip(text: &str) -> bool {
         return true;
     }
 
-    return false;
+    false
 }

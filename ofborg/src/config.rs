@@ -87,11 +87,11 @@ pub struct CheckoutConfig {
 
 impl Config {
     pub fn whoami(&self) -> String {
-        return format!("{}-{}", self.runner.identity, self.nix.system);
+        format!("{}-{}", self.runner.identity, self.nix.system)
     }
 
     pub fn acl(&self) -> acl::ACL {
-        return acl::ACL::new(
+        acl::ACL::new(
             self.runner.repos.clone().expect(
                 "fetching config's runner.repos",
             ),
@@ -101,7 +101,7 @@ impl Config {
             self.runner.known_users.clone().expect(
                 "fetching config's runner.known_users",
             ),
-        );
+        )
     }
 
     pub fn github(&self) -> Github {
@@ -141,25 +141,25 @@ impl Config {
             panic!();
         }
 
-        return Nix::new(
+        Nix::new(
             self.nix.system.clone(),
             self.nix.remote.clone(),
             self.nix.build_timeout_seconds,
             self.nix.initial_heap_size.clone(),
-        );
+        )
     }
 }
 
 impl RabbitMQConfig {
     pub fn as_uri(&self) -> String {
-        return format!(
+        format!(
             "{}://{}:{}@{}/{}",
             if self.ssl { "amqps" } else { "amqp" },
             self.username,
             self.password,
             self.host,
             self.virtualhost.clone().unwrap_or("/".to_owned()),
-        );
+        )
     }
 }
 
@@ -170,5 +170,5 @@ pub fn load(filename: &Path) -> Config {
 
     let deserialized: Config = serde_json::from_str(&contents).unwrap();
 
-    return deserialized;
+    deserialized
 }

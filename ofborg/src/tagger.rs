@@ -18,7 +18,7 @@ impl StdenvTagger {
         };
         t.possible.sort();
 
-        return t;
+        t
     }
 
     pub fn changed(&mut self, systems: Vec<tasks::eval::stdenvs::System>) {
@@ -54,7 +54,7 @@ impl StdenvTagger {
             remove.remove(pos);
         }
 
-        return remove;
+        remove
     }
 }
 
@@ -74,7 +74,7 @@ impl PkgsAddedRemovedTagger {
         };
         t.possible.sort();
 
-        return t;
+        t
     }
 
     pub fn changed(&mut self, removed: Vec<PackageArch>, added: Vec<PackageArch>) {
@@ -93,7 +93,7 @@ impl PkgsAddedRemovedTagger {
 
     pub fn tags_to_remove(&self) -> Vec<String> {
         // The cleanup tag is too vague to automatically remove.
-        return vec![];
+        vec![]
     }
 }
 
@@ -122,7 +122,7 @@ impl RebuildTagger {
         };
         t.possible.sort();
 
-        return t;
+        t
     }
 
     pub fn parse_attrs(&mut self, attrs: Vec<PackageArch>) {
@@ -175,22 +175,21 @@ impl RebuildTagger {
             remove.remove(pos);
         }
 
-        return remove;
+        remove
     }
 
     fn bucket(&self, count: u64) -> &str {
         if count > 500 {
-            return "501+";
+            "501+"
         } else if count > 100 {
-            return "101-500";
+             "101-500"
         } else if count > 10 {
-            return "11-100";
+            "11-100"
         } else if count > 0 {
-            return "1-10";
+            "1-10"
         } else {
-            return "0";
+            "0"
         }
-
     }
 }
 
@@ -232,7 +231,7 @@ impl PathsTagger {
             remove.remove(pos);
         }
 
-        return remove;
+        remove
     }
 }
 

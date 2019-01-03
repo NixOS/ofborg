@@ -30,11 +30,11 @@ impl OutPathDiff {
         match x {
             Ok(f) => {
                 self.original = Some(f);
-                return Ok(true);
+                Ok(true)
             }
             Err(e) => {
                 info!("Failed to find Before list");
-                return Err(e);
+                Err(e)
             }
         }
     }
@@ -49,11 +49,11 @@ impl OutPathDiff {
         match x {
             Ok(f) => {
                 self.current = Some(f);
-                return Ok(true);
+                Ok(true)
             }
             Err(e) => {
                 info!("Failed to find After list");
-                return Err(e);
+                Err(e)
             }
         }
     }
@@ -66,12 +66,12 @@ impl OutPathDiff {
 
                 let removed: Vec<PackageArch> = orig_set.difference(&cur_set).map(|ref p| (**p).clone()).collect();
                 let added: Vec<PackageArch> = cur_set.difference(&orig_set).map(|ref p| (**p).clone()).collect();
-                return Some((removed, added));
+                Some((removed, added))
             } else {
-                return None;
+                None
             }
         } else {
-            return None;
+            None
         }
     }
 
@@ -94,7 +94,7 @@ impl OutPathDiff {
             }
         }
 
-        return None;
+        None
     }
 
     fn run(&mut self) -> Result<PackageOutPaths, File> {

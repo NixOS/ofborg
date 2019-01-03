@@ -13,7 +13,7 @@ pub struct CachedCloner {
 }
 
 pub fn cached_cloner(path: &Path) -> CachedCloner {
-    return CachedCloner { root: path.to_path_buf() };
+    CachedCloner { root: path.to_path_buf() }
 }
 
 pub struct CachedProject {
@@ -39,10 +39,10 @@ impl CachedCloner {
         new_root.push("repo");
         new_root.push(format!("{:x}", md5::compute(&name)));
 
-        return CachedProject {
+        CachedProject {
             root: new_root,
             clone_url,
-        };
+        }
     }
 }
 
@@ -53,12 +53,12 @@ impl CachedProject {
         let mut new_root = self.root.clone();
         new_root.push(use_category);
 
-        return Ok(CachedProjectCo {
+        Ok(CachedProjectCo {
             root: new_root,
             id,
             clone_url: self.clone_from().clone(),
             local_reference: self.clone_to().clone(),
-        });
+        })
     }
 
     fn prefetch_cache(&self) -> Result<PathBuf, Error> {
@@ -67,7 +67,7 @@ impl CachedProject {
         self.clone_repo()?;
         self.fetch_repo()?;
 
-        return Ok(self.clone_to());
+        Ok(self.clone_to())
     }
 }
 
@@ -89,7 +89,7 @@ impl CachedProjectCo {
 
         // let build_dir = self.build_dir();
 
-        return Ok(self.clone_to().to_str().unwrap().to_string());
+        Ok(self.clone_to().to_str().unwrap().to_string())
     }
 
     pub fn fetch_pr(&self, pr_id: u64) -> Result<(), Error> {
@@ -105,9 +105,9 @@ impl CachedProjectCo {
         lock.unlock();
 
         if result.success() {
-            return Ok(());
+            Ok(())
         } else {
-            return Err(Error::new(ErrorKind::Other, "Failed to fetch PR"));
+            Err(Error::new(ErrorKind::Other, "Failed to fetch PR"))
         }
     }
 
@@ -124,7 +124,7 @@ impl CachedProjectCo {
 
         lock.unlock();
 
-        return result.success();
+        result.success()
     }
 
     pub fn merge_commit(&self, commit: &OsStr) -> Result<(), Error> {
@@ -142,9 +142,9 @@ impl CachedProjectCo {
         lock.unlock();
 
         if result.success() {
-            return Ok(());
+            Ok(())
         } else {
-            return Err(Error::new(ErrorKind::Other, "Failed to merge"));
+            Err(Error::new(ErrorKind::Other, "Failed to merge"))
         }
     }
 
@@ -161,17 +161,17 @@ impl CachedProjectCo {
         lock.unlock();
 
         if result.status.success() {
-            return Ok(
+            Ok(
                 String::from_utf8_lossy(&result.stdout)
                     .lines()
                     .map(|l| l.to_owned())
                     .collect(),
-            );
+            )
         } else {
-            return Err(Error::new(
+            Err(Error::new(
                 ErrorKind::Other,
                 String::from_utf8_lossy(&result.stderr).to_lowercase(),
-            ));
+            ))
         }
     }
 
@@ -188,67 +188,67 @@ impl CachedProjectCo {
         lock.unlock();
 
         if result.status.success() {
-            return Ok(
+            Ok(
                 String::from_utf8_lossy(&result.stdout)
                     .lines()
                     .map(|l| l.to_owned())
                     .collect(),
-            );
+            )
         } else {
-            return Err(Error::new(
+            Err(Error::new(
                 ErrorKind::Other,
                 String::from_utf8_lossy(&result.stderr).to_lowercase(),
-            ));
+            ))
         }
     }
 }
 
 impl clone::GitClonable for CachedProjectCo {
     fn clone_from(&self) -> String {
-        return self.clone_url.clone();
+        self.clone_url.clone()
     }
 
     fn clone_to(&self) -> PathBuf {
         let mut clone_path = self.root.clone();
         clone_path.push(&self.id);
-        return clone_path;
+        clone_path
     }
 
     fn lock_path(&self) -> PathBuf {
         let mut lock_path = self.root.clone();
         lock_path.push(format!("{}.lock", self.id));
-        return lock_path;
+        lock_path
     }
 
     fn extra_clone_args(&self) -> Vec<&OsStr> {
         let local_ref = self.local_reference.as_ref();
-        return vec![
+        vec![
             OsStr::new("--shared"),
             OsStr::new("--reference-if-able"),
             local_ref,
-        ];
+        ]
     }
 }
 
 impl clone::GitClonable for CachedProject {
     fn clone_from(&self) -> String {
-        return self.clone_url.clone();
+        self.clone_url.clone()
     }
 
     fn clone_to(&self) -> PathBuf {
         let mut clone_path = self.root.clone();
         clone_path.push("clone");
-        return clone_path;
+        clone_path
     }
 
     fn lock_path(&self) -> PathBuf {
         let mut clone_path = self.root.clone();
         clone_path.push("clone.lock");
-        return clone_path;
+        clone_path
     }
 
     fn extra_clone_args(&self) -> Vec<&OsStr> {
-        return vec![OsStr::new("--bare")];
+        vec![OsStr::new("--bare")]
     }
 }
 

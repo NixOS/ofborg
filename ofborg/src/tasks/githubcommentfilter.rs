@@ -21,10 +21,10 @@ pub struct GitHubCommentWorker {
 
 impl GitHubCommentWorker {
     pub fn new(acl: acl::ACL, github: hubcaps::Github) -> GitHubCommentWorker {
-        return GitHubCommentWorker {
+        GitHubCommentWorker {
             acl,
             github,
-        };
+        }
     }
 }
 
@@ -37,7 +37,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         _: &BasicProperties,
         body: &Vec<u8>,
     ) -> Result<Self::J, String> {
-        return match serde_json::from_slice(body) {
+        match serde_json::from_slice(body) {
             Ok(e) => Ok(e),
             Err(e) => {
                 println!(
@@ -46,7 +46,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                 );
                 panic!("{:?}", e);
             }
-        };
+        }
     }
 
     fn consumer(&mut self, job: &ghevent::IssueComment) -> worker::Actions {
@@ -146,6 +146,6 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         }
 
         response.push(worker::Action::Ack);
-        return response;
+        response
     }
 }

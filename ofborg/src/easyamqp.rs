@@ -312,7 +312,7 @@ pub fn session_from_config(config: &RabbitMQConfig) -> Result<amqp::Session, amq
     let session = try!(amqp::Session::new(options));
 
     info!("Connected to {}", &config.host);
-    return Ok(session);
+    Ok(session)
 }
 
 pub trait TypedWrappers {

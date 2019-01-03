@@ -31,12 +31,12 @@ impl BuildWorker {
         system: String,
         identity: String,
     ) -> BuildWorker {
-        return BuildWorker {
+        BuildWorker {
             cloner,
             nix,
             system,
             identity,
-        };
+        }
     }
 
     fn actions<'a, 'b>(
@@ -80,7 +80,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
                 None,
             ));
 
-        return JobActions {
+        JobActions {
             system: system.to_owned(),
             identity: identity.to_owned(),
             receiver,
@@ -92,7 +92,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             log_routing_key,
             result_exchange,
             result_routing_key,
-        };
+        }
     }
 
     pub fn log_snippet(&self) -> Vec<String> {
@@ -127,7 +127,6 @@ impl<'a, 'b> JobActions<'a, 'b> {
 
         let result_exchange = self.result_exchange.clone();
         let result_routing_key = self.result_routing_key.clone();
-
 
         self.tell(worker::publish_serde_action(
             result_exchange,
@@ -280,13 +279,13 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         body: &Vec<u8>,
     ) -> Result<Self::J, String> {
         println!("lmao I got a job?");
-        return match buildjob::from(body) {
+        match buildjob::from(body) {
             Ok(e) => Ok(e),
             Err(e) => {
                 println!("{:?}", String::from_utf8(body.clone()));
                 panic!("{:?}", e);
             }
-        };
+        }
     }
 
     fn consumer(
@@ -421,7 +420,7 @@ mod tests {
     }
 
     fn tpath(component: &str) -> PathBuf {
-        return Path::new(env!("CARGO_MANIFEST_DIR")).join(component);
+        Path::new(env!("CARGO_MANIFEST_DIR")).join(component)
     }
 
     fn make_worker(path: &Path) -> BuildWorker {
@@ -434,7 +433,7 @@ mod tests {
             "cargo-test-build".to_owned(),
         );
 
-        return worker;
+        worker
     }
 
     fn make_pr_repo(bare: &Path, co: &Path) -> String {
@@ -447,7 +446,8 @@ mod tests {
             .output()
             .expect("building the test PR failed");
         let hash = String::from_utf8(output.stdout).expect("Should just be a hash");
-        return hash.trim().to_owned();
+
+        hash.trim().to_owned()
     }
 
     fn strip_escaped_ansi(string: &str) -> String {

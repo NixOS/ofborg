@@ -22,7 +22,7 @@ impl LineWriter {
             last_line: len,
         };
 
-        return writer;
+        writer
     }
 
     fn load_buffer(file: &mut File) -> Vec<String> {

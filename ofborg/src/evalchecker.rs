@@ -33,6 +33,6 @@ impl EvalChecker {
     pub fn cli_cmd(&self) -> String {
         let mut cli = vec![self.op.to_string()];
         cli.append(&mut self.args.clone());
-        return cli.join(" ");
+        cli.join(" ")
     }
 }

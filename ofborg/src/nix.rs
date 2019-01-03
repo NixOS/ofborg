@@ -75,31 +75,31 @@ pub struct Nix {
 
 impl Nix {
     pub fn new(system: String, remote: String, build_timeout: u16, initial_heap_size: Option<String>) -> Nix {
-        return Nix {
+        Nix {
             system,
             remote,
             build_timeout,
             initial_heap_size,
             limit_supported_systems: true,
-        };
+        }
     }
 
     pub fn with_system(&self, system: String) -> Nix {
         let mut n = self.clone();
         n.system = system;
-        return n;
+        n
     }
 
     pub fn with_limited_supported_systems(&self) -> Nix {
         let mut n = self.clone();
         n.limit_supported_systems = true;
-        return n;
+        n
     }
 
     pub fn without_limited_supported_systems(&self) -> Nix {
         let mut n = self.clone();
         n.limit_supported_systems = false;
-        return n;
+        n
     }
 
     pub fn safely_partition_instantiable_attrs(
@@ -134,7 +134,7 @@ impl Nix {
     ) -> Result<File, File> {
         let cmd = self.safely_instantiate_attrs_cmd(nixpkgs, file, attrs);
 
-        return self.run(cmd, true);
+        self.run(cmd, true)
     }
 
     pub fn safely_instantiate_attrs_cmd(
@@ -150,7 +150,7 @@ impl Nix {
             attrargs.push(attr);
         }
 
-        return self.safe_command(Operation::Instantiate, nixpkgs, attrargs);
+        self.safe_command(Operation::Instantiate, nixpkgs, attrargs)
     }
 
     pub fn safely_build_attrs(
@@ -161,7 +161,7 @@ impl Nix {
     ) -> Result<File, File> {
         let cmd = self.safely_build_attrs_cmd(nixpkgs, file, attrs);
 
-        return self.run(cmd, true);
+        self.run(cmd, true)
     }
 
     pub fn safely_build_attrs_async(
@@ -197,7 +197,7 @@ impl Nix {
         args: Vec<String>,
         keep_stdout: bool,
     ) -> Result<File, File> {
-        return self.run(self.safe_command(op, nixpkgs, args), keep_stdout);
+        self.run(self.safe_command(op, nixpkgs, args), keep_stdout)
     }
 
     pub fn run(&self, mut cmd: Command, keep_stdout: bool) -> Result<File, File> {
@@ -223,9 +223,9 @@ impl Nix {
         );
 
         if status.success() {
-            return Ok(reader);
+            Ok(reader)
         } else {
-            return Err(reader);
+            Err(reader)
         }
     }
 
@@ -271,7 +271,7 @@ impl Nix {
 
         command.args(args);
 
-        return command;
+        command
     }
 }
 
@@ -302,19 +302,19 @@ mod tests {
     fn build_path() -> PathBuf {
         let mut cwd = env::current_dir().unwrap();
         cwd.push(Path::new("./test-srcs/build"));
-        return cwd;
+        cwd
     }
 
     fn passing_eval_path() -> PathBuf {
         let mut cwd = env::current_dir().unwrap();
         cwd.push(Path::new("./test-srcs/eval"));
-        return cwd;
+        cwd
     }
 
     fn individual_eval_path() -> PathBuf {
         let mut cwd = env::current_dir().unwrap();
         cwd.push(Path::new("./test-srcs/eval-mixed-failure"));
-        return cwd;
+        cwd
     }
 
     fn strip_ansi(string: &str) -> String {

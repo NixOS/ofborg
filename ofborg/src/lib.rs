@@ -75,7 +75,7 @@ pub mod ofborg {
     pub use test_scratch;
     pub use easyamqp;
 
-    pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+    pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
     pub fn partition_result<A,B>(results: Vec<Result<A,B>>) -> (Vec<A>, Vec<B>) {
         let mut ok = Vec::new();

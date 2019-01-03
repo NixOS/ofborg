@@ -13,11 +13,12 @@ impl ACL {
     ) -> ACL {
         trusted_users.iter_mut().map(|x| *x = x.to_lowercase()).last();
         known_users.iter_mut().map(|x| *x = x.to_lowercase()).last();
-        return ACL {
+
+        ACL {
             trusted_users,
             known_users,
             repos,
-        };
+        }
     }
 
     pub fn is_repo_eligible(&self, name: &str) -> bool {
@@ -46,16 +47,16 @@ impl ACL {
             return false;
         }
 
-        return self.known_users.contains(&user.to_lowercase());
+        self.known_users.contains(&user.to_lowercase())
     }
 
     pub fn can_build_unrestricted(&self, user: &str, repo: &str) -> bool {
         if repo.to_lowercase() == "nixos/nixpkgs" {
-            return self.trusted_users.contains(&user.to_lowercase());
+            self.trusted_users.contains(&user.to_lowercase())
         } else if user == "grahamc" {
-            return true;
+            true
         } else {
-            return false;
+            false
         }
     }
 }

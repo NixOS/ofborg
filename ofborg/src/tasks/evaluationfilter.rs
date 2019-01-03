@@ -16,9 +16,9 @@ pub struct EvaluationFilterWorker {
 
  impl EvaluationFilterWorker {
     pub fn new(acl: acl::ACL) -> EvaluationFilterWorker {
-        return EvaluationFilterWorker {
+        EvaluationFilterWorker {
             acl,
-        };
+        }
     }
 }
 
@@ -31,7 +31,7 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
         _: &BasicProperties,
         body: &Vec<u8>,
     ) -> Result<Self::J, String> {
-        return match serde_json::from_slice(body) {
+        match serde_json::from_slice(body) {
             Ok(e) => Ok(e),
             Err(e) => {
                 Err(format!(
@@ -40,7 +40,7 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
                     String::from_utf8(body.clone())
                 ))
             }
-        };
+        }
     }
 
     fn consumer(&mut self, job: &ghevent::PullRequestEvent) -> worker::Actions {

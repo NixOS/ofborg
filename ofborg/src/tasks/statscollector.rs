@@ -29,7 +29,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for StatCollectorWorker
         _: &BasicProperties,
         body: &Vec<u8>,
     ) -> Result<Self::J, String> {
-        return match serde_json::from_slice(body) {
+        match serde_json::from_slice(body) {
             Ok(e) => Ok(e),
             Err(_) => {
                 let mut modified_body: Vec<u8> = vec!["\"".as_bytes()[0]];
@@ -55,7 +55,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for StatCollectorWorker
                     }
                 }
             }
-        };
+        }
     }
 
     fn consumer(&mut self, job: &stats::EventMessage) -> worker::Actions {
@@ -65,6 +65,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for StatCollectorWorker
             self.collector.record(sender.clone(), event.clone());
         }
 
-        return vec![worker::Action::Ack];
+        vec![worker::Action::Ack]
     }
 }

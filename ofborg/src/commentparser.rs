@@ -9,9 +9,9 @@ pub fn parse(text: &str) -> Option<Vec<Instruction>> {
         .collect();
 
     if instructions.len() == 0 {
-        return None;
+        None
     } else {
-        return Some(instructions);
+        Some(instructions)
     }
 }
 

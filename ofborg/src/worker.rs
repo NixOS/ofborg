@@ -44,14 +44,14 @@ where
         ..Default::default()
     };
 
-    return Action::Publish(QueueMsg {
+    Action::Publish(QueueMsg {
         exchange,
         routing_key,
         mandatory: false,
         immediate: false,
         properties: Some(props),
         content: serde_json::to_string(&msg).unwrap().into_bytes(),
-    });
+    })
 }
 
 pub trait SimpleWorker: Send + 'static {
@@ -68,7 +68,7 @@ pub trait SimpleWorker: Send + 'static {
 }
 
 pub fn new<T: SimpleWorker>(worker: T) -> Worker<T> {
-    return Worker { internal: worker };
+    Worker { internal: worker }
 }
 
 

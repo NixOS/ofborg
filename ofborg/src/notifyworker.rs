@@ -48,10 +48,10 @@ pub struct ChannelNotificationReceiver<'a> {
 
 impl<'a> ChannelNotificationReceiver<'a> {
     pub fn new(channel: &'a mut Channel, delivery_tag: u64) -> ChannelNotificationReceiver<'a> {
-        return ChannelNotificationReceiver {
+        ChannelNotificationReceiver {
             channel,
             delivery_tag,
-        };
+        }
     }
 }
 
@@ -87,7 +87,7 @@ impl<'a> NotificationReceiver for ChannelNotificationReceiver<'a> {
 }
 
 pub fn new<T: SimpleNotifyWorker>(worker: T) -> NotifyWorker<T> {
-    return NotifyWorker { internal: worker };
+    NotifyWorker { internal: worker }
 }
 
 impl<T: SimpleNotifyWorker + Send> Consumer for NotifyWorker<T> {

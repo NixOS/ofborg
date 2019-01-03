@@ -52,18 +52,18 @@ fn validate_path_segment(segment: &PathBuf) -> Result<(), String> {
         }
     })
     {
-        return Ok(());
+        Ok(())
     } else {
-        return Err(String::from("Path contained invalid components"));
+        Err(String::from("Path contained invalid components"))
     }
 }
 
 impl LogMessageCollector {
     pub fn new(log_root: PathBuf, max_open: usize) -> LogMessageCollector {
-        return LogMessageCollector {
+        LogMessageCollector {
             handles: LruCache::new(max_open),
             log_root,
-        };
+        }
     }
 
     pub fn write_metadata(&mut self, from: &LogFrom, data: &BuildLogStart) -> Result<(), String>{
@@ -105,20 +105,20 @@ impl LogMessageCollector {
 
     pub fn handle_for(&mut self, from: &LogFrom) -> Result<&mut LineWriter, String> {
         if self.handles.contains_key(&from) {
-            return Ok(self.handles.get_mut(&from).expect(
+            Ok(self.handles.get_mut(&from).expect(
                 "handles just contained the key",
-            ));
+            ))
         } else {
             let logpath = self.path_for_log(&from)?;
             let fp = self.open_file(logpath)?;
             let writer = LineWriter::new(fp);
             self.handles.insert(from.clone(), writer);
             if let Some(handle) = self.handles.get_mut(&from) {
-                return Ok(handle);
+                Ok(handle)
             } else {
-                return Err(String::from(
+                Err(String::from(
                     "A just-inserted value should already be there",
-                ));
+                ))
             }
         }
     }
@@ -126,13 +126,13 @@ impl LogMessageCollector {
     fn path_for_metadata(&self, from: &LogFrom) -> Result<PathBuf, String> {
         let mut path = self.path_for_log(from)?;
         path.set_extension("metadata.json");
-        return Ok(path);
+        Ok(path)
     }
 
     fn path_for_result(&self, from: &LogFrom) -> Result<PathBuf, String> {
         let mut path = self.path_for_log(from)?;
         path.set_extension("result.json");
-        return Ok(path);
+        Ok(path)
     }
 
     fn path_for_log(&self, from: &LogFrom) -> Result<PathBuf, String> {
@@ -147,13 +147,13 @@ impl LogMessageCollector {
         location.push(attempt_id);
 
         if location.starts_with(&self.log_root) {
-            return Ok(location);
+            Ok(location)
         } else {
-            return Err(format!(
+            Err(format!(
                 "Calculating the log location for {:?} resulted in an invalid path {:?}",
                 from,
                 location
-            ));
+            ))
         }
     }
 
@@ -212,13 +212,13 @@ impl worker::SimpleWorker for LogMessageCollector {
             }
         }
 
-        return Ok(LogMessage {
+        Ok(LogMessage {
             from: LogFrom {
                 routing_key: deliver.routing_key.clone(),
                 attempt_id,
             },
             message,
-        });
+        })
     }
 
     fn consumer(&mut self, job: &LogMessage) -> worker::Actions {
@@ -237,7 +237,7 @@ impl worker::SimpleWorker for LogMessageCollector {
             },
         }
 
-        return vec![worker::Action::Ack];
+        vec![worker::Action::Ack]
     }
 }
 
