@@ -1,4 +1,4 @@
-use ofborg::ghevent::{Repository};
+use ofborg::ghevent::Repository;
 
 #[derive(Serialize, Deserialize)]
 pub struct PullRequestEvent {
@@ -16,7 +16,7 @@ pub struct PullRequestChanges {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BaseChange {
-    #[serde(rename="ref")]
+    #[serde(rename = "ref")]
     pub git_ref: ChangeWas,
     pub sha: ChangeWas,
 }
@@ -27,14 +27,14 @@ pub struct ChangeWas {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-#[serde(rename_all="snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum PullRequestState {
     Open,
     Closed,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-#[serde(rename_all="snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum PullRequestAction {
     Assigned,
     Unassigned,
@@ -51,7 +51,7 @@ pub enum PullRequestAction {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PullRequestRef {
-    #[serde(rename="ref")]
+    #[serde(rename = "ref")]
     pub git_ref: String,
     pub sha: String,
 }
@@ -63,7 +63,6 @@ pub struct PullRequest {
     pub head: PullRequestRef,
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -74,7 +73,6 @@ mod tests {
         let data = include_str!("../../test-srcs/events/pr-changed-base.json");
 
         let _p: PullRequestEvent =
-            serde_json::from_str(&data.to_string())
-            .expect("Should properly deserialize");
+            serde_json::from_str(&data.to_string()).expect("Should properly deserialize");
     }
 }

@@ -1,6 +1,5 @@
 use ofborg::message::{Pr, Repo};
 
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum BuildStatus {
     Skipped,
@@ -9,7 +8,6 @@ pub enum BuildStatus {
     TimedOut,
     UnexpectedError { err: String },
 }
-
 
 pub struct LegacyBuildResult {
     pub repo: Repo,
@@ -25,14 +23,14 @@ pub struct LegacyBuildResult {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum V1Tag {
-    V1
+    V1,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum BuildResult {
     V1 {
-        tag: V1Tag,  // use serde once all enum variants have a tag
+        tag: V1Tag, // use serde once all enum variants have a tag
         repo: Repo,
         pr: Pr,
         system: String,
@@ -64,50 +62,69 @@ impl BuildResult {
         // it's decouples the structs from serialization.  These can be changed
         // as long as we can translate all enum variants.
         match *self {
-            BuildResult::Legacy { ref repo, ref pr, ref system, ref output, ref attempt_id, ref request_id, ref attempted_attrs, ref skipped_attrs, .. } =>
-                LegacyBuildResult {
-                    repo: repo.to_owned(),
-                    pr: pr.to_owned(),
-                    system: system.to_owned(),
-                    output: output.to_owned(),
-                    attempt_id: attempt_id.to_owned(),
-                    request_id: request_id.to_owned(),
-                    status: self.status(),
-                    attempted_attrs: attempted_attrs.to_owned(),
-                    skipped_attrs: skipped_attrs.to_owned(),
-                },
-            BuildResult::V1 { ref repo, ref pr, ref system, ref output, ref attempt_id, ref request_id, ref attempted_attrs, ref skipped_attrs, .. } =>
-                LegacyBuildResult {
-                    repo: repo.to_owned(),
-                    pr: pr.to_owned(),
-                    system: system.to_owned(),
-                    output: output.to_owned(),
-                    attempt_id: attempt_id.to_owned(),
-                    request_id: request_id.to_owned(),
-                    status: self.status(),
-                    attempted_attrs: attempted_attrs.to_owned(),
-                    skipped_attrs: skipped_attrs.to_owned(),
-                },
+            BuildResult::Legacy {
+                ref repo,
+                ref pr,
+                ref system,
+                ref output,
+                ref attempt_id,
+                ref request_id,
+                ref attempted_attrs,
+                ref skipped_attrs,
+                ..
+            } => LegacyBuildResult {
+                repo: repo.to_owned(),
+                pr: pr.to_owned(),
+                system: system.to_owned(),
+                output: output.to_owned(),
+                attempt_id: attempt_id.to_owned(),
+                request_id: request_id.to_owned(),
+                status: self.status(),
+                attempted_attrs: attempted_attrs.to_owned(),
+                skipped_attrs: skipped_attrs.to_owned(),
+            },
+            BuildResult::V1 {
+                ref repo,
+                ref pr,
+                ref system,
+                ref output,
+                ref attempt_id,
+                ref request_id,
+                ref attempted_attrs,
+                ref skipped_attrs,
+                ..
+            } => LegacyBuildResult {
+                repo: repo.to_owned(),
+                pr: pr.to_owned(),
+                system: system.to_owned(),
+                output: output.to_owned(),
+                attempt_id: attempt_id.to_owned(),
+                request_id: request_id.to_owned(),
+                status: self.status(),
+                attempted_attrs: attempted_attrs.to_owned(),
+                skipped_attrs: skipped_attrs.to_owned(),
+            },
         }
     }
 
     pub fn status(&self) -> BuildStatus {
         match *self {
-            BuildResult::Legacy { ref status, ref success, .. } =>
-                status.to_owned().unwrap_or_else(|| {
-                    // Fallback for old format.
-                    match *success {
-                        None => BuildStatus::Skipped,
-                        Some(true) => BuildStatus::Success,
-                        Some(false) => BuildStatus::Failure,
-                    }
-                }),
-            BuildResult::V1 { ref status, .. } =>
-                status.to_owned(),
+            BuildResult::Legacy {
+                ref status,
+                ref success,
+                ..
+            } => status.to_owned().unwrap_or_else(|| {
+                // Fallback for old format.
+                match *success {
+                    None => BuildStatus::Skipped,
+                    Some(true) => BuildStatus::Success,
+                    Some(false) => BuildStatus::Failure,
+                }
+            }),
+            BuildResult::V1 { ref status, .. } => status.to_owned(),
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

@@ -1,9 +1,9 @@
-use std::path::PathBuf;
 use fs2::FileExt;
+use std::ffi::OsStr;
 use std::fs;
 use std::io::{Error, ErrorKind};
+use std::path::PathBuf;
 use std::process::Command;
-use std::ffi::OsStr;
 
 pub struct Lock {
     lock: Option<fs::File>,
@@ -30,23 +30,20 @@ pub trait GitClonable {
                 warn!("Failed to create lock file {:?}: {}", self.lock_path(), e);
                 Err(e)
             }
-            Ok(lock) => {
-                match lock.lock_exclusive() {
-                    Err(e) => {
-                        warn!(
-                            "Failed to get exclusive lock on file {:?}: {}",
-                            self.lock_path(),
-                            e
-                        );
-                        Err(e)
-                    }
-                    Ok(_) => {
-                        debug!("Got lock on {:?}", self.lock_path());
-                        Ok(Lock { lock: Some(lock) })
-                    }
+            Ok(lock) => match lock.lock_exclusive() {
+                Err(e) => {
+                    warn!(
+                        "Failed to get exclusive lock on file {:?}: {}",
+                        self.lock_path(),
+                        e
+                    );
+                    Err(e)
                 }
-            }
-
+                Ok(_) => {
+                    debug!("Got lock on {:?}", self.lock_path());
+                    Ok(Lock { lock: Some(lock) })
+                }
+            },
         }
     }
 
@@ -76,7 +73,14 @@ pub trait GitClonable {
         if result.success() {
             Ok(())
         } else {
-            Err(Error::new(ErrorKind::Other, format!("Failed to clone from {:?} to {:?}", self.clone_from(), self.clone_to())))
+            Err(Error::new(
+                ErrorKind::Other,
+                format!(
+                    "Failed to clone from {:?} to {:?}",
+                    self.clone_from(),
+                    self.clone_to()
+                ),
+            ))
         }
     }
 

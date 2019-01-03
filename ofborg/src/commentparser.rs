@@ -1,7 +1,8 @@
 use nom::types::CompleteStr;
 
 pub fn parse(text: &str) -> Option<Vec<Instruction>> {
-    let instructions: Vec<Instruction> = text.lines()
+    let instructions: Vec<Instruction> = text
+        .lines()
         .flat_map(|s| match parse_line(s) {
             Some(instructions) => instructions.into_iter(),
             None => Vec::new().into_iter(),
@@ -50,10 +51,11 @@ named!(parse_line_impl(CompleteStr) -> Option<Vec<Instruction>>, alt!(
 pub fn parse_line(text: &str) -> Option<Vec<Instruction>> {
     match parse_line_impl(CompleteStr(text)) {
         Ok((_, res)) => res,
-        Err(e) => { // This should likely never happen thanks to the | value!(None), but well...
+        Err(e) => {
+            // This should likely never happen thanks to the | value!(None), but well...
             warn!("Failed parsing string ‘{}’: result was {:?}", text, e);
             None
-        },
+        }
     }
 }
 
@@ -110,10 +112,7 @@ mod tests {
         assert_eq!(
             Some(vec![
                 Instruction::Eval,
-                Instruction::Build(
-                    Subset::Nixpkgs,
-                    vec![String::from("foo")]
-                ),
+                Instruction::Build(Subset::Nixpkgs, vec![String::from("foo")]),
             ]),
             parse("@grahamcofborg eval @grahamcofborg build foo")
         );
@@ -123,15 +122,9 @@ mod tests {
     fn build_and_eval_and_build_comment() {
         assert_eq!(
             Some(vec![
-                Instruction::Build(
-                    Subset::Nixpkgs,
-                    vec![String::from("bar")]
-                ),
+                Instruction::Build(Subset::Nixpkgs, vec![String::from("bar")]),
                 Instruction::Eval,
-                Instruction::Build(
-                    Subset::Nixpkgs,
-                    vec![String::from("foo")]
-                ),
+                Instruction::Build(Subset::Nixpkgs, vec![String::from("foo")]),
             ]),
             parse(
                 "
@@ -146,15 +139,9 @@ mod tests {
     fn complex_comment_with_paragraphs() {
         assert_eq!(
             Some(vec![
-                Instruction::Build(
-                    Subset::Nixpkgs,
-                    vec![String::from("bar")]
-                ),
+                Instruction::Build(Subset::Nixpkgs, vec![String::from("bar")]),
                 Instruction::Eval,
-                Instruction::Build(
-                    Subset::Nixpkgs,
-                    vec![String::from("foo")]
-                ),
+                Instruction::Build(Subset::Nixpkgs, vec![String::from("foo")]),
             ]),
             parse(
                 "
@@ -172,15 +159,11 @@ Also, just in case, let's try foo
         );
     }
 
-
     #[test]
     fn build_and_eval_comment() {
         assert_eq!(
             Some(vec![
-                Instruction::Build(
-                    Subset::Nixpkgs,
-                    vec![String::from("foo")]
-                ),
+                Instruction::Build(Subset::Nixpkgs, vec![String::from("foo")]),
                 Instruction::Eval,
             ]),
             parse("@grahamcofborg build foo @grahamcofborg eval")
@@ -190,12 +173,10 @@ Also, just in case, let's try foo
     #[test]
     fn build_comment() {
         assert_eq!(
-            Some(vec![
-                Instruction::Build(
-                    Subset::Nixpkgs,
-                    vec![String::from("foo"), String::from("bar")]
-                ),
-            ]),
+            Some(vec![Instruction::Build(
+                Subset::Nixpkgs,
+                vec![String::from("foo"), String::from("bar")]
+            ),]),
             parse(
                 "@GrahamCOfBorg build foo bar
 
@@ -207,16 +188,14 @@ baz",
     #[test]
     fn test_comment() {
         assert_eq!(
-            Some(vec![
-                Instruction::Build(
-                    Subset::NixOS,
-                    vec![
-                        String::from("tests.foo"),
-                        String::from("tests.bar"),
-                        String::from("tests.baz"),
-                    ]
-                ),
-            ]),
+            Some(vec![Instruction::Build(
+                Subset::NixOS,
+                vec![
+                    String::from("tests.foo"),
+                    String::from("tests.bar"),
+                    String::from("tests.baz"),
+                ]
+            ),]),
             parse("@GrahamCOfBorg test foo bar baz")
         );
     }
@@ -224,16 +203,14 @@ baz",
     #[test]
     fn build_comment_newlines() {
         assert_eq!(
-            Some(vec![
-                Instruction::Build(
-                    Subset::Nixpkgs,
-                    vec![
-                        String::from("foo"),
-                        String::from("bar"),
-                        String::from("baz"),
-                    ]
-                ),
-            ]),
+            Some(vec![Instruction::Build(
+                Subset::Nixpkgs,
+                vec![
+                    String::from("foo"),
+                    String::from("bar"),
+                    String::from("baz"),
+                ]
+            ),]),
             parse("@GrahamCOfBorg build foo bar baz")
         );
     }
@@ -241,16 +218,14 @@ baz",
     #[test]
     fn build_comment_lower() {
         assert_eq!(
-            Some(vec![
-                Instruction::Build(
-                    Subset::Nixpkgs,
-                    vec![
-                        String::from("foo"),
-                        String::from("bar"),
-                        String::from("baz"),
-                    ]
-                ),
-            ]),
+            Some(vec![Instruction::Build(
+                Subset::Nixpkgs,
+                vec![
+                    String::from("foo"),
+                    String::from("bar"),
+                    String::from("baz"),
+                ]
+            ),]),
             parse("@grahamcofborg build foo bar baz")
         );
     }
@@ -258,16 +233,14 @@ baz",
     #[test]
     fn build_comment_lower_package_case_retained() {
         assert_eq!(
-            Some(vec![
-                Instruction::Build(
-                    Subset::Nixpkgs,
-                    vec![
-                        String::from("foo"),
-                        String::from("bar"),
-                        String::from("baz.Baz"),
-                    ]
-                ),
-            ]),
+            Some(vec![Instruction::Build(
+                Subset::Nixpkgs,
+                vec![
+                    String::from("foo"),
+                    String::from("bar"),
+                    String::from("baz.Baz"),
+                ]
+            ),]),
             parse("@grahamcofborg build foo bar baz.Baz")
         );
     }

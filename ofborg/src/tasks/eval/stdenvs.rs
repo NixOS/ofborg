@@ -1,7 +1,6 @@
-
-use std::path::PathBuf;
-use ofborg::nix;
 use ofborg::files::file_to_str;
+use ofborg::nix;
+use std::path::PathBuf;
 
 enum StdenvFrom {
     Before,
@@ -127,16 +126,11 @@ mod tests {
             .output()
             .expect("nix-instantiate required");
 
-        let nixpkgs = String::from_utf8(output.stdout)
-            .expect("nixpkgs required");
+        let nixpkgs = String::from_utf8(output.stdout).expect("nixpkgs required");
 
         let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
         let nix = nix::Nix::new(String::from("x86_64-linux"), remote, 1200, None);
-        let mut stdenv =
-            Stdenvs::new(
-                nix.clone(),
-                PathBuf::from(nixpkgs.trim_right()),
-            );
+        let mut stdenv = Stdenvs::new(nix.clone(), PathBuf::from(nixpkgs.trim_right()));
         stdenv.identify(System::X8664Linux, StdenvFrom::Before);
         stdenv.identify(System::X8664Darwin, StdenvFrom::Before);
 

@@ -1,11 +1,11 @@
-use std::path::{Path, PathBuf};
 use md5;
-use std::fs;
-use std::io::{Error, ErrorKind};
 use ofborg::clone;
 use ofborg::clone::GitClonable;
 use std::ffi::OsStr;
 use std::ffi::OsString;
+use std::fs;
+use std::io::{Error, ErrorKind};
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 pub struct CachedCloner {
@@ -13,7 +13,9 @@ pub struct CachedCloner {
 }
 
 pub fn cached_cloner(path: &Path) -> CachedCloner {
-    CachedCloner { root: path.to_path_buf() }
+    CachedCloner {
+        root: path.to_path_buf(),
+    }
 }
 
 pub struct CachedProject {
@@ -161,12 +163,10 @@ impl CachedProjectCo {
         lock.unlock();
 
         if result.status.success() {
-            Ok(
-                String::from_utf8_lossy(&result.stdout)
-                    .lines()
-                    .map(|l| l.to_owned())
-                    .collect(),
-            )
+            Ok(String::from_utf8_lossy(&result.stdout)
+                .lines()
+                .map(|l| l.to_owned())
+                .collect())
         } else {
             Err(Error::new(
                 ErrorKind::Other,
@@ -188,12 +188,10 @@ impl CachedProjectCo {
         lock.unlock();
 
         if result.status.success() {
-            Ok(
-                String::from_utf8_lossy(&result.stdout)
-                    .lines()
-                    .map(|l| l.to_owned())
-                    .collect(),
-            )
+            Ok(String::from_utf8_lossy(&result.stdout)
+                .lines()
+                .map(|l| l.to_owned())
+                .collect())
         } else {
             Err(Error::new(
                 ErrorKind::Other,
@@ -252,13 +250,12 @@ impl clone::GitClonable for CachedProject {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ofborg::test_scratch::TestScratch;
     use std::path::{Path, PathBuf};
     use std::process::{Command, Stdio};
-    use ofborg::test_scratch::TestScratch;
 
     fn tpath(component: &str) -> PathBuf {
         return Path::new(env!("CARGO_MANIFEST_DIR")).join(component);
@@ -273,8 +270,8 @@ mod tests {
             .output()
             .expect("building the test PR failed");
 
-        let stderr = String::from_utf8(output.stderr)
-            .unwrap_or_else(|err| format!("warning: {}", err));
+        let stderr =
+            String::from_utf8(output.stderr).unwrap_or_else(|err| format!("warning: {}", err));
         println!("{}", stderr);
 
         let hash = String::from_utf8(output.stdout).expect("Should just be a hash");
@@ -301,9 +298,9 @@ mod tests {
         let expect: Vec<String> = vec!["check out this cool PR".to_owned()];
 
         assert_eq!(
-            working_co.commit_messages_from_head(&hash).expect(
-                "fetching messages should work",
-            ),
+            working_co
+                .commit_messages_from_head(&hash)
+                .expect("fetching messages should work",),
             expect
         );
     }
@@ -328,9 +325,9 @@ mod tests {
         let expect: Vec<String> = vec!["default.nix".to_owned(), "hi another file".to_owned()];
 
         assert_eq!(
-            working_co.files_changed_from_head(&hash).expect(
-                "fetching files changed should work",
-            ),
+            working_co
+                .files_changed_from_head(&hash)
+                .expect("fetching files changed should work",),
             expect
         );
     }

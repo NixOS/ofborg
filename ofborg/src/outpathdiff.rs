@@ -1,14 +1,14 @@
 extern crate amqp;
 extern crate env_logger;
 
-use std::collections::{HashSet, HashMap};
-use std::fs::File;
+use ofborg::nix;
+use std::collections::{HashMap, HashSet};
 use std::fs;
+use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::path::PathBuf;
-use ofborg::nix;
 use std::io::Write;
+use std::path::PathBuf;
 
 pub struct OutPathDiff {
     calculator: OutPaths,
@@ -64,8 +64,14 @@ impl OutPathDiff {
                 let orig_set: HashSet<&PackageArch> = orig.keys().collect();
                 let cur_set: HashSet<&PackageArch> = cur.keys().collect();
 
-                let removed: Vec<PackageArch> = orig_set.difference(&cur_set).map(|ref p| (**p).clone()).collect();
-                let added: Vec<PackageArch> = cur_set.difference(&orig_set).map(|ref p| (**p).clone()).collect();
+                let removed: Vec<PackageArch> = orig_set
+                    .difference(&cur_set)
+                    .map(|ref p| (**p).clone())
+                    .collect();
+                let added: Vec<PackageArch> = cur_set
+                    .difference(&orig_set)
+                    .map(|ref p| (**p).clone())
+                    .collect();
                 Some((removed, added))
             } else {
                 None
@@ -182,7 +188,6 @@ impl OutPaths {
     }
 }
 
-
 fn parse_lines(data: &mut BufRead) -> PackageOutPaths {
     data.lines()
         .filter_map(|line| match line {
@@ -211,7 +216,6 @@ fn parse_lines(data: &mut BufRead) -> PackageOutPaths {
                 info!("Warning: not 2 word segments in {:?}", split);
                 None
             }
-
         })
         .collect()
 }

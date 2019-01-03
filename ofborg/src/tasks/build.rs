@@ -1,21 +1,20 @@
 extern crate amqp;
-extern crate uuid;
 extern crate env_logger;
+extern crate uuid;
 
 use uuid::Uuid;
 
-use std::collections::VecDeque;
 use ofborg::checkout;
-use ofborg::message::buildjob;
-use ofborg::message::buildresult::{BuildResult, BuildStatus, V1Tag};
-use ofborg::message::buildlogmsg;
-use ofborg::nix;
 use ofborg::commentparser;
+use ofborg::message::buildjob;
+use ofborg::message::buildlogmsg;
+use ofborg::message::buildresult::{BuildResult, BuildStatus, V1Tag};
+use ofborg::nix;
+use std::collections::VecDeque;
 
-use ofborg::worker;
+use amqp::protocol::basic::{BasicProperties, Deliver};
 use ofborg::notifyworker;
-use amqp::protocol::basic::{Deliver, BasicProperties};
-
+use ofborg::worker;
 
 pub struct BuildWorker {
     cloner: checkout::CachedCloner,
@@ -69,16 +68,15 @@ impl<'a, 'b> JobActions<'a, 'b> {
         job: &'b buildjob::BuildJob,
         receiver: &'a mut notifyworker::NotificationReceiver,
     ) -> JobActions<'a, 'b> {
-        let (log_exchange, log_routing_key) = job.logs.clone().unwrap_or((
-            Some(String::from("logs")),
-            Some(String::from("build.log")),
-        ));
+        let (log_exchange, log_routing_key) = job
+            .logs
+            .clone()
+            .unwrap_or((Some(String::from("logs")), Some(String::from("build.log"))));
 
-        let (result_exchange, result_routing_key) =
-            job.statusreport.clone().unwrap_or((
-                Some(String::from("build-results")),
-                None,
-            ));
+        let (result_exchange, result_routing_key) = job
+            .statusreport
+            .clone()
+            .unwrap_or((Some(String::from("build-results")), None));
 
         JobActions {
             system: system.to_owned(),
@@ -192,9 +190,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
         ));
     }
 
-    pub fn build_not_attempted(&mut self, not_attempted_attrs: Vec<String>,
-
-    ) {
+    pub fn build_not_attempted(&mut self, not_attempted_attrs: Vec<String>) {
         let msg = BuildResult::V1 {
             tag: V1Tag::V1,
             repo: self.job.repo.clone(),
@@ -227,10 +223,11 @@ impl<'a, 'b> JobActions<'a, 'b> {
         self.tell(worker::Action::Ack);
     }
 
-    pub fn build_finished(&mut self, status: BuildStatus,
-                          attempted_attrs: Vec<String>,
-                          not_attempted_attrs: Vec<String>,
-
+    pub fn build_finished(
+        &mut self,
+        status: BuildStatus,
+        attempted_attrs: Vec<String>,
+        not_attempted_attrs: Vec<String>,
     ) {
         let msg = BuildResult::V1 {
             tag: V1Tag::V1,
@@ -272,12 +269,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
 impl notifyworker::SimpleNotifyWorker for BuildWorker {
     type J = buildjob::BuildJob;
 
-    fn msg_to_job(
-        &self,
-        _: &Deliver,
-        _: &BasicProperties,
-        body: &[u8],
-    ) -> Result<Self::J, String> {
+    fn msg_to_job(&self, _: &Deliver, _: &BasicProperties, body: &[u8]) -> Result<Self::J, String> {
         println!("lmao I got a job?");
         match buildjob::from(body) {
             Ok(e) => Ok(e),
@@ -301,10 +293,9 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         }
 
         info!("Working on {}", job.pr.number);
-        let project = self.cloner.project(
-            &job.repo.full_name,
-            job.repo.clone_url.clone(),
-        );
+        let project = self
+            .cloner
+            .project(&job.repo.full_name, job.repo.clone_url.clone());
         let co = project
             .clone_for("builder".to_string(), self.identity.clone())
             .unwrap();
@@ -339,7 +330,10 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             return;
         }
 
-        println!("Got path: {:?}, determining which ones we can build ", refpath);
+        println!(
+            "Got path: {:?}, determining which ones we can build ",
+            refpath
+        );
         let (can_build, cannot_build) = self.nix.safely_partition_instantiable_attrs(
             refpath.as_ref(),
             buildfile,
@@ -349,13 +343,14 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         let cannot_build_attrs: Vec<String> = cannot_build
             .clone()
             .into_iter()
-            .map(|(attr,_)| attr)
+            .map(|(attr, _)| attr)
             .collect();
 
-        println!("Can build: '{}', Cannot build: '{}'",
-                 can_build.join(", "),
-                 cannot_build_attrs.join(", "));
-
+        println!(
+            "Can build: '{}', Cannot build: '{}'",
+            can_build.join(", "),
+            cannot_build_attrs.join(", ")
+        );
 
         actions.log_started(can_build.clone(), cannot_build_attrs.clone());
         actions.log_instantiation_errors(cannot_build);
@@ -365,11 +360,9 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             return;
         }
 
-        let mut spawned = self.nix.safely_build_attrs_async(
-            refpath.as_ref(),
-            buildfile,
-            can_build.clone(),
-        );
+        let mut spawned =
+            self.nix
+                .safely_build_attrs_async(refpath.as_ref(), buildfile, can_build.clone());
 
         for line in spawned.lines() {
             actions.log_line(&line);
@@ -390,12 +383,16 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             },
             e => BuildStatus::UnexpectedError {
                 err: format!("failed on interior command {:?}", e),
-            }
+            },
         };
 
         println!("ok built ({:?}), building", status);
         println!("Lines:\n-----8<-----");
-        actions.log_snippet().iter().inspect(|x| println!("{}", x)).last();
+        actions
+            .log_snippet()
+            .iter()
+            .inspect(|x| println!("{}", x))
+            .last();
         println!("----->8-----");
 
         actions.build_finished(status, can_build, cannot_build_attrs);
@@ -406,13 +403,13 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use notifyworker::SimpleNotifyWorker;
+    use ofborg::message::{Pr, Repo};
+    use ofborg::test_scratch::TestScratch;
     use std::env;
     use std::path::{Path, PathBuf};
-    use ofborg::message::{Pr, Repo};
-    use notifyworker::SimpleNotifyWorker;
     use std::process::{Command, Stdio};
     use std::vec::IntoIter;
-    use ofborg::test_scratch::TestScratch;
 
     fn nix() -> nix::Nix {
         let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
@@ -507,10 +504,7 @@ mod tests {
                 owner: "ofborg-test".to_owned(),
             },
             subset: None,
-            logs: Some((
-                Some(String::from("logs")),
-                Some(String::from("build.log")),
-            )),
+            logs: Some((Some(String::from("logs")), Some(String::from("build.log")))),
             statusreport: Some((Some(String::from("build-results")), None)),
             request_id: "bogus-request-id".to_owned(),
         };
@@ -531,7 +525,6 @@ mod tests {
         assert_contains_job(&mut actions, "status\":\"Success\""); // This one to the logs
         assert_eq!(actions.next(), Some(worker::Action::Ack));
     }
-
 
     #[test]
     pub fn test_all_jobs_skipped() {
@@ -556,10 +549,7 @@ mod tests {
                 owner: "ofborg-test".to_owned(),
             },
             subset: None,
-            logs: Some((
-                Some(String::from("logs")),
-                Some(String::from("build.log")),
-            )),
+            logs: Some((Some(String::from("logs")), Some(String::from("build.log")))),
             statusreport: Some((Some(String::from("build-results")), None)),
             request_id: "bogus-request-id".to_owned(),
         };
@@ -570,7 +560,10 @@ mod tests {
 
         println!("Total actions: {:?}", dummyreceiver.actions.len());
         let mut actions = dummyreceiver.actions.into_iter();
-        assert_contains_job(&mut actions, "\"line_number\":1,\"output\":\"Cannot nix-instantiate `not-real\' because:\"");
+        assert_contains_job(
+            &mut actions,
+            "\"line_number\":1,\"output\":\"Cannot nix-instantiate `not-real\' because:\"",
+        );
         assert_contains_job(&mut actions, "\"line_number\":2,\"output\":\"error: attribute 'not-real' in selection path 'not-real' not found\"}");
         assert_contains_job(&mut actions, "skipped_attrs\":[\"not-real"); // First one to the github poster
         assert_contains_job(&mut actions, "skipped_attrs\":[\"not-real"); // This one to the logs

@@ -1,13 +1,13 @@
-extern crate hyper;
 extern crate amqp;
+extern crate hyper;
 extern crate ofborg;
 
+use ofborg::{config, easyamqp, stats, tasks, worker};
 use std::env;
-use ofborg::{easyamqp, tasks, worker, config, stats};
 
 use amqp::Basic;
-use ofborg::easyamqp::TypedWrappers;
 use hyper::server::{Request, Response, Server};
+use ofborg::easyamqp::TypedWrappers;
 
 use std::thread;
 
@@ -17,21 +17,17 @@ fn main() {
 
     println!("Hello, world!");
 
-
     let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
     println!("Connected to rabbitmq");
 
     let events = stats::RabbitMQ::new(
         &format!("{}-{}", cfg.runner.identity.clone(), cfg.nix.system.clone()),
-        session.open_channel(3).unwrap()
+        session.open_channel(3).unwrap(),
     );
 
     let metrics = stats::MetricCollector::new();
 
-    let collector = tasks::statscollector::StatCollectorWorker::new(
-        events,
-        metrics.clone(),
-    );
+    let collector = tasks::statscollector::StatCollectorWorker::new(events, metrics.clone());
 
     let mut channel = session.open_channel(1).unwrap();
     channel
@@ -85,8 +81,7 @@ fn main() {
         )
         .unwrap();
 
-
-    thread::spawn(||{
+    thread::spawn(|| {
         let addr = "0.0.0.0:9898";
         println!("listening addr {:?}", addr);
         Server::http(addr)
@@ -96,7 +91,6 @@ fn main() {
             })
             .unwrap();
     });
-
 
     channel.start_consuming();
 

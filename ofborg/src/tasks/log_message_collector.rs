@@ -3,15 +3,15 @@ extern crate env_logger;
 use lru_cache::LruCache;
 use serde_json;
 use std::fs;
-use std::fs::{OpenOptions, File};
-use std::path::{Component, PathBuf};
+use std::fs::{File, OpenOptions};
 use std::io::Write;
+use std::path::{Component, PathBuf};
 
-use ofborg::writetoline::LineWriter;
-use ofborg::message::buildlogmsg::{BuildLogStart, BuildLogMsg};
+use amqp::protocol::basic::{BasicProperties, Deliver};
+use ofborg::message::buildlogmsg::{BuildLogMsg, BuildLogStart};
 use ofborg::message::buildresult::BuildResult;
 use ofborg::worker;
-use amqp::protocol::basic::{Deliver, BasicProperties};
+use ofborg::writetoline::LineWriter;
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone)]
 pub struct LogFrom {
@@ -34,7 +34,7 @@ enum MsgType {
 #[derive(Debug)]
 pub struct LogMessage {
     from: LogFrom,
-    message: MsgType
+    message: MsgType,
 }
 
 fn validate_path_segment(segment: &PathBuf) -> Result<(), String> {
@@ -50,8 +50,7 @@ fn validate_path_segment(segment: &PathBuf) -> Result<(), String> {
             println!("Invalid path component: {:?}", e);
             false
         }
-    })
-    {
+    }) {
         Ok(())
     } else {
         Err(String::from("Path contained invalid components"))
@@ -66,7 +65,7 @@ impl LogMessageCollector {
         }
     }
 
-    pub fn write_metadata(&mut self, from: &LogFrom, data: &BuildLogStart) -> Result<(), String>{
+    pub fn write_metadata(&mut self, from: &LogFrom, data: &BuildLogStart) -> Result<(), String> {
         let metapath = self.path_for_metadata(&from)?;
         let mut fp = self.open_file(&metapath)?;
 
@@ -77,15 +76,12 @@ impl LogMessageCollector {
                 } else {
                     Ok(())
                 }
-            },
-            Err(e) => {
-                Err(format!("Failed to stringify metadata: {:?}", e))
             }
+            Err(e) => Err(format!("Failed to stringify metadata: {:?}", e)),
         }
     }
 
-
-    pub fn write_result(&mut self, from: &LogFrom, data: &BuildResult) -> Result<(), String>{
+    pub fn write_result(&mut self, from: &LogFrom, data: &BuildResult) -> Result<(), String> {
         let path = self.path_for_result(&from)?;
         let mut fp = self.open_file(&path)?;
 
@@ -96,18 +92,17 @@ impl LogMessageCollector {
                 } else {
                     Ok(())
                 }
-            },
-            Err(e) => {
-                Err(format!("Failed to stringify result: {:?}", e))
             }
+            Err(e) => Err(format!("Failed to stringify result: {:?}", e)),
         }
     }
 
     pub fn handle_for(&mut self, from: &LogFrom) -> Result<&mut LineWriter, String> {
         if self.handles.contains_key(&from) {
-            Ok(self.handles.get_mut(&from).expect(
-                "handles just contained the key",
-            ))
+            Ok(self
+                .handles
+                .get_mut(&from)
+                .expect("handles just contained the key"))
         } else {
             let logpath = self.path_for_log(&from)?;
             let fp = self.open_file(&logpath)?;
@@ -151,8 +146,7 @@ impl LogMessageCollector {
         } else {
             Err(format!(
                 "Calculating the log location for {:?} resulted in an invalid path {:?}",
-                from,
-                location
+                from, location
             ))
         }
     }
@@ -172,8 +166,7 @@ impl LogMessageCollector {
             Ok(handle) => Ok(handle),
             Err(e) => Err(format!(
                 "Failed to open the file for {:?}, err: {:?}",
-                &path,
-                e
+                &path, e
             )),
         }
     }
@@ -188,7 +181,6 @@ impl worker::SimpleWorker for LogMessageCollector {
         _: &BasicProperties,
         body: &[u8],
     ) -> Result<Self::J, String> {
-
         let message: MsgType;
         let attempt_id: String;
 
@@ -224,17 +216,18 @@ impl worker::SimpleWorker for LogMessageCollector {
     fn consumer(&mut self, job: &LogMessage) -> worker::Actions {
         match job.message {
             MsgType::Start(ref start) => {
-                self.write_metadata(&job.from, &start).expect("failed to write metadata");
-            },
+                self.write_metadata(&job.from, &start)
+                    .expect("failed to write metadata");
+            }
             MsgType::Msg(ref message) => {
                 let handle = self.handle_for(&job.from).unwrap();
 
-                handle.write_to_line((message.line_number - 1) as usize,
-                                     &message.output);
-            },
+                handle.write_to_line((message.line_number - 1) as usize, &message.output);
+            }
             MsgType::Finish(ref finish) => {
-                self.write_result(&job.from, &finish).expect("failed to write result");
-            },
+                self.write_result(&job.from, &finish)
+                    .expect("failed to write result");
+            }
         }
 
         vec![worker::Action::Ack]
@@ -244,12 +237,12 @@ impl worker::SimpleWorker for LogMessageCollector {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ofborg::message::buildresult::{BuildStatus, V1Tag};
+    use ofborg::message::{Pr, Repo};
+    use ofborg::test_scratch::TestScratch;
+    use ofborg::worker::SimpleWorker;
     use std::io::Read;
     use std::path::PathBuf;
-    use ofborg::worker::SimpleWorker;
-    use ofborg::test_scratch::TestScratch;
-    use ofborg::message::buildresult::{BuildStatus, V1Tag};
-    use ofborg::message::{Pr,Repo};
 
     fn make_worker(path: PathBuf) -> LogMessageCollector {
         LogMessageCollector::new(path, 3)
@@ -291,11 +284,12 @@ mod tests {
             })
             .expect("the path should be valid");
 
-
         assert!(path.starts_with(p.path()));
-        assert!(path.as_os_str().to_string_lossy().ends_with("my-routing-key/my-attempt-id.metadata.json"));
+        assert!(path
+            .as_os_str()
+            .to_string_lossy()
+            .ends_with("my-routing-key/my-attempt-id.metadata.json"));
     }
-
 
     #[test]
     fn test_path_for_result() {
@@ -309,9 +303,11 @@ mod tests {
             })
             .expect("the path should be valid");
 
-
         assert!(path.starts_with(p.path()));
-        assert!(path.as_os_str().to_string_lossy().ends_with("my-routing-key/my-attempt-id.result.json"));
+        assert!(path
+            .as_os_str()
+            .to_string_lossy()
+            .ends_with("my-routing-key/my-attempt-id.result.json"));
     }
 
     #[test]
@@ -325,7 +321,6 @@ mod tests {
                 routing_key: String::from("my-routing-key"),
             })
             .expect("the path should be valid");
-
 
         assert!(path.starts_with(p.path()));
         assert!(path.ends_with("my-routing-key/my-attempt-id"));
@@ -361,22 +356,17 @@ mod tests {
         assert!(validate_path_segment(&PathBuf::from("/foo")).is_err());
     }
 
-
     #[test]
     fn test_open_file() {
         let p = TestScratch::new_dir("log-message-collector-open_file");
         let worker = make_worker(p.path());
 
-        assert!(
-            worker
-                .open_file(&worker.path_for_log(&make_from("a")).unwrap())
-                .is_ok()
-        );
-        assert!(
-            worker
-                .open_file(&worker.path_for_log(&make_from("b.foo/123")).unwrap())
-                .is_ok()
-        );
+        assert!(worker
+            .open_file(&worker.path_for_log(&make_from("a")).unwrap())
+            .is_ok());
+        assert!(worker
+            .open_file(&worker.path_for_log(&make_from("b.foo/123")).unwrap())
+            .is_ok());
     }
 
     #[test]
@@ -397,19 +387,18 @@ mod tests {
 
         {
             let mut worker = make_worker(p.path());
-            assert_eq!(vec![worker::Action::Ack],
-                       worker.consumer(&
-                                       LogMessage {
-                                           from: make_from("foo"),
-                                           message: MsgType::Start(BuildLogStart {
-                                               attempt_id: String::from("my-attempt-id"),
-                                               identity: String::from("my-identity"),
-                                               system: String::from("foobar-x8664"),
-                                               attempted_attrs: Some(vec!["foo".to_owned()]),
-                                               skipped_attrs: Some(vec!["bar".to_owned()]),
-                                           })
-                                       }
-                       )
+            assert_eq!(
+                vec![worker::Action::Ack],
+                worker.consumer(&LogMessage {
+                    from: make_from("foo"),
+                    message: MsgType::Start(BuildLogStart {
+                        attempt_id: String::from("my-attempt-id"),
+                        identity: String::from("my-identity"),
+                        system: String::from("foobar-x8664"),
+                        attempted_attrs: Some(vec!["foo".to_owned()]),
+                        skipped_attrs: Some(vec!["bar".to_owned()]),
+                    })
+                })
             );
 
             assert_eq!(vec![worker::Action::Ack], worker.consumer(&job));
@@ -426,33 +415,32 @@ mod tests {
             job.message = MsgType::Msg(logmsg.clone());
             assert_eq!(vec![worker::Action::Ack], worker.consumer(&job));
 
-            assert_eq!(vec![worker::Action::Ack],
-                       worker.consumer(&
-                                       LogMessage {
-                                           from: make_from("foo"),
-                                           message: MsgType::Finish(BuildResult::V1 {
-                                               tag: V1Tag::V1,
-                                               repo: Repo {
-                                                   clone_url: "https://github.com/nixos/ofborg.git".to_owned(),
-                                                   full_name: "NixOS/ofborg".to_owned(),
-                                                   owner: "NixOS".to_owned(),
-                                                   name: "ofborg".to_owned(),
-                                               },
-                                               pr: Pr {
-                                                   number: 42,
-                                                   head_sha: "6dd9f0265d52b946dd13daf996f30b64e4edb446".to_owned(),
-                                                   target_branch: Some("scratch".to_owned()),
-                                               },
-                                               system: "x86_64-linux".to_owned(),
-                                               output: vec![],
-                                               attempt_id: "attempt-id-foo".to_owned(),
-                                               request_id: "bogus-request-id".to_owned(),
-                                               status: BuildStatus::Success,
-                                               attempted_attrs: Some(vec!["foo".to_owned()]),
-                                               skipped_attrs: Some(vec!["bar".to_owned()]),
-                                           })
-                                       }
-                       )
+            assert_eq!(
+                vec![worker::Action::Ack],
+                worker.consumer(&LogMessage {
+                    from: make_from("foo"),
+                    message: MsgType::Finish(BuildResult::V1 {
+                        tag: V1Tag::V1,
+                        repo: Repo {
+                            clone_url: "https://github.com/nixos/ofborg.git".to_owned(),
+                            full_name: "NixOS/ofborg".to_owned(),
+                            owner: "NixOS".to_owned(),
+                            name: "ofborg".to_owned(),
+                        },
+                        pr: Pr {
+                            number: 42,
+                            head_sha: "6dd9f0265d52b946dd13daf996f30b64e4edb446".to_owned(),
+                            target_branch: Some("scratch".to_owned()),
+                        },
+                        system: "x86_64-linux".to_owned(),
+                        output: vec![],
+                        attempt_id: "attempt-id-foo".to_owned(),
+                        request_id: "bogus-request-id".to_owned(),
+                        status: BuildStatus::Success,
+                        attempted_attrs: Some(vec!["foo".to_owned()]),
+                        skipped_attrs: Some(vec!["bar".to_owned()]),
+                    })
+                })
             );
         }
 
@@ -462,13 +450,11 @@ mod tests {
         File::open(prm).unwrap().read_to_string(&mut sm).unwrap();
         assert_eq!(&sm, "{\"system\":\"foobar-x8664\",\"identity\":\"my-identity\",\"attempt_id\":\"my-attempt-id\",\"attempted_attrs\":[\"foo\"],\"skipped_attrs\":[\"bar\"]}");
 
-
         let mut prf = p.path();
         let mut sf = String::new();
         prf.push("routing-key-foo/attempt-id-foo");
         File::open(prf).unwrap().read_to_string(&mut sf).unwrap();
         assert_eq!(&sf, "line-1\n\n\n\nline-5\n");
-
 
         let mut pr = p.path();
         let mut s = String::new();

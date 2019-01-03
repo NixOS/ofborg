@@ -1,10 +1,10 @@
 extern crate amqp;
 extern crate env_logger;
 
-use serde_json;
-use ofborg::worker;
+use amqp::protocol::basic::{BasicProperties, Deliver};
 use ofborg::stats;
-use amqp::protocol::basic::{Deliver, BasicProperties};
+use ofborg::worker;
+use serde_json;
 
 pub struct StatCollectorWorker<E> {
     events: E,
@@ -13,10 +13,7 @@ pub struct StatCollectorWorker<E> {
 
 impl<E: stats::SysEvents + 'static> StatCollectorWorker<E> {
     pub fn new(events: E, collector: stats::MetricCollector) -> StatCollectorWorker<E> {
-        StatCollectorWorker {
-            events,
-            collector,
-        }
+        StatCollectorWorker { events, collector }
     }
 }
 
@@ -38,12 +35,14 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for StatCollectorWorker
 
                 match serde_json::from_slice(&modified_body) {
                     Ok(e) => {
-                        self.events.notify(stats::Event::StatCollectorLegacyEvent(stats::event_metric_name(&e)));
+                        self.events.notify(stats::Event::StatCollectorLegacyEvent(
+                            stats::event_metric_name(&e),
+                        ));
                         Ok(stats::EventMessage {
                             sender: "".to_owned(),
                             events: vec![e],
                         })
-                    },
+                    }
                     Err(e) => {
                         self.events.notify(stats::Event::StatCollectorBogusEvent);
                         error!(
@@ -59,7 +58,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for StatCollectorWorker
     }
 
     fn consumer(&mut self, job: &stats::EventMessage) -> worker::Actions {
-
         let sender = job.sender.clone();
         for event in job.events.iter() {
             self.collector.record(sender.clone(), event.clone());

@@ -1,9 +1,9 @@
 extern crate amqp;
 extern crate env_logger;
 
+use ofborg::nix;
 use std::fs::File;
 use std::path::Path;
-use ofborg::nix;
 
 pub struct EvalChecker {
     name: String,
@@ -27,7 +27,8 @@ impl EvalChecker {
     }
 
     pub fn execute(&self, path: &Path) -> Result<File, File> {
-        self.nix.safely(self.op.clone(), path, self.args.clone(), false)
+        self.nix
+            .safely(self.op.clone(), path, self.args.clone(), false)
     }
 
     pub fn cli_cmd(&self) -> String {

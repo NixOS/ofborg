@@ -2,17 +2,16 @@ extern crate amqp;
 extern crate env_logger;
 extern crate uuid;
 
-use uuid::Uuid;
-use ofborg::ghevent;
 use ofborg::acl;
+use ofborg::ghevent;
 use serde_json;
+use uuid::Uuid;
 
+use amqp::protocol::basic::{BasicProperties, Deliver};
 use hubcaps;
-use ofborg::message::{Repo, Pr, buildjob, massrebuildjob};
-use ofborg::worker;
 use ofborg::commentparser;
-use amqp::protocol::basic::{Deliver, BasicProperties};
-
+use ofborg::message::{buildjob, massrebuildjob, Pr, Repo};
+use ofborg::worker;
 
 pub struct GitHubCommentWorker {
     acl: acl::ACL,
@@ -21,10 +20,7 @@ pub struct GitHubCommentWorker {
 
 impl GitHubCommentWorker {
     pub fn new(acl: acl::ACL, github: hubcaps::Github) -> GitHubCommentWorker {
-        GitHubCommentWorker {
-            acl,
-            github,
-        }
+        GitHubCommentWorker { acl, github }
     }
 }
 
@@ -75,7 +71,8 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         let instructions = commentparser::parse(&job.comment.body);
         println!("Instructions: {:?}", instructions);
 
-        let pr = self.github
+        let pr = self
+            .github
             .repo(
                 job.repository.owner.login.clone(),
                 job.repository.name.clone(),
@@ -87,9 +84,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         if let Err(x) = pr {
             info!(
                 "fetching PR {}#{} from GitHub yielded error {}",
-                job.repository.full_name,
-                job.issue.number,
-                x
+                job.repository.full_name, job.issue.number, x
             );
             return vec![worker::Action::Ack];
         }
@@ -140,7 +135,6 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                             &msg,
                         ));
                     }
-
                 }
             }
         }

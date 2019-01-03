@@ -3,27 +3,27 @@ extern crate amqp;
 extern crate env_logger;
 extern crate uuid;
 
-use tasks::eval;
-use uuid::Uuid;
+use amqp::protocol::basic::{BasicProperties, Deliver};
+use hubcaps;
+use ofborg::acl::ACL;
+use ofborg::checkout;
+use ofborg::commentparser::Subset;
+use ofborg::commitstatus::CommitStatus;
+use ofborg::evalchecker::EvalChecker;
+use ofborg::files::file_to_str;
+use ofborg::message::{buildjob, massrebuildjob};
+use ofborg::nix;
+use ofborg::outpathdiff::{OutPathDiff, OutPaths};
+use ofborg::stats;
+use ofborg::stats::Event;
+use ofborg::tagger::{PathsTagger, PkgsAddedRemovedTagger, RebuildTagger, StdenvTagger};
+use ofborg::worker;
 use std::collections::HashMap;
 use std::path::Path;
 use std::path::PathBuf;
-use ofborg::checkout;
-use ofborg::message::{massrebuildjob, buildjob};
 use std::time::Instant;
-use ofborg::files::file_to_str;
-use ofborg::nix;
-use ofborg::acl::ACL;
-use ofborg::stats;
-use ofborg::stats::Event;
-use ofborg::worker;
-use ofborg::tagger::{StdenvTagger, RebuildTagger, PathsTagger, PkgsAddedRemovedTagger};
-use ofborg::outpathdiff::{OutPaths, OutPathDiff};
-use ofborg::evalchecker::EvalChecker;
-use ofborg::commitstatus::CommitStatus;
-use ofborg::commentparser::Subset;
-use amqp::protocol::basic::{Deliver, BasicProperties};
-use hubcaps;
+use tasks::eval;
+use uuid::Uuid;
 
 pub struct MassRebuildWorker<E> {
     cloner: checkout::CachedCloner,
@@ -61,19 +61,16 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
     }
 
     fn tag_from_title(&self, issue: &hubcaps::issues::IssueRef) {
-        let darwin = issue.get()
+        let darwin = issue
+            .get()
             .map(|iss| {
-                iss.title.to_lowercase().contains("darwin") ||
-                iss.title.to_lowercase().contains("macos")
+                iss.title.to_lowercase().contains("darwin")
+                    || iss.title.to_lowercase().contains("macos")
             })
             .unwrap_or(false);
 
         if darwin {
-            update_labels(
-                &issue,
-                &[String::from("6.topic: darwin")],
-                &[],
-            );
+            update_labels(&issue, &[String::from("6.topic: darwin")], &[]);
         }
     }
 
@@ -84,11 +81,7 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
             tagger.path_changed(&path);
         }
 
-        update_labels(
-            &issue,
-            &tagger.tags_to_add(),
-            &tagger.tags_to_remove(),
-        );
+        update_labels(&issue, &tagger.tags_to_add(), &tagger.tags_to_remove());
     }
 }
 
@@ -120,10 +113,9 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
     }
 
     fn consumer(&mut self, job: &massrebuildjob::MassRebuildJob) -> worker::Actions {
-        let repo = self.github.repo(
-            job.repo.owner.clone(),
-            job.repo.name.clone(),
-        );
+        let repo = self
+            .github
+            .repo(job.repo.owner.clone(), job.repo.name.clone());
         let gists = self.github.gists();
         let issue = repo.issue(job.pr.number);
 
@@ -140,10 +132,9 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                 if issue_is_wip(&iss) {
                     auto_schedule_build_archs = vec![];
                 } else {
-                    auto_schedule_build_archs = self.acl.build_job_destinations_for_user_repo(
-                        &iss.user.login,
-                        &job.repo.full_name,
-                    );
+                    auto_schedule_build_archs = self
+                        .acl
+                        .build_job_destinations_for_user_repo(&iss.user.login, &job.repo.full_name);
                 }
             }
             Err(e) => {
@@ -166,10 +157,9 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
 
         overall_status.set_with_description("Starting", hubcaps::statuses::State::Pending);
 
-        let project = self.cloner.project(
-            &job.repo.full_name,
-            job.repo.clone_url.clone(),
-        );
+        let project = self
+            .cloner
+            .project(&job.repo.full_name, job.repo.clone_url.clone());
 
         overall_status.set_with_description("Cloning project", hubcaps::statuses::State::Pending);
 
@@ -195,7 +185,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
             hubcaps::statuses::State::Pending,
         );
 
-
         let mut stdenvs = eval::Stdenvs::new(self.nix.clone(), PathBuf::from(&refpath));
         stdenvs.identify_before();
 
@@ -216,7 +205,8 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                 file_to_str(&mut output),
             ));
 
-            self.events.notify(Event::TargetBranchFailsEvaluation(target_branch.clone()));
+            self.events
+                .notify(Event::TargetBranchFailsEvaluation(target_branch.clone()));
             overall_status.set_with_description(
                 format!("Target branch {} doesn't evaluate!", &target_branch).as_ref(),
                 hubcaps::statuses::State::Failure,
@@ -224,78 +214,58 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
 
             return self.actions().skip(&job);
         }
-        self.events.notify(
-            Event::EvaluationDuration(
-                target_branch.clone(),
-                target_branch_rebuild_sniff_start.elapsed().as_secs(),
-            )
-        );
-        self.events.notify(
-            Event::EvaluationDurationCount(
-                target_branch.clone()
-            )
-        );
+        self.events.notify(Event::EvaluationDuration(
+            target_branch.clone(),
+            target_branch_rebuild_sniff_start.elapsed().as_secs(),
+        ));
+        self.events
+            .notify(Event::EvaluationDurationCount(target_branch.clone()));
 
         overall_status.set_with_description("Fetching PR", hubcaps::statuses::State::Pending);
 
         co.fetch_pr(job.pr.number).unwrap();
 
         if !co.commit_exists(job.pr.head_sha.as_ref()) {
-            overall_status.set_with_description(
-                "Commit not found",
-                hubcaps::statuses::State::Error,
-            );
+            overall_status
+                .set_with_description("Commit not found", hubcaps::statuses::State::Error);
 
             info!("Commit {} doesn't exist", job.pr.head_sha);
             return self.actions().skip(&job);
         }
 
-        let possibly_touched_packages =
-            parse_commit_messages(&co.commit_messages_from_head(&job.pr.head_sha).unwrap_or_else(|_|
-                vec!["".to_owned()],
-            ));
+        let possibly_touched_packages = parse_commit_messages(
+            &co.commit_messages_from_head(&job.pr.head_sha)
+                .unwrap_or_else(|_| vec!["".to_owned()]),
+        );
 
         self.tag_from_paths(
             &issue,
-            co.files_changed_from_head(&job.pr.head_sha).unwrap_or_else(|_| vec![])
+            co.files_changed_from_head(&job.pr.head_sha)
+                .unwrap_or_else(|_| vec![]),
         );
 
         overall_status.set_with_description("Merging PR", hubcaps::statuses::State::Pending);
 
         if co.merge_commit(job.pr.head_sha.as_ref()).is_err() {
-            overall_status.set_with_description(
-                "Failed to merge",
-                hubcaps::statuses::State::Failure,
-            );
+            overall_status
+                .set_with_description("Failed to merge", hubcaps::statuses::State::Failure);
 
             info!("Failed to merge {}", job.pr.head_sha);
 
-            update_labels(
-                &issue,
-                &["2.status: merge conflict".to_owned()],
-                &[],
-            );
+            update_labels(&issue, &["2.status: merge conflict".to_owned()], &[]);
 
             return self.actions().skip(&job);
         } else {
-            update_labels(
-                &issue,
-                &[],
-                &["2.status: merge conflict".to_owned()],
-            );
+            update_labels(&issue, &[], &["2.status: merge conflict".to_owned()]);
         }
 
-        overall_status.set_with_description(
-            "Checking new stdenvs",
-            hubcaps::statuses::State::Pending,
-        );
+        overall_status
+            .set_with_description("Checking new stdenvs", hubcaps::statuses::State::Pending);
 
         stdenvs.identify_after();
 
-        overall_status.set_with_description(
-            "Checking new out paths",
-            hubcaps::statuses::State::Pending,
-        );
+        overall_status
+            .set_with_description("Checking new out paths", hubcaps::statuses::State::Pending);
 
         if let Err(mut output) = rebuildsniff.find_after() {
             overall_status.set_url(make_gist(
@@ -308,29 +278,24 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                 format!(
                     "Failed to enumerate outputs after merging to {}",
                     &target_branch
-                ).as_ref(),
+                )
+                .as_ref(),
                 hubcaps::statuses::State::Failure,
             );
             return self.actions().skip(&job);
         }
 
         println!("Got path: {:?}, building", refpath);
-        overall_status.set_with_description(
-            "Beginning Evaluations",
-            hubcaps::statuses::State::Pending,
-        );
+        overall_status
+            .set_with_description("Beginning Evaluations", hubcaps::statuses::State::Pending);
 
         let eval_checks = vec![
             EvalChecker::new(
                 "package-list",
                 nix::Operation::QueryPackagesJSON,
-                vec![
-                    String::from("--file"),
-                    String::from("."),
-                ],
-                self.nix.clone()
+                vec![String::from("--file"), String::from(".")],
+                self.nix.clone(),
             ),
-
             EvalChecker::new(
                 "package-list-no-aliases",
                 nix::Operation::QueryPackagesJSON,
@@ -341,9 +306,8 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                     String::from("config"),
                     String::from("{ allowAliases = false; }"),
                 ],
-                self.nix.clone()
+                self.nix.clone(),
             ),
-
             EvalChecker::new(
                 "nixos-options",
                 nix::Operation::Instantiate,
@@ -355,9 +319,8 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                     String::from("-A"),
                     String::from("options"),
                 ],
-                self.nix.clone()
+                self.nix.clone(),
             ),
-
             EvalChecker::new(
                 "nixos-manual",
                 nix::Operation::Instantiate,
@@ -369,9 +332,8 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                     String::from("-A"),
                     String::from("manual"),
                 ],
-                self.nix.clone()
+                self.nix.clone(),
             ),
-
             EvalChecker::new(
                 "nixpkgs-manual",
                 nix::Operation::Instantiate,
@@ -383,9 +345,8 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                     String::from("-A"),
                     String::from("manual"),
                 ],
-                self.nix.clone()
+                self.nix.clone(),
             ),
-
             EvalChecker::new(
                 "nixpkgs-tarball",
                 nix::Operation::Instantiate,
@@ -397,9 +358,8 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                     String::from("-A"),
                     String::from("tarball"),
                 ],
-                self.nix.clone()
+                self.nix.clone(),
             ),
-
             EvalChecker::new(
                 "nixpkgs-unstable-jobset",
                 nix::Operation::Instantiate,
@@ -411,7 +371,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                     String::from("-A"),
                     String::from("unstable"),
                 ],
-                self.nix.clone()
+                self.nix.clone(),
             ),
         ];
 
@@ -457,7 +417,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
             })
             .all(|status| status == Ok(()));
 
-
         let mut response: worker::Actions = vec![];
 
         if eval_results {
@@ -480,7 +439,8 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                     state = hubcaps::statuses::State::Success;
                     gist_url = None;
 
-                    let mut try_build: Vec<String> = pkgs.keys()
+                    let mut try_build: Vec<String> = pkgs
+                        .keys()
                         .map(|pkgarch| pkgarch.package.clone())
                         .filter(|pkg| possibly_touched_packages.contains(&pkg))
                         .collect();
@@ -539,7 +499,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
             );
 
             if let Some((removed, added)) = rebuildsniff.package_diff() {
-            let mut addremovetagger = PkgsAddedRemovedTagger::new();
+                let mut addremovetagger = PkgsAddedRemovedTagger::new();
                 addremovetagger.changed(&removed, &added);
                 update_labels(
                     &issue,
@@ -575,12 +535,9 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
             );
 
             overall_status.set_with_description("^.^!", hubcaps::statuses::State::Success);
-
         } else {
-            overall_status.set_with_description(
-                "Complete, with errors",
-                hubcaps::statuses::State::Failure,
-            );
+            overall_status
+                .set_with_description("Complete, with errors", hubcaps::statuses::State::Failure);
         }
 
         self.events.notify(Event::TaskEvaluationCheckComplete);
@@ -588,8 +545,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
         self.actions().done(&job, response)
     }
 }
-
-
 
 fn make_gist<'a>(
     gists: &hubcaps::gists::Gists<'a>,
@@ -632,7 +587,8 @@ pub fn update_labels(issue: &hubcaps::issues::IssueRef, add: &[String], remove: 
     let to_add = add
         .iter()
         .filter(|l| !existing.contains(l)) // Remove labels already on the issue
-        .map(|l| l.as_ref()).collect();
+        .map(|l| l.as_ref())
+        .collect();
     info!("Adding labels: {:?}", to_add);
 
     let to_remove: Vec<String> = remove
@@ -678,7 +634,7 @@ mod tests {
     fn test_parse_commit_messages() {
         let expect: Vec<&str> = vec![
             "firefox{-esr", // don't support such fancy syntax
-            "}", // Don't support such fancy syntax
+            "}",            // Don't support such fancy syntax
             "firefox",
             "buildkite-agent",
             "python.pkgs.ptyprocess",
@@ -703,9 +659,9 @@ mod tests {
               Merge pull request #34414 from dotlambda/postfix
               foo,bar: something here: yeah
             "
-                    .lines()
-                    .map(|l| l.to_owned())
-                    .collect::<Vec<String>>(),
+                .lines()
+                .map(|l| l.to_owned())
+                .collect::<Vec<String>>(),
             ),
             expect
         );

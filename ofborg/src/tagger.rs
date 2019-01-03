@@ -1,5 +1,5 @@
-use ofborg::tasks;
 use ofborg::outpathdiff::PackageArch;
+use ofborg::tasks;
 use std::collections::HashMap;
 
 pub struct StdenvTagger {
@@ -111,7 +111,6 @@ impl RebuildTagger {
                 String::from("10.rebuild-linux: 11-100"),
                 String::from("10.rebuild-linux: 1-10"),
                 String::from("10.rebuild-linux: 0"),
-
                 String::from("10.rebuild-darwin: 501+"),
                 String::from("10.rebuild-darwin: 101-500"),
                 String::from("10.rebuild-darwin: 11-100"),
@@ -145,14 +144,10 @@ impl RebuildTagger {
             }
         }
 
-        self.selected =
-            vec![
-                format!("10.rebuild-linux: {}", self.bucket(counter_linux)),
-                format!(
-                    "10.rebuild-darwin: {}",
-                    self.bucket(counter_darwin)
-                ),
-            ];
+        self.selected = vec![
+            format!("10.rebuild-linux: {}", self.bucket(counter_linux)),
+            format!("10.rebuild-darwin: {}", self.bucket(counter_darwin)),
+        ];
 
         for tag in &self.selected {
             if !self.possible.contains(&tag) {
@@ -182,7 +177,7 @@ impl RebuildTagger {
         if count > 500 {
             "501+"
         } else if count > 100 {
-             "101-500"
+            "101-500"
         } else if count > 10 {
             "11-100"
         } else if count > 0 {
@@ -207,12 +202,11 @@ impl PathsTagger {
     }
 
     pub fn path_changed(&mut self, path: &str) {
-        let mut tags_to_add: Vec<String> = self.possible
+        let mut tags_to_add: Vec<String> = self
+            .possible
             .iter()
             .filter(|&(ref tag, ref _paths)| !self.selected.contains(&tag))
-            .filter(|&(ref _tag, ref paths)| {
-                paths.iter().any(|tp| path.contains(tp))
-            })
+            .filter(|&(ref _tag, ref paths)| paths.iter().any(|tp| path.contains(tp)))
             .map(|(tag, _paths)| tag.clone())
             .collect();
         self.selected.append(&mut tags_to_add);
@@ -266,7 +260,6 @@ mod tests {
                 vec!["topic: python".to_owned(), "topic: ruby".to_owned()]
             );
 
-
             tagger.path_changed("pkgs/development/interpreters/ruby/default.nix");
             assert_eq!(tagger.tags_to_add(), vec!["topic: ruby".to_owned()]);
             assert_eq!(tagger.tags_to_remove(), vec!["topic: python".to_owned()]);
@@ -274,7 +267,6 @@ mod tests {
             tagger.path_changed("pkgs/development/interpreters/ruby/foobar.nix");
             assert_eq!(tagger.tags_to_add(), vec!["topic: ruby".to_owned()]);
             assert_eq!(tagger.tags_to_remove(), vec!["topic: python".to_owned()]);
-
 
             tagger.path_changed("pkgs/top-level/python-packages.nix");
             assert_eq!(

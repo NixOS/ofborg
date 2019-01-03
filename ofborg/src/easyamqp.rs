@@ -1,8 +1,7 @@
-
-use ofborg;
-use ofborg::config::RabbitMQConfig;
 use amqp;
 use amqp::Basic;
+use ofborg;
+use ofborg::config::RabbitMQConfig;
 
 pub struct ConsumeConfig {
     /// Specifies the name of the queue to consume from.
@@ -368,7 +367,6 @@ impl TypedWrappers for amqp::Channel {
             config.arguments.unwrap_or_else(amqp::Table::new),
         )
     }
-
 
     fn declare_queue(
         &mut self,

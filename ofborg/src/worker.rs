@@ -1,9 +1,9 @@
+use amqp::protocol::basic::{BasicProperties, Deliver};
 use amqp::Basic;
-use amqp::{Consumer, Channel};
-use amqp::protocol::basic::{Deliver, BasicProperties};
-use std::marker::Send;
+use amqp::{Channel, Consumer};
 use serde::Serialize;
 use serde_json;
+use std::marker::Send;
 
 pub struct Worker<T: SimpleWorker> {
     internal: T,
@@ -71,8 +71,6 @@ pub fn new<T: SimpleWorker>(worker: T) -> Worker<T> {
     Worker { internal: worker }
 }
 
-
-
 impl<T: SimpleWorker + Send> Consumer for Worker<T> {
     fn handle_delivery(
         &mut self,
@@ -108,9 +106,9 @@ impl<T: SimpleWorker + Send> Consumer for Worker<T> {
                     let exch = msg.exchange.clone().unwrap_or_else(|| "".to_owned());
                     let key = msg.routing_key.clone().unwrap_or_else(|| "".to_owned());
 
-                    let props = msg.properties.unwrap_or(
-                        BasicProperties { ..Default::default() },
-                    );
+                    let props = msg.properties.unwrap_or(BasicProperties {
+                        ..Default::default()
+                    });
                     channel
                         .basic_publish(exch, key, msg.mandatory, msg.immediate, props, msg.content)
                         .unwrap();

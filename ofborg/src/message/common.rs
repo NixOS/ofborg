@@ -1,4 +1,3 @@
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Repo {
     pub owner: String,

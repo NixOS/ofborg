@@ -1,6 +1,6 @@
+use amqp::protocol::basic::{BasicProperties, Deliver};
 use amqp::Basic;
-use amqp::{Consumer, Channel};
-use amqp::protocol::basic::{Deliver, BasicProperties};
+use amqp::{Channel, Consumer};
 use std::marker::Send;
 use worker::Action;
 
@@ -75,9 +75,9 @@ impl<'a> NotificationReceiver for ChannelNotificationReceiver<'a> {
                 let exch = msg.exchange.clone().unwrap_or_else(|| "".to_owned());
                 let key = msg.routing_key.clone().unwrap_or_else(|| "".to_owned());
 
-                let props = msg.properties.unwrap_or(
-                    BasicProperties { ..Default::default() },
-                );
+                let props = msg.properties.unwrap_or(BasicProperties {
+                    ..Default::default()
+                });
                 self.channel
                     .basic_publish(exch, key, msg.mandatory, msg.immediate, props, msg.content)
                     .unwrap();
