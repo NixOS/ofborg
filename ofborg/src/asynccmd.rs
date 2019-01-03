@@ -189,7 +189,7 @@ impl AsyncCmd {
 
 
 impl SpawnedAsyncCmd {
-    pub fn lines<'a>(&'a mut self) -> mpsc::Iter<'a, String> {
+    pub fn lines(&mut self) -> mpsc::Iter<'_, String> {
         self.rx.iter()
     }
 
