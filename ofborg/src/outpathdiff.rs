@@ -161,13 +161,11 @@ impl OutPaths {
     }
 
     fn execute(&self) -> Result<File, File> {
-        let check_meta: String;
-
-        if self.check_meta {
-            check_meta = String::from("true");
+        let check_meta: String = if self.check_meta {
+            String::from("true")
         } else {
-            check_meta = String::from("false");
-        }
+            String::from("false")
+        };
 
         self.nix.safely(
             nix::Operation::QueryPackagesOutputs,

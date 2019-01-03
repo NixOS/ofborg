@@ -115,9 +115,7 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
             &skipped));
     }
 
-    let text: String;
-
-    if !result.output.is_empty() {
+    let text: String = if !result.output.is_empty() {
         let mut reply: Vec<String> = vec![];
 
         reply.push("## Partial log".to_owned());
@@ -126,11 +124,10 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
         reply.extend(result.output.clone());
         reply.push("```".to_owned());
 
-        text = reply.join("\n");
+        reply.join("\n")
     } else {
-        text = String::from("No partial log is available.");
-    }
-
+        String::from("No partial log is available.")
+    };
 
     CheckRunOptions{
         name: format!(

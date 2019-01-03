@@ -204,14 +204,11 @@ impl Nix {
         let stderr = tempfile().expect("Fetching a stderr tempfile");
         let mut reader = stderr.try_clone().expect("Cloning stderr to the reader");
 
-        let stdout: Stdio;
-
-        if keep_stdout {
-            let stdout_fd = stderr.try_clone().expect("Cloning stderr for stdout");
-            stdout = Stdio::from(stdout_fd);
+        let stdout: Stdio = if keep_stdout {
+            Stdio::from(stderr.try_clone().expect("Cloning stderr for stdout"))
         } else {
-            stdout = Stdio::null();
-        }
+            Stdio::null()
+        };
 
         let status = cmd.stdout(Stdio::from(stdout))
             .stderr(Stdio::from(stderr))
