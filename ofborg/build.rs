@@ -568,7 +568,7 @@ impl MetricCollector {
             index_fields.push("instance".to_owned());
             let ref_index_fields: Vec<String> = index_fields
                 .iter()
-                .map(|m| format!("ref {}", m))
+                .map(|m| format!("{}", m))
                 .collect();
 
             let for_matcher: String;
@@ -591,7 +591,7 @@ impl MetricCollector {
         .expect(\"Failed to unwrap metric mutex for {}\");
       let values: Vec<String> = (*table)
         .iter()
-        .map(|(&{}, value)| {{
+        .map(|({}, value)| {{
           let kvs: Vec<String> = vec![
 {}
           ];
