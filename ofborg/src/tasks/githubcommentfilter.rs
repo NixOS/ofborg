@@ -104,7 +104,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         };
 
         let pr_msg = Pr {
-            number: job.issue.number.clone(),
+            number: job.issue.number,
             head_sha: pr.head.sha.clone(),
             target_branch: Some(pr.base.commit_ref.clone()),
         };

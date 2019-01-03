@@ -89,7 +89,7 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
         };
 
         let pr_msg = Pr {
-            number: job.number.clone(),
+            number: job.number,
             head_sha: job.pull_request.head.sha.clone(),
             target_branch: Some(job.pull_request.base.git_ref.clone()),
         };
