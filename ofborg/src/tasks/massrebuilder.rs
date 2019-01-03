@@ -3,6 +3,7 @@ extern crate amqp;
 extern crate env_logger;
 extern crate uuid;
 
+use crate::maintainers::ImpactedMaintainers;
 use amqp::protocol::basic::{BasicProperties, Deliver};
 use hubcaps;
 use ofborg::acl::ACL;
@@ -74,7 +75,7 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
         }
     }
 
-    fn tag_from_paths(&self, issue: &hubcaps::issues::IssueRef, paths: Vec<String>) {
+    fn tag_from_paths(&self, issue: &hubcaps::issues::IssueRef, paths: &[String]) {
         let mut tagger = PathsTagger::new(self.tag_paths.clone());
 
         for path in paths {
@@ -238,11 +239,10 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                 .unwrap_or_else(|_| vec!["".to_owned()]),
         );
 
-        self.tag_from_paths(
-            &issue,
-            co.files_changed_from_head(&job.pr.head_sha)
-                .unwrap_or_else(|_| vec![]),
-        );
+        let changed_paths = co
+            .files_changed_from_head(&job.pr.head_sha)
+            .unwrap_or_else(|_| vec![]);
+        self.tag_from_paths(&issue, &changed_paths);
 
         overall_status.set_with_description("Merging PR", hubcaps::statuses::State::Pending);
 
@@ -523,6 +523,38 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                     );
 
                     overall_status.set_url(gist_url);
+
+                    let changed_attributes = attrs
+                        .iter()
+                        .map(|attr| attr.package.split('.').collect::<Vec<&str>>())
+                        .collect::<Vec<Vec<&str>>>();
+
+                    let m = ImpactedMaintainers::calculate(
+                        &self.nix,
+                        &PathBuf::from(&refpath),
+                        &changed_paths,
+                        &changed_attributes,
+                    );
+
+                    let gist_url = make_gist(
+                        &gists,
+                        "Potential Maintainers",
+                        Some("".to_owned()),
+                        match m {
+                            Ok(maintainers) => format!("Maintainers:\n{}", maintainers),
+                            Err(e) => format!("Ignorable calculation error:\n{:?}", e),
+                        },
+                    );
+
+                    let mut status = CommitStatus::new(
+                        repo.statuses(),
+                        job.pr.head_sha.clone(),
+                        String::from("grahamcofborg-eval-check-maintainers"),
+                        String::from("matching changed paths to changed attrs..."),
+                        gist_url,
+                    );
+
+                    status.set(hubcaps::statuses::State::Success);
                 }
 
                 rebuild_tags.parse_attrs(attrs);
