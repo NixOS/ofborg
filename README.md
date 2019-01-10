@@ -49,6 +49,10 @@ Commands:
 @grahamcofborg test list of tests
 ```
 
+**NOTICE** This command does currently not work due the way ofborg evaluate the tests.
+Use the build command instead to build tests through the `nixosTests` attribute set
+i.e instead of `@grahamcofborg test ferm` run `@grahamcofborg build nixosTests.ferm`.
+
 This will run `nix-build ./nixos/release.nix -A tests.list -A tests.of -A tests.tests` in
 the nixpkgs checkout. Note: this will only run on x86_64-linux machines.
 
