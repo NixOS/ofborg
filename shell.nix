@@ -76,6 +76,7 @@ let
     name = "gh-event-forwarder";
     buildInputs = with pkgs; [
       bash
+      nix
       nix-prefetch-git
       rust.rustc
       rust.cargo
