@@ -5,6 +5,7 @@ extern crate ofborg;
 use std::env;
 
 use ofborg::config;
+use ofborg::nix;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -18,7 +19,7 @@ fn main() {
 
     match nix.safely_build_attrs(
         &Path::new("./"),
-        "./default.nix",
+        nix::File::DefaultNixpkgs,
         vec![String::from("hello")],
     ) {
         Ok(mut out) => {
