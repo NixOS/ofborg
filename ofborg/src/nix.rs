@@ -12,8 +12,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use tempfile::tempfile;
 
-
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum File {
     DefaultNixpkgs,
     ReleaseNixOS,
@@ -27,7 +26,6 @@ impl fmt::Display for File {
         }
     }
 }
-
 
 #[derive(Clone, Debug)]
 pub enum Operation {
@@ -95,7 +93,6 @@ impl fmt::Display for Operation {
     }
 }
 
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct Nix {
     system: String,
@@ -148,7 +145,7 @@ impl Nix {
         let attr_instantiations: Vec<Result<String, (String, Vec<String>)>> = attrs
             .into_iter()
             .map(
-                |attr| match self.safely_instantiate_attrs(nixpkgs, file.clone(), vec![attr.clone()]) {
+                |attr| match self.safely_instantiate_attrs(nixpkgs, file, vec![attr.clone()]) {
                     Ok(_) => Ok(attr.clone()),
                     Err(f) => Err((attr.clone(), lines_from_file(f))),
                 },
@@ -217,13 +214,12 @@ impl Nix {
             args.push(String::from("-A"));
             args.push(attr);
         }
-        match file {
-            File::ReleaseNixOS => {
-                args.push(String::from("--arg"));
-                args.push(String::from("nixpkgs"));
-                args.push(String::from("{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }"));
-            },
-            _ => {},
+        if let File::ReleaseNixOS = file {
+            args.push(String::from("--arg"));
+            args.push(String::from("nixpkgs"));
+            args.push(String::from(
+                "{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }",
+            ));
         }
         command.args(args);
     }
@@ -622,17 +618,15 @@ mod tests {
         let op = noop(Operation::Build);
 
         let mut command = nix.safe_command(&op, build_path().as_path(), vec![], &[]);
-        nix.set_attrs_command(&mut command, File::DefaultNixpkgs, vec![
-          "foo".into(), "bar".into(),
-        ]);
+        nix.set_attrs_command(
+            &mut command,
+            File::DefaultNixpkgs,
+            vec!["foo".into(), "bar".into()],
+        );
 
         let ret: Result<fs::File, fs::File> = nix.run(command, true);
 
-        assert_run(
-            ret,
-            Expect::Pass,
-            vec!["./default.nix", "-A foo -A bar"],
-        );
+        assert_run(ret, Expect::Pass, vec!["./default.nix", "-A foo -A bar"]);
     }
 
     #[test]
@@ -641,16 +635,21 @@ mod tests {
         let op = noop(Operation::Instantiate);
 
         let mut command = nix.safe_command(&op, build_path().as_path(), vec![], &[]);
-        nix.set_attrs_command(&mut command, File::ReleaseNixOS, vec![
-          "foo".into(), "bar".into(),
-        ]);
+        nix.set_attrs_command(
+            &mut command,
+            File::ReleaseNixOS,
+            vec!["foo".into(), "bar".into()],
+        );
 
         let ret: Result<fs::File, fs::File> = nix.run(command, true);
 
         assert_run(
             ret,
             Expect::Pass,
-            vec!["./nixos/release.nix", "--arg nixpkgs { outPath=./.; revCount=999999; shortRev=\"ofborg\"; }"],
+            vec![
+                "./nixos/release.nix",
+                "--arg nixpkgs { outPath=./.; revCount=999999; shortRev=\"ofborg\"; }",
+            ],
         );
     }
 

@@ -336,7 +336,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         );
         let (can_build, cannot_build) = self.nix.safely_partition_instantiable_attrs(
             refpath.as_ref(),
-            buildfile.clone(),
+            buildfile,
             job.attrs.clone(),
         );
 
