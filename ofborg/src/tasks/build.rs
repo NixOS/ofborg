@@ -306,11 +306,11 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         };
 
         let buildfile = match job.subset {
-            Some(commentparser::Subset::NixOS) => "./nixos/release.nix",
-            _ => "./default.nix",
+            Some(commentparser::Subset::NixOS) => nix::File::ReleaseNixOS,
+            _ => nix::File::DefaultNixpkgs,
         };
 
-        if buildfile == "./nixos/release.nix" && self.system == "x86_64-darwin" {
+        if buildfile == nix::File::ReleaseNixOS && self.system == "x86_64-darwin" {
             actions.nasty_hack_linux_only();
             return;
         }
