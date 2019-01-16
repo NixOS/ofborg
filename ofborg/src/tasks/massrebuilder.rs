@@ -737,18 +737,16 @@ fn request_reviews(
 ) {
     if let Ok(ref maint) = m {
         if maint.maintainers().len() < 10 {
-            if let Err(e) =
-                pull.review_requests()
-                    .create(&hubcaps::review_requests::ReviewRequestOptions {
-                        reviewers: maint.maintainers(),
-                        team_reviewers: vec![],
-                    })
-            {
-                println!(
-                    "Failure adding review requests for maintainers ({:?}): {:#?}",
-                    maint.maintainers(),
-                    e,
-                );
+            for maintainer in maint.maintainers() {
+                if let Err(e) =
+                    pull.review_requests()
+                        .create(&hubcaps::review_requests::ReviewRequestOptions {
+                            reviewers: vec![maintainer.clone()],
+                            team_reviewers: vec![],
+                        })
+                {
+                    println!("Failure requesting a review from {}: {:#?}", maintainer, e,);
+                }
             }
         }
     }
