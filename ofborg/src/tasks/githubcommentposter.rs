@@ -68,7 +68,7 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
         vec![result.attempted_attrs.clone(), result.skipped_attrs.clone()]
             .into_iter()
             .map(|opt| opt.unwrap_or_else(|| vec![]))
-            .flat_map(|list| list.into_iter().map(|attr| format!("-A {}", attr)))
+            .flat_map(|list| list.into_iter())
             .collect();
     all_attrs.sort();
 
@@ -112,11 +112,7 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
     };
 
     CheckRunOptions {
-        name: format!(
-            "nix-build {} --argstr system {}",
-            all_attrs.join(" "),
-            result.system
-        ),
+        name: format!("{} on {}", all_attrs.join(", "), result.system),
         actions: None,
         completed_at: Some(timestamp.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)),
         started_at: None,
@@ -638,7 +634,7 @@ No partial log is available.
         assert_eq!(
             result_to_check(&result, timestamp),
             CheckRunOptions {
-                name: "nix-build -A bar -A foo --argstr system x86_64-linux".to_string(),
+                name: "bar, foo on x86_64-linux".to_string(),
                 actions: None,
                 started_at: None,
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
@@ -720,7 +716,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
         assert_eq!(
             result_to_check(&result, timestamp),
             CheckRunOptions {
-                name: "nix-build -A foo --argstr system x86_64-linux".to_string(),
+                name: "foo on x86_64-linux".to_string(),
                 actions: None,
                 started_at: None,
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
@@ -799,7 +795,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
         assert_eq!(
             result_to_check(&result, timestamp),
             CheckRunOptions {
-                name: "nix-build -A foo --argstr system x86_64-linux".to_string(),
+                name: "foo on x86_64-linux".to_string(),
                 actions: None,
                 started_at: None,
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
@@ -879,7 +875,7 @@ error: build of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' failed
         assert_eq!(
             result_to_check(&result, timestamp),
             CheckRunOptions {
-                name: "nix-build (unknown attributes) --argstr system x86_64-linux".to_string(),
+                name: "(unknown attributes) on x86_64-linux".to_string(),
                 actions: None,
                 started_at: None,
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
@@ -957,7 +953,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
         assert_eq!(
             result_to_check(&result, timestamp),
             CheckRunOptions {
-                name: "nix-build (unknown attributes) --argstr system x86_64-linux".to_string(),
+                name: "(unknown attributes) on x86_64-linux".to_string(),
                 actions: None,
                 started_at: None,
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
@@ -1024,7 +1020,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
         assert_eq!(
             result_to_check(&result, timestamp),
             CheckRunOptions {
-                name: "nix-build -A not-attempted --argstr system x86_64-linux".to_string(),
+                name: "not-attempted on x86_64-linux".to_string(),
                 actions: None,
                 started_at: None,
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
@@ -1077,7 +1073,7 @@ foo
         assert_eq!(
             result_to_check(&result, timestamp),
             CheckRunOptions {
-                name: "nix-build -A not-attempted --argstr system x86_64-linux".to_string(),
+                name: "not-attempted on x86_64-linux".to_string(),
                 actions: None,
                 started_at: None,
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
