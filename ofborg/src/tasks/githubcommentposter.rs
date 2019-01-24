@@ -76,13 +76,7 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
         all_attrs = vec![String::from("(unknown attributes)")];
     }
 
-    let conclusion = match result.status {
-        BuildStatus::Skipped => Conclusion::Neutral,
-        BuildStatus::Success => Conclusion::Success,
-        BuildStatus::Failure => Conclusion::Neutral,
-        BuildStatus::TimedOut => Conclusion::Neutral,
-        BuildStatus::UnexpectedError { .. } => Conclusion::Neutral,
-    };
+    let conclusion: Conclusion = result.status.clone().into();
 
     let mut summary: Vec<String> = vec![];
     if let Some(ref attempted) = result.attempted_attrs {

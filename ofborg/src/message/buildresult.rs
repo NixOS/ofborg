@@ -1,3 +1,4 @@
+use hubcaps::checks::Conclusion;
 use ofborg::message::{Pr, Repo};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -17,6 +18,18 @@ impl From<BuildStatus> for String {
             BuildStatus::Failure => "Failure".into(),
             BuildStatus::TimedOut => "Timed out, unknown build status".into(),
             BuildStatus::UnexpectedError { ref err } => format!("Unexpected error: {}", err),
+        }
+    }
+}
+
+impl From<BuildStatus> for Conclusion {
+    fn from(status: BuildStatus) -> Conclusion {
+        match status {
+            BuildStatus::Skipped => Conclusion::Neutral,
+            BuildStatus::Success => Conclusion::Success,
+            BuildStatus::Failure => Conclusion::Neutral,
+            BuildStatus::TimedOut => Conclusion::Neutral,
+            BuildStatus::UnexpectedError { .. } => Conclusion::Neutral,
         }
     }
 }
