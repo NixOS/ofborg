@@ -136,7 +136,7 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
             images: None,
             summary: summary.join("\n"),
             text: Some(text),
-            title: "Build Results".to_string(),
+            title: result.status.clone().into(),
         }),
         status: Some(CheckRunState::Completed),
     }
@@ -651,7 +651,7 @@ No partial log is available.
                 external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
-                    title: "Build Results".to_string(),
+                    title: "Success".to_string(),
                     summary: "Attempted: foo
 
 The following builds were skipped because they don't evaluate on x86_64-linux: bar
@@ -733,7 +733,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
-                    title: "Build Results".to_string(),
+                    title: "Failure".to_string(),
                     summary: "Attempted: foo
 "
                     .to_string(),
@@ -812,7 +812,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
-                    title: "Build Results".to_string(),
+                    title: "Timed out, unknown build status".to_string(),
                     summary: "Attempted: foo
 
 Build timed out."
@@ -892,7 +892,7 @@ error: build of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' failed
                 external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
-                    title: "Build Results".to_string(),
+                    title: "Success".to_string(),
                     summary: "".to_string(),
                     text: Some(
                         "## Partial log
@@ -970,7 +970,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
-                    title: "Build Results".to_string(),
+                    title: "Failure".to_string(),
                     summary: "".to_string(),
                     text: Some(
                         "## Partial log
@@ -1034,7 +1034,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
-                    title: "Build Results".to_string(),
+                    title: "No attempt".to_string(),
                     summary: "The following builds were skipped because they don\'t evaluate on x86_64-linux: not-attempted
 ".to_string(),
                     text: Some("## Partial log
@@ -1087,7 +1087,7 @@ foo
                 external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
-                    title: "Build Results".to_string(),
+                    title: "No attempt".to_string(),
                     summary: "The following builds were skipped because they don\'t evaluate on x86_64-linux: not-attempted
 ".to_string(),
                     text: Some("No partial log is available.".to_string()),
