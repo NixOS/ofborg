@@ -9,6 +9,18 @@ pub enum BuildStatus {
     UnexpectedError { err: String },
 }
 
+impl From<BuildStatus> for String {
+    fn from(status: BuildStatus) -> String {
+        match status {
+            BuildStatus::Skipped => "No attempt".into(),
+            BuildStatus::Success => "Success".into(),
+            BuildStatus::Failure => "Failure".into(),
+            BuildStatus::TimedOut => "Timed out, unknown build status".into(),
+            BuildStatus::UnexpectedError { ref err } => format!("Unexpected error: {}", err),
+        }
+    }
+}
+
 pub struct LegacyBuildResult {
     pub repo: Repo,
     pub pr: Pr,

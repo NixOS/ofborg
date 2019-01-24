@@ -166,13 +166,7 @@ fn result_to_comment(result: &LegacyBuildResult) -> String {
     reply.push(format!("<!--REQUEST_ID={}-->", result.request_id));
     reply.push(format!(
         "{} on {}{}",
-        (match result.status {
-            BuildStatus::Skipped => "No attempt".into(),
-            BuildStatus::Success => "Success".into(),
-            BuildStatus::Failure => "Failure".into(),
-            BuildStatus::TimedOut => "Timed out, unknown build status".into(),
-            BuildStatus::UnexpectedError { ref err } => format!("Unexpected error: {}", err),
-        }),
+        String::from(result.status.clone()),
         result.system,
         log_link
     ));
