@@ -1,3 +1,4 @@
+#[derive(Clone, Debug)]
 pub enum System {
     X8664Linux,
     Aarch64Linux,
