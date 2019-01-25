@@ -1,3 +1,4 @@
+use crate::maintainers::{Maintainer, MaintainersByPackage};
 use ofborg::outpathdiff::PackageArch;
 use ofborg::tasks;
 use std::collections::HashMap;
@@ -244,6 +245,61 @@ impl PathsTagger {
         }
 
         remove
+    }
+}
+
+pub struct MaintainerPRTagger {
+    possible: Vec<String>,
+    selected: Vec<String>,
+}
+
+impl Default for MaintainerPRTagger {
+    fn default() -> MaintainerPRTagger {
+        let mut t = MaintainerPRTagger {
+            possible: vec![String::from("11.by: package-maintainer")],
+            selected: vec![],
+        };
+        t.possible.sort();
+
+        t
+    }
+}
+
+impl MaintainerPRTagger {
+    pub fn new() -> MaintainerPRTagger {
+        Default::default()
+    }
+
+    pub fn record_maintainer(
+        &mut self,
+        pr_submitter: &str,
+        identified_maintainers: &MaintainersByPackage,
+    ) {
+        let submitter = Maintainer::from(pr_submitter);
+
+        if identified_maintainers.0.is_empty() {
+            // No packages -> not from the maintainer
+            return;
+        }
+
+        for (_package, maintainers) in identified_maintainers.0.iter() {
+            if !maintainers.contains(&submitter) {
+                // One of the packages is not maintained by this submitter
+                return;
+            }
+        }
+
+        self.selected
+            .push(String::from("11.by: package-maintainer"));
+    }
+
+    pub fn tags_to_add(&self) -> Vec<String> {
+        self.selected.clone()
+    }
+
+    pub fn tags_to_remove(&self) -> Vec<String> {
+        // The cleanup tag is too vague to automatically remove.
+        vec![]
     }
 }
 

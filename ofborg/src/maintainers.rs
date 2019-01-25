@@ -1,20 +1,22 @@
 use ofborg::nix::Nix;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::Write;
 use std::path::Path;
 use tempfile::NamedTempFile;
 
 #[derive(Deserialize, Debug, Eq, PartialEq)]
 pub struct ImpactedMaintainers(HashMap<Maintainer, Vec<Package>>);
-#[derive(Deserialize, Debug, Eq, PartialEq, Hash)]
-struct Maintainer(String);
+pub struct MaintainersByPackage(pub HashMap<Package, HashSet<Maintainer>>);
+
+#[derive(Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
+pub struct Maintainer(String);
 impl<'a> From<&'a str> for Maintainer {
     fn from(name: &'a str) -> Maintainer {
         Maintainer(name.to_owned())
     }
 }
-#[derive(Deserialize, Debug, Eq, PartialEq, Hash)]
-struct Package(String);
+#[derive(Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
+pub struct Package(String);
 impl<'a> From<&'a str> for Package {
     fn from(name: &'a str) -> Package {
         Package(name.to_owned())
@@ -79,6 +81,22 @@ impl ImpactedMaintainers {
             .iter()
             .map(|(maintainer, _)| maintainer.0.clone())
             .collect()
+    }
+
+    pub fn maintainers_by_package(&self) -> MaintainersByPackage {
+        let mut bypkg = MaintainersByPackage(HashMap::new());
+
+        for (maintainer, packages) in self.0.iter() {
+            for package in packages.iter() {
+                bypkg
+                    .0
+                    .entry(package.clone())
+                    .or_insert_with(HashSet::new)
+                    .insert(maintainer.clone());
+            }
+        }
+
+        bypkg
     }
 }
 

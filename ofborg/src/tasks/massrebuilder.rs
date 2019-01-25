@@ -7,6 +7,7 @@ use crate::maintainers;
 use crate::maintainers::ImpactedMaintainers;
 use amqp::protocol::basic::{BasicProperties, Deliver};
 use hubcaps;
+use hubcaps::issues::Issue;
 use ofborg::acl::ACL;
 use ofborg::checkout;
 use ofborg::commentparser::Subset;
@@ -19,7 +20,9 @@ use ofborg::outpathdiff::{OutPathDiff, OutPaths};
 use ofborg::stats;
 use ofborg::stats::Event;
 use ofborg::systems;
-use ofborg::tagger::{PathsTagger, PkgsAddedRemovedTagger, RebuildTagger, StdenvTagger};
+use ofborg::tagger::{
+    MaintainerPRTagger, PathsTagger, PkgsAddedRemovedTagger, RebuildTagger, StdenvTagger,
+};
 use ofborg::worker;
 use std::collections::HashMap;
 use std::path::Path;
@@ -122,11 +125,11 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
         let gists = self.github.gists();
         let pulls = repo.pulls();
         let pull = pulls.get(job.pr.number);
-        let issue = repo.issue(job.pr.number);
-
+        let issue_ref = repo.issue(job.pr.number);
+        let issue: Issue;
         let auto_schedule_build_archs: Vec<systems::System>;
 
-        match issue.get() {
+        match issue_ref.get() {
             Ok(iss) => {
                 if iss.state == "closed" {
                     self.events.notify(Event::IssueAlreadyClosed);
@@ -142,16 +145,19 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                         &job.repo.full_name,
                     );
                 }
+
+                issue = iss;
             }
+
             Err(e) => {
                 self.events.notify(Event::IssueFetchFailed);
                 info!("Error fetching {}!", job.pr.number);
                 info!("E: {:?}", e);
                 return self.actions().skip(&job);
             }
-        }
+        };
 
-        self.tag_from_title(&issue);
+        self.tag_from_title(&issue_ref);
 
         let mut overall_status = CommitStatus::new(
             repo.statuses(),
@@ -247,7 +253,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
         let changed_paths = co
             .files_changed_from_head(&job.pr.head_sha)
             .unwrap_or_else(|_| vec![]);
-        self.tag_from_paths(&issue, &changed_paths);
+        self.tag_from_paths(&issue_ref, &changed_paths);
 
         overall_status.set_with_description("Merging PR", hubcaps::statuses::State::Pending);
 
@@ -257,11 +263,11 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
 
             info!("Failed to merge {}", job.pr.head_sha);
 
-            update_labels(&issue, &["2.status: merge conflict".to_owned()], &[]);
+            update_labels(&issue_ref, &["2.status: merge conflict".to_owned()], &[]);
 
             return self.actions().skip(&job);
         } else {
-            update_labels(&issue, &[], &["2.status: merge conflict".to_owned()]);
+            update_labels(&issue_ref, &[], &["2.status: merge conflict".to_owned()]);
         }
 
         overall_status
@@ -510,7 +516,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                 stdenvtagger.changed(stdenvs.changed());
             }
             update_labels(
-                &issue,
+                &issue_ref,
                 &stdenvtagger.tags_to_add(),
                 &stdenvtagger.tags_to_remove(),
             );
@@ -519,7 +525,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                 let mut addremovetagger = PkgsAddedRemovedTagger::new();
                 addremovetagger.changed(&removed, &added);
                 update_labels(
-                    &issue,
+                    &issue_ref,
                     &addremovetagger.tags_to_add(),
                     &addremovetagger.tags_to_remove(),
                 );
@@ -563,7 +569,17 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                         },
                     );
 
-                    request_reviews(&m, &pull);
+                    if let Ok(ref maint) = m {
+                        request_reviews(&maint, &pull);
+                        let mut maint_tagger = MaintainerPRTagger::new();
+                        maint_tagger
+                            .record_maintainer(&issue.user.login, &maint.maintainers_by_package());
+                        update_labels(
+                            &issue_ref,
+                            &maint_tagger.tags_to_add(),
+                            &maint_tagger.tags_to_remove(),
+                        );
+                    }
 
                     let mut status = CommitStatus::new(
                         repo.statuses(),
@@ -580,7 +596,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
             }
 
             update_labels(
-                &issue,
+                &issue_ref,
                 &rebuild_tags.tags_to_add(),
                 &rebuild_tags.tags_to_remove(),
             );
@@ -745,22 +761,17 @@ fn indicates_wip(text: &str) -> bool {
     false
 }
 
-fn request_reviews(
-    m: &Result<maintainers::ImpactedMaintainers, maintainers::CalculationError>,
-    pull: &hubcaps::pulls::PullRequest,
-) {
-    if let Ok(ref maint) = m {
-        if maint.maintainers().len() < 10 {
-            for maintainer in maint.maintainers() {
-                if let Err(e) =
-                    pull.review_requests()
-                        .create(&hubcaps::review_requests::ReviewRequestOptions {
-                            reviewers: vec![maintainer.clone()],
-                            team_reviewers: vec![],
-                        })
-                {
-                    println!("Failure requesting a review from {}: {:#?}", maintainer, e,);
-                }
+fn request_reviews(maint: &maintainers::ImpactedMaintainers, pull: &hubcaps::pulls::PullRequest) {
+    if maint.maintainers().len() < 10 {
+        for maintainer in maint.maintainers() {
+            if let Err(e) =
+                pull.review_requests()
+                    .create(&hubcaps::review_requests::ReviewRequestOptions {
+                        reviewers: vec![maintainer.clone()],
+                        team_reviewers: vec![],
+                    })
+            {
+                println!("Failure requesting a review from {}: {:#?}", maintainer, e,);
             }
         }
     }
