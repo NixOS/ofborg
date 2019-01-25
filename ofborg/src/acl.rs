@@ -1,3 +1,5 @@
+use ofborg::systems::System;
+
 pub struct ACL {
     trusted_users: Vec<String>,
     known_users: Vec<String>,
@@ -27,21 +29,29 @@ impl ACL {
         self.repos.contains(&name.to_lowercase())
     }
 
+    pub fn build_job_architectures_for_user_repo(&self, user: &str, repo: &str) -> Vec<System> {
+        if self.can_build_unrestricted(user, repo) {
+            vec![
+                System::X8664Darwin,
+                System::X8664Linux,
+                System::Aarch64Linux,
+            ]
+        } else if self.can_build_restricted(user, repo) {
+            vec![System::X8664Linux, System::Aarch64Linux]
+        } else {
+            vec![]
+        }
+    }
+
     pub fn build_job_destinations_for_user_repo(
         &self,
         user: &str,
         repo: &str,
     ) -> Vec<(Option<String>, Option<String>)> {
-        if self.can_build_unrestricted(user, repo) {
-            vec![(Some("build-jobs".to_owned()), None)]
-        } else if self.can_build_restricted(user, repo) {
-            vec![
-                (None, Some("build-inputs-x86_64-linux".to_owned())),
-                (None, Some("build-inputs-aarch64-linux".to_owned())),
-            ]
-        } else {
-            vec![]
-        }
+        self.build_job_architectures_for_user_repo(user, repo)
+            .iter()
+            .map(|system| system.as_build_destination())
+            .collect()
     }
 
     pub fn can_build_restricted(&self, user: &str, repo: &str) -> bool {

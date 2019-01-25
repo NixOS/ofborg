@@ -45,6 +45,7 @@ pub mod nix;
 pub mod notifyworker;
 pub mod outpathdiff;
 pub mod stats;
+pub mod systems;
 pub mod tagger;
 pub mod tasks;
 pub mod test_scratch;
@@ -69,6 +70,7 @@ pub mod ofborg {
     pub use notifyworker;
     pub use outpathdiff;
     pub use stats;
+    pub use systems;
     pub use tagger;
     pub use tasks;
     pub use test_scratch;

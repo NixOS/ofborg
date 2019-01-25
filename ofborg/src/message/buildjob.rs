@@ -13,6 +13,12 @@ pub struct BuildJob {
     pub statusreport: Option<ExchangeQueue>, // (Exchange, Routing Key)
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct QueuedBuildJobs {
+    pub job: BuildJob,
+    pub architectures: Vec<String>,
+}
+
 pub type ExchangeQueue = (Option<Exchange>, Option<RoutingKey>);
 type Exchange = String;
 type RoutingKey = String;

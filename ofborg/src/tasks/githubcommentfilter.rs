@@ -55,7 +55,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
             return vec![worker::Action::Ack];
         }
 
-        let build_destinations = self.acl.build_job_destinations_for_user_repo(
+        let build_destinations = self.acl.build_job_architectures_for_user_repo(
             &job.comment.user.login,
             &job.repository.full_name,
         );
@@ -119,9 +119,23 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                             format!("{}", Uuid::new_v4()),
                         );
 
-                        for (exch, rk) in build_destinations.clone() {
-                            response.push(worker::publish_serde_action(exch, rk, &msg));
+                        for arch in build_destinations.iter() {
+                            let (exchange, routingkey) = arch.as_build_destination();
+                            response.push(worker::publish_serde_action(exchange, routingkey, &msg));
                         }
+
+                        response.push(worker::publish_serde_action(
+                            Some("build-results".to_string()),
+                            None,
+                            &buildjob::QueuedBuildJobs {
+                                job: msg,
+                                architectures: build_destinations
+                                    .iter()
+                                    .cloned()
+                                    .map(|arch| arch.to_string())
+                                    .collect(),
+                            },
+                        ));
                     }
                     commentparser::Instruction::Eval => {
                         let msg = massrebuildjob::MassRebuildJob {

@@ -18,6 +18,7 @@ use ofborg::nix;
 use ofborg::outpathdiff::{OutPathDiff, OutPaths};
 use ofborg::stats;
 use ofborg::stats::Event;
+use ofborg::systems;
 use ofborg::tagger::{PathsTagger, PkgsAddedRemovedTagger, RebuildTagger, StdenvTagger};
 use ofborg::worker;
 use std::collections::HashMap;
@@ -123,7 +124,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
         let pull = pulls.get(job.pr.number);
         let issue = repo.issue(job.pr.number);
 
-        let auto_schedule_build_archs: Vec<buildjob::ExchangeQueue>;
+        let auto_schedule_build_archs: Vec<systems::System>;
 
         match issue.get() {
             Ok(iss) => {
@@ -136,9 +137,10 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                 if issue_is_wip(&iss) {
                     auto_schedule_build_archs = vec![];
                 } else {
-                    auto_schedule_build_archs = self
-                        .acl
-                        .build_job_destinations_for_user_repo(&iss.user.login, &job.repo.full_name);
+                    auto_schedule_build_archs = self.acl.build_job_architectures_for_user_repo(
+                        &iss.user.login,
+                        &job.repo.full_name,
+                    );
                 }
             }
             Err(e) => {
@@ -464,9 +466,21 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                             None,
                             format!("{}", Uuid::new_v4()),
                         );
-                        for (dest, rk) in auto_schedule_build_archs {
-                            response.push(worker::publish_serde_action(dest, rk, &msg));
+                        for arch in auto_schedule_build_archs.iter() {
+                            let (exchange, routingkey) = arch.as_build_destination();
+                            response.push(worker::publish_serde_action(exchange, routingkey, &msg));
                         }
+                        response.push(worker::publish_serde_action(
+                            Some("build-results".to_string()),
+                            None,
+                            &buildjob::QueuedBuildJobs {
+                                job: msg,
+                                architectures: auto_schedule_build_archs
+                                    .into_iter()
+                                    .map(|arch| arch.to_string())
+                                    .collect(),
+                            },
+                        ));
                     }
                 }
                 Err(mut out) => {
