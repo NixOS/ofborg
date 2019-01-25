@@ -572,7 +572,8 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                     if let Ok(ref maint) = m {
                         request_reviews(&maint, &pull);
                         let mut maint_tagger = MaintainerPRTagger::new();
-                        maint_tagger.record_maintainer(&issue.user.login, &maint.maintainers());
+                        maint_tagger
+                            .record_maintainer(&issue.user.login, &maint.maintainers_by_package());
                         update_labels(
                             &issue_ref,
                             &maint_tagger.tags_to_add(),

@@ -1,3 +1,4 @@
+use crate::maintainers::{Maintainer, MaintainersByPackage};
 use ofborg::outpathdiff::PackageArch;
 use ofborg::tasks;
 use std::collections::HashMap;
@@ -269,15 +270,27 @@ impl MaintainerPRTagger {
         Default::default()
     }
 
-    pub fn record_maintainer(&mut self, pr_submitter: &str, identified_maintainers: &[String]) {
-        let mut compare_to: Vec<String> = identified_maintainers.to_vec().clone();
-        compare_to.sort();
-        compare_to.dedup();
+    pub fn record_maintainer(
+        &mut self,
+        pr_submitter: &str,
+        identified_maintainers: &MaintainersByPackage,
+    ) {
+        let submitter = Maintainer::from(pr_submitter);
 
-        if compare_to.len() == 1 && compare_to.contains(&pr_submitter.to_string()) {
-            self.selected
-                .push(String::from("11.by: package-maintainer"));
+        if identified_maintainers.0.is_empty() {
+            // No packages -> not from the maintainer
+            return;
         }
+
+        for (_package, maintainers) in identified_maintainers.0.iter() {
+            if !maintainers.contains(&submitter) {
+                // One of the packages is not maintained by this submitter
+                return;
+            }
+        }
+
+        self.selected
+            .push(String::from("11.by: package-maintainer"));
     }
 
     pub fn tags_to_add(&self) -> Vec<String> {
