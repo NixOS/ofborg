@@ -247,6 +247,49 @@ impl PathsTagger {
     }
 }
 
+pub struct MaintainerPRTagger {
+    possible: Vec<String>,
+    selected: Vec<String>,
+}
+
+impl Default for MaintainerPRTagger {
+    fn default() -> MaintainerPRTagger {
+        let mut t = MaintainerPRTagger {
+            possible: vec![String::from("11.by: package-maintainer")],
+            selected: vec![],
+        };
+        t.possible.sort();
+
+        t
+    }
+}
+
+impl MaintainerPRTagger {
+    pub fn new() -> MaintainerPRTagger {
+        Default::default()
+    }
+
+    pub fn record_maintainer(&mut self, pr_submitter: &str, identified_maintainers: &[String]) {
+        let mut compare_to: Vec<String> = identified_maintainers.to_vec().clone();
+        compare_to.sort();
+        compare_to.dedup();
+
+        if compare_to.len() == 1 && compare_to.contains(&pr_submitter.to_string()) {
+            self.selected
+                .push(String::from("11.by: package-maintainer"));
+        }
+    }
+
+    pub fn tags_to_add(&self) -> Vec<String> {
+        self.selected.clone()
+    }
+
+    pub fn tags_to_remove(&self) -> Vec<String> {
+        // The cleanup tag is too vague to automatically remove.
+        vec![]
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

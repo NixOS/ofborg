@@ -20,7 +20,9 @@ use ofborg::outpathdiff::{OutPathDiff, OutPaths};
 use ofborg::stats;
 use ofborg::stats::Event;
 use ofborg::systems;
-use ofborg::tagger::{PathsTagger, PkgsAddedRemovedTagger, RebuildTagger, StdenvTagger};
+use ofborg::tagger::{
+    MaintainerPRTagger, PathsTagger, PkgsAddedRemovedTagger, RebuildTagger, StdenvTagger,
+};
 use ofborg::worker;
 use std::collections::HashMap;
 use std::path::Path;
@@ -567,7 +569,16 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                         },
                     );
 
-                    request_reviews(&m, &pull);
+                    if let Ok(ref maint) = m {
+                        request_reviews(&maint, &pull);
+                        let mut maint_tagger = MaintainerPRTagger::new();
+                        maint_tagger.record_maintainer(&issue.user.login, &maint.maintainers());
+                        update_labels(
+                            &issue_ref,
+                            &maint_tagger.tags_to_add(),
+                            &maint_tagger.tags_to_remove(),
+                        );
+                    }
 
                     let mut status = CommitStatus::new(
                         repo.statuses(),
@@ -749,22 +760,17 @@ fn indicates_wip(text: &str) -> bool {
     false
 }
 
-fn request_reviews(
-    m: &Result<maintainers::ImpactedMaintainers, maintainers::CalculationError>,
-    pull: &hubcaps::pulls::PullRequest,
-) {
-    if let Ok(ref maint) = m {
-        if maint.maintainers().len() < 10 {
-            for maintainer in maint.maintainers() {
-                if let Err(e) =
-                    pull.review_requests()
-                        .create(&hubcaps::review_requests::ReviewRequestOptions {
-                            reviewers: vec![maintainer.clone()],
-                            team_reviewers: vec![],
-                        })
-                {
-                    println!("Failure requesting a review from {}: {:#?}", maintainer, e,);
-                }
+fn request_reviews(maint: &maintainers::ImpactedMaintainers, pull: &hubcaps::pulls::PullRequest) {
+    if maint.maintainers().len() < 10 {
+        for maintainer in maint.maintainers() {
+            if let Err(e) =
+                pull.review_requests()
+                    .create(&hubcaps::review_requests::ReviewRequestOptions {
+                        reviewers: vec![maintainer.clone()],
+                        team_reviewers: vec![],
+                    })
+            {
+                println!("Failure requesting a review from {}: {:#?}", maintainer, e,);
             }
         }
     }
