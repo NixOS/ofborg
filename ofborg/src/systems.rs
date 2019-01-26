@@ -17,4 +17,12 @@ impl System {
     pub fn as_build_destination(&self) -> (Option<String>, Option<String>) {
         (None, Some(format!("build-inputs-{}", self.to_string())))
     }
+
+    pub fn can_run_nixos_tests(&self) -> bool {
+        match self {
+            System::X8664Linux => true,
+            System::Aarch64Linux => true,
+            System::X8664Darwin => false,
+        }
+    }
 }
