@@ -101,10 +101,6 @@ impl<'a, 'b> JobActions<'a, 'b> {
         self.tell(worker::Action::Ack);
     }
 
-    pub fn nasty_hack_linux_only(&mut self) {
-        self.tell(worker::Action::Ack);
-    }
-
     pub fn nothing_to_do(&mut self) {
         self.tell(worker::Action::Ack);
     }
@@ -309,11 +305,6 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             Some(commentparser::Subset::NixOS) => nix::File::ReleaseNixOS,
             _ => nix::File::DefaultNixpkgs,
         };
-
-        if buildfile == nix::File::ReleaseNixOS && self.system == "x86_64-darwin" {
-            actions.nasty_hack_linux_only();
-            return;
-        }
 
         let refpath = co.checkout_origin_ref(target_branch.as_ref()).unwrap();
         co.fetch_pr(job.pr.number).unwrap();
