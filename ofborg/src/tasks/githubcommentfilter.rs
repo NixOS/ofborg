@@ -109,6 +109,15 @@ impl worker::SimpleWorker for GitHubCommentWorker {
             for instruction in instructions {
                 match instruction {
                     commentparser::Instruction::Build(subset, attrs) => {
+                        let build_destinations = match subset {
+                            commentparser::Subset::NixOS => build_destinations
+                                .clone()
+                                .into_iter()
+                                .filter(|x| x.can_run_nixos_tests())
+                                .collect(),
+                            _ => build_destinations.clone(),
+                        };
+
                         let msg = buildjob::BuildJob::new(
                             repo_msg.clone(),
                             pr_msg.clone(),
