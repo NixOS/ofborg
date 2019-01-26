@@ -134,6 +134,9 @@
         "6.topic: nixos": [
             "nixos"
         ],
+        "6.topic: pantheon": [
+            "pkgs/desktops/pantheon"
+        ],
         "6.topic: policy discussion": [
             ".github"
         ],
