@@ -119,20 +119,19 @@ impl Default for RebuildTagger {
     fn default() -> RebuildTagger {
         let mut t = RebuildTagger {
             possible: vec![
-                String::from("10.rebuild-linux: 501+"),
-                String::from("10.rebuild-linux: 101-500"),
-                String::from("10.rebuild-linux: 11-100"),
-                String::from("10.rebuild-linux: 1-10"),
-                String::from("10.rebuild-linux: 0"),
-                String::from("10.rebuild-darwin: 501+"),
-                String::from("10.rebuild-darwin: 101-500"),
-                String::from("10.rebuild-darwin: 11-100"),
-                String::from("10.rebuild-darwin: 1-10"),
                 String::from("10.rebuild-darwin: 0"),
+                String::from("10.rebuild-darwin: 1-10"),
+                String::from("10.rebuild-darwin: 11-100"),
+                String::from("10.rebuild-darwin: 101-500"),
+                String::from("10.rebuild-darwin: 501+"),
+                String::from("10.rebuild-linux: 0"),
+                String::from("10.rebuild-linux: 1-10"),
+                String::from("10.rebuild-linux: 11-100"),
+                String::from("10.rebuild-linux: 101-500"),
+                String::from("10.rebuild-linux: 501+"),
             ],
             selected: vec![],
         };
-        t.possible.sort();
 
         t
     }
@@ -183,13 +182,13 @@ impl RebuildTagger {
     }
 
     pub fn tags_to_remove(&self) -> Vec<String> {
-        let mut remove = self.possible.clone();
-        for tag in &self.selected {
-            let pos = remove.binary_search(&tag).unwrap();
-            remove.remove(pos);
-        }
+        let mut remove = vec![];
 
-        remove.sort();
+        for tag in self.possible.clone().into_iter() {
+            if !self.selected.contains(&tag) {
+                remove.push(tag);
+            }
+        }
 
         remove
     }
@@ -369,13 +368,13 @@ mod tests {
             tagger.tags_to_remove(),
             vec![
                 "10.rebuild-darwin: 1-10",
-                "10.rebuild-darwin: 101-500",
                 "10.rebuild-darwin: 11-100",
+                "10.rebuild-darwin: 101-500",
                 "10.rebuild-darwin: 501+",
                 "10.rebuild-linux: 1-10",
-                "10.rebuild-linux: 101-500",
                 "10.rebuild-linux: 11-100",
-                "10.rebuild-linux: 501+"
+                "10.rebuild-linux: 101-500",
+                "10.rebuild-linux: 501+",
             ]
         );
 
@@ -390,13 +389,13 @@ mod tests {
             tagger.tags_to_remove(),
             vec![
                 "10.rebuild-darwin: 1-10",
-                "10.rebuild-darwin: 101-500",
                 "10.rebuild-darwin: 11-100",
+                "10.rebuild-darwin: 101-500",
                 "10.rebuild-darwin: 501+",
                 "10.rebuild-linux: 0",
-                "10.rebuild-linux: 101-500",
                 "10.rebuild-linux: 11-100",
-                "10.rebuild-linux: 501+"
+                "10.rebuild-linux: 101-500",
+                "10.rebuild-linux: 501+",
             ]
         );
 
@@ -410,13 +409,13 @@ mod tests {
             tagger.tags_to_remove(),
             vec![
                 "10.rebuild-darwin: 0",
-                "10.rebuild-darwin: 101-500",
                 "10.rebuild-darwin: 11-100",
+                "10.rebuild-darwin: 101-500",
                 "10.rebuild-darwin: 501+",
                 "10.rebuild-linux: 0",
-                "10.rebuild-linux: 101-500",
                 "10.rebuild-linux: 11-100",
-                "10.rebuild-linux: 501+"
+                "10.rebuild-linux: 101-500",
+                "10.rebuild-linux: 501+",
             ]
         );
 
@@ -430,13 +429,13 @@ mod tests {
             tagger.tags_to_remove(),
             vec![
                 "10.rebuild-darwin: 0",
-                "10.rebuild-darwin: 101-500",
                 "10.rebuild-darwin: 11-100",
+                "10.rebuild-darwin: 101-500",
                 "10.rebuild-darwin: 501+",
                 "10.rebuild-linux: 0",
-                "10.rebuild-linux: 101-500",
                 "10.rebuild-linux: 11-100",
-                "10.rebuild-linux: 501+"
+                "10.rebuild-linux: 101-500",
+                "10.rebuild-linux: 501+",
             ]
         );
 
@@ -456,7 +455,7 @@ mod tests {
                 "10.rebuild-linux: 0",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 101-500",
-                "10.rebuild-linux: 501+"
+                "10.rebuild-linux: 501+",
             ]
         );
 
@@ -476,7 +475,7 @@ mod tests {
                 "10.rebuild-linux: 0",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 101-500",
-                "10.rebuild-linux: 501+"
+                "10.rebuild-linux: 501+",
             ]
         );
 
@@ -496,7 +495,7 @@ mod tests {
                 "10.rebuild-linux: 0",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 11-100",
-                "10.rebuild-linux: 501+"
+                "10.rebuild-linux: 501+",
             ]
         );
 
@@ -516,7 +515,7 @@ mod tests {
                 "10.rebuild-linux: 0",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 11-100",
-                "10.rebuild-linux: 501+"
+                "10.rebuild-linux: 501+",
             ]
         );
 
