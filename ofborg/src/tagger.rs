@@ -117,7 +117,7 @@ pub struct RebuildTagger {
 
 impl Default for RebuildTagger {
     fn default() -> RebuildTagger {
-        let mut t = RebuildTagger {
+        RebuildTagger {
             possible: vec![
                 String::from("10.rebuild-darwin: 0"),
                 String::from("10.rebuild-darwin: 1-10"),
@@ -139,9 +139,7 @@ impl Default for RebuildTagger {
                 String::from("10.rebuild-linux: 5,001+"),
             ],
             selected: vec![],
-        };
-
-        t
+        }
     }
 }
 
@@ -359,7 +357,7 @@ mod tests {
 
     impl From<PackageArchSrc> for Vec<PackageArch> {
         fn from(src: PackageArchSrc) -> Vec<PackageArch> {
-            let mut darwin: Vec<PackageArch> = (0..src.darwin)
+            let darwin: Vec<PackageArch> = (0..src.darwin)
                 .into_iter()
                 .map(|_| PackageArch {
                     package: String::from("bogus :)"),
