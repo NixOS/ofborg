@@ -124,11 +124,19 @@ impl Default for RebuildTagger {
                 String::from("10.rebuild-darwin: 11-100"),
                 String::from("10.rebuild-darwin: 101-500"),
                 String::from("10.rebuild-darwin: 501+"),
+                String::from("10.rebuild-darwin: 501-1,000"),
+                String::from("10.rebuild-darwin: 1,001-2,500"),
+                String::from("10.rebuild-darwin: 2,501-5,000"),
+                String::from("10.rebuild-darwin: 5,001+"),
                 String::from("10.rebuild-linux: 0"),
                 String::from("10.rebuild-linux: 1-10"),
                 String::from("10.rebuild-linux: 11-100"),
                 String::from("10.rebuild-linux: 101-500"),
                 String::from("10.rebuild-linux: 501+"),
+                String::from("10.rebuild-linux: 501-1,000"),
+                String::from("10.rebuild-linux: 1,001-2,500"),
+                String::from("10.rebuild-linux: 2,501-5,000"),
+                String::from("10.rebuild-linux: 5,001+"),
             ],
             selected: vec![],
         };
@@ -162,10 +170,20 @@ impl RebuildTagger {
             }
         }
 
-        self.selected = vec![
-            format!("10.rebuild-darwin: {}", self.bucket(counter_darwin)),
-            format!("10.rebuild-linux: {}", self.bucket(counter_linux)),
-        ];
+        self.selected = vec![];
+        self.selected.extend(
+            RebuildTagger::bucket(counter_darwin)
+                .iter()
+                .map(|bucket| format!("10.rebuild-darwin: {}", bucket))
+                .collect::<Vec<String>>(),
+        );
+
+        self.selected.extend(
+            RebuildTagger::bucket(counter_linux)
+                .iter()
+                .map(|bucket| format!("10.rebuild-linux: {}", bucket))
+                .collect::<Vec<String>>(),
+        );
 
         for tag in &self.selected {
             if !self.possible.contains(&tag) {
@@ -193,17 +211,23 @@ impl RebuildTagger {
         remove
     }
 
-    fn bucket(&self, count: u64) -> &str {
-        if count > 500 {
-            "501+"
+    fn bucket(count: u64) -> &'static [&'static str] {
+        if count > 5000 {
+            &["501+", "5,001+"]
+        } else if count > 2500 {
+            &["501+", "2,501-5,000"]
+        } else if count > 1000 {
+            &["501+", "1,001-2,500"]
+        } else if count > 500 {
+            &["501+", "501-1,000"]
         } else if count > 100 {
-            "101-500"
+            &["101-500"]
         } else if count > 10 {
-            "11-100"
+            &["11-100"]
         } else if count > 0 {
-            "1-10"
+            &["1-10"]
         } else {
-            "0"
+            &["0"]
         }
     }
 }
@@ -371,10 +395,18 @@ mod tests {
                 "10.rebuild-darwin: 11-100",
                 "10.rebuild-darwin: 101-500",
                 "10.rebuild-darwin: 501+",
+                "10.rebuild-darwin: 501-1,000",
+                "10.rebuild-darwin: 1,001-2,500",
+                "10.rebuild-darwin: 2,501-5,000",
+                "10.rebuild-darwin: 5,001+",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 11-100",
                 "10.rebuild-linux: 101-500",
                 "10.rebuild-linux: 501+",
+                "10.rebuild-linux: 501-1,000",
+                "10.rebuild-linux: 1,001-2,500",
+                "10.rebuild-linux: 2,501-5,000",
+                "10.rebuild-linux: 5,001+",
             ]
         );
 
@@ -392,10 +424,18 @@ mod tests {
                 "10.rebuild-darwin: 11-100",
                 "10.rebuild-darwin: 101-500",
                 "10.rebuild-darwin: 501+",
+                "10.rebuild-darwin: 501-1,000",
+                "10.rebuild-darwin: 1,001-2,500",
+                "10.rebuild-darwin: 2,501-5,000",
+                "10.rebuild-darwin: 5,001+",
                 "10.rebuild-linux: 0",
                 "10.rebuild-linux: 11-100",
                 "10.rebuild-linux: 101-500",
                 "10.rebuild-linux: 501+",
+                "10.rebuild-linux: 501-1,000",
+                "10.rebuild-linux: 1,001-2,500",
+                "10.rebuild-linux: 2,501-5,000",
+                "10.rebuild-linux: 5,001+"
             ]
         );
 
@@ -412,10 +452,18 @@ mod tests {
                 "10.rebuild-darwin: 11-100",
                 "10.rebuild-darwin: 101-500",
                 "10.rebuild-darwin: 501+",
+                "10.rebuild-darwin: 501-1,000",
+                "10.rebuild-darwin: 1,001-2,500",
+                "10.rebuild-darwin: 2,501-5,000",
+                "10.rebuild-darwin: 5,001+",
                 "10.rebuild-linux: 0",
                 "10.rebuild-linux: 11-100",
                 "10.rebuild-linux: 101-500",
                 "10.rebuild-linux: 501+",
+                "10.rebuild-linux: 501-1,000",
+                "10.rebuild-linux: 1,001-2,500",
+                "10.rebuild-linux: 2,501-5,000",
+                "10.rebuild-linux: 5,001+"
             ]
         );
 
@@ -432,10 +480,18 @@ mod tests {
                 "10.rebuild-darwin: 11-100",
                 "10.rebuild-darwin: 101-500",
                 "10.rebuild-darwin: 501+",
+                "10.rebuild-darwin: 501-1,000",
+                "10.rebuild-darwin: 1,001-2,500",
+                "10.rebuild-darwin: 2,501-5,000",
+                "10.rebuild-darwin: 5,001+",
                 "10.rebuild-linux: 0",
                 "10.rebuild-linux: 11-100",
                 "10.rebuild-linux: 101-500",
                 "10.rebuild-linux: 501+",
+                "10.rebuild-linux: 501-1,000",
+                "10.rebuild-linux: 1,001-2,500",
+                "10.rebuild-linux: 2,501-5,000",
+                "10.rebuild-linux: 5,001+"
             ]
         );
 
@@ -452,10 +508,18 @@ mod tests {
                 "10.rebuild-darwin: 1-10",
                 "10.rebuild-darwin: 101-500",
                 "10.rebuild-darwin: 501+",
+                "10.rebuild-darwin: 501-1,000",
+                "10.rebuild-darwin: 1,001-2,500",
+                "10.rebuild-darwin: 2,501-5,000",
+                "10.rebuild-darwin: 5,001+",
                 "10.rebuild-linux: 0",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 101-500",
                 "10.rebuild-linux: 501+",
+                "10.rebuild-linux: 501-1,000",
+                "10.rebuild-linux: 1,001-2,500",
+                "10.rebuild-linux: 2,501-5,000",
+                "10.rebuild-linux: 5,001+"
             ]
         );
 
@@ -472,10 +536,18 @@ mod tests {
                 "10.rebuild-darwin: 1-10",
                 "10.rebuild-darwin: 101-500",
                 "10.rebuild-darwin: 501+",
+                "10.rebuild-darwin: 501-1,000",
+                "10.rebuild-darwin: 1,001-2,500",
+                "10.rebuild-darwin: 2,501-5,000",
+                "10.rebuild-darwin: 5,001+",
                 "10.rebuild-linux: 0",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 101-500",
                 "10.rebuild-linux: 501+",
+                "10.rebuild-linux: 501-1,000",
+                "10.rebuild-linux: 1,001-2,500",
+                "10.rebuild-linux: 2,501-5,000",
+                "10.rebuild-linux: 5,001+"
             ]
         );
 
@@ -492,10 +564,18 @@ mod tests {
                 "10.rebuild-darwin: 1-10",
                 "10.rebuild-darwin: 11-100",
                 "10.rebuild-darwin: 501+",
+                "10.rebuild-darwin: 501-1,000",
+                "10.rebuild-darwin: 1,001-2,500",
+                "10.rebuild-darwin: 2,501-5,000",
+                "10.rebuild-darwin: 5,001+",
                 "10.rebuild-linux: 0",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 11-100",
                 "10.rebuild-linux: 501+",
+                "10.rebuild-linux: 501-1,000",
+                "10.rebuild-linux: 1,001-2,500",
+                "10.rebuild-linux: 2,501-5,000",
+                "10.rebuild-linux: 5,001+"
             ]
         );
 
@@ -512,10 +592,18 @@ mod tests {
                 "10.rebuild-darwin: 1-10",
                 "10.rebuild-darwin: 11-100",
                 "10.rebuild-darwin: 501+",
+                "10.rebuild-darwin: 501-1,000",
+                "10.rebuild-darwin: 1,001-2,500",
+                "10.rebuild-darwin: 2,501-5,000",
+                "10.rebuild-darwin: 5,001+",
                 "10.rebuild-linux: 0",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 11-100",
                 "10.rebuild-linux: 501+",
+                "10.rebuild-linux: 501-1,000",
+                "10.rebuild-linux: 1,001-2,500",
+                "10.rebuild-linux: 2,501-5,000",
+                "10.rebuild-linux: 5,001+"
             ]
         );
 
@@ -523,19 +611,216 @@ mod tests {
         tagger.parse_attrs(PackageArchSrc::linux(501).and_darwin(501).into());
         assert_eq!(
             tagger.tags_to_add(),
-            vec!["10.rebuild-darwin: 501+", "10.rebuild-linux: 501+"]
+            vec![
+                "10.rebuild-darwin: 501+",
+                "10.rebuild-darwin: 501-1,000",
+                "10.rebuild-linux: 501+",
+                "10.rebuild-linux: 501-1,000",
+            ]
         );
         assert_eq!(
             tagger.tags_to_remove(),
             vec![
                 "10.rebuild-darwin: 0",
                 "10.rebuild-darwin: 1-10",
-                "10.rebuild-darwin: 101-500",
                 "10.rebuild-darwin: 11-100",
+                "10.rebuild-darwin: 101-500",
+                "10.rebuild-darwin: 1,001-2,500",
+                "10.rebuild-darwin: 2,501-5,000",
+                "10.rebuild-darwin: 5,001+",
                 "10.rebuild-linux: 0",
                 "10.rebuild-linux: 1-10",
-                "10.rebuild-linux: 101-500",
                 "10.rebuild-linux: 11-100",
+                "10.rebuild-linux: 101-500",
+                "10.rebuild-linux: 1,001-2,500",
+                "10.rebuild-linux: 2,501-5,000",
+                "10.rebuild-linux: 5,001+"
+            ]
+        );
+
+        let mut tagger = RebuildTagger::new();
+        tagger.parse_attrs(PackageArchSrc::linux(1000).and_darwin(1000).into());
+        assert_eq!(
+            tagger.tags_to_add(),
+            vec![
+                "10.rebuild-darwin: 501+",
+                "10.rebuild-darwin: 501-1,000",
+                "10.rebuild-linux: 501+",
+                "10.rebuild-linux: 501-1,000",
+            ]
+        );
+        assert_eq!(
+            tagger.tags_to_remove(),
+            vec![
+                "10.rebuild-darwin: 0",
+                "10.rebuild-darwin: 1-10",
+                "10.rebuild-darwin: 11-100",
+                "10.rebuild-darwin: 101-500",
+                "10.rebuild-darwin: 1,001-2,500",
+                "10.rebuild-darwin: 2,501-5,000",
+                "10.rebuild-darwin: 5,001+",
+                "10.rebuild-linux: 0",
+                "10.rebuild-linux: 1-10",
+                "10.rebuild-linux: 11-100",
+                "10.rebuild-linux: 101-500",
+                "10.rebuild-linux: 1,001-2,500",
+                "10.rebuild-linux: 2,501-5,000",
+                "10.rebuild-linux: 5,001+"
+            ]
+        );
+
+        let mut tagger = RebuildTagger::new();
+        tagger.parse_attrs(PackageArchSrc::linux(1001).and_darwin(1001).into());
+        assert_eq!(
+            tagger.tags_to_add(),
+            vec![
+                "10.rebuild-darwin: 501+",
+                "10.rebuild-darwin: 1,001-2,500",
+                "10.rebuild-linux: 501+",
+                "10.rebuild-linux: 1,001-2,500"
+            ]
+        );
+        assert_eq!(
+            tagger.tags_to_remove(),
+            vec![
+                "10.rebuild-darwin: 0",
+                "10.rebuild-darwin: 1-10",
+                "10.rebuild-darwin: 11-100",
+                "10.rebuild-darwin: 101-500",
+                "10.rebuild-darwin: 501-1,000",
+                "10.rebuild-darwin: 2,501-5,000",
+                "10.rebuild-darwin: 5,001+",
+                "10.rebuild-linux: 0",
+                "10.rebuild-linux: 1-10",
+                "10.rebuild-linux: 11-100",
+                "10.rebuild-linux: 101-500",
+                "10.rebuild-linux: 501-1,000",
+                "10.rebuild-linux: 2,501-5,000",
+                "10.rebuild-linux: 5,001+"
+            ]
+        );
+
+        let mut tagger = RebuildTagger::new();
+        tagger.parse_attrs(PackageArchSrc::linux(2500).and_darwin(2500).into());
+        assert_eq!(
+            tagger.tags_to_add(),
+            vec![
+                "10.rebuild-darwin: 501+",
+                "10.rebuild-darwin: 1,001-2,500",
+                "10.rebuild-linux: 501+",
+                "10.rebuild-linux: 1,001-2,500"
+            ]
+        );
+        assert_eq!(
+            tagger.tags_to_remove(),
+            vec![
+                "10.rebuild-darwin: 0",
+                "10.rebuild-darwin: 1-10",
+                "10.rebuild-darwin: 11-100",
+                "10.rebuild-darwin: 101-500",
+                "10.rebuild-darwin: 501-1,000",
+                "10.rebuild-darwin: 2,501-5,000",
+                "10.rebuild-darwin: 5,001+",
+                "10.rebuild-linux: 0",
+                "10.rebuild-linux: 1-10",
+                "10.rebuild-linux: 11-100",
+                "10.rebuild-linux: 101-500",
+                "10.rebuild-linux: 501-1,000",
+                "10.rebuild-linux: 2,501-5,000",
+                "10.rebuild-linux: 5,001+"
+            ]
+        );
+
+        let mut tagger = RebuildTagger::new();
+        tagger.parse_attrs(PackageArchSrc::linux(2501).and_darwin(2501).into());
+        assert_eq!(
+            tagger.tags_to_add(),
+            vec![
+                "10.rebuild-darwin: 501+",
+                "10.rebuild-darwin: 2,501-5,000",
+                "10.rebuild-linux: 501+",
+                "10.rebuild-linux: 2,501-5,000"
+            ]
+        );
+        assert_eq!(
+            tagger.tags_to_remove(),
+            vec![
+                "10.rebuild-darwin: 0",
+                "10.rebuild-darwin: 1-10",
+                "10.rebuild-darwin: 11-100",
+                "10.rebuild-darwin: 101-500",
+                "10.rebuild-darwin: 501-1,000",
+                "10.rebuild-darwin: 1,001-2,500",
+                "10.rebuild-darwin: 5,001+",
+                "10.rebuild-linux: 0",
+                "10.rebuild-linux: 1-10",
+                "10.rebuild-linux: 11-100",
+                "10.rebuild-linux: 101-500",
+                "10.rebuild-linux: 501-1,000",
+                "10.rebuild-linux: 1,001-2,500",
+                "10.rebuild-linux: 5,001+"
+            ]
+        );
+
+        let mut tagger = RebuildTagger::new();
+        tagger.parse_attrs(PackageArchSrc::linux(5000).and_darwin(5000).into());
+        assert_eq!(
+            tagger.tags_to_add(),
+            vec![
+                "10.rebuild-darwin: 501+",
+                "10.rebuild-darwin: 2,501-5,000",
+                "10.rebuild-linux: 501+",
+                "10.rebuild-linux: 2,501-5,000"
+            ]
+        );
+        assert_eq!(
+            tagger.tags_to_remove(),
+            vec![
+                "10.rebuild-darwin: 0",
+                "10.rebuild-darwin: 1-10",
+                "10.rebuild-darwin: 11-100",
+                "10.rebuild-darwin: 101-500",
+                "10.rebuild-darwin: 501-1,000",
+                "10.rebuild-darwin: 1,001-2,500",
+                "10.rebuild-darwin: 5,001+",
+                "10.rebuild-linux: 0",
+                "10.rebuild-linux: 1-10",
+                "10.rebuild-linux: 11-100",
+                "10.rebuild-linux: 101-500",
+                "10.rebuild-linux: 501-1,000",
+                "10.rebuild-linux: 1,001-2,500",
+                "10.rebuild-linux: 5,001+"
+            ]
+        );
+
+        let mut tagger = RebuildTagger::new();
+        tagger.parse_attrs(PackageArchSrc::linux(5001).and_darwin(5001).into());
+        assert_eq!(
+            tagger.tags_to_add(),
+            vec![
+                "10.rebuild-darwin: 501+",
+                "10.rebuild-darwin: 5,001+",
+                "10.rebuild-linux: 501+",
+                "10.rebuild-linux: 5,001+"
+            ]
+        );
+        assert_eq!(
+            tagger.tags_to_remove(),
+            vec![
+                "10.rebuild-darwin: 0",
+                "10.rebuild-darwin: 1-10",
+                "10.rebuild-darwin: 11-100",
+                "10.rebuild-darwin: 101-500",
+                "10.rebuild-darwin: 501-1,000",
+                "10.rebuild-darwin: 1,001-2,500",
+                "10.rebuild-darwin: 2,501-5,000",
+                "10.rebuild-linux: 0",
+                "10.rebuild-linux: 1-10",
+                "10.rebuild-linux: 11-100",
+                "10.rebuild-linux: 101-500",
+                "10.rebuild-linux: 501-1,000",
+                "10.rebuild-linux: 1,001-2,500",
+                "10.rebuild-linux: 2,501-5,000",
             ]
         );
     }
