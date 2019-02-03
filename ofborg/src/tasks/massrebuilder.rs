@@ -308,7 +308,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                 self.nix.clone(),
             ),
             EvalChecker::new(
-                "package-list-no-aliases",
+                "package-list-strictly",
                 nix::Operation::QueryPackagesJSON,
                 vec![
                     String::from("--file"),
@@ -316,6 +316,9 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
                     String::from("--arg"),
                     String::from("config"),
                     String::from("{ allowAliases = false; }"),
+                    String::from("--arg"),
+                    String::from("overlays"),
+                    String::from("[(self: super: { extend = abort ''The pkgs.extend function should not be used inside Nixpkgs. Extensive use decreases performance and complicates the package set. If absolutely necessary, this restriction may be lifted.''; })]"),
                 ],
                 self.nix.clone(),
             ),
