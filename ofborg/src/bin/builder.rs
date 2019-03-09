@@ -24,7 +24,7 @@ fn main() {
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
     let nix = cfg.nix();
 
-    if cfg.feedback.full_logs != true {
+    if !cfg.feedback.full_logs {
         warn!("Please define feedback.full_logs in your configuration to true!");
         warn!("feedback.full_logs when true will cause the full build log to be sent back");
         warn!("to the server, and be viewable by everyone.");
