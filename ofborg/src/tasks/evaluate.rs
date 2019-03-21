@@ -1,4 +1,4 @@
-/// This is what evaluates every pull-requests
+/// This is what evaluates every pull-request
 extern crate amqp;
 extern crate env_logger;
 extern crate uuid;
@@ -14,7 +14,7 @@ use ofborg::commentparser::Subset;
 use ofborg::commitstatus::CommitStatus;
 use ofborg::evalchecker::EvalChecker;
 use ofborg::files::file_to_str;
-use ofborg::message::{buildjob, massrebuildjob};
+use ofborg::message::{buildjob, evaluationjob};
 use ofborg::nix;
 use ofborg::outpathdiff::{OutPathDiff, OutPaths};
 use ofborg::stats;
@@ -31,7 +31,7 @@ use std::time::Instant;
 use tasks::eval;
 use uuid::Uuid;
 
-pub struct MassRebuildWorker<E> {
+pub struct EvaluationWorker<E> {
     cloner: checkout::CachedCloner,
     nix: nix::Nix,
     github: hubcaps::Github,
@@ -41,7 +41,7 @@ pub struct MassRebuildWorker<E> {
     tag_paths: HashMap<String, Vec<String>>,
 }
 
-impl<E: stats::SysEvents> MassRebuildWorker<E> {
+impl<E: stats::SysEvents> EvaluationWorker<E> {
     pub fn new(
         cloner: checkout::CachedCloner,
         nix: &nix::Nix,
@@ -50,8 +50,8 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
         identity: String,
         events: E,
         tag_paths: HashMap<String, Vec<String>>,
-    ) -> MassRebuildWorker<E> {
-        MassRebuildWorker {
+    ) -> EvaluationWorker<E> {
+        EvaluationWorker {
             cloner,
             nix: nix.without_limited_supported_systems(),
             github,
@@ -62,8 +62,8 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
         }
     }
 
-    fn actions(&self) -> massrebuildjob::Actions {
-        massrebuildjob::Actions {}
+    fn actions(&self) -> evaluationjob::Actions {
+        evaluationjob::Actions {}
     }
 
     fn tag_from_title(&self, issue: &hubcaps::issues::IssueRef) {
@@ -91,8 +91,8 @@ impl<E: stats::SysEvents> MassRebuildWorker<E> {
     }
 }
 
-impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E> {
-    type J = massrebuildjob::MassRebuildJob;
+impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E> {
+    type J = evaluationjob::EvaluationJob;
 
     fn msg_to_job(
         &mut self,
@@ -101,7 +101,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
         body: &[u8],
     ) -> Result<Self::J, String> {
         self.events.notify(Event::JobReceived);
-        match massrebuildjob::from(body) {
+        match evaluationjob::from(body) {
             Ok(e) => {
                 self.events.notify(Event::JobDecodeSuccess);
                 Ok(e)
@@ -118,7 +118,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for MassRebuildWorker<E
         }
     }
 
-    fn consumer(&mut self, job: &massrebuildjob::MassRebuildJob) -> worker::Actions {
+    fn consumer(&mut self, job: &evaluationjob::EvaluationJob) -> worker::Actions {
         let repo = self
             .github
             .repo(job.repo.owner.clone(), job.repo.name.clone());

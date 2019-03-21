@@ -6,7 +6,7 @@ use ofborg::ghevent;
 use serde_json;
 
 use amqp::protocol::basic::{BasicProperties, Deliver};
-use ofborg::message::{massrebuildjob, Pr, Repo};
+use ofborg::message::{evaluationjob, Pr, Repo};
 use ofborg::worker;
 
 pub struct EvaluationFilterWorker {
@@ -92,7 +92,7 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
             target_branch: Some(job.pull_request.base.git_ref.clone()),
         };
 
-        let msg = massrebuildjob::MassRebuildJob {
+        let msg = evaluationjob::EvaluationJob {
             repo: repo_msg.clone(),
             pr: pr_msg.clone(),
         };
@@ -128,7 +128,7 @@ mod tests {
                 worker::publish_serde_action(
                     None,
                     Some("mass-rebuild-check-jobs".to_owned()),
-                    &massrebuildjob::MassRebuildJob {
+                    &evaluationjob::EvaluationJob {
                         repo: Repo {
                             clone_url: String::from("https://github.com/NixOS/nixpkgs.git"),
                             full_name: String::from("NixOS/nixpkgs"),

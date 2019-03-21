@@ -47,7 +47,7 @@ fn main() {
         session.open_channel(3).unwrap(),
     );
 
-    let mrw = tasks::massrebuilder::MassRebuildWorker::new(
+    let mrw = tasks::evaluate::EvaluationWorker::new(
         cloner,
         &nix,
         cfg.github(),
