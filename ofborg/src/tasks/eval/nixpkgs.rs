@@ -1,3 +1,4 @@
+use hubcaps::issues::IssueRef;
 use ofborg::checkout::CachedProjectCo;
 use ofborg::commitstatus::CommitStatus;
 use ofborg::evalchecker::EvalChecker;
@@ -5,14 +6,16 @@ use ofborg::message::buildjob::BuildJob;
 use std::path::Path;
 use tasks::eval::{EvaluationStrategy, StepResult};
 
-pub struct NixpkgsStrategy {}
-impl NixpkgsStrategy {
-    pub fn new() -> NixpkgsStrategy {
-        Self {}
+pub struct NixpkgsStrategy<'a> {
+    issue_ref: &'a IssueRef<'a>,
+}
+impl<'a> NixpkgsStrategy<'a> {
+    pub fn new(issue_ref: &'a IssueRef) -> NixpkgsStrategy<'a> {
+        Self { issue_ref }
     }
 }
 
-impl EvaluationStrategy for NixpkgsStrategy {
+impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
     fn pre_clone(&mut self) -> StepResult<()> {
         Ok(())
     }
