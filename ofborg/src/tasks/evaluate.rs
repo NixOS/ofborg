@@ -642,6 +642,26 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
                 &rebuild_tags.tags_to_remove(),
             );
 
+            {
+                let ret = evaluation_strategy
+                    .all_evaluations_passed(&Path::new(&refpath), &mut overall_status);
+                match ret {
+                    Ok(builds) => {
+                        if builds.len() != 0 {
+                            panic!("we shouldn't be here yet!");
+                        }
+                    }
+                    Err(e) => {
+                        if self
+                            .handle_strategy_err(Err(e), &gists, &mut overall_status)
+                            .is_err()
+                        {
+                            return self.actions().skip(&job);
+                        }
+                    }
+                }
+            }
+
             overall_status.set_with_description("^.^!", hubcaps::statuses::State::Success);
         } else {
             overall_status
