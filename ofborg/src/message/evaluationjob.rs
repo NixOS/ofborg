@@ -12,6 +12,12 @@ pub struct EvaluationJob {
     pub pr: Pr,
 }
 
+impl EvaluationJob {
+    pub fn is_nixpkgs(&self) -> bool {
+        self.repo.name == "nixpkgs"
+    }
+}
+
 pub struct Actions {}
 
 impl Actions {
