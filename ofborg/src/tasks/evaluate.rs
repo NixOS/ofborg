@@ -211,6 +211,17 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
         info!("Checking out target branch {}", &target_branch);
         let refpath = co.checkout_origin_ref(target_branch.as_ref()).unwrap();
 
+        if self
+            .handle_strategy_err(
+                evaluation_strategy.on_target_branch(&Path::new(&refpath), &mut overall_status),
+                &gists,
+                &mut overall_status,
+            )
+            .is_err()
+        {
+            return self.actions().skip(&job);
+        }
+
         overall_status.set_with_description(
             "Checking original stdenvs",
             hubcaps::statuses::State::Pending,
