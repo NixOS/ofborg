@@ -24,7 +24,7 @@ pub trait EvaluationStrategy {
     ) -> StepResult<Vec<BuildJob>>;
 }
 
-type StepResult<T> = Result<T, Error>;
+pub type StepResult<T> = Result<T, Error>;
 
 #[derive(Debug)]
 pub enum Error {
