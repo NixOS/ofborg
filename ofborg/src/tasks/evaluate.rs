@@ -68,20 +68,6 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
         evaluationjob::Actions {}
     }
 
-    fn tag_from_title(&self, issue: &hubcaps::issues::IssueRef) {
-        let darwin = issue
-            .get()
-            .map(|iss| {
-                iss.title.to_lowercase().contains("darwin")
-                    || iss.title.to_lowercase().contains("macos")
-            })
-            .unwrap_or(false);
-
-        if darwin {
-            update_labels(&issue, &[String::from("6.topic: darwin")], &[]);
-        }
-    }
-
     fn tag_from_paths(&self, issue: &hubcaps::issues::IssueRef, paths: &[String]) {
         let mut tagger = PathsTagger::new(self.tag_paths.clone());
 
@@ -185,8 +171,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             }
         };
 
-        self.tag_from_title(&issue_ref);
-
         let mut overall_status = CommitStatus::new(
             repo.statuses(),
             job.pr.head_sha.clone(),
@@ -196,6 +180,13 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
         );
 
         overall_status.set_with_description("Starting", hubcaps::statuses::State::Pending);
+
+        if self
+            .handle_strategy_err(evaluation_strategy.pre_clone(), &gists, &mut overall_status)
+            .is_err()
+        {
+            return self.actions().skip(&job);
+        }
 
         let project = self
             .cloner
