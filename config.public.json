@@ -9,6 +9,7 @@
         "repos": [
             "nixos/nixpkgs",
             "nixos/ofborg",
+            "grahamc/ofborg",
             "grahamc/nixpkgs"
         ],
         "trusted_users": [
