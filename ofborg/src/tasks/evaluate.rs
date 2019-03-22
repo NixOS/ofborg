@@ -7,6 +7,7 @@ use crate::maintainers;
 use crate::maintainers::ImpactedMaintainers;
 use amqp::protocol::basic::{BasicProperties, Deliver};
 use hubcaps;
+use hubcaps::gists::Gists;
 use hubcaps::issues::Issue;
 use ofborg::acl::ACL;
 use ofborg::checkout;
@@ -29,6 +30,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::time::Instant;
 use tasks::eval;
+use tasks::eval::StepResult;
 use uuid::Uuid;
 
 pub struct EvaluationWorker<E> {
@@ -88,6 +90,26 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
         }
 
         update_labels(&issue, &tagger.tags_to_add(), &tagger.tags_to_remove());
+    }
+
+    fn handle_strategy_err(
+        &self,
+        ret: StepResult<()>,
+        gists: &Gists<'_>,
+        status: &mut CommitStatus,
+    ) -> Result<(), ()> {
+        match ret {
+            Ok(()) => Ok(()),
+            Err(eval::Error::Fail(msg)) => {
+                status.set_with_description(&msg, hubcaps::statuses::State::Failure);
+                Err(())
+            }
+            Err(eval::Error::FailWithGist(msg, filename, content)) => {
+                status.set_with_description(&msg, hubcaps::statuses::State::Failure);
+                status.set_url(make_gist(&gists, &filename, Some("".to_owned()), content));
+                Err(())
+            }
+        }
     }
 }
 
