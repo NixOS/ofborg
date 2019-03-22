@@ -300,6 +300,17 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             update_labels(&issue_ref, &[], &["2.status: merge conflict".to_owned()]);
         }
 
+        if self
+            .handle_strategy_err(
+                evaluation_strategy.after_merge(&mut overall_status),
+                &gists,
+                &mut overall_status,
+            )
+            .is_err()
+        {
+            return self.actions().skip(&job);
+        }
+
         overall_status
             .set_with_description("Checking new stdenvs", hubcaps::statuses::State::Pending);
 
