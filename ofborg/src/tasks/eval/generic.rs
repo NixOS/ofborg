@@ -5,6 +5,7 @@ use ofborg::message::buildjob::BuildJob;
 use std::path::Path;
 use tasks::eval::{EvaluationStrategy, StepResult};
 
+#[derive(Default)]
 pub struct GenericStrategy {}
 impl GenericStrategy {
     pub fn new() -> GenericStrategy {

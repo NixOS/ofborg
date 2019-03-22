@@ -36,7 +36,9 @@ pub struct NixpkgsStrategy<'a> {
     changed_paths: Option<Vec<String>>,
     touched_packages: Option<Vec<String>>,
 }
+
 impl<'a> NixpkgsStrategy<'a> {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         job: &'a EvaluationJob,
         pull: &'a hubcaps::pulls::PullRequest,
@@ -182,7 +184,7 @@ impl<'a> NixpkgsStrategy<'a> {
                     self.record_impacted_maintainers(&dir, &attrs);
                 }
 
-                rebuild_tags.parse_attrs(&attrs);
+                rebuild_tags.parse_attrs(attrs.clone());
             }
 
             update_labels(
@@ -193,7 +195,7 @@ impl<'a> NixpkgsStrategy<'a> {
         }
     }
 
-    fn gist_changed_paths(&self, attrs: &Vec<PackageArch>) -> Option<String> {
+    fn gist_changed_paths(&self, attrs: &[PackageArch]) -> Option<String> {
         make_gist(
             &self.gists,
             "Changed Paths",
@@ -206,7 +208,7 @@ impl<'a> NixpkgsStrategy<'a> {
         )
     }
 
-    fn record_impacted_maintainers(&self, dir: &Path, attrs: &Vec<PackageArch>) -> () {
+    fn record_impacted_maintainers(&self, dir: &Path, attrs: &[PackageArch]) {
         let changed_attributes = attrs
             .iter()
             .map(|attr| attr.package.split('.').collect::<Vec<&str>>())

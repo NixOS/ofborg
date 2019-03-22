@@ -148,7 +148,7 @@ impl RebuildTagger {
         Default::default()
     }
 
-    pub fn parse_attrs(&mut self, attrs: &Vec<PackageArch>) {
+    pub fn parse_attrs(&mut self, attrs: Vec<PackageArch>) {
         let mut counter_darwin = 0;
         let mut counter_linux = 0;
 
