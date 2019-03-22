@@ -129,6 +129,12 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
         let issue: Issue;
         let auto_schedule_build_archs: Vec<systems::System>;
 
+        let mut evaluation_strategy: Box<eval::EvaluationStrategy> = if job.is_nixpkgs() {
+            Box::new(eval::NixpkgsStrategy::new())
+        } else {
+            Box::new(eval::GenericStrategy::new())
+        };
+
         match issue_ref.get() {
             Ok(iss) => {
                 if iss.state == "closed" {
