@@ -10,6 +10,7 @@ use ofborg::evalchecker::EvalChecker;
 use ofborg::files::file_to_str;
 use ofborg::message::buildjob::BuildJob;
 use ofborg::message::evaluationjob::EvaluationJob;
+use ofborg::nix;
 use ofborg::nix::Nix;
 use ofborg::outpathdiff::{OutPathDiff, OutPaths, PackageArch};
 use ofborg::tagger::{MaintainerPRTagger, PathsTagger, RebuildTagger};
@@ -364,7 +365,91 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
     }
 
     fn evaluation_checks(&self) -> Vec<EvalChecker> {
-        vec![]
+        vec![
+            EvalChecker::new(
+                "package-list",
+                nix::Operation::QueryPackagesJSON,
+                vec![String::from("--file"), String::from(".")],
+                self.nix.clone(),
+            ),
+            EvalChecker::new(
+                "package-list-no-aliases",
+                nix::Operation::QueryPackagesJSON,
+                vec![
+                    String::from("--file"),
+                    String::from("."),
+                    String::from("--arg"),
+                    String::from("config"),
+                    String::from("{ allowAliases = false; }"),
+                ],
+                self.nix.clone(),
+            ),
+            EvalChecker::new(
+                "nixos-options",
+                nix::Operation::Instantiate,
+                vec![
+                    String::from("--arg"),
+                    String::from("nixpkgs"),
+                    String::from("{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }"),
+                    String::from("./nixos/release.nix"),
+                    String::from("-A"),
+                    String::from("options"),
+                ],
+                self.nix.clone(),
+            ),
+            EvalChecker::new(
+                "nixos-manual",
+                nix::Operation::Instantiate,
+                vec![
+                    String::from("--arg"),
+                    String::from("nixpkgs"),
+                    String::from("{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }"),
+                    String::from("./nixos/release.nix"),
+                    String::from("-A"),
+                    String::from("manual"),
+                ],
+                self.nix.clone(),
+            ),
+            EvalChecker::new(
+                "nixpkgs-manual",
+                nix::Operation::Instantiate,
+                vec![
+                    String::from("--arg"),
+                    String::from("nixpkgs"),
+                    String::from("{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }"),
+                    String::from("./pkgs/top-level/release.nix"),
+                    String::from("-A"),
+                    String::from("manual"),
+                ],
+                self.nix.clone(),
+            ),
+            EvalChecker::new(
+                "nixpkgs-tarball",
+                nix::Operation::Instantiate,
+                vec![
+                    String::from("--arg"),
+                    String::from("nixpkgs"),
+                    String::from("{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }"),
+                    String::from("./pkgs/top-level/release.nix"),
+                    String::from("-A"),
+                    String::from("tarball"),
+                ],
+                self.nix.clone(),
+            ),
+            EvalChecker::new(
+                "nixpkgs-unstable-jobset",
+                nix::Operation::Instantiate,
+                vec![
+                    String::from("--arg"),
+                    String::from("nixpkgs"),
+                    String::from("{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }"),
+                    String::from("./pkgs/top-level/release.nix"),
+                    String::from("-A"),
+                    String::from("unstable"),
+                ],
+                self.nix.clone(),
+            ),
+        ]
     }
 
     fn all_evaluations_passed(

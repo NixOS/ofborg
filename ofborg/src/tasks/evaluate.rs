@@ -9,7 +9,6 @@ use hubcaps::issues::Issue;
 use ofborg::acl::ACL;
 use ofborg::checkout;
 use ofborg::commitstatus::CommitStatus;
-use ofborg::evalchecker::EvalChecker;
 use ofborg::files::file_to_str;
 use ofborg::message::{buildjob, evaluationjob};
 use ofborg::nix;
@@ -273,93 +272,8 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
         overall_status
             .set_with_description("Beginning Evaluations", hubcaps::statuses::State::Pending);
 
-        let eval_checks = vec![
-            EvalChecker::new(
-                "package-list",
-                nix::Operation::QueryPackagesJSON,
-                vec![String::from("--file"), String::from(".")],
-                self.nix.clone(),
-            ),
-            EvalChecker::new(
-                "package-list-no-aliases",
-                nix::Operation::QueryPackagesJSON,
-                vec![
-                    String::from("--file"),
-                    String::from("."),
-                    String::from("--arg"),
-                    String::from("config"),
-                    String::from("{ allowAliases = false; }"),
-                ],
-                self.nix.clone(),
-            ),
-            EvalChecker::new(
-                "nixos-options",
-                nix::Operation::Instantiate,
-                vec![
-                    String::from("--arg"),
-                    String::from("nixpkgs"),
-                    String::from("{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }"),
-                    String::from("./nixos/release.nix"),
-                    String::from("-A"),
-                    String::from("options"),
-                ],
-                self.nix.clone(),
-            ),
-            EvalChecker::new(
-                "nixos-manual",
-                nix::Operation::Instantiate,
-                vec![
-                    String::from("--arg"),
-                    String::from("nixpkgs"),
-                    String::from("{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }"),
-                    String::from("./nixos/release.nix"),
-                    String::from("-A"),
-                    String::from("manual"),
-                ],
-                self.nix.clone(),
-            ),
-            EvalChecker::new(
-                "nixpkgs-manual",
-                nix::Operation::Instantiate,
-                vec![
-                    String::from("--arg"),
-                    String::from("nixpkgs"),
-                    String::from("{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }"),
-                    String::from("./pkgs/top-level/release.nix"),
-                    String::from("-A"),
-                    String::from("manual"),
-                ],
-                self.nix.clone(),
-            ),
-            EvalChecker::new(
-                "nixpkgs-tarball",
-                nix::Operation::Instantiate,
-                vec![
-                    String::from("--arg"),
-                    String::from("nixpkgs"),
-                    String::from("{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }"),
-                    String::from("./pkgs/top-level/release.nix"),
-                    String::from("-A"),
-                    String::from("tarball"),
-                ],
-                self.nix.clone(),
-            ),
-            EvalChecker::new(
-                "nixpkgs-unstable-jobset",
-                nix::Operation::Instantiate,
-                vec![
-                    String::from("--arg"),
-                    String::from("nixpkgs"),
-                    String::from("{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }"),
-                    String::from("./pkgs/top-level/release.nix"),
-                    String::from("-A"),
-                    String::from("unstable"),
-                ],
-                self.nix.clone(),
-            ),
-        ];
-
-        let eval_results: bool = eval_checks
+        let eval_results: bool = evaluation_strategy
+            .evaluation_checks()
             .into_iter()
             .map(|check| {
                 let mut status = CommitStatus::new(
