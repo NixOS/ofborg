@@ -3,16 +3,18 @@ use ofborg::checkout::CachedProjectCo;
 use ofborg::commitstatus::CommitStatus;
 use ofborg::evalchecker::EvalChecker;
 use ofborg::message::buildjob::BuildJob;
+use ofborg::nix::Nix;
 use ofborg::tasks::eval::{EvaluationStrategy, StepResult};
 use ofborg::tasks::evaluate::update_labels;
 use std::path::Path;
 
 pub struct NixpkgsStrategy<'a> {
     issue_ref: &'a IssueRef<'a>,
+    nix: Nix,
 }
 impl<'a> NixpkgsStrategy<'a> {
-    pub fn new(issue_ref: &'a IssueRef) -> NixpkgsStrategy<'a> {
-        Self { issue_ref }
+    pub fn new(issue_ref: &'a IssueRef, nix: Nix) -> NixpkgsStrategy<'a> {
+        Self { issue_ref, nix }
     }
 
     fn tag_from_title(&self) {

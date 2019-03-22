@@ -138,7 +138,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
         let auto_schedule_build_archs: Vec<systems::System>;
 
         let mut evaluation_strategy: Box<eval::EvaluationStrategy> = if job.is_nixpkgs() {
-            Box::new(eval::NixpkgsStrategy::new(&issue_ref))
+            Box::new(eval::NixpkgsStrategy::new(&issue_ref, self.nix.clone()))
         } else {
             Box::new(eval::GenericStrategy::new())
         };
