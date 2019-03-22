@@ -2,9 +2,6 @@
 extern crate amqp;
 extern crate env_logger;
 extern crate uuid;
-
-use crate::maintainers;
-use crate::maintainers::ImpactedMaintainers;
 use amqp::protocol::basic::{BasicProperties, Deliver};
 use hubcaps;
 use hubcaps::gists::Gists;
@@ -17,11 +14,10 @@ use ofborg::evalchecker::EvalChecker;
 use ofborg::files::file_to_str;
 use ofborg::message::{buildjob, evaluationjob};
 use ofborg::nix;
-use ofborg::outpathdiff::{OutPathDiff, OutPaths};
+use ofborg::outpathdiff::OutPaths;
 use ofborg::stats;
 use ofborg::stats::Event;
 use ofborg::systems;
-use ofborg::tagger::{MaintainerPRTagger, PathsTagger, PkgsAddedRemovedTagger, RebuildTagger};
 use ofborg::worker;
 use std::collections::HashMap;
 use std::path::Path;
@@ -64,16 +60,6 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
 
     fn actions(&self) -> evaluationjob::Actions {
         evaluationjob::Actions {}
-    }
-
-    fn tag_from_paths(&self, issue: &hubcaps::issues::IssueRef, paths: &[String]) {
-        let mut tagger = PathsTagger::new(self.tag_paths.clone());
-
-        for path in paths {
-            tagger.path_changed(&path);
-        }
-
-        update_labels(&issue, &tagger.tags_to_add(), &tagger.tags_to_remove());
     }
 
     fn handle_strategy_err(
@@ -135,12 +121,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
         let issue: Issue;
         let auto_schedule_build_archs: Vec<systems::System>;
 
-        let mut evaluation_strategy: Box<eval::EvaluationStrategy> = if job.is_nixpkgs() {
-            Box::new(eval::NixpkgsStrategy::new(&issue_ref, self.nix.clone()))
-        } else {
-            Box::new(eval::GenericStrategy::new())
-        };
-
         match issue_ref.get() {
             Ok(iss) => {
                 if iss.state == "closed" {
@@ -167,6 +147,21 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
                 info!("E: {:?}", e);
                 return self.actions().skip(&job);
             }
+        };
+
+        let mut evaluation_strategy: Box<eval::EvaluationStrategy> = if job.is_nixpkgs() {
+            Box::new(eval::NixpkgsStrategy::new(
+                &job,
+                &pull,
+                &issue,
+                &issue_ref,
+                &repo,
+                &gists,
+                self.nix.clone(),
+                &self.tag_paths,
+            ))
+        } else {
+            Box::new(eval::GenericStrategy::new())
         };
 
         let mut overall_status = CommitStatus::new(
@@ -220,32 +215,8 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             return self.actions().skip(&job);
         }
 
-        let mut rebuildsniff = OutPathDiff::new(self.nix.clone(), PathBuf::from(&refpath));
-
-        overall_status.set_with_description(
-            "Checking original out paths",
-            hubcaps::statuses::State::Pending,
-        );
-
         let target_branch_rebuild_sniff_start = Instant::now();
 
-        if let Err(mut output) = rebuildsniff.find_before() {
-            overall_status.set_url(make_gist(
-                &gists,
-                "Output path comparison",
-                Some("".to_owned()),
-                file_to_str(&mut output),
-            ));
-
-            self.events
-                .notify(Event::TargetBranchFailsEvaluation(target_branch.clone()));
-            overall_status.set_with_description(
-                format!("Target branch {} doesn't evaluate!", &target_branch).as_ref(),
-                hubcaps::statuses::State::Failure,
-            );
-
-            return self.actions().skip(&job);
-        }
         self.events.notify(Event::EvaluationDuration(
             target_branch.clone(),
             target_branch_rebuild_sniff_start.elapsed().as_secs(),
@@ -265,15 +236,21 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             return self.actions().skip(&job);
         }
 
+        if self
+            .handle_strategy_err(
+                evaluation_strategy.after_fetch(&co),
+                &gists,
+                &mut overall_status,
+            )
+            .is_err()
+        {
+            return self.actions().skip(&job);
+        }
+
         let possibly_touched_packages = parse_commit_messages(
             &co.commit_messages_from_head(&job.pr.head_sha)
                 .unwrap_or_else(|_| vec!["".to_owned()]),
         );
-
-        let changed_paths = co
-            .files_changed_from_head(&job.pr.head_sha)
-            .unwrap_or_else(|_| vec![]);
-        self.tag_from_paths(&issue_ref, &changed_paths);
 
         overall_status.set_with_description("Merging PR", hubcaps::statuses::State::Pending);
 
@@ -298,27 +275,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             )
             .is_err()
         {
-            return self.actions().skip(&job);
-        }
-
-        overall_status
-            .set_with_description("Checking new out paths", hubcaps::statuses::State::Pending);
-
-        if let Err(mut output) = rebuildsniff.find_after() {
-            overall_status.set_url(make_gist(
-                &gists,
-                "Output path comparison",
-                Some("".to_owned()),
-                file_to_str(&mut output),
-            ));
-            overall_status.set_with_description(
-                format!(
-                    "Failed to enumerate outputs after merging to {}",
-                    &target_branch
-                )
-                .as_ref(),
-                hubcaps::statuses::State::Failure,
-            );
             return self.actions().skip(&job);
         }
 
@@ -532,91 +488,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
         }
 
         if eval_results {
-            overall_status.set_with_description(
-                "Calculating Changed Outputs",
-                hubcaps::statuses::State::Pending,
-            );
-
-            if let Some((removed, added)) = rebuildsniff.package_diff() {
-                let mut addremovetagger = PkgsAddedRemovedTagger::new();
-                addremovetagger.changed(&removed, &added);
-                update_labels(
-                    &issue_ref,
-                    &addremovetagger.tags_to_add(),
-                    &addremovetagger.tags_to_remove(),
-                );
-            }
-
-            let mut rebuild_tags = RebuildTagger::new();
-            if let Some(attrs) = rebuildsniff.calculate_rebuild() {
-                if !attrs.is_empty() {
-                    let gist_url = make_gist(
-                        &gists,
-                        "Changed Paths",
-                        Some("".to_owned()),
-                        attrs
-                            .iter()
-                            .map(|attr| format!("{}\t{}", &attr.architecture, &attr.package))
-                            .collect::<Vec<String>>()
-                            .join("\n"),
-                    );
-
-                    overall_status.set_url(gist_url);
-
-                    let changed_attributes = attrs
-                        .iter()
-                        .map(|attr| attr.package.split('.').collect::<Vec<&str>>())
-                        .collect::<Vec<Vec<&str>>>();
-
-                    let m = ImpactedMaintainers::calculate(
-                        &self.nix,
-                        &PathBuf::from(&refpath),
-                        &changed_paths,
-                        &changed_attributes,
-                    );
-
-                    let gist_url = make_gist(
-                        &gists,
-                        "Potential Maintainers",
-                        Some("".to_owned()),
-                        match m {
-                            Ok(ref maintainers) => format!("Maintainers:\n{}", maintainers),
-                            Err(ref e) => format!("Ignorable calculation error:\n{:?}", e),
-                        },
-                    );
-
-                    if let Ok(ref maint) = m {
-                        request_reviews(&maint, &pull);
-                        let mut maint_tagger = MaintainerPRTagger::new();
-                        maint_tagger
-                            .record_maintainer(&issue.user.login, &maint.maintainers_by_package());
-                        update_labels(
-                            &issue_ref,
-                            &maint_tagger.tags_to_add(),
-                            &maint_tagger.tags_to_remove(),
-                        );
-                    }
-
-                    let mut status = CommitStatus::new(
-                        repo.statuses(),
-                        job.pr.head_sha.clone(),
-                        String::from("grahamcofborg-eval-check-maintainers"),
-                        String::from("matching changed paths to changed attrs..."),
-                        gist_url,
-                    );
-
-                    status.set(hubcaps::statuses::State::Success);
-                }
-
-                rebuild_tags.parse_attrs(attrs);
-            }
-
-            update_labels(
-                &issue_ref,
-                &rebuild_tags.tags_to_add(),
-                &rebuild_tags.tags_to_remove(),
-            );
-
             {
                 let ret = evaluation_strategy
                     .all_evaluations_passed(&Path::new(&refpath), &mut overall_status);
@@ -649,7 +520,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
     }
 }
 
-fn make_gist<'a>(
+pub fn make_gist<'a>(
     gists: &hubcaps::gists::Gists<'a>,
     name: &str,
     description: Option<String>,
@@ -795,20 +666,4 @@ fn indicates_wip(text: &str) -> bool {
     }
 
     false
-}
-
-fn request_reviews(maint: &maintainers::ImpactedMaintainers, pull: &hubcaps::pulls::PullRequest) {
-    if maint.maintainers().len() < 10 {
-        for maintainer in maint.maintainers() {
-            if let Err(e) =
-                pull.review_requests()
-                    .create(&hubcaps::review_requests::ReviewRequestOptions {
-                        reviewers: vec![maintainer.clone()],
-                        team_reviewers: vec![],
-                    })
-            {
-                println!("Failure requesting a review from {}: {:#?}", maintainer, e,);
-            }
-        }
-    }
 }

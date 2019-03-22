@@ -81,11 +81,11 @@ impl OutPathDiff {
         }
     }
 
-    pub fn calculate_rebuild(self) -> Option<Vec<PackageArch>> {
+    pub fn calculate_rebuild(&self) -> Option<Vec<PackageArch>> {
         let mut rebuild: Vec<PackageArch> = vec![];
 
-        if let Some(cur) = self.current {
-            if let Some(orig) = self.original {
+        if let Some(ref cur) = self.current {
+            if let Some(ref orig) = self.original {
                 for key in cur.keys() {
                     trace!("Checking out {:?}", key);
                     if cur.get(key) != orig.get(key) {
