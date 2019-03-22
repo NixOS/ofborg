@@ -21,9 +21,7 @@ use ofborg::outpathdiff::{OutPathDiff, OutPaths};
 use ofborg::stats;
 use ofborg::stats::Event;
 use ofborg::systems;
-use ofborg::tagger::{
-    MaintainerPRTagger, PathsTagger, PkgsAddedRemovedTagger, RebuildTagger, StdenvTagger,
-};
+use ofborg::tagger::{MaintainerPRTagger, PathsTagger, PkgsAddedRemovedTagger, RebuildTagger};
 use ofborg::worker;
 use std::collections::HashMap;
 use std::path::Path;
@@ -222,14 +220,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             return self.actions().skip(&job);
         }
 
-        overall_status.set_with_description(
-            "Checking original stdenvs",
-            hubcaps::statuses::State::Pending,
-        );
-
-        let mut stdenvs = eval::Stdenvs::new(self.nix.clone(), PathBuf::from(&refpath));
-        stdenvs.identify_before();
-
         let mut rebuildsniff = OutPathDiff::new(self.nix.clone(), PathBuf::from(&refpath));
 
         overall_status.set_with_description(
@@ -310,11 +300,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
         {
             return self.actions().skip(&job);
         }
-
-        overall_status
-            .set_with_description("Checking new stdenvs", hubcaps::statuses::State::Pending);
-
-        stdenvs.identify_after();
 
         overall_status
             .set_with_description("Checking new out paths", hubcaps::statuses::State::Pending);
@@ -550,16 +535,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             overall_status.set_with_description(
                 "Calculating Changed Outputs",
                 hubcaps::statuses::State::Pending,
-            );
-
-            let mut stdenvtagger = StdenvTagger::new();
-            if !stdenvs.are_same() {
-                stdenvtagger.changed(stdenvs.changed());
-            }
-            update_labels(
-                &issue_ref,
-                &stdenvtagger.tags_to_add(),
-                &stdenvtagger.tags_to_remove(),
             );
 
             if let Some((removed, added)) = rebuildsniff.package_diff() {
