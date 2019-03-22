@@ -8,24 +8,20 @@ use hubcaps::gists::Gists;
 use hubcaps::issues::Issue;
 use ofborg::acl::ACL;
 use ofborg::checkout;
-use ofborg::commentparser::Subset;
 use ofborg::commitstatus::CommitStatus;
 use ofborg::evalchecker::EvalChecker;
 use ofborg::files::file_to_str;
 use ofborg::message::{buildjob, evaluationjob};
 use ofborg::nix;
-use ofborg::outpathdiff::OutPaths;
 use ofborg::stats;
 use ofborg::stats::Event;
 use ofborg::systems;
 use ofborg::worker;
 use std::collections::HashMap;
 use std::path::Path;
-use std::path::PathBuf;
 use std::time::Instant;
 use tasks::eval;
 use tasks::eval::StepResult;
-use uuid::Uuid;
 
 pub struct EvaluationWorker<E> {
     cloner: checkout::CachedCloner,
@@ -247,11 +243,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             return self.actions().skip(&job);
         }
 
-        let possibly_touched_packages = parse_commit_messages(
-            &co.commit_messages_from_head(&job.pr.head_sha)
-                .unwrap_or_else(|_| vec!["".to_owned()]),
-        );
-
         overall_status.set_with_description("Merging PR", hubcaps::statuses::State::Pending);
 
         if co.merge_commit(job.pr.head_sha.as_ref()).is_err() {
@@ -368,7 +359,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             ),
         ];
 
-        let mut eval_results: bool = eval_checks
+        let eval_results: bool = eval_checks
             .into_iter()
             .map(|check| {
                 let mut status = CommitStatus::new(
@@ -413,97 +404,36 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
         let mut response: worker::Actions = vec![];
 
         if eval_results {
-            let mut status = CommitStatus::new(
-                repo.statuses(),
-                job.pr.head_sha.clone(),
-                String::from("grahamcofborg-eval-check-meta"),
-                String::from("config.nix: checkMeta = true"),
-                None,
-            );
-
-            status.set(hubcaps::statuses::State::Pending);
-
-            let state: hubcaps::statuses::State;
-            let gist_url: Option<String>;
-
-            let checker = OutPaths::new(self.nix.clone(), PathBuf::from(&refpath), true);
-            match checker.find() {
-                Ok(pkgs) => {
-                    state = hubcaps::statuses::State::Success;
-                    gist_url = None;
-
-                    let mut try_build: Vec<String> = pkgs
-                        .keys()
-                        .map(|pkgarch| pkgarch.package.clone())
-                        .filter(|pkg| possibly_touched_packages.contains(&pkg))
-                        .collect();
-                    try_build.sort();
-                    try_build.dedup();
-
-                    if !try_build.is_empty() && try_build.len() <= 10 {
-                        // In the case of trying to merge master in to
-                        // a stable branch, we don't want to do this.
-                        // Therefore, only schedule builds if there
-                        // less than or exactly 10
-                        let msg = buildjob::BuildJob::new(
-                            job.repo.clone(),
-                            job.pr.clone(),
-                            Subset::Nixpkgs,
-                            try_build,
-                            None,
-                            None,
-                            format!("{}", Uuid::new_v4()),
-                        );
+            let ret = evaluation_strategy
+                .all_evaluations_passed(&Path::new(&refpath), &mut overall_status);
+            match ret {
+                Ok(builds) => {
+                    for buildjob in builds {
                         for arch in auto_schedule_build_archs.iter() {
                             let (exchange, routingkey) = arch.as_build_destination();
-                            response.push(worker::publish_serde_action(exchange, routingkey, &msg));
+                            response.push(worker::publish_serde_action(
+                                exchange, routingkey, &buildjob,
+                            ));
                         }
                         response.push(worker::publish_serde_action(
                             Some("build-results".to_string()),
                             None,
                             &buildjob::QueuedBuildJobs {
-                                job: msg,
+                                job: buildjob,
                                 architectures: auto_schedule_build_archs
-                                    .into_iter()
+                                    .iter()
                                     .map(|arch| arch.to_string())
                                     .collect(),
                             },
                         ));
                     }
                 }
-                Err(mut out) => {
-                    eval_results = false;
-                    state = hubcaps::statuses::State::Failure;
-                    gist_url = make_gist(
-                        &gists,
-                        "Meta Check",
-                        Some(format!("{:?}", state)),
-                        file_to_str(&mut out),
-                    );
-                }
-            }
-
-            status.set_url(gist_url);
-            status.set(state.clone());
-        }
-
-        if eval_results {
-            {
-                let ret = evaluation_strategy
-                    .all_evaluations_passed(&Path::new(&refpath), &mut overall_status);
-                match ret {
-                    Ok(builds) => {
-                        if builds.len() != 0 {
-                            panic!("we shouldn't be here yet!");
-                        }
-                    }
-                    Err(e) => {
-                        if self
-                            .handle_strategy_err(Err(e), &gists, &mut overall_status)
-                            .is_err()
-                        {
-                            return self.actions().skip(&job);
-                        }
+                Err(e) => {
+                    if self
+                        .handle_strategy_err(Err(e), &gists, &mut overall_status)
+                        .is_err()
+                    {
+                        return self.actions().skip(&job);
                     }
                 }
             }
@@ -576,69 +506,6 @@ pub fn update_labels(issue: &hubcaps::issues::IssueRef, add: &[String], remove: 
 
     for label in to_remove {
         l.remove(&label).expect("Failed to remove tag");
-    }
-}
-
-fn parse_commit_messages(messages: &[String]) -> Vec<String> {
-    messages
-        .iter()
-        .filter_map(|line| {
-            // Convert "foo: some notes" in to "foo"
-            let parts: Vec<&str> = line.splitn(2, ':').collect();
-            if parts.len() == 2 {
-                Some(parts[0])
-            } else {
-                None
-            }
-        })
-        .flat_map(|line| {
-            let pkgs: Vec<&str> = line.split(',').collect();
-            pkgs
-        })
-        .map(|line| line.trim().to_owned())
-        .collect()
-}
-
-#[cfg(test)]
-mod tests {
-
-    use super::*;
-
-    #[test]
-    fn test_parse_commit_messages() {
-        let expect: Vec<&str> = vec![
-            "firefox{-esr", // don't support such fancy syntax
-            "}",            // Don't support such fancy syntax
-            "firefox",
-            "buildkite-agent",
-            "python.pkgs.ptyprocess",
-            "python.pkgs.ptyprocess",
-            "android-studio-preview",
-            "foo",
-            "bar",
-        ];
-        assert_eq!(
-            parse_commit_messages(
-                &"
-              firefox{-esr,}: fix failing build due to the google-api-key
-              Merge pull request #34483 from andir/dovecot-cve-2017-15132
-              firefox: enable official branding
-              Merge pull request #34442 from rnhmjoj/virtual
-              buildkite-agent: enable building on darwin
-              python.pkgs.ptyprocess: 0.5 -> 0.5.2
-              python.pkgs.ptyprocess: move expression
-              Merge pull request #34465 from steveeJ/steveej-attempt-qtile-bump-0.10.7
-              android-studio-preview: 3.1.0.8 -> 3.1.0.9
-              Merge pull request #34188 from dotlambda/home-assistant
-              Merge pull request #34414 from dotlambda/postfix
-              foo,bar: something here: yeah
-            "
-                .lines()
-                .map(|l| l.to_owned())
-                .collect::<Vec<String>>(),
-            ),
-            expect
-        );
     }
 }
 
