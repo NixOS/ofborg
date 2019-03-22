@@ -250,11 +250,9 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
 
             info!("Failed to merge {}", job.pr.head_sha);
 
-            update_labels(&issue_ref, &["2.status: merge conflict".to_owned()], &[]);
+            evaluaton_strategy.merge_conflict();
 
             return self.actions().skip(&job);
-        } else {
-            update_labels(&issue_ref, &[], &["2.status: merge conflict".to_owned()]);
         }
 
         if self
