@@ -10,7 +10,7 @@ use uuid::Uuid;
 use amqp::protocol::basic::{BasicProperties, Deliver};
 use hubcaps;
 use ofborg::commentparser;
-use ofborg::message::{buildjob, massrebuildjob, Pr, Repo};
+use ofborg::message::{buildjob, evaluationjob, Pr, Repo};
 use ofborg::worker;
 
 pub struct GitHubCommentWorker {
@@ -147,7 +147,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                         ));
                     }
                     commentparser::Instruction::Eval => {
-                        let msg = massrebuildjob::MassRebuildJob {
+                        let msg = evaluationjob::EvaluationJob {
                             repo: repo_msg.clone(),
                             pr: pr_msg.clone(),
                         };

@@ -77,8 +77,7 @@ let
     buildInputs = with pkgs; [
       bash
       nix-prefetch-git
-      rust.rustc
-      rust.cargo
+      latest.rustChannels.stable.rust
       #rustfmt
       #carnix
       openssl.dev
