@@ -463,6 +463,19 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
                 ],
                 self.nix.clone(),
             ),
+            EvalChecker::new(
+                "darwin",
+                nix::Operation::Instantiate,
+                vec![
+                    String::from("--arg"),
+                    String::from("nixpkgs"),
+                    String::from("{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }"),
+                    String::from("./pkgs/top-level/release.nix"),
+                    String::from("-A"),
+                    String::from("darwin-tested"),
+                ],
+                self.nix.clone(),
+            ),
         ]
     }
 
