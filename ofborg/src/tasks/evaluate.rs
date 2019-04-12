@@ -70,8 +70,8 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
                 Err(())
             }
             Err(eval::Error::FailWithGist(msg, filename, content)) => {
-                status.set_with_description(&msg, hubcaps::statuses::State::Failure);
                 status.set_url(make_gist(&gists, &filename, Some("".to_owned()), content));
+                status.set_with_description(&msg, hubcaps::statuses::State::Failure);
                 Err(())
             }
         }
