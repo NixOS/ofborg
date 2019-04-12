@@ -7,7 +7,7 @@ matrix:
       script: nix-shell --run checkPhase --arg useNix1 false -A mozilla-rust-overlay
     - name: checkPhase - Nix 2
       script: nix-shell --run checkPhase --arg useNix1 false
-    - name: checkPhase - Nix 2
-      script: nix-shell --run checkPhase --arg useNix1 false
     - name: checkPhase - Nix 1
       script: nix-shell --run checkPhase --arg useNix1 true
+    - name: nix-build
+      script: nix-build ./default.nix -A ofborg.rs -A ofborg.php
