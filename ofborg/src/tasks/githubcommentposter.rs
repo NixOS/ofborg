@@ -5,20 +5,20 @@ use serde_json;
 
 use amqp::protocol::basic::{BasicProperties, Deliver};
 use chrono::{DateTime, Utc};
-use hubcaps;
 use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
 use message::buildjob::{BuildJob, QueuedBuildJobs};
+use ofborg::config::GithubAppVendingMachine;
 use ofborg::message::buildresult::{BuildResult, BuildStatus, LegacyBuildResult};
 use ofborg::message::Repo;
 use ofborg::worker;
 
 pub struct GitHubCommentPoster {
-    github: hubcaps::Github,
+    github_vend: GithubAppVendingMachine,
 }
 
 impl GitHubCommentPoster {
-    pub fn new(github: hubcaps::Github) -> GitHubCommentPoster {
-        GitHubCommentPoster { github }
+    pub fn new(github_vend: GithubAppVendingMachine) -> GitHubCommentPoster {
+        GitHubCommentPoster { github_vend }
     }
 }
 
@@ -77,7 +77,9 @@ impl worker::SimpleWorker for GitHubCommentPoster {
             println!(":{:?}", check);
 
             let check_create_attempt = self
-                .github
+                .github_vend
+                .for_repo(&repo.owner, &repo.name)
+                .unwrap()
                 .repo(repo.owner.clone(), repo.name.clone())
                 .checkruns()
                 .create(&check);
