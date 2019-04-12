@@ -47,6 +47,7 @@ pub mod locks;
 pub mod maintainers;
 pub mod message;
 pub mod nix;
+pub mod nixstats;
 pub mod notifyworker;
 pub mod outpathdiff;
 pub mod stats;
