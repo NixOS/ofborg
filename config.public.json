@@ -180,6 +180,10 @@
         "6.topic: steam": [
             "pkgs/games/steam"
         ],
+        "6.topic: TeX": [
+            "pkgs/tools/typesetting/tex",
+            "doc/languages-frameworks/texlive.xml"
+        ],
         "6.topic: vim": [
             "pkgs/applications/editors/vim",
             "pkgs/misc/vim-plugins",
