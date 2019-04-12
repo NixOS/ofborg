@@ -11,14 +11,15 @@ use message::buildjob::{BuildJob, QueuedBuildJobs};
 use ofborg::message::buildresult::{BuildResult, BuildStatus, LegacyBuildResult};
 use ofborg::message::Repo;
 use ofborg::worker;
+use ofborg::config::GithubAppVendingMachine;
 
 pub struct GitHubCommentPoster {
-    github: hubcaps::Github,
+    github_vend: GithubAppVendingMachine,
 }
 
 impl GitHubCommentPoster {
-    pub fn new(github: hubcaps::Github) -> GitHubCommentPoster {
-        GitHubCommentPoster { github }
+    pub fn new(github_vend: GithubAppVendingMachine) -> GitHubCommentPoster {
+        GitHubCommentPoster { github_vend }
     }
 }
 
@@ -77,7 +78,8 @@ impl worker::SimpleWorker for GitHubCommentPoster {
             println!(":{:?}", check);
 
             let check_create_attempt = self
-                .github
+                .github_vend.for_repo(&repo.owner, &repo.name)
+                .unwrap()
                 .repo(repo.owner.clone(), repo.name.clone())
                 .checkruns()
                 .create(&check);

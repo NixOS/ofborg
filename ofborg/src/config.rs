@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-
+use std::cell::RefCell;
 use ofborg::acl;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -115,17 +115,13 @@ impl Config {
         )
     }
 
-    pub fn github_app(&self) -> Github {
-        let conf = self.github_app.clone().unwrap();
-        Github::new(
-            "github.com/grahamc/ofborg (app)",
-            // tls configured hyper client
-            Client::with_connector(HttpsConnector::new(NativeTlsClient::new().unwrap())),
-            Credentials::InstallationToken(InstallationTokenGenerator::new(
-                conf.installation_id,
-                JWTCredentials::new(conf.app_id, conf.private_key),
-            )),
-        )
+    pub fn github_app_vendingmachine(&self) -> GithubAppVendingMachine
+    {
+        GithubAppVendingMachine {
+            conf: self.github_app.clone().unwrap(),
+            id_cache: RefCell::new(HashMap::new()),
+            client_cache: RefCell::new(HashMap::new()),
+        }
     }
 
     pub fn nix(&self) -> Nix {
@@ -168,4 +164,53 @@ pub fn load(filename: &Path) -> Config {
     let deserialized: Config = serde_json::from_str(&contents).unwrap();
 
     deserialized
+}
+
+pub struct GithubAppVendingMachine {
+    conf: GithubAppConfig,
+    id_cache: RefCell<HashMap<(String, String), i32>>,
+    client_cache: RefCell<HashMap<i32, Github>>
+}
+
+impl GithubAppVendingMachine {
+    pub fn for_repo(&self, owner: &str, repo: &str) -> Result<Github, hubcaps::Error> {
+        let mut id_cache = self.id_cache.borrow_mut();
+        // !!! Cache clients so we don't look up new tokens all the time
+        let mut _client_cache = self.client_cache.borrow_mut();
+
+        let useragent = "github.com/grahamc/ofborg (app)";
+        let jwt = JWTCredentials::new(self.conf.app_id,
+                                      self.conf.private_key.clone());
+
+        let install_id: i32;
+
+        let key = (owner.to_owned(), repo.to_owned());
+        if id_cache.contains_key(&key) {
+            install_id = *id_cache.get(&key).unwrap();
+            debug!("Found install ID for {:?} in cache", key);
+        } else {
+            info!("Looking up install ID for {}/{}", owner, repo);
+
+            let lookup_gh = Github::new(
+                useragent,
+                Client::with_connector(HttpsConnector::new(NativeTlsClient::new().unwrap())),
+                Credentials::JWT(jwt.clone())
+            );
+
+            install_id = lookup_gh
+                .app()
+                .find_repo_installation(owner, repo)?.id;
+            id_cache.insert(key, install_id);
+            debug!("Received install ID {}", install_id);
+        }
+
+        Ok(Github::new(
+            useragent,
+            Client::with_connector(HttpsConnector::new(NativeTlsClient::new().unwrap())),
+            Credentials::InstallationToken(InstallationTokenGenerator::new(
+                install_id,
+                jwt
+            )),
+        ))
+    }
 }

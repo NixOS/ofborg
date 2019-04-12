@@ -313,6 +313,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             })
             .all(|status| status == Ok(()));
 
+        info!("Finished evaluations");
         let mut response: worker::Actions = vec![];
 
         if eval_results {
@@ -320,6 +321,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
                 .all_evaluations_passed(&Path::new(&refpath), &mut overall_status);
             match ret {
                 Ok(builds) => {
+                    info!("Scheduling build jobs {:#?} on arches {:#?}", builds, auto_schedule_build_archs);
                     for buildjob in builds {
                         for arch in auto_schedule_build_archs.iter() {
                             let (exchange, routingkey) = arch.as_build_destination();
@@ -341,6 +343,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
                     }
                 }
                 Err(e) => {
+                    info!("Failed after all the evaluations passed");
                     if self
                         .handle_strategy_err(Err(e), &gists, &mut overall_status)
                         .is_err()
@@ -350,6 +353,8 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
                 }
             }
 
+            info!("Just about done...");
+
             overall_status.set_with_description("^.^!", hubcaps::statuses::State::Success);
         } else {
             overall_status
@@ -358,6 +363,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
 
         self.events.notify(Event::TaskEvaluationCheckComplete);
 
+        info!("done!");
         self.actions().done(&job, response)
     }
 }
