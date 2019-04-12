@@ -1,4 +1,9 @@
 #![recursion_limit = "512"]
+// Replacing .map(|arch| arch.to_string())
+//      with .map(systems::System::to_string)
+//
+// seems much less clear and I just don't like it :)
+#![allow(clippy::redundant_closure)]
 
 #[macro_use]
 extern crate serde_derive;
