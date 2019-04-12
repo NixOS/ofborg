@@ -5,7 +5,6 @@ use serde_json;
 
 use amqp::protocol::basic::{BasicProperties, Deliver};
 use chrono::{DateTime, Utc};
-use hubcaps;
 use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
 use message::buildjob::{BuildJob, QueuedBuildJobs};
 use ofborg::message::buildresult::{BuildResult, BuildStatus, LegacyBuildResult};

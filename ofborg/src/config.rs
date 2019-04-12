@@ -8,7 +8,6 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::cell::RefCell;
 use ofborg::acl;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -119,8 +118,8 @@ impl Config {
     {
         GithubAppVendingMachine {
             conf: self.github_app.clone().unwrap(),
-            id_cache: RefCell::new(HashMap::new()),
-            client_cache: RefCell::new(HashMap::new()),
+            id_cache: HashMap::new(),
+            client_cache: HashMap::new(),
         }
     }
 
@@ -168,16 +167,12 @@ pub fn load(filename: &Path) -> Config {
 
 pub struct GithubAppVendingMachine {
     conf: GithubAppConfig,
-    id_cache: RefCell<HashMap<(String, String), i32>>,
-    client_cache: RefCell<HashMap<i32, Github>>
+    id_cache: HashMap<(String, String), i32>,
+    client_cache: HashMap<i32, Github>,
 }
 
 impl GithubAppVendingMachine {
-    pub fn for_repo(&self, owner: &str, repo: &str) -> Result<Github, hubcaps::Error> {
-        let mut id_cache = self.id_cache.borrow_mut();
-        // !!! Cache clients so we don't look up new tokens all the time
-        let mut _client_cache = self.client_cache.borrow_mut();
-
+    pub fn for_repo<'a>(&'a mut self, owner: &str, repo: &str) -> Result<&'a Github, hubcaps::Error> {
         let useragent = "github.com/grahamc/ofborg (app)";
         let jwt = JWTCredentials::new(self.conf.app_id,
                                       self.conf.private_key.clone());
@@ -185,8 +180,8 @@ impl GithubAppVendingMachine {
         let install_id: i32;
 
         let key = (owner.to_owned(), repo.to_owned());
-        if id_cache.contains_key(&key) {
-            install_id = *id_cache.get(&key).unwrap();
+        if self.id_cache.contains_key(&key) {
+            install_id = *self.id_cache.get(&key).unwrap();
             debug!("Found install ID for {:?} in cache", key);
         } else {
             info!("Looking up install ID for {}/{}", owner, repo);
@@ -200,17 +195,22 @@ impl GithubAppVendingMachine {
             install_id = lookup_gh
                 .app()
                 .find_repo_installation(owner, repo)?.id;
-            id_cache.insert(key, install_id);
+            self.id_cache.insert(key, install_id);
             debug!("Received install ID {}", install_id);
         }
 
-        Ok(Github::new(
-            useragent,
-            Client::with_connector(HttpsConnector::new(NativeTlsClient::new().unwrap())),
-            Credentials::InstallationToken(InstallationTokenGenerator::new(
-                install_id,
-                jwt
-            )),
-        ))
+        if ! self.client_cache.contains_key(&install_id) {
+            let new_client = Github::new(
+                useragent,
+                Client::with_connector(HttpsConnector::new(NativeTlsClient::new().unwrap())),
+                Credentials::InstallationToken(InstallationTokenGenerator::new(
+                    install_id,
+                    jwt
+                )),
+            );
+            self.client_cache.insert(install_id, new_client);
+        }
+
+        Ok(self.client_cache.get(&install_id).unwrap())
     }
 }
