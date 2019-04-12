@@ -7,10 +7,10 @@ use amqp::protocol::basic::{BasicProperties, Deliver};
 use chrono::{DateTime, Utc};
 use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
 use message::buildjob::{BuildJob, QueuedBuildJobs};
+use ofborg::config::GithubAppVendingMachine;
 use ofborg::message::buildresult::{BuildResult, BuildStatus, LegacyBuildResult};
 use ofborg::message::Repo;
 use ofborg::worker;
-use ofborg::config::GithubAppVendingMachine;
 
 pub struct GitHubCommentPoster {
     github_vend: GithubAppVendingMachine,
@@ -77,7 +77,8 @@ impl worker::SimpleWorker for GitHubCommentPoster {
             println!(":{:?}", check);
 
             let check_create_attempt = self
-                .github_vend.for_repo(&repo.owner, &repo.name)
+                .github_vend
+                .for_repo(&repo.owner, &repo.name)
                 .unwrap()
                 .repo(repo.owner.clone(), repo.name.clone())
                 .checkruns()

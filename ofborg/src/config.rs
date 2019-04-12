@@ -3,12 +3,12 @@ use hyper::net::HttpsConnector;
 use hyper::Client;
 use hyper_native_tls::NativeTlsClient;
 use nix::Nix;
+use ofborg::acl;
 use serde_json;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use ofborg::acl;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
@@ -114,8 +114,7 @@ impl Config {
         )
     }
 
-    pub fn github_app_vendingmachine(&self) -> GithubAppVendingMachine
-    {
+    pub fn github_app_vendingmachine(&self) -> GithubAppVendingMachine {
         GithubAppVendingMachine {
             conf: self.github_app.clone().unwrap(),
             id_cache: HashMap::new(),
@@ -167,50 +166,58 @@ pub fn load(filename: &Path) -> Config {
 
 pub struct GithubAppVendingMachine {
     conf: GithubAppConfig,
-    id_cache: HashMap<(String, String), i32>,
+    id_cache: HashMap<(String, String), Option<i32>>,
     client_cache: HashMap<i32, Github>,
 }
 
 impl GithubAppVendingMachine {
-    pub fn for_repo<'a>(&'a mut self, owner: &str, repo: &str) -> Result<&'a Github, hubcaps::Error> {
-        let useragent = "github.com/grahamc/ofborg (app)";
-        let jwt = JWTCredentials::new(self.conf.app_id,
-                                      self.conf.private_key.clone());
+    fn useragent(&self) -> &'static str {
+        "github.com/grahamc/ofborg (app)"
+    }
 
-        let install_id: i32;
+    fn jwt(&self) -> JWTCredentials {
+        JWTCredentials::new(self.conf.app_id, self.conf.private_key.clone())
+    }
+
+    fn install_id_for_repo(&mut self, owner: &str, repo: &str) -> Option<i32> {
+        let useragent = self.useragent();
+        let jwt = self.jwt();
 
         let key = (owner.to_owned(), repo.to_owned());
-        if self.id_cache.contains_key(&key) {
-            install_id = *self.id_cache.get(&key).unwrap();
-            debug!("Found install ID for {:?} in cache", key);
-        } else {
+
+        *self.id_cache.entry(key).or_insert_with(|| {
             info!("Looking up install ID for {}/{}", owner, repo);
 
             let lookup_gh = Github::new(
                 useragent,
                 Client::with_connector(HttpsConnector::new(NativeTlsClient::new().unwrap())),
-                Credentials::JWT(jwt.clone())
+                Credentials::JWT(jwt),
             );
 
-            install_id = lookup_gh
-                .app()
-                .find_repo_installation(owner, repo)?.id;
-            self.id_cache.insert(key, install_id);
-            debug!("Received install ID {}", install_id);
-        }
+            match lookup_gh.app().find_repo_installation(owner, repo) {
+                Ok(install_id) => {
+                    debug!("Received install ID {:#?}", install_id);
+                    Some(install_id.id)
+                }
+                Err(e) => {
+                    warn!("Error during install ID lookup: {:#?}", e);
+                    None
+                }
+            }
+        })
+    }
 
-        if ! self.client_cache.contains_key(&install_id) {
-            let new_client = Github::new(
+    pub fn for_repo<'a>(&'a mut self, owner: &str, repo: &str) -> Option<&'a Github> {
+        let useragent = self.useragent();
+        let jwt = self.jwt();
+        let install_id = self.install_id_for_repo(owner, repo)?;
+
+        Some(self.client_cache.entry(install_id).or_insert_with(|| {
+            Github::new(
                 useragent,
                 Client::with_connector(HttpsConnector::new(NativeTlsClient::new().unwrap())),
-                Credentials::InstallationToken(InstallationTokenGenerator::new(
-                    install_id,
-                    jwt
-                )),
-            );
-            self.client_cache.insert(install_id, new_client);
-        }
-
-        Ok(self.client_cache.get(&install_id).unwrap())
+                Credentials::InstallationToken(InstallationTokenGenerator::new(install_id, jwt)),
+            )
+        }))
     }
 }

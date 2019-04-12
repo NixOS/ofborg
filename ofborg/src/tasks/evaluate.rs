@@ -321,7 +321,10 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
                 .all_evaluations_passed(&Path::new(&refpath), &mut overall_status);
             match ret {
                 Ok(builds) => {
-                    info!("Scheduling build jobs {:#?} on arches {:#?}", builds, auto_schedule_build_archs);
+                    info!(
+                        "Scheduling build jobs {:#?} on arches {:#?}",
+                        builds, auto_schedule_build_archs
+                    );
                     for buildjob in builds {
                         for arch in auto_schedule_build_archs.iter() {
                             let (exchange, routingkey) = arch.as_build_destination();
