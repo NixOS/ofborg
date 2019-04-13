@@ -1,5 +1,6 @@
 use crate::maintainers;
 use crate::maintainers::ImpactedMaintainers;
+use crate::nixenv::HydraNixEnv;
 use hubcaps::gists::Gists;
 use hubcaps::issues::{Issue, IssueRef};
 use hubcaps::repositories::Repository;
@@ -7,12 +8,11 @@ use ofborg::checkout::CachedProjectCo;
 use ofborg::commentparser::Subset;
 use ofborg::commitstatus::CommitStatus;
 use ofborg::evalchecker::EvalChecker;
-use ofborg::files::file_to_str;
 use ofborg::message::buildjob::BuildJob;
 use ofborg::message::evaluationjob::EvaluationJob;
 use ofborg::nix;
 use ofborg::nix::Nix;
-use ofborg::outpathdiff::{OutPathDiff, OutPaths, PackageArch};
+use ofborg::outpathdiff::{OutPathDiff, PackageArch};
 use ofborg::tagger::{MaintainerPRTagger, PathsTagger, RebuildTagger};
 use ofborg::tagger::{PkgsAddedRemovedTagger, StdenvTagger};
 use ofborg::tasks::eval::{stdenvs::Stdenvs, Error, EvaluationStrategy, StepResult};
@@ -266,8 +266,8 @@ impl<'a> NixpkgsStrategy<'a> {
             );
             status.set(hubcaps::statuses::State::Pending);
 
-            let checker = OutPaths::new(self.nix.clone(), dir.to_path_buf(), true);
-            match checker.find() {
+            let nixenv = HydraNixEnv::new(self.nix.clone(), dir.to_path_buf(), true);
+            match nixenv.execute() {
                 Ok(pkgs) => {
                     let mut try_build: Vec<String> = pkgs
                         .0
@@ -300,12 +300,7 @@ impl<'a> NixpkgsStrategy<'a> {
                     }
                 }
                 Err(mut out) => {
-                    status.set_url(make_gist(
-                        &self.gists,
-                        "Meta Check",
-                        None,
-                        file_to_str(&mut out),
-                    ));
+                    status.set_url(make_gist(&self.gists, "Meta Check", None, out.display()));
                     status.set(hubcaps::statuses::State::Failure);
                     Err(Error::Fail(String::from(
                         "Failed to validate package metadata.",
