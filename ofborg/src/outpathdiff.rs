@@ -1,6 +1,6 @@
 use crate::nixenv::Error as NixEnvError;
 use crate::nixenv::HydraNixEnv;
-use crate::nixstats::EvaluationStats;
+use crate::nixstats::{EvaluationStats, EvaluationStatsDiff};
 use ofborg::nix;
 use std::collections::{HashMap, HashSet};
 use std::io::BufRead;
@@ -35,6 +35,18 @@ impl OutPathDiff {
 
         self.current = Some(self.run()?);
         Ok(())
+    }
+
+    pub fn performance_diff(&self) -> Option<EvaluationStatsDiff> {
+        if let Some((_, ref cur)) = self.current {
+            if let Some((_, ref orig)) = self.original {
+                Some(EvaluationStatsDiff::compare(orig, cur))
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 
     pub fn package_diff(&self) -> Option<(Vec<PackageArch>, Vec<PackageArch>)> {
