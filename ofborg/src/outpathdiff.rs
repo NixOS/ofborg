@@ -174,20 +174,16 @@ impl OutPaths {
     }
 
     fn execute(&self) -> (bool, File, File) {
-        let check_meta: String = if self.check_meta {
-            String::from("true")
-        } else {
-            String::from("false")
-        };
+        let check_meta = if self.check_meta { "true" } else { "false" };
 
         self.nix.run_stderr_stdout(self.nix.safe_command(
             &nix::Operation::QueryPackagesOutputs,
             &self.path,
-            vec![
-                String::from("-f"),
-                String::from(".gc-of-borg-outpaths.nix"),
-                String::from("--arg"),
-                String::from("checkMeta"),
+            &[
+                "-f",
+                ".gc-of-borg-outpaths.nix",
+                "--arg",
+                "checkMeta",
                 check_meta,
             ],
             &[],
