@@ -261,6 +261,33 @@ impl Nix {
         }
     }
 
+    pub fn run_stderr_stdout(&self, mut cmd: Command) -> (bool, fs::File, fs::File) {
+        let stdout_file = tempfile().expect("Fetching a stdout tempfile");
+        let mut stdout_reader = stdout_file
+            .try_clone()
+            .expect("Cloning stdout to the reader");
+
+        let stderr_file = tempfile().expect("Fetching a stderr tempfile");
+        let mut stderr_reader = stderr_file
+            .try_clone()
+            .expect("Cloning stderr to the reader");
+
+        let status = cmd
+            .stdout(Stdio::from(stdout_file))
+            .stderr(Stdio::from(stderr_file))
+            .status()
+            .expect("Running a program ...");
+
+        stdout_reader
+            .seek(SeekFrom::Start(0))
+            .expect("Seeking dout to Start(0)");
+        stderr_reader
+            .seek(SeekFrom::Start(0))
+            .expect("Seeking stderr to Start(0)");
+
+        (status.success(), stdout_reader, stderr_reader)
+    }
+
     pub fn safe_command(
         &self,
         op: &Operation,

@@ -270,6 +270,7 @@ impl<'a> NixpkgsStrategy<'a> {
             match checker.find() {
                 Ok(pkgs) => {
                     let mut try_build: Vec<String> = pkgs
+                        .0
                         .keys()
                         .map(|pkgarch| pkgarch.package.clone())
                         .filter(|pkg| possibly_touched_packages.contains(&pkg))

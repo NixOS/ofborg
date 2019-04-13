@@ -1,19 +1,23 @@
 extern crate amqp;
 extern crate env_logger;
 
+use crate::nixstats::EvaluationStats;
 use ofborg::nix;
+use serde_json;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
+use std::io::Seek;
+use std::io::SeekFrom;
 use std::io::Write;
 use std::path::PathBuf;
 
 pub struct OutPathDiff {
     calculator: OutPaths,
-    pub original: Option<PackageOutPaths>,
-    pub current: Option<PackageOutPaths>,
+    pub original: Option<(PackageOutPaths, EvaluationStats)>,
+    pub current: Option<(PackageOutPaths, EvaluationStats)>,
 }
 
 impl OutPathDiff {
@@ -59,8 +63,8 @@ impl OutPathDiff {
     }
 
     pub fn package_diff(&self) -> Option<(Vec<PackageArch>, Vec<PackageArch>)> {
-        if let Some(ref cur) = self.current {
-            if let Some(ref orig) = self.original {
+        if let Some((ref cur, _)) = self.current {
+            if let Some((ref orig, _)) = self.original {
                 let orig_set: HashSet<&PackageArch> = orig.keys().collect();
                 let cur_set: HashSet<&PackageArch> = cur.keys().collect();
 
@@ -84,8 +88,8 @@ impl OutPathDiff {
     pub fn calculate_rebuild(&self) -> Option<Vec<PackageArch>> {
         let mut rebuild: Vec<PackageArch> = vec![];
 
-        if let Some(ref cur) = self.current {
-            if let Some(ref orig) = self.original {
+        if let Some((ref cur, _)) = self.current {
+            if let Some((ref orig, _)) = self.original {
                 for key in cur.keys() {
                     trace!("Checking out {:?}", key);
                     if cur.get(key) != orig.get(key) {
@@ -103,7 +107,7 @@ impl OutPathDiff {
         None
     }
 
-    fn run(&mut self) -> Result<PackageOutPaths, File> {
+    fn run(&mut self) -> Result<(PackageOutPaths, EvaluationStats), File> {
         self.calculator.find()
     }
 }
@@ -134,18 +138,21 @@ impl OutPaths {
         }
     }
 
-    pub fn find(&self) -> Result<PackageOutPaths, File> {
-        self.run()
-    }
-
-    fn run(&self) -> Result<PackageOutPaths, File> {
+    pub fn find(&self) -> Result<(PackageOutPaths, EvaluationStats), File> {
         self.place_nix();
-        let ret = self.execute();
+        let (status, stdout, mut stderr) = self.execute();
         self.remove_nix();
 
-        match ret {
-            Ok(file) => Ok(parse_lines(&mut BufReader::new(file))),
-            Err(e) => Err(e),
+        if status {
+            Err(stderr)
+        } else if let Ok(stats) = serde_json::from_reader(&mut stderr) {
+            let outpaths = parse_lines(&mut BufReader::new(stdout));
+            Ok((outpaths, stats))
+        } else {
+            stderr
+                .seek(SeekFrom::Start(0))
+                .expect("Seeking to Start(0)");
+            Err(stderr)
         }
     }
 
@@ -166,14 +173,14 @@ impl OutPaths {
         dest
     }
 
-    fn execute(&self) -> Result<File, File> {
+    fn execute(&self) -> (bool, File, File) {
         let check_meta: String = if self.check_meta {
             String::from("true")
         } else {
             String::from("false")
         };
 
-        self.nix.safely(
+        self.nix.run_stderr_stdout(self.nix.safe_command(
             &nix::Operation::QueryPackagesOutputs,
             &self.path,
             vec![
@@ -183,8 +190,8 @@ impl OutPaths {
                 String::from("checkMeta"),
                 check_meta,
             ],
-            true,
-        )
+            &[],
+        ))
     }
 }
 
