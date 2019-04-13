@@ -112,7 +112,7 @@ impl OutPathDiff {
     }
 }
 
-type PackageOutPaths = HashMap<PackageArch, OutPath>;
+pub type PackageOutPaths = HashMap<PackageArch, OutPath>;
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
 pub struct PackageArch {
@@ -191,7 +191,7 @@ impl OutPaths {
     }
 }
 
-fn parse_lines(data: &mut BufRead) -> PackageOutPaths {
+pub fn parse_lines(data: &mut BufRead) -> PackageOutPaths {
     data.lines()
         .filter_map(|line| match line {
             Ok(line) => Some(line),
