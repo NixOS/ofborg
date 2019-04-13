@@ -2,6 +2,7 @@ use ofborg::asynccmd::{AsyncCmd, SpawnedAsyncCmd};
 use ofborg::partition_result;
 use std::collections::HashMap;
 use std::env;
+use std::ffi::OsStr;
 use std::fmt;
 use std::fs;
 use std::io::BufRead;
@@ -161,7 +162,7 @@ impl Nix {
         file: File,
         attrs: Vec<String>,
     ) -> Result<fs::File, fs::File> {
-        let mut command = self.safe_command(&Operation::Instantiate, nixpkgs, vec![], &[]);
+        let mut command = self.safe_command::<&OsStr>(&Operation::Instantiate, nixpkgs, &[], &[]);
         self.set_attrs_command(&mut command, file, attrs);
         self.run(command, true)
     }
@@ -182,7 +183,7 @@ impl Nix {
             attrargs.push(argstr.to_owned());
         }
 
-        self.safe_command(&Operation::Evaluate, nixpkgs, attrargs, &extra_paths)
+        self.safe_command(&Operation::Evaluate, nixpkgs, &attrargs, &extra_paths)
     }
 
     pub fn safely_build_attrs(
@@ -191,7 +192,7 @@ impl Nix {
         file: File,
         attrs: Vec<String>,
     ) -> Result<fs::File, fs::File> {
-        let mut command = self.safe_command(&Operation::Build, nixpkgs, vec![], &[]);
+        let mut command = self.safe_command::<&OsStr>(&Operation::Build, nixpkgs, &[], &[]);
         self.set_attrs_command(&mut command, file, attrs);
         self.run(command, true)
     }
@@ -202,7 +203,7 @@ impl Nix {
         file: File,
         attrs: Vec<String>,
     ) -> SpawnedAsyncCmd {
-        let mut command = self.safe_command(&Operation::Build, nixpkgs, vec![], &[]);
+        let mut command = self.safe_command::<&OsStr>(&Operation::Build, nixpkgs, &[], &[]);
         self.set_attrs_command(&mut command, file, attrs);
         AsyncCmd::new(command).spawn()
     }
@@ -231,7 +232,7 @@ impl Nix {
         args: Vec<String>,
         keep_stdout: bool,
     ) -> Result<fs::File, fs::File> {
-        self.run(self.safe_command(&op, nixpkgs, args, &[]), keep_stdout)
+        self.run(self.safe_command(&op, nixpkgs, &args, &[]), keep_stdout)
     }
 
     pub fn run(&self, mut cmd: Command, keep_stdout: bool) -> Result<fs::File, fs::File> {
@@ -288,13 +289,16 @@ impl Nix {
         (status.success(), stdout_reader, stderr_reader)
     }
 
-    pub fn safe_command(
+    pub fn safe_command<S>(
         &self,
         op: &Operation,
         nixpkgs: &Path,
-        args: Vec<String>,
+        args: &[S],
         safe_paths: &[&Path],
-    ) -> Command {
+    ) -> Command
+    where
+        S: AsRef<OsStr>,
+    {
         let nixpkgspath = format!("nixpkgs={}", nixpkgs.display());
         let mut nixpath: Vec<String> = safe_paths
             .iter()
@@ -489,12 +493,7 @@ mod tests {
         assert_eq!(op.to_string(), "nix-build");
 
         let ret: Result<fs::File, fs::File> = nix.run(
-            nix.safe_command(
-                &op,
-                build_path().as_path(),
-                vec![String::from("--version")],
-                &[],
-            ),
+            nix.safe_command(&op, build_path().as_path(), &["--version"], &[]),
             true,
         );
 
@@ -512,12 +511,7 @@ mod tests {
         assert_eq!(op.to_string(), "nix-instantiate");
 
         let ret: Result<fs::File, fs::File> = nix.run(
-            nix.safe_command(
-                &op,
-                build_path().as_path(),
-                vec![String::from("--version")],
-                &[],
-            ),
+            nix.safe_command(&op, build_path().as_path(), &["--version"], &[]),
             true,
         );
 
@@ -531,12 +525,7 @@ mod tests {
         assert_eq!(op.to_string(), "nix-env -qa --json");
 
         let ret: Result<fs::File, fs::File> = nix.run(
-            nix.safe_command(
-                &op,
-                build_path().as_path(),
-                vec![String::from("--version")],
-                &[],
-            ),
+            nix.safe_command(&op, build_path().as_path(), &["--version"], &[]),
             true,
         );
 
@@ -554,12 +543,7 @@ mod tests {
         assert_eq!(op.to_string(), "nix-env -qaP --no-name --out-path");
 
         let ret: Result<fs::File, fs::File> = nix.run(
-            nix.safe_command(
-                &op,
-                build_path().as_path(),
-                vec![String::from("--version")],
-                &[],
-            ),
+            nix.safe_command(&op, build_path().as_path(), &["--version"], &[]),
             true,
         );
 
@@ -578,7 +562,7 @@ mod tests {
         let nix = nix();
 
         let ret: Result<fs::File, fs::File> = nix.run(
-            nix.safe_command(&env_noop(), build_path().as_path(), vec![], &[]),
+            nix.safe_command::<&OsStr>(&env_noop(), build_path().as_path(), &[], &[]),
             true,
         );
 
@@ -605,7 +589,7 @@ mod tests {
         );
 
         let ret: Result<fs::File, fs::File> = nix.run(
-            nix.safe_command(&env_noop(), build_path().as_path(), vec![], &[]),
+            nix.safe_command::<&OsStr>(&env_noop(), build_path().as_path(), &[], &[]),
             true,
         );
 
@@ -628,7 +612,7 @@ mod tests {
         let op = noop(Operation::Build);
 
         let ret: Result<fs::File, fs::File> = nix.run(
-            nix.safe_command(&op, build_path().as_path(), vec![], &[]),
+            nix.safe_command::<&OsStr>(&op, build_path().as_path(), &[], &[]),
             true,
         );
 
@@ -644,7 +628,7 @@ mod tests {
         let nix = nix();
         let op = noop(Operation::Build);
 
-        let mut command = nix.safe_command(&op, build_path().as_path(), vec![], &[]);
+        let mut command = nix.safe_command::<&OsStr>(&op, build_path().as_path(), &[], &[]);
         nix.set_attrs_command(
             &mut command,
             File::DefaultNixpkgs,
@@ -661,7 +645,7 @@ mod tests {
         let nix = nix();
         let op = noop(Operation::Instantiate);
 
-        let mut command = nix.safe_command(&op, build_path().as_path(), vec![], &[]);
+        let mut command = nix.safe_command::<&OsStr>(&op, build_path().as_path(), &[], &[]);
         nix.set_attrs_command(
             &mut command,
             File::ReleaseNixOS,
