@@ -1,6 +1,5 @@
-extern crate amqp;
-extern crate env_logger;
-
+use crate::nixenv::Error as NixEnvError;
+use crate::nixenv::HydraNixEnv;
 use crate::nixstats::EvaluationStats;
 use ofborg::nix;
 use serde_json;
@@ -15,7 +14,7 @@ use std::io::Write;
 use std::path::PathBuf;
 
 pub struct OutPathDiff {
-    calculator: OutPaths,
+    calculator: HydraNixEnv,
     pub original: Option<(PackageOutPaths, EvaluationStats)>,
     pub current: Option<(PackageOutPaths, EvaluationStats)>,
 }
@@ -23,43 +22,25 @@ pub struct OutPathDiff {
 impl OutPathDiff {
     pub fn new(nix: nix::Nix, path: PathBuf) -> OutPathDiff {
         OutPathDiff {
-            calculator: OutPaths::new(nix, path, false),
+            calculator: HydraNixEnv::new(nix, path, false),
             original: None,
             current: None,
         }
     }
 
-    pub fn find_before(&mut self) -> Result<bool, File> {
-        let x = self.run();
-        match x {
-            Ok(f) => {
-                self.original = Some(f);
-                Ok(true)
-            }
-            Err(e) => {
-                info!("Failed to find Before list");
-                Err(e)
-            }
-        }
+    pub fn find_before(&mut self) -> Result<(), NixEnvError> {
+        self.original = Some(self.run()?);
+        Ok(())
     }
 
-    pub fn find_after(&mut self) -> Result<bool, File> {
+    pub fn find_after(&mut self) -> Result<(), NixEnvError> {
         if self.original.is_none() {
             debug!("Before is None, not bothering with After");
-            return Ok(false);
+            return Ok(());
         }
 
-        let x = self.run();
-        match x {
-            Ok(f) => {
-                self.current = Some(f);
-                Ok(true)
-            }
-            Err(e) => {
-                info!("Failed to find After list");
-                Err(e)
-            }
-        }
+        self.current = Some(self.run()?);
+        Ok(())
     }
 
     pub fn package_diff(&self) -> Option<(Vec<PackageArch>, Vec<PackageArch>)> {
@@ -107,8 +88,8 @@ impl OutPathDiff {
         None
     }
 
-    fn run(&mut self) -> Result<(PackageOutPaths, EvaluationStats), File> {
-        self.calculator.find()
+    fn run(&mut self) -> Result<(PackageOutPaths, EvaluationStats), NixEnvError> {
+        self.calculator.execute()
     }
 }
 

@@ -125,7 +125,7 @@ impl<'a> NixpkgsStrategy<'a> {
     fn check_outpaths_before(&mut self, dir: &Path) -> StepResult<()> {
         let mut rebuildsniff = OutPathDiff::new(self.nix.clone(), dir.to_path_buf());
 
-        if let Err(mut output) = rebuildsniff.find_before() {
+        if let Err(err) = rebuildsniff.find_before() {
             /*
             self.events
                 .notify(Event::TargetBranchFailsEvaluation(target_branch.clone()));
@@ -134,7 +134,7 @@ impl<'a> NixpkgsStrategy<'a> {
             Err(Error::FailWithGist(
                 String::from("The branch this PR will merge in to does not evaluate, and so this PR cannot be checked."),
                 String::from("Output path comparison"),
-                file_to_str(&mut output),
+                err.display(),
             ))
         } else {
             self.outpath_diff = Some(rebuildsniff);
@@ -144,11 +144,11 @@ impl<'a> NixpkgsStrategy<'a> {
 
     fn check_outpaths_after(&mut self) -> StepResult<()> {
         if let Some(ref mut rebuildsniff) = self.outpath_diff {
-            if let Err(mut output) = rebuildsniff.find_after() {
+            if let Err(mut err) = rebuildsniff.find_after() {
                 Err(Error::FailWithGist(
                     String::from("This PR breaks listing of package outputs after merging."),
                     String::from("Output path comparison"),
-                    file_to_str(&mut output),
+                    err.display(),
                 ))
             } else {
                 Ok(())

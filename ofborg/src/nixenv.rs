@@ -7,6 +7,7 @@ use serde_json;
 use std::fs;
 use std::fs::File;
 use std::io::BufReader;
+use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
 use std::io::Write;
@@ -91,5 +92,26 @@ pub enum Error {
 impl From<std::io::Error> for Error {
     fn from(e: std::io::Error) -> Error {
         Error::Io(e)
+    }
+}
+
+impl Error {
+    pub fn display(self) -> String {
+        match self {
+            Error::Io(e) => format!("Failed during the setup of executing nix-env: {:?}", e),
+            Error::Fd(mut fd) => {
+                let mut buffer = Vec::new();
+                let read_result = fd.read_to_end(&mut buffer);
+                let bufstr = String::from_utf8_lossy(&buffer);
+
+                match read_result {
+                    Ok(_) => format!("nix-env failed:\n{}", bufstr),
+                    Err(e) => format!(
+                        "nix-env failed and loading the error result caused a new error {:?}\n\n{}",
+                        e, bufstr
+                    ),
+                }
+            }
+        }
     }
 }
