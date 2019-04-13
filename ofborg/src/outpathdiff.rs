@@ -2,15 +2,9 @@ use crate::nixenv::Error as NixEnvError;
 use crate::nixenv::HydraNixEnv;
 use crate::nixstats::EvaluationStats;
 use ofborg::nix;
-use serde_json;
 use std::collections::{HashMap, HashSet};
-use std::fs;
-use std::fs::File;
 use std::io::BufRead;
-use std::io::BufReader;
-use std::io::Seek;
-use std::io::SeekFrom;
-use std::io::Write;
+
 use std::path::PathBuf;
 
 pub struct OutPathDiff {
@@ -103,74 +97,6 @@ pub struct PackageArch {
 type Package = String;
 type Architecture = String;
 type OutPath = String;
-
-pub struct OutPaths {
-    path: PathBuf,
-    nix: nix::Nix,
-    check_meta: bool,
-}
-
-impl OutPaths {
-    pub fn new(nix: nix::Nix, path: PathBuf, check_meta: bool) -> OutPaths {
-        OutPaths {
-            nix,
-            path,
-            check_meta,
-        }
-    }
-
-    pub fn find(&self) -> Result<(PackageOutPaths, EvaluationStats), File> {
-        self.place_nix();
-        let (status, stdout, mut stderr) = self.execute();
-        self.remove_nix();
-
-        if status {
-            Err(stderr)
-        } else if let Ok(stats) = serde_json::from_reader(&mut stderr) {
-            let outpaths = parse_lines(&mut BufReader::new(stdout));
-            Ok((outpaths, stats))
-        } else {
-            stderr
-                .seek(SeekFrom::Start(0))
-                .expect("Seeking to Start(0)");
-            Err(stderr)
-        }
-    }
-
-    fn place_nix(&self) {
-        let mut file = File::create(self.nix_path()).expect("Failed to create nix out path check");
-        file.write_all(include_bytes!("outpaths.nix"))
-            .expect("Failed to place outpaths.nix");
-    }
-
-    fn remove_nix(&self) {
-        fs::remove_file(self.nix_path()).expect("Failed to delete outpaths.nix");
-    }
-
-    fn nix_path(&self) -> PathBuf {
-        let mut dest = self.path.clone();
-        dest.push(".gc-of-borg-outpaths.nix");
-
-        dest
-    }
-
-    fn execute(&self) -> (bool, File, File) {
-        let check_meta = if self.check_meta { "true" } else { "false" };
-
-        self.nix.run_stderr_stdout(self.nix.safe_command(
-            &nix::Operation::QueryPackagesOutputs,
-            &self.path,
-            &[
-                "-f",
-                ".gc-of-borg-outpaths.nix",
-                "--arg",
-                "checkMeta",
-                check_meta,
-            ],
-            &[],
-        ))
-    }
-}
 
 pub fn parse_lines(data: &mut BufRead) -> PackageOutPaths {
     data.lines()
