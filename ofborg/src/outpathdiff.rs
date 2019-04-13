@@ -40,7 +40,7 @@ impl OutPathDiff {
     }
 
     pub fn find_after(&mut self) -> Result<bool, File> {
-        if self.original == None {
+        if self.original.is_none() {
             debug!("Before is None, not bothering with After");
             return Ok(false);
         }
