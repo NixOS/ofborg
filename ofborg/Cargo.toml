@@ -27,6 +27,7 @@ lru-cache = "0.1.1"
 nom = "4.0.0-beta3"
 sys-info = "0.5.6"
 chrono = "0.4.6"
+separator = "0.4.1"
 
 [patch.crates-io]
 #hubcaps = { path = "../hubcaps" }
