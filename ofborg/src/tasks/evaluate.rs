@@ -4,6 +4,7 @@ extern crate env_logger;
 extern crate uuid;
 use amqp::protocol::basic::{BasicProperties, Deliver};
 use hubcaps;
+use hubcaps::checks::CheckRunOptions;
 use hubcaps::gists::Gists;
 use hubcaps::issues::Issue;
 use ofborg::acl::ACL;
@@ -331,30 +332,9 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             let ret = evaluation_strategy
                 .all_evaluations_passed(&Path::new(&refpath), &mut overall_status);
             match ret {
-                Ok(builds) => {
-                    info!(
-                        "Scheduling build jobs {:#?} on arches {:#?}",
-                        builds, auto_schedule_build_archs
-                    );
-                    for buildjob in builds {
-                        for arch in auto_schedule_build_archs.iter() {
-                            let (exchange, routingkey) = arch.as_build_destination();
-                            response.push(worker::publish_serde_action(
-                                exchange, routingkey, &buildjob,
-                            ));
-                        }
-                        response.push(worker::publish_serde_action(
-                            Some("build-results".to_string()),
-                            None,
-                            &buildjob::QueuedBuildJobs {
-                                job: buildjob,
-                                architectures: auto_schedule_build_archs
-                                    .iter()
-                                    .map(|arch| arch.to_string())
-                                    .collect(),
-                            },
-                        ));
-                    }
+                Ok(complete) => {
+                    send_check_statuses(complete.checks, &repo);
+                    response.extend(schedule_builds(complete.builds, auto_schedule_build_archs));
                 }
                 Err(e) => {
                     info!("Failed after all the evaluations passed");
@@ -380,6 +360,47 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
         info!("done!");
         self.actions().done(&job, response)
     }
+}
+
+fn send_check_statuses(checks: Vec<CheckRunOptions>, repo: &hubcaps::repositories::Repository) {
+    for check in checks {
+        match repo.checkruns().create(&check) {
+            Ok(_) => info!("Sent check update"),
+            Err(e) => info!("Failed to send check update: {:?}", e),
+        }
+    }
+}
+
+fn schedule_builds(
+    builds: Vec<buildjob::BuildJob>,
+    auto_schedule_build_archs: Vec<systems::System>,
+) -> Vec<worker::Action> {
+    let mut response = vec![];
+    info!(
+        "Scheduling build jobs {:#?} on arches {:#?}",
+        builds, auto_schedule_build_archs
+    );
+    for buildjob in builds {
+        for arch in auto_schedule_build_archs.iter() {
+            let (exchange, routingkey) = arch.as_build_destination();
+            response.push(worker::publish_serde_action(
+                exchange, routingkey, &buildjob,
+            ));
+        }
+        response.push(worker::publish_serde_action(
+            Some("build-results".to_string()),
+            None,
+            &buildjob::QueuedBuildJobs {
+                job: buildjob,
+                architectures: auto_schedule_build_archs
+                    .iter()
+                    .map(|arch| arch.to_string())
+                    .collect(),
+            },
+        ));
+    }
+
+    response
 }
 
 pub fn make_gist<'a>(

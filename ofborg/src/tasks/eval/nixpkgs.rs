@@ -1,6 +1,7 @@
 use crate::maintainers;
 use crate::maintainers::ImpactedMaintainers;
 use crate::nixenv::HydraNixEnv;
+use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
 use hubcaps::gists::Gists;
 use hubcaps::issues::{Issue, IssueRef};
 use hubcaps::repositories::Repository;
@@ -15,7 +16,9 @@ use ofborg::nix::Nix;
 use ofborg::outpathdiff::{OutPathDiff, PackageArch};
 use ofborg::tagger::{MaintainerPRTagger, PathsTagger, RebuildTagger};
 use ofborg::tagger::{PkgsAddedRemovedTagger, StdenvTagger};
-use ofborg::tasks::eval::{stdenvs::Stdenvs, Error, EvaluationStrategy, StepResult};
+use ofborg::tasks::eval::{
+    stdenvs::Stdenvs, Error, EvaluationComplete, EvaluationStrategy, StepResult,
+};
 use ofborg::tasks::evaluate::update_labels;
 use std::collections::HashMap;
 use std::path::Path;
@@ -158,6 +161,32 @@ impl<'a> NixpkgsStrategy<'a> {
                 "Ofborg BUG: No outpath diff! Please report!",
             )))
         }
+    }
+
+    fn performance_stats(&self) -> Vec<CheckRunOptions> {
+        if let Some(ref rebuildsniff) = self.outpath_diff {
+            if let Some(report) = rebuildsniff.performance_diff() {
+                return vec![CheckRunOptions {
+                    name: "Evaluation Performance Report".to_owned(),
+                    actions: None,
+                    completed_at: None,
+                    started_at: None,
+                    conclusion: Some(Conclusion::Success),
+                    status: Some(CheckRunState::Completed),
+                    details_url: None,
+                    external_id: None,
+                    head_sha: self.job.pr.head_sha.clone(),
+                    output: Some(Output {
+                        title: "Evaluator Performance Report".to_string(),
+                        summary: "".to_string(),
+                        text: Some(report.markdown()),
+                        annotations: None,
+                        images: None,
+                    }),
+                }];
+            }
+        }
+        vec![]
     }
 
     fn update_new_package_labels(&self) {
@@ -479,7 +508,7 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
         &mut self,
         dir: &Path,
         status: &mut CommitStatus,
-    ) -> StepResult<Vec<BuildJob>> {
+    ) -> StepResult<EvaluationComplete> {
         self.update_stdenv_labels();
 
         status.set_with_description(
@@ -489,8 +518,10 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
 
         self.update_new_package_labels();
         self.update_rebuild_labels(&dir, status);
+        let checks = self.performance_stats();
 
-        self.check_meta_queue_builds(&dir)
+        let builds = self.check_meta_queue_builds(&dir)?;
+        Ok(EvaluationComplete { builds, checks })
     }
 }
 
