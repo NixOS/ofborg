@@ -123,7 +123,6 @@ let crates = cratesIO // rec {
       (cratesIO.crates."lru_cache"."${deps."ofborg"."0.1.8"."lru_cache"}" deps)
       (cratesIO.crates."md5"."${deps."ofborg"."0.1.8"."md5"}" deps)
       (cratesIO.crates."nom"."${deps."ofborg"."0.1.8"."nom"}" deps)
-      (cratesIO.crates."separator"."${deps."ofborg"."0.1.8"."separator"}" deps)
       (cratesIO.crates."serde"."${deps."ofborg"."0.1.8"."serde"}" deps)
       (cratesIO.crates."serde_derive"."${deps."ofborg"."0.1.8"."serde_derive"}" deps)
       (cratesIO.crates."serde_json"."${deps."ofborg"."0.1.8"."serde_json"}" deps)
@@ -146,7 +145,6 @@ let crates = cratesIO // rec {
     md5."${deps.ofborg."0.1.8".md5}".default = true;
     nom."${deps.ofborg."0.1.8".nom}".default = true;
     ofborg."0.1.8".default = (f.ofborg."0.1.8".default or true);
-    separator."${deps.ofborg."0.1.8".separator}".default = true;
     serde."${deps.ofborg."0.1.8".serde}".default = true;
     serde_derive."${deps.ofborg."0.1.8".serde_derive}".default = true;
     serde_json."${deps.ofborg."0.1.8".serde_json}".default = true;
@@ -169,7 +167,6 @@ let crates = cratesIO // rec {
     (cratesIO.features_.lru_cache."${deps."ofborg"."0.1.8"."lru_cache"}" deps)
     (cratesIO.features_.md5."${deps."ofborg"."0.1.8"."md5"}" deps)
     (cratesIO.features_.nom."${deps."ofborg"."0.1.8"."nom"}" deps)
-    (cratesIO.features_.separator."${deps."ofborg"."0.1.8"."separator"}" deps)
     (cratesIO.features_.serde."${deps."ofborg"."0.1.8"."serde"}" deps)
     (cratesIO.features_.serde_derive."${deps."ofborg"."0.1.8"."serde_derive"}" deps)
     (cratesIO.features_.serde_json."${deps."ofborg"."0.1.8"."serde_json"}" deps)
@@ -378,7 +375,6 @@ rec {
     lru_cache = "0.1.1";
     md5 = "0.3.8";
     nom = "4.1.1";
-    separator = "0.4.1";
     serde = "1.0.84";
     serde_derive = "1.0.84";
     serde_json = "1.0.34";
@@ -463,7 +459,6 @@ rec {
     core_foundation_sys = "0.2.3";
     libc = "0.2.46";
   };
-  deps.separator."0.4.1" = {};
   deps.serde."1.0.84" = {};
   deps.serde_derive."1.0.84" = {
     proc_macro2 = "0.4.24";

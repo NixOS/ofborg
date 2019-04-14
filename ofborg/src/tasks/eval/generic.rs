@@ -1,8 +1,9 @@
 use ofborg::checkout::CachedProjectCo;
 use ofborg::commitstatus::CommitStatus;
 use ofborg::evalchecker::EvalChecker;
+use ofborg::message::buildjob::BuildJob;
 use std::path::Path;
-use tasks::eval::{EvaluationComplete, EvaluationStrategy, StepResult};
+use tasks::eval::{EvaluationStrategy, StepResult};
 
 #[derive(Default)]
 pub struct GenericStrategy {}
@@ -39,7 +40,7 @@ impl EvaluationStrategy for GenericStrategy {
         &mut self,
         _co: &Path,
         _status: &mut CommitStatus,
-    ) -> StepResult<EvaluationComplete> {
-        Ok(Default::default())
+    ) -> StepResult<Vec<BuildJob>> {
+        Ok(vec![])
     }
 }

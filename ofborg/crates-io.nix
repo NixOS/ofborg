@@ -2119,20 +2119,6 @@ rec {
 
 
 # end
-# separator-0.4.1
-
-  crates.separator."0.4.1" = deps: { features?(features_.separator."0.4.1" deps {}) }: buildRustCrate {
-    crateName = "separator";
-    version = "0.4.1";
-    authors = [ "Saghm Rossi <saghmrossi@gmail.com>" ];
-    sha256 = "1l7yhf6dy09k9cy0kkwb9wy98rn8mnz72q27wbd6bhiflllwghr7";
-  };
-  features_.separator."0.4.1" = deps: f: updateFeatures f (rec {
-    separator."0.4.1".default = (f.separator."0.4.1".default or true);
-  }) [];
-
-
-# end
 # serde-1.0.84
 
   crates.serde."1.0.84" = deps: { features?(features_.serde."1.0.84" deps {}) }: buildRustCrate {
