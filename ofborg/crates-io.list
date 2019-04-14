@@ -2,6 +2,7 @@ aho-corasick-0.5.3
 aho-corasick-0.6.9
 amq-proto-0.1.0
 antidote-1.0.0
+arrayvec-0.4.10
 autocfg-0.1.1
 backtrace-0.3.13
 backtrace-sys-0.1.28
@@ -47,7 +48,9 @@ memchr-0.1.11
 memchr-2.1.2
 mime-0.2.6
 native-tls-0.1.5
+nodrop-0.1.13
 nom-4.1.1
+num-format-0.4.0
 num-integer-0.1.39
 num-traits-0.1.43
 num-traits-0.2.6
