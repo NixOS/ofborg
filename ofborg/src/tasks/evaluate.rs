@@ -9,6 +9,7 @@ use hubcaps::issues::Issue;
 use ofborg::acl::ACL;
 use ofborg::checkout;
 use ofborg::commitstatus::CommitStatus;
+use ofborg::config::GithubAppVendingMachine;
 use ofborg::files::file_to_str;
 use ofborg::message::{buildjob, evaluationjob};
 use ofborg::nix;
@@ -18,6 +19,7 @@ use ofborg::systems;
 use ofborg::worker;
 use std::collections::HashMap;
 use std::path::Path;
+use std::sync::RwLock;
 use std::time::Instant;
 use tasks::eval;
 use tasks::eval::StepResult;
@@ -26,6 +28,7 @@ pub struct EvaluationWorker<E> {
     cloner: checkout::CachedCloner,
     nix: nix::Nix,
     github: hubcaps::Github,
+    github_vend: RwLock<GithubAppVendingMachine>,
     acl: ACL,
     identity: String,
     events: E,
@@ -33,10 +36,12 @@ pub struct EvaluationWorker<E> {
 }
 
 impl<E: stats::SysEvents> EvaluationWorker<E> {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         cloner: checkout::CachedCloner,
         nix: &nix::Nix,
         github: hubcaps::Github,
+        github_vend: GithubAppVendingMachine,
         acl: ACL,
         identity: String,
         events: E,
@@ -46,6 +51,7 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
             cloner,
             nix: nix.without_limited_supported_systems(),
             github,
+            github_vend: RwLock::new(github_vend),
             acl,
             identity,
             events,
@@ -106,9 +112,14 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
     }
 
     fn consumer(&mut self, job: &evaluationjob::EvaluationJob) -> worker::Actions {
-        let repo = self
-            .github
-            .repo(job.repo.owner.clone(), job.repo.name.clone());
+        let mut vending_machine = self
+            .github_vend
+            .write()
+            .expect("Failed to get write lock on github vending machine");
+        let github_client = vending_machine
+            .for_repo(&job.repo.owner, &job.repo.name)
+            .expect("Failed to get a github client token");
+        let repo = github_client.repo(job.repo.owner.clone(), job.repo.name.clone());
         let gists = self.github.gists();
         let pulls = repo.pulls();
         let pull = pulls.get(job.pr.number);
