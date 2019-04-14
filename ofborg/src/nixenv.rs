@@ -33,7 +33,7 @@ impl HydraNixEnv {
         let (status, stdout, mut stderr) = self.run_nix_env();
         self.remove_nix()?;
 
-        if status {
+        if !status {
             Err(Error::Fd(stderr))
         } else if let Ok(stats) = serde_json::from_reader(&mut stderr) {
             let outpaths = outpathdiff::parse_lines(&mut BufReader::new(stdout));
