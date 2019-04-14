@@ -1,6 +1,7 @@
 use crate::maintainers;
 use crate::maintainers::ImpactedMaintainers;
 use crate::nixenv::HydraNixEnv;
+use chrono::Utc;
 use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
 use hubcaps::gists::Gists;
 use hubcaps::issues::{Issue, IssueRef};
@@ -24,8 +25,6 @@ use std::collections::HashMap;
 use std::path::Path;
 use tasks::evaluate::make_gist;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
-
 
 pub struct NixpkgsStrategy<'a> {
     job: &'a EvaluationJob,
