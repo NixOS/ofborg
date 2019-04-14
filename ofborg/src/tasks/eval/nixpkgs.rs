@@ -24,6 +24,8 @@ use std::collections::HashMap;
 use std::path::Path;
 use tasks::evaluate::make_gist;
 use uuid::Uuid;
+use chrono::{DateTime, Utc};
+
 
 pub struct NixpkgsStrategy<'a> {
     job: &'a EvaluationJob,
@@ -169,7 +171,9 @@ impl<'a> NixpkgsStrategy<'a> {
                 return vec![CheckRunOptions {
                     name: "Evaluation Performance Report".to_owned(),
                     actions: None,
-                    completed_at: None,
+                    completed_at: Some(
+                        Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                    ),
                     started_at: None,
                     conclusion: Some(Conclusion::Success),
                     status: Some(CheckRunState::Completed),
