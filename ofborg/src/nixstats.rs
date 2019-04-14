@@ -1,4 +1,4 @@
-use num_format::{Locale, ToFormattedString};
+use separator::Separatable;
 /// Statistics emitted by Nix when NIX_SHOW_STATS=1
 use std::collections::HashMap;
 
@@ -143,10 +143,10 @@ impl<'a> EvaluationStatsDiff<'a> {
                 }
 
                 Row {
-                    before: left.to_formatted_string(&Locale::en),
-                    after: right.to_formatted_string(&Locale::en),
-                    diff: format!("{}{}", direction, diff.to_formatted_string(&Locale::en)),
-                    diff_pct: diff_pct,
+                    before: left.separated_string(),
+                    after: right.separated_string(),
+                    diff: format!("{}{}", direction, diff.separated_string()),
+                    diff_pct,
                 }
             }
 
@@ -169,7 +169,7 @@ impl<'a> EvaluationStatsDiff<'a> {
                 if diff > 0.0 {
                     diff_pct = format!(
                         "{:.2}%",
-                        ((right as f64) - (left as f64)) / (left as f64) * 100.0
+                        (f64::from(right) - f64::from(left)) / f64::from(left) * 100.0
                     );
                 } else {
                     diff_pct = String::from("");
@@ -179,7 +179,7 @@ impl<'a> EvaluationStatsDiff<'a> {
                     before: format!("{:.2}", left),
                     after: format!("{:.2}", right),
                     diff: format!("{}{:.2}", direction, diff),
-                    diff_pct: diff_pct,
+                    diff_pct,
                 }
             }
         }
@@ -329,7 +329,7 @@ impl<'a> EvaluationStatsDiff<'a> {
         let rows = keys
             .into_iter()
             .map(|key| {
-                let row = data.get(&key).unwrap();
+                let row = &data[&key];
                 format!("| {key:<keywidth$} | {before:>beforewidth$} | {after:>afterwidth$} | {diff:<diffwidth$} | {diff_pct:>diff_pctwidth$} |",
                         key=format!("**{}**", key), keywidth=(keylen + 4),
                         before=row.before, beforewidth=beforelen,

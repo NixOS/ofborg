@@ -100,37 +100,6 @@ rec {
 
 
 # end
-# arrayvec-0.4.10
-
-  crates.arrayvec."0.4.10" = deps: { features?(features_.arrayvec."0.4.10" deps {}) }: buildRustCrate {
-    crateName = "arrayvec";
-    version = "0.4.10";
-    authors = [ "bluss" ];
-    sha256 = "0qbh825i59w5wfdysqdkiwbwkrsy7lgbd4pwbyb8pxx8wc36iny8";
-    dependencies = mapFeatures features ([
-      (crates."nodrop"."${deps."arrayvec"."0.4.10"."nodrop"}" deps)
-    ]);
-    features = mkFeatures (features."arrayvec"."0.4.10" or {});
-  };
-  features_.arrayvec."0.4.10" = deps: f: updateFeatures f (rec {
-    arrayvec = fold recursiveUpdate {} [
-      { "0.4.10".default = (f.arrayvec."0.4.10".default or true); }
-      { "0.4.10".serde =
-        (f.arrayvec."0.4.10".serde or false) ||
-        (f.arrayvec."0.4.10".serde-1 or false) ||
-        (arrayvec."0.4.10"."serde-1" or false); }
-      { "0.4.10".std =
-        (f.arrayvec."0.4.10".std or false) ||
-        (f.arrayvec."0.4.10".default or false) ||
-        (arrayvec."0.4.10"."default" or false); }
-    ];
-    nodrop."${deps.arrayvec."0.4.10".nodrop}".default = (f.nodrop."${deps.arrayvec."0.4.10".nodrop}".default or false);
-  }) [
-    (features_.nodrop."${deps."arrayvec"."0.4.10"."nodrop"}" deps)
-  ];
-
-
-# end
 # autocfg-0.1.1
 
   crates.autocfg."0.1.1" = deps: { features?(features_.autocfg."0.1.1" deps {}) }: buildRustCrate {
@@ -1351,33 +1320,6 @@ rec {
 
 
 # end
-# nodrop-0.1.13
-
-  crates.nodrop."0.1.13" = deps: { features?(features_.nodrop."0.1.13" deps {}) }: buildRustCrate {
-    crateName = "nodrop";
-    version = "0.1.13";
-    authors = [ "bluss" ];
-    sha256 = "0gkfx6wihr9z0m8nbdhma5pyvbipznjpkzny2d4zkc05b0vnhinb";
-    dependencies = mapFeatures features ([
-]);
-    features = mkFeatures (features."nodrop"."0.1.13" or {});
-  };
-  features_.nodrop."0.1.13" = deps: f: updateFeatures f (rec {
-    nodrop = fold recursiveUpdate {} [
-      { "0.1.13".default = (f.nodrop."0.1.13".default or true); }
-      { "0.1.13".nodrop-union =
-        (f.nodrop."0.1.13".nodrop-union or false) ||
-        (f.nodrop."0.1.13".use_union or false) ||
-        (nodrop."0.1.13"."use_union" or false); }
-      { "0.1.13".std =
-        (f.nodrop."0.1.13".std or false) ||
-        (f.nodrop."0.1.13".default or false) ||
-        (nodrop."0.1.13"."default" or false); }
-    ];
-  }) [];
-
-
-# end
 # nom-4.1.1
 
   crates.nom."4.1.1" = deps: { features?(features_.nom."4.1.1" deps {}) }: buildRustCrate {
@@ -1425,89 +1367,6 @@ rec {
     ];
   }) [
     (features_.memchr."${deps."nom"."4.1.1"."memchr"}" deps)
-  ];
-
-
-# end
-# num-format-0.4.0
-
-  crates.num_format."0.4.0" = deps: { features?(features_.num_format."0.4.0" deps {}) }: buildRustCrate {
-    crateName = "num-format";
-    version = "0.4.0";
-    authors = [ "Brian Myers <brian.carl.myers@gmail.com>" ];
-    sha256 = "0vvvv4bc47h30b6k7m3dzzg9zzsw4g9f84dc2q9sswm51l2hij00";
-    dependencies = mapFeatures features ([
-      (crates."arrayvec"."${deps."num_format"."0.4.0"."arrayvec"}" deps)
-      (crates."itoa"."${deps."num_format"."0.4.0"."itoa"}" deps)
-    ])
-      ++ (if (kernel == "linux" || kernel == "darwin") then mapFeatures features ([
-]) else [])
-      ++ (if kernel == "windows" then mapFeatures features ([
-]) else []);
-    features = mkFeatures (features."num_format"."0.4.0" or {});
-  };
-  features_.num_format."0.4.0" = deps: f: updateFeatures f (rec {
-    arrayvec = fold recursiveUpdate {} [
-      { "${deps.num_format."0.4.0".arrayvec}"."default" =
-        (f.arrayvec."${deps.num_format."0.4.0".arrayvec}"."default" or false) ||
-        (num_format."0.4.0"."std" or false) ||
-        (f."num_format"."0.4.0"."std" or false); }
-      { "${deps.num_format."0.4.0".arrayvec}"."serde-1" =
-        (f.arrayvec."${deps.num_format."0.4.0".arrayvec}"."serde-1" or false) ||
-        (num_format."0.4.0"."with-serde" or false) ||
-        (f."num_format"."0.4.0"."with-serde" or false); }
-      { "${deps.num_format."0.4.0".arrayvec}".default = (f.arrayvec."${deps.num_format."0.4.0".arrayvec}".default or false); }
-    ];
-    itoa = fold recursiveUpdate {} [
-      { "${deps.num_format."0.4.0".itoa}"."default" =
-        (f.itoa."${deps.num_format."0.4.0".itoa}"."default" or false) ||
-        (num_format."0.4.0"."std" or false) ||
-        (f."num_format"."0.4.0"."std" or false); }
-      { "${deps.num_format."0.4.0".itoa}"."i128" = true; }
-      { "${deps.num_format."0.4.0".itoa}".default = (f.itoa."${deps.num_format."0.4.0".itoa}".default or false); }
-    ];
-    num_format = fold recursiveUpdate {} [
-      { "0.4.0".cfg-if =
-        (f.num_format."0.4.0".cfg-if or false) ||
-        (f.num_format."0.4.0".with-system-locale or false) ||
-        (num_format."0.4.0"."with-system-locale" or false); }
-      { "0.4.0".default = (f.num_format."0.4.0".default or true); }
-      { "0.4.0".encoding_rs =
-        (f.num_format."0.4.0".encoding_rs or false) ||
-        (f.num_format."0.4.0".with-system-locale or false) ||
-        (num_format."0.4.0"."with-system-locale" or false); }
-      { "0.4.0".lazy_static =
-        (f.num_format."0.4.0".lazy_static or false) ||
-        (f.num_format."0.4.0".with-system-locale or false) ||
-        (num_format."0.4.0"."with-system-locale" or false); }
-      { "0.4.0".libc =
-        (f.num_format."0.4.0".libc or false) ||
-        (f.num_format."0.4.0".with-system-locale or false) ||
-        (num_format."0.4.0"."with-system-locale" or false); }
-      { "0.4.0".num-bigint =
-        (f.num_format."0.4.0".num-bigint or false) ||
-        (f.num_format."0.4.0".with-num-bigint or false) ||
-        (num_format."0.4.0"."with-num-bigint" or false); }
-      { "0.4.0".num-format-windows =
-        (f.num_format."0.4.0".num-format-windows or false) ||
-        (f.num_format."0.4.0".with-system-locale or false) ||
-        (num_format."0.4.0"."with-system-locale" or false); }
-      { "0.4.0".std =
-        (f.num_format."0.4.0".std or false) ||
-        (f.num_format."0.4.0".default or false) ||
-        (num_format."0.4.0"."default" or false) ||
-        (f.num_format."0.4.0".with-num-bigint or false) ||
-        (num_format."0.4.0"."with-num-bigint" or false) ||
-        (f.num_format."0.4.0".with-system-locale or false) ||
-        (num_format."0.4.0"."with-system-locale" or false); }
-      { "0.4.0".widestring =
-        (f.num_format."0.4.0".widestring or false) ||
-        (f.num_format."0.4.0".with-system-locale or false) ||
-        (num_format."0.4.0"."with-system-locale" or false); }
-    ];
-  }) [
-    (features_.arrayvec."${deps."num_format"."0.4.0"."arrayvec"}" deps)
-    (features_.itoa."${deps."num_format"."0.4.0"."itoa"}" deps)
   ];
 
 
@@ -2257,6 +2116,20 @@ rec {
     (features_.core_foundation_sys."${deps."security_framework_sys"."0.1.16"."core_foundation_sys"}" deps)
     (features_.libc."${deps."security_framework_sys"."0.1.16"."libc"}" deps)
   ];
+
+
+# end
+# separator-0.4.1
+
+  crates.separator."0.4.1" = deps: { features?(features_.separator."0.4.1" deps {}) }: buildRustCrate {
+    crateName = "separator";
+    version = "0.4.1";
+    authors = [ "Saghm Rossi <saghmrossi@gmail.com>" ];
+    sha256 = "1l7yhf6dy09k9cy0kkwb9wy98rn8mnz72q27wbd6bhiflllwghr7";
+  };
+  features_.separator."0.4.1" = deps: f: updateFeatures f (rec {
+    separator."0.4.1".default = (f.separator."0.4.1".default or true);
+  }) [];
 
 
 # end

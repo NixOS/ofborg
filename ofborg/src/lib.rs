@@ -27,7 +27,7 @@ extern crate hyper;
 extern crate hyper_native_tls;
 extern crate lru_cache;
 extern crate md5;
-extern crate num_format;
+extern crate separator;
 extern crate tempfile;
 extern crate uuid;
 
