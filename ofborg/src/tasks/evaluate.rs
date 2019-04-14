@@ -4,13 +4,11 @@ extern crate env_logger;
 extern crate uuid;
 use amqp::protocol::basic::{BasicProperties, Deliver};
 use hubcaps;
-use hubcaps::checks::CheckRunOptions;
 use hubcaps::gists::Gists;
 use hubcaps::issues::Issue;
 use ofborg::acl::ACL;
 use ofborg::checkout;
 use ofborg::commitstatus::CommitStatus;
-use ofborg::config::GithubAppVendingMachine;
 use ofborg::files::file_to_str;
 use ofborg::message::{buildjob, evaluationjob};
 use ofborg::nix;
@@ -20,7 +18,6 @@ use ofborg::systems;
 use ofborg::worker;
 use std::collections::HashMap;
 use std::path::Path;
-use std::sync::RwLock;
 use std::time::Instant;
 use tasks::eval;
 use tasks::eval::StepResult;
@@ -29,7 +26,6 @@ pub struct EvaluationWorker<E> {
     cloner: checkout::CachedCloner,
     nix: nix::Nix,
     github: hubcaps::Github,
-    github_vend: RwLock<GithubAppVendingMachine>,
     acl: ACL,
     identity: String,
     events: E,
@@ -37,12 +33,10 @@ pub struct EvaluationWorker<E> {
 }
 
 impl<E: stats::SysEvents> EvaluationWorker<E> {
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         cloner: checkout::CachedCloner,
         nix: &nix::Nix,
         github: hubcaps::Github,
-        github_vend: GithubAppVendingMachine,
         acl: ACL,
         identity: String,
         events: E,
@@ -52,7 +46,6 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
             cloner,
             nix: nix.without_limited_supported_systems(),
             github,
-            github_vend: RwLock::new(github_vend),
             acl,
             identity,
             events,
@@ -113,14 +106,9 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
     }
 
     fn consumer(&mut self, job: &evaluationjob::EvaluationJob) -> worker::Actions {
-        let mut vending_machine = self
-            .github_vend
-            .write()
-            .expect("Failed to get write lock on github vending machine");
-        let github_client = vending_machine
-            .for_repo(&job.repo.owner, &job.repo.name)
-            .expect("Failed to get a github client token");
-        let repo = github_client.repo(job.repo.owner.clone(), job.repo.name.clone());
+        let repo = self
+            .github
+            .repo(job.repo.owner.clone(), job.repo.name.clone());
         let gists = self.github.gists();
         let pulls = repo.pulls();
         let pull = pulls.get(job.pr.number);
@@ -332,9 +320,30 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             let ret = evaluation_strategy
                 .all_evaluations_passed(&Path::new(&refpath), &mut overall_status);
             match ret {
-                Ok(complete) => {
-                    send_check_statuses(complete.checks, &repo);
-                    response.extend(schedule_builds(complete.builds, auto_schedule_build_archs));
+                Ok(builds) => {
+                    info!(
+                        "Scheduling build jobs {:#?} on arches {:#?}",
+                        builds, auto_schedule_build_archs
+                    );
+                    for buildjob in builds {
+                        for arch in auto_schedule_build_archs.iter() {
+                            let (exchange, routingkey) = arch.as_build_destination();
+                            response.push(worker::publish_serde_action(
+                                exchange, routingkey, &buildjob,
+                            ));
+                        }
+                        response.push(worker::publish_serde_action(
+                            Some("build-results".to_string()),
+                            None,
+                            &buildjob::QueuedBuildJobs {
+                                job: buildjob,
+                                architectures: auto_schedule_build_archs
+                                    .iter()
+                                    .map(|arch| arch.to_string())
+                                    .collect(),
+                            },
+                        ));
+                    }
                 }
                 Err(e) => {
                     info!("Failed after all the evaluations passed");
@@ -360,47 +369,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
         info!("done!");
         self.actions().done(&job, response)
     }
-}
-
-fn send_check_statuses(checks: Vec<CheckRunOptions>, repo: &hubcaps::repositories::Repository) {
-    for check in checks {
-        match repo.checkruns().create(&check) {
-            Ok(_) => info!("Sent check update"),
-            Err(e) => info!("Failed to send check update: {:?}", e),
-        }
-    }
-}
-
-fn schedule_builds(
-    builds: Vec<buildjob::BuildJob>,
-    auto_schedule_build_archs: Vec<systems::System>,
-) -> Vec<worker::Action> {
-    let mut response = vec![];
-    info!(
-        "Scheduling build jobs {:#?} on arches {:#?}",
-        builds, auto_schedule_build_archs
-    );
-    for buildjob in builds {
-        for arch in auto_schedule_build_archs.iter() {
-            let (exchange, routingkey) = arch.as_build_destination();
-            response.push(worker::publish_serde_action(
-                exchange, routingkey, &buildjob,
-            ));
-        }
-        response.push(worker::publish_serde_action(
-            Some("build-results".to_string()),
-            None,
-            &buildjob::QueuedBuildJobs {
-                job: buildjob,
-                architectures: auto_schedule_build_archs
-                    .iter()
-                    .map(|arch| arch.to_string())
-                    .collect(),
-            },
-        ));
-    }
-
-    response
 }
 
 pub fn make_gist<'a>(

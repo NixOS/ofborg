@@ -1,57 +1,66 @@
-use crate::nixenv::Error as NixEnvError;
-use crate::nixenv::HydraNixEnv;
-use crate::nixstats::{EvaluationStats, EvaluationStatsDiff};
+extern crate amqp;
+extern crate env_logger;
+
 use ofborg::nix;
 use std::collections::{HashMap, HashSet};
+use std::fs;
+use std::fs::File;
 use std::io::BufRead;
-
+use std::io::BufReader;
+use std::io::Write;
 use std::path::PathBuf;
 
 pub struct OutPathDiff {
-    calculator: HydraNixEnv,
-    pub original: Option<(PackageOutPaths, EvaluationStats)>,
-    pub current: Option<(PackageOutPaths, EvaluationStats)>,
+    calculator: OutPaths,
+    pub original: Option<PackageOutPaths>,
+    pub current: Option<PackageOutPaths>,
 }
 
 impl OutPathDiff {
     pub fn new(nix: nix::Nix, path: PathBuf) -> OutPathDiff {
         OutPathDiff {
-            calculator: HydraNixEnv::new(nix, path, false),
+            calculator: OutPaths::new(nix, path, false),
             original: None,
             current: None,
         }
     }
 
-    pub fn find_before(&mut self) -> Result<(), NixEnvError> {
-        self.original = Some(self.run()?);
-        Ok(())
+    pub fn find_before(&mut self) -> Result<bool, File> {
+        let x = self.run();
+        match x {
+            Ok(f) => {
+                self.original = Some(f);
+                Ok(true)
+            }
+            Err(e) => {
+                info!("Failed to find Before list");
+                Err(e)
+            }
+        }
     }
 
-    pub fn find_after(&mut self) -> Result<(), NixEnvError> {
-        if self.original.is_none() {
+    pub fn find_after(&mut self) -> Result<bool, File> {
+        if self.original == None {
             debug!("Before is None, not bothering with After");
-            return Ok(());
+            return Ok(false);
         }
 
-        self.current = Some(self.run()?);
-        Ok(())
-    }
-
-    pub fn performance_diff(&self) -> Option<EvaluationStatsDiff> {
-        if let Some((_, ref cur)) = self.current {
-            if let Some((_, ref orig)) = self.original {
-                Some(EvaluationStatsDiff::compare(orig, cur))
-            } else {
-                None
+        let x = self.run();
+        match x {
+            Ok(f) => {
+                self.current = Some(f);
+                Ok(true)
             }
-        } else {
-            None
+            Err(e) => {
+                info!("Failed to find After list");
+                Err(e)
+            }
         }
     }
 
     pub fn package_diff(&self) -> Option<(Vec<PackageArch>, Vec<PackageArch>)> {
-        if let Some((ref cur, _)) = self.current {
-            if let Some((ref orig, _)) = self.original {
+        if let Some(ref cur) = self.current {
+            if let Some(ref orig) = self.original {
                 let orig_set: HashSet<&PackageArch> = orig.keys().collect();
                 let cur_set: HashSet<&PackageArch> = cur.keys().collect();
 
@@ -75,8 +84,8 @@ impl OutPathDiff {
     pub fn calculate_rebuild(&self) -> Option<Vec<PackageArch>> {
         let mut rebuild: Vec<PackageArch> = vec![];
 
-        if let Some((ref cur, _)) = self.current {
-            if let Some((ref orig, _)) = self.original {
+        if let Some(ref cur) = self.current {
+            if let Some(ref orig) = self.original {
                 for key in cur.keys() {
                     trace!("Checking out {:?}", key);
                     if cur.get(key) != orig.get(key) {
@@ -94,12 +103,12 @@ impl OutPathDiff {
         None
     }
 
-    fn run(&mut self) -> Result<(PackageOutPaths, EvaluationStats), NixEnvError> {
-        self.calculator.execute()
+    fn run(&mut self) -> Result<PackageOutPaths, File> {
+        self.calculator.find()
     }
 }
 
-pub type PackageOutPaths = HashMap<PackageArch, OutPath>;
+type PackageOutPaths = HashMap<PackageArch, OutPath>;
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
 pub struct PackageArch {
@@ -110,7 +119,76 @@ type Package = String;
 type Architecture = String;
 type OutPath = String;
 
-pub fn parse_lines(data: &mut BufRead) -> PackageOutPaths {
+pub struct OutPaths {
+    path: PathBuf,
+    nix: nix::Nix,
+    check_meta: bool,
+}
+
+impl OutPaths {
+    pub fn new(nix: nix::Nix, path: PathBuf, check_meta: bool) -> OutPaths {
+        OutPaths {
+            nix,
+            path,
+            check_meta,
+        }
+    }
+
+    pub fn find(&self) -> Result<PackageOutPaths, File> {
+        self.run()
+    }
+
+    fn run(&self) -> Result<PackageOutPaths, File> {
+        self.place_nix();
+        let ret = self.execute();
+        self.remove_nix();
+
+        match ret {
+            Ok(file) => Ok(parse_lines(&mut BufReader::new(file))),
+            Err(e) => Err(e),
+        }
+    }
+
+    fn place_nix(&self) {
+        let mut file = File::create(self.nix_path()).expect("Failed to create nix out path check");
+        file.write_all(include_bytes!("outpaths.nix"))
+            .expect("Failed to place outpaths.nix");
+    }
+
+    fn remove_nix(&self) {
+        fs::remove_file(self.nix_path()).expect("Failed to delete outpaths.nix");
+    }
+
+    fn nix_path(&self) -> PathBuf {
+        let mut dest = self.path.clone();
+        dest.push(".gc-of-borg-outpaths.nix");
+
+        dest
+    }
+
+    fn execute(&self) -> Result<File, File> {
+        let check_meta: String = if self.check_meta {
+            String::from("true")
+        } else {
+            String::from("false")
+        };
+
+        self.nix.safely(
+            &nix::Operation::QueryPackagesOutputs,
+            &self.path,
+            vec![
+                String::from("-f"),
+                String::from(".gc-of-borg-outpaths.nix"),
+                String::from("--arg"),
+                String::from("checkMeta"),
+                check_meta,
+            ],
+            true,
+        )
+    }
+}
+
+fn parse_lines(data: &mut BufRead) -> PackageOutPaths {
     data.lines()
         .filter_map(|line| match line {
             Ok(line) => Some(line),

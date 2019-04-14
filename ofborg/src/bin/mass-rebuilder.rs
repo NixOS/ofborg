@@ -51,7 +51,6 @@ fn main() {
         cloner,
         &nix,
         cfg.github(),
-        cfg.github_app_vendingmachine(),
         cfg.acl(),
         cfg.runner.identity.clone(),
         events,
