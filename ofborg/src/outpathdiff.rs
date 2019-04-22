@@ -95,7 +95,7 @@ impl OutPathDiff {
     }
 
     fn run(&mut self) -> Result<(PackageOutPaths, EvaluationStats), NixEnvError> {
-        self.calculator.execute()
+        self.calculator.execute_with_stats()
     }
 }
 

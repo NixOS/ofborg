@@ -136,7 +136,7 @@ impl<'a> NixpkgsStrategy<'a> {
              */
 
             Err(Error::FailWithGist(
-                String::from("The branch this PR will merge in to does not evaluate, and so this PR cannot be checked."),
+                String::from("The branch this PR will merge in to does not cleanly evaluate, and so this PR cannot be checked."),
                 String::from("Output path comparison"),
                 err.display(),
             ))
@@ -150,7 +150,7 @@ impl<'a> NixpkgsStrategy<'a> {
         if let Some(ref mut rebuildsniff) = self.outpath_diff {
             if let Err(mut err) = rebuildsniff.find_after() {
                 Err(Error::FailWithGist(
-                    String::from("This PR breaks listing of package outputs after merging."),
+                    String::from("This PR does not cleanly list of package outputs after merging."),
                     String::from("Output path comparison"),
                     err.display(),
                 ))
@@ -299,10 +299,9 @@ impl<'a> NixpkgsStrategy<'a> {
             status.set(hubcaps::statuses::State::Pending);
 
             let nixenv = HydraNixEnv::new(self.nix.clone(), dir.to_path_buf(), true);
-            match nixenv.execute() {
-                Ok(pkgs) => {
+            match nixenv.execute_with_stats() {
+                Ok((pkgs, _stats)) => {
                     let mut try_build: Vec<String> = pkgs
-                        .0
                         .keys()
                         .map(|pkgarch| pkgarch.package.clone())
                         .filter(|pkg| possibly_touched_packages.contains(&pkg))

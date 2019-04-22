@@ -28,21 +28,23 @@ impl HydraNixEnv {
         }
     }
 
-    pub fn execute(&self) -> Result<(outpathdiff::PackageOutPaths, EvaluationStats), Error> {
+    pub fn execute_with_stats(
+        &self,
+    ) -> Result<(outpathdiff::PackageOutPaths, EvaluationStats), Error> {
         self.place_nix()?;
         let (status, stdout, mut stderr) = self.run_nix_env();
         self.remove_nix()?;
 
-        if !status {
-            Err(Error::Fd(stderr))
-        } else if let Ok(stats) = serde_json::from_reader(&mut stderr) {
+        if status {
             let outpaths = outpathdiff::parse_lines(&mut BufReader::new(stdout));
+            let stats = serde_json::from_reader(&mut stderr).map_err(|err| {
+                let seek = stderr.seek(SeekFrom::Start(0));
+
+                Error::StatsParse(stderr, seek, err)
+            })?;
             Ok((outpaths, stats))
         } else {
-            stderr
-                .seek(SeekFrom::Start(0))
-                .expect("Seeking to Start(0)");
-            Err(Error::Fd(stderr))
+            Err(Error::CommandFailed(stderr))
         }
     }
 
@@ -86,7 +88,8 @@ impl HydraNixEnv {
 
 pub enum Error {
     Io(std::io::Error),
-    Fd(File),
+    CommandFailed(File),
+    StatsParse(File, Result<u64, std::io::Error>, serde_json::Error),
 }
 
 impl From<std::io::Error> for Error {
@@ -99,7 +102,7 @@ impl Error {
     pub fn display(self) -> String {
         match self {
             Error::Io(e) => format!("Failed during the setup of executing nix-env: {:?}", e),
-            Error::Fd(mut fd) => {
+            Error::CommandFailed(mut fd) => {
                 let mut buffer = Vec::new();
                 let read_result = fd.read_to_end(&mut buffer);
                 let bufstr = String::from_utf8_lossy(&buffer);
@@ -111,6 +114,34 @@ impl Error {
                         e, bufstr
                     ),
                 }
+            }
+            Error::StatsParse(mut fd, seek, parse_err) => {
+                let mut buffer = Vec::new();
+                let read_result = fd.read_to_end(&mut buffer);
+                let bufstr = String::from_utf8_lossy(&buffer);
+
+                let mut lines =
+                    String::from("Parsing nix-env's performance statistics failed.\n\n");
+
+                if let Err(seek_err) = seek {
+                    lines.push_str(&format!(
+                        "Additionally, resetting to the beginning of the output failed with:\n{:?}\n\n",
+                        seek_err
+                    ));
+                }
+
+                if let Err(read_err) = read_result {
+                    lines.push_str(&format!(
+                        "Additionally, loading the output failed with:\n{:?}\n\n",
+                        read_err
+                    ));
+                }
+
+                lines.push_str(&format!("Parse error:\n{:?}\n\n", parse_err));
+
+                lines.push_str(&format!("Evaluation output:\n{}", bufstr));
+
+                lines
             }
         }
     }
