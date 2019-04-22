@@ -27,6 +27,7 @@ extern crate hyper;
 extern crate hyper_native_tls;
 extern crate lru_cache;
 extern crate md5;
+extern crate separator;
 extern crate tempfile;
 extern crate uuid;
 
@@ -47,6 +48,8 @@ pub mod locks;
 pub mod maintainers;
 pub mod message;
 pub mod nix;
+pub mod nixenv;
+pub mod nixstats;
 pub mod notifyworker;
 pub mod outpathdiff;
 pub mod stats;
