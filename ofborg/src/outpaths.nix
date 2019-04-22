@@ -1,7 +1,12 @@
-{ checkMeta }:
+#!/usr/bin/env nix-shell
+# When using as a callable script, passing `--argstr path some/path` overrides $PWD.
+#!nix-shell -p nix -i "nix-env -qaP --no-name --out-path --arg checkMeta true --argstr path $PWD -f"
+{ checkMeta
+, path ? ./.
+}:
 let
-  lib = import ./lib;
-  hydraJobs = import ./pkgs/top-level/release.nix
+  lib = import (path + "/lib");
+  hydraJobs = import (path + "/pkgs/top-level/release.nix")
     # Compromise: accuracy vs. resources needed for evaluation.
     {
       supportedSystems = [
