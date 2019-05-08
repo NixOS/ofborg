@@ -124,10 +124,10 @@ impl<'a> EvaluationStatsDiff<'a> {
 
                 if left > right {
                     diff = left - right;
-                    direction = "🡖 ";
+                    direction = "↘ ";
                 } else if left < right {
                     diff = right - left;
-                    direction = "🡕 ";
+                    direction = "↗ ";
                 } else {
                     diff = 0;
                     direction = "";
@@ -157,10 +157,10 @@ impl<'a> EvaluationStatsDiff<'a> {
 
                 if left > right {
                     diff = left - right;
-                    direction = "🡖 ";
+                    direction = "↘ ";
                 } else if left < right {
                     diff = right - left;
-                    direction = "🡕 ";
+                    direction = "↗ ";
                 } else {
                     diff = 0.0;
                     direction = "";
