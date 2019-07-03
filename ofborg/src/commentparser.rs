@@ -23,7 +23,7 @@ named!(normal_token(CompleteStr) -> CompleteStr,
 named!(parse_line_impl(CompleteStr) -> Option<Vec<Instruction>>, alt!(
     do_parse!(
         res: ws!(many1!(ws!(preceded!(
-            tag_no_case!("@grahamcofborg"),
+            alt!(tag_no_case!("@grahamcofborg") | tag_no_case!("@ofborg")),
             alt!(
                 ws!(do_parse!(
                     tag!("build") >>
@@ -129,7 +129,7 @@ mod tests {
             parse(
                 "
 @grahamcofborg build bar
-@grahamcofborg eval
+@ofborg eval
 @grahamcofborg build foo",
             )
         );
@@ -178,7 +178,7 @@ Also, just in case, let's try foo
                 vec![String::from("foo"), String::from("bar")]
             ),]),
             parse(
-                "@GrahamCOfBorg build foo bar
+                "@OfBorg build foo bar
 
 baz",
             )
@@ -211,7 +211,7 @@ baz",
                     String::from("baz"),
                 ]
             ),]),
-            parse("@GrahamCOfBorg build foo bar baz")
+            parse("@OfBorg build foo bar baz")
         );
     }
 
@@ -241,7 +241,7 @@ baz",
                     String::from("baz.Baz"),
                 ]
             ),]),
-            parse("@grahamcofborg build foo bar baz.Baz")
+            parse("@ofborg build foo bar baz.Baz")
         );
     }
 
