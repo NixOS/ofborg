@@ -148,7 +148,7 @@ impl<'a> NixpkgsStrategy<'a> {
 
     fn check_outpaths_after(&mut self) -> StepResult<()> {
         if let Some(ref mut rebuildsniff) = self.outpath_diff {
-            if let Err(mut err) = rebuildsniff.find_after() {
+            if let Err(err) = rebuildsniff.find_after() {
                 Err(Error::FailWithGist(
                     String::from("This PR does not cleanly list of package outputs after merging."),
                     String::from("Output path comparison"),
@@ -264,7 +264,7 @@ impl<'a> NixpkgsStrategy<'a> {
                 },
             );
 
-            let mut status = CommitStatus::new(
+            let status = CommitStatus::new(
                 self.repo.statuses(),
                 self.job.pr.head_sha.clone(),
                 String::from("grahamcofborg-eval-check-maintainers"),
@@ -330,7 +330,7 @@ impl<'a> NixpkgsStrategy<'a> {
                         Ok(vec![])
                     }
                 }
-                Err(mut out) => {
+                Err(out) => {
                     status.set_url(make_gist(&self.gists, "Meta Check", None, out.display()));
                     status.set(hubcaps::statuses::State::Failure);
                     Err(Error::Fail(String::from(
