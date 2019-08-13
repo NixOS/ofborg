@@ -12,7 +12,7 @@ pub struct MaintainersByPackage(pub HashMap<Package, HashSet<Maintainer>>);
 pub struct Maintainer(String);
 impl<'a> From<&'a str> for Maintainer {
     fn from(name: &'a str) -> Maintainer {
-        Maintainer(name.to_owned())
+        Maintainer(name.to_ascii_lowercase().to_owned())
     }
 }
 #[derive(Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
