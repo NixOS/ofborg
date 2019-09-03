@@ -120,6 +120,7 @@ impl Default for RebuildTagger {
         RebuildTagger {
             possible: vec![
                 String::from("10.rebuild-darwin: 0"),
+                String::from("10.rebuild-darwin: 1"),
                 String::from("10.rebuild-darwin: 1-10"),
                 String::from("10.rebuild-darwin: 11-100"),
                 String::from("10.rebuild-darwin: 101-500"),
@@ -129,6 +130,7 @@ impl Default for RebuildTagger {
                 String::from("10.rebuild-darwin: 2501-5000"),
                 String::from("10.rebuild-darwin: 5001+"),
                 String::from("10.rebuild-linux: 0"),
+                String::from("10.rebuild-linux: 1"),
                 String::from("10.rebuild-linux: 1-10"),
                 String::from("10.rebuild-linux: 11-100"),
                 String::from("10.rebuild-linux: 101-500"),
@@ -222,8 +224,10 @@ impl RebuildTagger {
             &["101-500"]
         } else if count > 10 {
             &["11-100"]
-        } else if count > 0 {
+        } else if count > 1 {
             &["1-10"]
+        } else if count > 0 {
+            &["1", "1-10"]
         } else {
             &["0"]
         }
@@ -389,6 +393,7 @@ mod tests {
         assert_eq!(
             tagger.tags_to_remove(),
             vec![
+                "10.rebuild-darwin: 1",
                 "10.rebuild-darwin: 1-10",
                 "10.rebuild-darwin: 11-100",
                 "10.rebuild-darwin: 101-500",
@@ -397,6 +402,7 @@ mod tests {
                 "10.rebuild-darwin: 1001-2500",
                 "10.rebuild-darwin: 2501-5000",
                 "10.rebuild-darwin: 5001+",
+                "10.rebuild-linux: 1",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 11-100",
                 "10.rebuild-linux: 101-500",
@@ -413,11 +419,12 @@ mod tests {
 
         assert_eq!(
             tagger.tags_to_add(),
-            vec!["10.rebuild-darwin: 0", "10.rebuild-linux: 1-10",]
+            vec!["10.rebuild-darwin: 0", "10.rebuild-linux: 1", "10.rebuild-linux: 1-10",]
         );
         assert_eq!(
             tagger.tags_to_remove(),
             vec![
+                "10.rebuild-darwin: 1",
                 "10.rebuild-darwin: 1-10",
                 "10.rebuild-darwin: 11-100",
                 "10.rebuild-darwin: 101-500",
@@ -441,7 +448,12 @@ mod tests {
         tagger.parse_attrs(PackageArchSrc::linux(1).and_darwin(1).into());
         assert_eq!(
             tagger.tags_to_add(),
-            vec!["10.rebuild-darwin: 1-10", "10.rebuild-linux: 1-10",]
+            vec![
+                "10.rebuild-darwin: 1",
+                "10.rebuild-darwin: 1-10",
+                "10.rebuild-linux: 1",
+                "10.rebuild-linux: 1-10",
+            ]
         );
         assert_eq!(
             tagger.tags_to_remove(),
@@ -475,6 +487,7 @@ mod tests {
             tagger.tags_to_remove(),
             vec![
                 "10.rebuild-darwin: 0",
+                "10.rebuild-darwin: 1",
                 "10.rebuild-darwin: 11-100",
                 "10.rebuild-darwin: 101-500",
                 "10.rebuild-darwin: 501+",
@@ -483,6 +496,7 @@ mod tests {
                 "10.rebuild-darwin: 2501-5000",
                 "10.rebuild-darwin: 5001+",
                 "10.rebuild-linux: 0",
+                "10.rebuild-linux: 1",
                 "10.rebuild-linux: 11-100",
                 "10.rebuild-linux: 101-500",
                 "10.rebuild-linux: 501+",
@@ -503,6 +517,7 @@ mod tests {
             tagger.tags_to_remove(),
             vec![
                 "10.rebuild-darwin: 0",
+                "10.rebuild-darwin: 1",
                 "10.rebuild-darwin: 1-10",
                 "10.rebuild-darwin: 101-500",
                 "10.rebuild-darwin: 501+",
@@ -511,6 +526,7 @@ mod tests {
                 "10.rebuild-darwin: 2501-5000",
                 "10.rebuild-darwin: 5001+",
                 "10.rebuild-linux: 0",
+                "10.rebuild-linux: 1",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 101-500",
                 "10.rebuild-linux: 501+",
@@ -531,6 +547,7 @@ mod tests {
             tagger.tags_to_remove(),
             vec![
                 "10.rebuild-darwin: 0",
+                "10.rebuild-darwin: 1",
                 "10.rebuild-darwin: 1-10",
                 "10.rebuild-darwin: 101-500",
                 "10.rebuild-darwin: 501+",
@@ -539,6 +556,7 @@ mod tests {
                 "10.rebuild-darwin: 2501-5000",
                 "10.rebuild-darwin: 5001+",
                 "10.rebuild-linux: 0",
+                "10.rebuild-linux: 1",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 101-500",
                 "10.rebuild-linux: 501+",
@@ -559,6 +577,7 @@ mod tests {
             tagger.tags_to_remove(),
             vec![
                 "10.rebuild-darwin: 0",
+                "10.rebuild-darwin: 1",
                 "10.rebuild-darwin: 1-10",
                 "10.rebuild-darwin: 11-100",
                 "10.rebuild-darwin: 501+",
@@ -567,6 +586,7 @@ mod tests {
                 "10.rebuild-darwin: 2501-5000",
                 "10.rebuild-darwin: 5001+",
                 "10.rebuild-linux: 0",
+                "10.rebuild-linux: 1",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 11-100",
                 "10.rebuild-linux: 501+",
@@ -587,6 +607,7 @@ mod tests {
             tagger.tags_to_remove(),
             vec![
                 "10.rebuild-darwin: 0",
+                "10.rebuild-darwin: 1",
                 "10.rebuild-darwin: 1-10",
                 "10.rebuild-darwin: 11-100",
                 "10.rebuild-darwin: 501+",
@@ -595,6 +616,7 @@ mod tests {
                 "10.rebuild-darwin: 2501-5000",
                 "10.rebuild-darwin: 5001+",
                 "10.rebuild-linux: 0",
+                "10.rebuild-linux: 1",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 11-100",
                 "10.rebuild-linux: 501+",
@@ -620,6 +642,7 @@ mod tests {
             tagger.tags_to_remove(),
             vec![
                 "10.rebuild-darwin: 0",
+                "10.rebuild-darwin: 1",
                 "10.rebuild-darwin: 1-10",
                 "10.rebuild-darwin: 11-100",
                 "10.rebuild-darwin: 101-500",
@@ -627,6 +650,7 @@ mod tests {
                 "10.rebuild-darwin: 2501-5000",
                 "10.rebuild-darwin: 5001+",
                 "10.rebuild-linux: 0",
+                "10.rebuild-linux: 1",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 11-100",
                 "10.rebuild-linux: 101-500",
@@ -651,6 +675,7 @@ mod tests {
             tagger.tags_to_remove(),
             vec![
                 "10.rebuild-darwin: 0",
+                "10.rebuild-darwin: 1",
                 "10.rebuild-darwin: 1-10",
                 "10.rebuild-darwin: 11-100",
                 "10.rebuild-darwin: 101-500",
@@ -658,6 +683,7 @@ mod tests {
                 "10.rebuild-darwin: 2501-5000",
                 "10.rebuild-darwin: 5001+",
                 "10.rebuild-linux: 0",
+                "10.rebuild-linux: 1",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 11-100",
                 "10.rebuild-linux: 101-500",
@@ -682,6 +708,7 @@ mod tests {
             tagger.tags_to_remove(),
             vec![
                 "10.rebuild-darwin: 0",
+                "10.rebuild-darwin: 1",
                 "10.rebuild-darwin: 1-10",
                 "10.rebuild-darwin: 11-100",
                 "10.rebuild-darwin: 101-500",
@@ -689,6 +716,7 @@ mod tests {
                 "10.rebuild-darwin: 2501-5000",
                 "10.rebuild-darwin: 5001+",
                 "10.rebuild-linux: 0",
+                "10.rebuild-linux: 1",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 11-100",
                 "10.rebuild-linux: 101-500",
@@ -713,6 +741,7 @@ mod tests {
             tagger.tags_to_remove(),
             vec![
                 "10.rebuild-darwin: 0",
+                "10.rebuild-darwin: 1",
                 "10.rebuild-darwin: 1-10",
                 "10.rebuild-darwin: 11-100",
                 "10.rebuild-darwin: 101-500",
@@ -720,6 +749,7 @@ mod tests {
                 "10.rebuild-darwin: 2501-5000",
                 "10.rebuild-darwin: 5001+",
                 "10.rebuild-linux: 0",
+                "10.rebuild-linux: 1",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 11-100",
                 "10.rebuild-linux: 101-500",
@@ -744,6 +774,7 @@ mod tests {
             tagger.tags_to_remove(),
             vec![
                 "10.rebuild-darwin: 0",
+                "10.rebuild-darwin: 1",
                 "10.rebuild-darwin: 1-10",
                 "10.rebuild-darwin: 11-100",
                 "10.rebuild-darwin: 101-500",
@@ -751,6 +782,7 @@ mod tests {
                 "10.rebuild-darwin: 1001-2500",
                 "10.rebuild-darwin: 5001+",
                 "10.rebuild-linux: 0",
+                "10.rebuild-linux: 1",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 11-100",
                 "10.rebuild-linux: 101-500",
@@ -775,6 +807,7 @@ mod tests {
             tagger.tags_to_remove(),
             vec![
                 "10.rebuild-darwin: 0",
+                "10.rebuild-darwin: 1",
                 "10.rebuild-darwin: 1-10",
                 "10.rebuild-darwin: 11-100",
                 "10.rebuild-darwin: 101-500",
@@ -782,6 +815,7 @@ mod tests {
                 "10.rebuild-darwin: 1001-2500",
                 "10.rebuild-darwin: 5001+",
                 "10.rebuild-linux: 0",
+                "10.rebuild-linux: 1",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 11-100",
                 "10.rebuild-linux: 101-500",
@@ -806,6 +840,7 @@ mod tests {
             tagger.tags_to_remove(),
             vec![
                 "10.rebuild-darwin: 0",
+                "10.rebuild-darwin: 1",
                 "10.rebuild-darwin: 1-10",
                 "10.rebuild-darwin: 11-100",
                 "10.rebuild-darwin: 101-500",
@@ -813,6 +848,7 @@ mod tests {
                 "10.rebuild-darwin: 1001-2500",
                 "10.rebuild-darwin: 2501-5000",
                 "10.rebuild-linux: 0",
+                "10.rebuild-linux: 1",
                 "10.rebuild-linux: 1-10",
                 "10.rebuild-linux: 11-100",
                 "10.rebuild-linux: 101-500",
