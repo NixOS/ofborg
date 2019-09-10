@@ -151,7 +151,11 @@
             "nixos"
         ],
         "6.topic: pantheon": [
-            "pkgs/desktops/pantheon"
+            "pkgs/desktops/pantheon",
+            "nixos/tests/pantheon.nix",
+            "nixos/modules/services/x11/desktop-managers/pantheon.nix",
+            "nixos/modules/services/x11/display-managers/lightdm-greeters/pantheon.nix",
+            "nixos/modules/services/desktops/pantheon"
         ],
         "6.topic: policy discussion": [
             ".github"
