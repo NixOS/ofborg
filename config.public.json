@@ -161,7 +161,8 @@
             ".github"
         ],
         "6.topic: printing": [
-            "pkgs/misc/cups"
+            "pkgs/misc/cups",
+            "nixos/modules/services/printing/cupsd.nix"
         ],
         "6.topic: python": [
             "pkgs/top-level/python-packages.nix",
