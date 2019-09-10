@@ -119,7 +119,12 @@
             "pkgs/build-support/fetch"
         ],
         "6.topic: gnome3": [
-            "pkgs/desktops/gnome-3"
+            "pkgs/desktops/gnome-3",
+            "nixos/modules/services/x11/desktop-managers/gnome3.nix",
+            "nixos/tests/gnome3.nix",
+            "nixos/tests/gnome3-xorg.nix",
+            "nixos/modules/services/desktops/gnome3",
+            "doc/languages-frameworks/gnome.xml"
         ],
         "6.topic: golang": [
             "pkgs/development/compilers/go",
