@@ -175,7 +175,9 @@
             "pkgs/desktops/plasma-5",
             "pkgs/development/libraries/kde-frameworks",
             "pkgs/development/libraries/qt-5",
-            "doc/languages-frameworks/qt.xml"
+            "doc/languages-frameworks/qt.xml",
+            "nixos/modules/services/x11/desktop-managers/plasma5.nix",
+            "nixos/tests/plasma5.nix"
         ],
         "6.topic: ruby": [
             "pkgs/development/interpreters/ruby",
