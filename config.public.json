@@ -119,7 +119,12 @@
             "pkgs/build-support/fetch"
         ],
         "6.topic: gnome3": [
-            "pkgs/desktops/gnome-3"
+            "pkgs/desktops/gnome-3",
+            "nixos/modules/services/x11/desktop-managers/gnome3.nix",
+            "nixos/tests/gnome3.nix",
+            "nixos/tests/gnome3-xorg.nix",
+            "nixos/modules/services/desktops/gnome3",
+            "doc/languages-frameworks/gnome.xml"
         ],
         "6.topic: golang": [
             "pkgs/development/compilers/go",
@@ -146,13 +151,18 @@
             "nixos"
         ],
         "6.topic: pantheon": [
-            "pkgs/desktops/pantheon"
+            "pkgs/desktops/pantheon",
+            "nixos/tests/pantheon.nix",
+            "nixos/modules/services/x11/desktop-managers/pantheon.nix",
+            "nixos/modules/services/x11/display-managers/lightdm-greeters/pantheon.nix",
+            "nixos/modules/services/desktops/pantheon"
         ],
         "6.topic: policy discussion": [
             ".github"
         ],
         "6.topic: printing": [
-            "pkgs/misc/cups"
+            "pkgs/misc/cups",
+            "nixos/modules/services/printing/cupsd.nix"
         ],
         "6.topic: python": [
             "pkgs/top-level/python-packages.nix",
@@ -165,7 +175,9 @@
             "pkgs/desktops/plasma-5",
             "pkgs/development/libraries/kde-frameworks",
             "pkgs/development/libraries/qt-5",
-            "doc/languages-frameworks/qt.xml"
+            "doc/languages-frameworks/qt.xml",
+            "nixos/modules/services/x11/desktop-managers/plasma5.nix",
+            "nixos/tests/plasma5.nix"
         ],
         "6.topic: ruby": [
             "pkgs/development/interpreters/ruby",
@@ -193,7 +205,13 @@
             "doc/languages-frameworks/vim.md"
         ],
         "6.topic: xfce": [
-            "pkgs/desktops/xfce"
+            "pkgs/desktops/xfce",
+            "pkgs/destkops/xfce4-14",
+            "nixos/doc/manual/configuration/xfce.xml",
+            "nixos/modules/services/x11/desktop-managers/xfce4-14.nix",
+            "nixos/modules/services/x11/desktop-managers/xfce.nix",
+            "nixos/tests/xfce.nix",
+            "nixos/tests/xfce4-14.nix"
         ],
         "8.has: changelog": [
             "doc/manual/release-notes/"
