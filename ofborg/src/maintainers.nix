@@ -77,7 +77,7 @@ let
     (builtins.map
       (pkg:
         builtins.map (maintainer: {
-          handle = maintainer.github;
+          handle = pkgs.lib.toLower maintainer.github;
           packageName = pkg.name;
           dueToFiles = pkg.filenames;
         })
