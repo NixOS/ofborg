@@ -11,7 +11,7 @@ pub struct NotifyWorker<T: SimpleNotifyWorker> {
 pub trait SimpleNotifyWorker {
     type J;
 
-    fn consumer(&self, job: &Self::J, notifier: &mut NotificationReceiver);
+    fn consumer(&self, job: &Self::J, notifier: &mut dyn NotificationReceiver);
 
     fn msg_to_job(
         &self,

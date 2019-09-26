@@ -110,7 +110,7 @@ type Package = String;
 type Architecture = String;
 type OutPath = String;
 
-pub fn parse_lines(data: &mut BufRead) -> PackageOutPaths {
+pub fn parse_lines(data: &mut dyn BufRead) -> PackageOutPaths {
     data.lines()
         .filter_map(|line| match line {
             Ok(line) => Some(line),
