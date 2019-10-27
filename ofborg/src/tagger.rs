@@ -419,7 +419,11 @@ mod tests {
 
         assert_eq!(
             tagger.tags_to_add(),
-            vec!["10.rebuild-darwin: 0", "10.rebuild-linux: 1", "10.rebuild-linux: 1-10",]
+            vec![
+                "10.rebuild-darwin: 0",
+                "10.rebuild-linux: 1",
+                "10.rebuild-linux: 1-10",
+            ]
         );
         assert_eq!(
             tagger.tags_to_remove(),
