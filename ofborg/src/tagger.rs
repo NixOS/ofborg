@@ -340,15 +340,6 @@ mod tests {
             PackageArchSrc { linux, darwin: 0 }
         }
 
-        pub fn darwin(darwin: usize) -> PackageArchSrc {
-            PackageArchSrc::linux(0).and_darwin(darwin)
-        }
-
-        pub fn and_linux(mut self, linux: usize) -> PackageArchSrc {
-            self.linux = linux;
-            self
-        }
-
         pub fn and_darwin(mut self, darwin: usize) -> PackageArchSrc {
             self.darwin = darwin;
             self
