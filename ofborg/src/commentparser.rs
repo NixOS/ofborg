@@ -244,5 +244,4 @@ baz",
             parse("@ofborg build foo bar baz.Baz")
         );
     }
-
 }

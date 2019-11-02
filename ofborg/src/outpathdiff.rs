@@ -110,7 +110,7 @@ type Package = String;
 type Architecture = String;
 type OutPath = String;
 
-pub fn parse_lines(data: &mut BufRead) -> PackageOutPaths {
+pub fn parse_lines(data: &mut dyn BufRead) -> PackageOutPaths {
     data.lines()
         .filter_map(|line| match line {
             Ok(line) => Some(line),
@@ -191,5 +191,4 @@ gnome3.evolution_data_server.aarch64-linux                                 /nix/
         );
         assert_eq!(parse_lines(&mut Cursor::new(TEST_LINES)), expect);
     }
-
 }

@@ -41,7 +41,7 @@ impl BuildWorker {
     fn actions<'a, 'b>(
         &self,
         job: &'b buildjob::BuildJob,
-        receiver: &'a mut notifyworker::NotificationReceiver,
+        receiver: &'a mut dyn notifyworker::NotificationReceiver,
     ) -> JobActions<'a, 'b> {
         JobActions::new(&self.system, &self.identity, job, receiver)
     }
@@ -50,7 +50,7 @@ impl BuildWorker {
 pub struct JobActions<'a, 'b> {
     system: String,
     identity: String,
-    receiver: &'a mut notifyworker::NotificationReceiver,
+    receiver: &'a mut dyn notifyworker::NotificationReceiver,
     job: &'b buildjob::BuildJob,
     line_counter: u64,
     snippet_log: VecDeque<String>,
@@ -66,7 +66,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
         system: &str,
         identity: &str,
         job: &'b buildjob::BuildJob,
-        receiver: &'a mut notifyworker::NotificationReceiver,
+        receiver: &'a mut dyn notifyworker::NotificationReceiver,
     ) -> JobActions<'a, 'b> {
         let (log_exchange, log_routing_key) = job
             .logs
@@ -279,7 +279,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
     fn consumer(
         &self,
         job: &buildjob::BuildJob,
-        notifier: &mut notifyworker::NotificationReceiver,
+        notifier: &mut dyn notifyworker::NotificationReceiver,
     ) {
         let mut actions = self.actions(&job, notifier);
 
