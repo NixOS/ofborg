@@ -191,5 +191,4 @@ gnome3.evolution_data_server.aarch64-linux                                 /nix/
         );
         assert_eq!(parse_lines(&mut Cursor::new(TEST_LINES)), expect);
     }
-
 }

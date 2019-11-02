@@ -5,15 +5,17 @@ pub enum System {
     X8664Darwin,
 }
 
-impl System {
-    pub fn to_string(&self) -> String {
+impl std::fmt::Display for System {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            System::X8664Linux => String::from("x86_64-linux"),
-            System::Aarch64Linux => String::from("aarch64-linux"),
-            System::X8664Darwin => String::from("x86_64-darwin"),
+            System::X8664Linux => write!(f, "x86_64-linux"),
+            System::Aarch64Linux => write!(f, "aarch64-linux"),
+            System::X8664Darwin => write!(f, "x86_64-darwin"),
         }
     }
+}
 
+impl System {
     pub fn as_build_destination(&self) -> (Option<String>, Option<String>) {
         (None, Some(format!("build-inputs-{}", self.to_string())))
     }
