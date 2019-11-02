@@ -156,7 +156,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             }
         };
 
-        let mut evaluation_strategy: Box<eval::EvaluationStrategy> = if job.is_nixpkgs() {
+        let mut evaluation_strategy: Box<dyn eval::EvaluationStrategy> = if job.is_nixpkgs() {
             Box::new(eval::NixpkgsStrategy::new(
                 &job,
                 &pull,
