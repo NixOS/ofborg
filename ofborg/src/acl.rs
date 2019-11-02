@@ -36,8 +36,6 @@ impl ACL {
                 System::X8664Linux,
                 System::Aarch64Linux,
             ]
-        } else if self.can_build_restricted(user, repo) {
-            vec![System::X8664Linux, System::Aarch64Linux]
         } else {
             // allow everybody to issue aarch64-linux and x8664-linux builds
             vec![System::X8664Linux, System::Aarch64Linux]
