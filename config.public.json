@@ -13,6 +13,7 @@
             "grahamc/nixpkgs"
         ],
         "trusted_users": [
+            "1000101",
             "7c6f434c",
             "aanderse",
             "abbradar",
