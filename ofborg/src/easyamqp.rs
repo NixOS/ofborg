@@ -308,7 +308,7 @@ pub fn session_from_config(config: &RabbitMQConfig) -> Result<amqp::Session, amq
         ..amqp::Options::default()
     };
 
-    let session = r#try!(amqp::Session::new(options));
+    let session = amqp::Session::new(options)?;
 
     info!("Connected to {}", &config.host);
     Ok(session)
