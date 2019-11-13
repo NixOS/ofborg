@@ -84,7 +84,7 @@ impl LineWriter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ofborg::test_scratch::TestScratch;
+    use crate::test_scratch::TestScratch;
     use std::fs::File;
     use std::fs::OpenOptions;
     use std::io::Read;

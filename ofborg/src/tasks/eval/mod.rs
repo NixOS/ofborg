@@ -4,11 +4,11 @@ mod nixpkgs;
 pub use self::nixpkgs::NixpkgsStrategy;
 mod generic;
 pub use self::generic::GenericStrategy;
+use crate::checkout::CachedProjectCo;
+use crate::commitstatus::CommitStatus;
+use crate::evalchecker::EvalChecker;
+use crate::message::buildjob::BuildJob;
 use hubcaps::checks::CheckRunOptions;
-use ofborg::checkout::CachedProjectCo;
-use ofborg::commitstatus::CommitStatus;
-use ofborg::evalchecker::EvalChecker;
-use ofborg::message::buildjob::BuildJob;
 use std::path::Path;
 
 pub trait EvaluationStrategy {

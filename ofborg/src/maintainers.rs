@@ -1,4 +1,4 @@
-use ofborg::nix::Nix;
+use crate::nix::Nix;
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
 use std::path::Path;
@@ -125,9 +125,9 @@ impl std::fmt::Display for ImpactedMaintainers {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use checkout::cached_cloner;
-    use clone::GitClonable;
-    use ofborg::test_scratch::TestScratch;
+    use crate::checkout::cached_cloner;
+    use crate::clone::GitClonable;
+    use crate::test_scratch::TestScratch;
     use std::env;
     use std::ffi::OsStr;
     use std::path::{Path, PathBuf};

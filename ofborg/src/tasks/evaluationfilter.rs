@@ -1,13 +1,12 @@
 extern crate amqp;
 extern crate env_logger;
 
-use ofborg::acl;
-use ofborg::ghevent;
-use serde_json;
-
+use crate::acl;
+use crate::ghevent;
+use crate::message::{evaluationjob, Pr, Repo};
+use crate::worker;
 use amqp::protocol::basic::{BasicProperties, Deliver};
-use ofborg::message::{evaluationjob, Pr, Repo};
-use ofborg::worker;
+use serde_json;
 
 pub struct EvaluationFilterWorker {
     acl: acl::ACL,
@@ -107,7 +106,7 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use worker::SimpleWorker;
+    use crate::worker::SimpleWorker;
 
     #[test]
     fn changed_base() {

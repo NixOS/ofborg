@@ -1,7 +1,7 @@
+use crate::config::RabbitMQConfig;
+use crate::ofborg;
 use amqp;
 use amqp::Basic;
-use ofborg;
-use ofborg::config::RabbitMQConfig;
 
 pub struct ConsumeConfig {
     /// Specifies the name of the queue to consume from.
@@ -308,7 +308,7 @@ pub fn session_from_config(config: &RabbitMQConfig) -> Result<amqp::Session, amq
         ..amqp::Options::default()
     };
 
-    let session = try!(amqp::Session::new(options));
+    let session = r#try!(amqp::Session::new(options));
 
     info!("Connected to {}", &config.host);
     Ok(session)

@@ -1,17 +1,17 @@
 extern crate amqp;
 extern crate env_logger;
+
+use crate::message::buildlogmsg::{BuildLogMsg, BuildLogStart};
+use crate::message::buildresult::BuildResult;
+use crate::worker;
+use crate::writetoline::LineWriter;
+use amqp::protocol::basic::{BasicProperties, Deliver};
 use lru_cache::LruCache;
 use serde_json;
 use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::{Component, PathBuf};
-
-use amqp::protocol::basic::{BasicProperties, Deliver};
-use ofborg::message::buildlogmsg::{BuildLogMsg, BuildLogStart};
-use ofborg::message::buildresult::BuildResult;
-use ofborg::worker;
-use ofborg::writetoline::LineWriter;
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone)]
 pub struct LogFrom {
@@ -237,10 +237,10 @@ impl worker::SimpleWorker for LogMessageCollector {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ofborg::message::buildresult::{BuildStatus, V1Tag};
-    use ofborg::message::{Pr, Repo};
-    use ofborg::test_scratch::TestScratch;
-    use ofborg::worker::SimpleWorker;
+    use crate::message::buildresult::{BuildStatus, V1Tag};
+    use crate::message::{Pr, Repo};
+    use crate::test_scratch::TestScratch;
+    use crate::worker::SimpleWorker;
     use std::io::Read;
     use std::path::PathBuf;
 
