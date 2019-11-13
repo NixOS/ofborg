@@ -1,5 +1,5 @@
-use ofborg::asynccmd::{AsyncCmd, SpawnedAsyncCmd};
-use ofborg::partition_result;
+use crate::asynccmd::{AsyncCmd, SpawnedAsyncCmd};
+use crate::ofborg::partition_result;
 use std::collections::HashMap;
 use std::env;
 use std::ffi::OsStr;

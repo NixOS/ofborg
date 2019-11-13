@@ -1,4 +1,4 @@
-use ofborg::ghevent::{Comment, Issue, Repository};
+use crate::ghevent::{Comment, Issue, Repository};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct IssueComment {

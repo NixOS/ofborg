@@ -1,5 +1,5 @@
+use crate::message::{Pr, Repo};
 use hubcaps::checks::Conclusion;
-use ofborg::message::{Pr, Repo};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum BuildStatus {

@@ -1,6 +1,6 @@
 use crate::maintainers::{Maintainer, MaintainersByPackage};
-use ofborg::outpathdiff::PackageArch;
-use ofborg::tasks;
+use crate::outpathdiff::PackageArch;
+use crate::tasks;
 use std::collections::HashMap;
 
 pub struct StdenvTagger {

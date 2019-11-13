@@ -1,9 +1,9 @@
 extern crate amqp;
 extern crate env_logger;
 
+use crate::stats;
+use crate::worker;
 use amqp::protocol::basic::{BasicProperties, Deliver};
-use ofborg::stats;
-use ofborg::worker;
 use serde_json;
 
 pub struct StatCollectorWorker<E> {

@@ -1,6 +1,6 @@
+use crate::clone;
+use crate::clone::GitClonable;
 use md5;
-use ofborg::clone;
-use ofborg::clone::GitClonable;
 use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::fs;
@@ -253,7 +253,7 @@ impl clone::GitClonable for CachedProject {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ofborg::test_scratch::TestScratch;
+    use crate::test_scratch::TestScratch;
     use std::path::{Path, PathBuf};
     use std::process::{Command, Stdio};
 

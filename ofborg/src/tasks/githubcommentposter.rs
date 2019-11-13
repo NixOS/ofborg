@@ -1,16 +1,15 @@
 extern crate amqp;
 extern crate env_logger;
 
-use serde_json;
-
+use crate::config::GithubAppVendingMachine;
+use crate::message::buildjob::{BuildJob, QueuedBuildJobs};
+use crate::message::buildresult::{BuildResult, BuildStatus, LegacyBuildResult};
+use crate::message::Repo;
+use crate::worker;
 use amqp::protocol::basic::{BasicProperties, Deliver};
 use chrono::{DateTime, Utc};
 use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
-use message::buildjob::{BuildJob, QueuedBuildJobs};
-use ofborg::config::GithubAppVendingMachine;
-use ofborg::message::buildresult::{BuildResult, BuildStatus, LegacyBuildResult};
-use ofborg::message::Repo;
-use ofborg::worker;
+use serde_json;
 
 pub struct GitHubCommentPoster {
     github_vend: GithubAppVendingMachine,
@@ -210,8 +209,8 @@ fn list_segment(name: &str, things: &[String]) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::message::{Pr, Repo};
     use chrono::TimeZone;
-    use message::{Pr, Repo};
 
     #[test]
     pub fn test_queued_build() {

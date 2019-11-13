@@ -2,16 +2,15 @@ extern crate amqp;
 extern crate env_logger;
 extern crate uuid;
 
-use ofborg::acl;
-use ofborg::ghevent;
-use serde_json;
-use uuid::Uuid;
-
+use crate::acl;
+use crate::commentparser;
+use crate::ghevent;
+use crate::message::{buildjob, evaluationjob, Pr, Repo};
+use crate::worker;
 use amqp::protocol::basic::{BasicProperties, Deliver};
 use hubcaps;
-use ofborg::commentparser;
-use ofborg::message::{buildjob, evaluationjob, Pr, Repo};
-use ofborg::worker;
+use serde_json;
+use uuid::Uuid;
 
 pub struct GitHubCommentWorker {
     acl: acl::ACL,

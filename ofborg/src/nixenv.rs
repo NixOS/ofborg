@@ -1,8 +1,8 @@
+use crate::nix;
 /// Evaluates the expression like Hydra would, with regards to
 /// architecture support and recursed packages.
 use crate::nixstats::EvaluationStats;
 use crate::outpathdiff;
-use ofborg::nix;
 use serde_json;
 use std::fs;
 use std::fs::File;

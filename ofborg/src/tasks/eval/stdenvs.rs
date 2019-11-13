@@ -1,5 +1,5 @@
-use ofborg::files::file_to_str;
-use ofborg::nix;
+use crate::files::file_to_str;
+use crate::nix;
 use std::path::PathBuf;
 
 enum StdenvFrom {

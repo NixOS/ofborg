@@ -2,19 +2,16 @@ extern crate amqp;
 extern crate env_logger;
 extern crate uuid;
 
-use uuid::Uuid;
-
-use ofborg::checkout;
-use ofborg::commentparser;
-use ofborg::message::buildjob;
-use ofborg::message::buildlogmsg;
-use ofborg::message::buildresult::{BuildResult, BuildStatus, V1Tag};
-use ofborg::nix;
-use std::collections::VecDeque;
-
+use crate::checkout;
+use crate::commentparser;
+use crate::message::buildresult::{BuildResult, BuildStatus, V1Tag};
+use crate::message::{buildjob, buildlogmsg};
+use crate::nix;
+use crate::notifyworker;
+use crate::worker;
 use amqp::protocol::basic::{BasicProperties, Deliver};
-use ofborg::notifyworker;
-use ofborg::worker;
+use std::collections::VecDeque;
+use uuid::Uuid;
 
 pub struct BuildWorker {
     cloner: checkout::CachedCloner,
@@ -394,9 +391,9 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use notifyworker::SimpleNotifyWorker;
-    use ofborg::message::{Pr, Repo};
-    use ofborg::test_scratch::TestScratch;
+    use crate::message::{Pr, Repo};
+    use crate::notifyworker::SimpleNotifyWorker;
+    use crate::test_scratch::TestScratch;
     use std::env;
     use std::path::{Path, PathBuf};
     use std::process::{Command, Stdio};

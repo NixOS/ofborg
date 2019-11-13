@@ -1,5 +1,5 @@
-use ofborg::commentparser::Subset;
-use ofborg::message::{Pr, Repo};
+use crate::commentparser::Subset;
+use crate::message::{Pr, Repo};
 use serde_json;
 
 #[derive(Serialize, Deserialize, Debug)]
