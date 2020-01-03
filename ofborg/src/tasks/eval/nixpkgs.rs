@@ -150,7 +150,7 @@ impl<'a> NixpkgsStrategy<'a> {
         if let Some(ref mut rebuildsniff) = self.outpath_diff {
             if let Err(err) = rebuildsniff.find_after() {
                 Err(Error::FailWithGist(
-                    String::from("This PR does not cleanly list of package outputs after merging."),
+                    String::from("This PR does not cleanly list package outputs after merging."),
                     String::from("Output path comparison"),
                     err.display(),
                 ))
