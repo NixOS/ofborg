@@ -17,12 +17,12 @@ as well as other changes.
 
 Example messages and the builds:
 
-|Message|Automatic Build|
-|-|-|
-|`vim: 1.0.0 -> 2.0.0`|`vim`|
-|`vagrant: Fix dependencies for version 2.0.2 `|`vagrant`|
-|`python36Packages.requests,python27Packages.requests: 1.0.0 -> 2.0.0`|`python36Packages.requests`, `python27Packages.requests`|
-|`python{2,3}Packages.requests: 1.0.0 -> 2.0.0`|_nothing_|
+| Message                                                               | Automatic Build                                          |
+|-----------------------------------------------------------------------|----------------------------------------------------------|
+| `vim: 1.0.0 -> 2.0.0`                                                 | `vim`                                                    |
+| `vagrant: Fix dependencies for version 2.0.2 `                        | `vagrant`                                                |
+| `python36Packages.requests,python27Packages.requests: 1.0.0 -> 2.0.0` | `python36Packages.requests`, `python27Packages.requests` |
+| `python{2,3}Packages.requests: 1.0.0 -> 2.0.0`                        | _nothing_                                                |
 
 If a PR is opened with many commits, it will create a single build job
 for all of the detected packages. If a PR is opened and many commits
@@ -221,9 +221,9 @@ config.known-users.json, run `./scripts/update-known-users.sh`.
 In case you have a non-trivial setup on Linux, make sure that the ofborg
 user has access to `dev/kvm`, as it is needed for running tests.
 
-If you want to run multiple builder instances on the same physical 
+If you want to run multiple builder instances on the same physical
 machine please make sure they use different configs with different
-instance identity (same username/password is OK) and different 
+instance identity (same username/password is OK) and different
 repository paths. Running two builders with the same config risks data
 corruption.
 
