@@ -1,4 +1,4 @@
-{ pkgs ? import ./nix {} }:
+{ pkgs ? import ./nix { overlays = [ (import ./nix/overlay.nix) ]; } }:
 
 let
   ofborgOverrides = {

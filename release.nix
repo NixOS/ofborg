@@ -15,7 +15,12 @@ let
     (collector: system:
       collector // {
         "${system}" = import ./. {
-          pkgs = import nixpkgs { inherit system; };
+          pkgs = import nixpkgs {
+            inherit system;
+            overlays = [
+              (import ./nix/overlay.nix)
+            ];
+          };
         };
       }
     )
