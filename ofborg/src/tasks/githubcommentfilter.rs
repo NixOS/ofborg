@@ -101,7 +101,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         let pr_msg = Pr {
             number: job.issue.number,
             head_sha: pr.head.sha.clone(),
-            target_branch: Some(pr.base.commit_ref.clone()),
+            target_branch: Some(pr.base.commit_ref),
         };
 
         let mut response: Vec<worker::Action> = vec![];

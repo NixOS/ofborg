@@ -196,7 +196,7 @@ impl worker::SimpleWorker for LogMessageCollector {
             } else {
                 let decode_msg: Result<BuildResult, _> = serde_json::from_slice(body);
                 if let Ok(msg) = decode_msg {
-                    attempt_id = msg.legacy().attempt_id.clone();
+                    attempt_id = msg.legacy().attempt_id;
                     message = MsgType::Finish(Box::new(msg));
                 } else {
                     return Err(format!("failed to decode job: {:?}", decode_msg));

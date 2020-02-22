@@ -11,46 +11,46 @@ enum MetricType {
 impl MetricType {
     fn collector_type(&self) -> String {
         match self {
-            &MetricType::Ticker(_) => String::from("u64"),
-            &MetricType::Counter(_) => String::from("u64"),
+            MetricType::Ticker(_) => String::from("u64"),
+            MetricType::Counter(_) => String::from("u64"),
         }
     }
 
     fn enum_matcher_types(&self) -> String {
         let fields = self.enum_field_types();
 
-        if fields.len() > 0 {
+        if !fields.is_empty() {
             format!("{}({})", self.variant(), fields.join(", "))
         } else {
-            format!("{}", self.variant())
+            self.variant()
         }
     }
 
     fn variant(&self) -> String {
         match self {
-            &MetricType::Ticker(ref event) => event.variant.clone(),
-            &MetricType::Counter(ref event) => event.variant.clone(),
+            MetricType::Ticker(ref event) => event.variant.clone(),
+            MetricType::Counter(ref event) => event.variant.clone(),
         }
     }
 
     fn metric_type(&self) -> String {
         match self {
-            &MetricType::Ticker(_) => String::from("counter"),
-            &MetricType::Counter(_) => String::from("counter"),
+            MetricType::Ticker(_) => String::from("counter"),
+            MetricType::Counter(_) => String::from("counter"),
         }
     }
 
     fn metric_name(&self) -> String {
         match self {
-            &MetricType::Ticker(ref event) => event.metric_name.clone(),
-            &MetricType::Counter(ref event) => event.metric_name.clone(),
+            MetricType::Ticker(ref event) => event.metric_name.clone(),
+            MetricType::Counter(ref event) => event.metric_name.clone(),
         }
     }
 
     fn description(&self) -> String {
         match self {
-            &MetricType::Ticker(ref event) => event.description.clone(),
-            &MetricType::Counter(ref event) => event.description.clone(),
+            MetricType::Ticker(ref event) => event.description.clone(),
+            MetricType::Counter(ref event) => event.description.clone(),
         }
     }
 
@@ -58,10 +58,10 @@ impl MetricType {
         let event: &Metric;
 
         match self {
-            &MetricType::Ticker(ref i_event) => {
+            MetricType::Ticker(ref i_event) => {
                 event = i_event;
             }
-            &MetricType::Counter(ref i_event) => {
+            MetricType::Counter(ref i_event) => {
                 event = i_event;
             }
         }
@@ -72,15 +72,15 @@ impl MetricType {
             .map(|&(ref _fieldname, ref fieldtype)| fieldtype.clone())
             .collect();
 
-        return fields;
+        fields
     }
 
     fn enum_field_types(&self) -> Vec<String> {
         let mut extra_fields: Vec<String> = vec![];
 
         match self {
-            &MetricType::Ticker(_) => {}
-            &MetricType::Counter(_) => {
+            MetricType::Ticker(_) => {}
+            MetricType::Counter(_) => {
                 extra_fields = vec![self.collector_type()];
             }
         }
@@ -88,17 +88,17 @@ impl MetricType {
         let mut fields: Vec<String> = self.enum_index_types();
         fields.append(&mut extra_fields);
 
-        return fields;
+        fields
     }
 
     fn enum_index_names(&self) -> Vec<String> {
         let event: &Metric;
 
         match self {
-            &MetricType::Ticker(ref i_event) => {
+            MetricType::Ticker(ref i_event) => {
                 event = i_event;
             }
-            &MetricType::Counter(ref i_event) => {
+            MetricType::Counter(ref i_event) => {
                 event = i_event;
             }
         }
@@ -109,15 +109,15 @@ impl MetricType {
             .map(|&(ref fieldname, ref _fieldtype)| fieldname.clone())
             .collect();
 
-        return fields;
+        fields
     }
 
     fn enum_field_names(&self) -> Vec<String> {
         let mut extra_fields: Vec<String> = vec![];
 
         match self {
-            &MetricType::Ticker(_) => {}
-            &MetricType::Counter(_) => {
+            MetricType::Ticker(_) => {}
+            MetricType::Counter(_) => {
                 extra_fields = vec!["value".to_owned()];
             }
         }
@@ -125,13 +125,13 @@ impl MetricType {
         let mut fields: Vec<String> = self.enum_index_names();
         fields.append(&mut extra_fields);
 
-        return fields;
+        fields
     }
 
     fn record_value(&self) -> String {
         match self {
-            &MetricType::Ticker(_) => String::from("1"),
-            &MetricType::Counter(_) => String::from("value"),
+            MetricType::Ticker(_) => String::from("1"),
+            MetricType::Counter(_) => String::from("value"),
         }
     }
 }
@@ -147,18 +147,18 @@ fn name_to_parts(name: &str) -> Vec<String> {
     let mut parts: Vec<String> = vec![];
     let mut buf = String::from("");
     for c in name.chars() {
-        if char::is_uppercase(c) && buf.len() > 0 {
+        if char::is_uppercase(c) && !buf.is_empty() {
             parts.push(buf.to_owned());
             buf = String::from("");
         }
         buf.push_str(&c.to_string());
     }
-    if buf.len() > 0 {
+    if !buf.is_empty() {
         parts.push(buf.to_owned());
         std::mem::drop(buf);
     }
 
-    return parts;
+    parts
 }
 
 impl Metric {
@@ -166,13 +166,11 @@ impl Metric {
         let parts = name_to_parts(name);
 
         MetricType::Ticker(Metric {
-            variant: parts.iter().map(|f| f.clone().to_owned()).collect(),
+            variant: parts.iter().cloned().collect(),
             fields: fields
-                .unwrap_or(vec![])
+                .unwrap_or_else(|| vec![])
                 .iter()
-                .map(|&(ref fieldname, ref fieldtype)| {
-                    (fieldname.clone().to_owned(), fieldtype.clone().to_owned())
-                })
+                .map(|(fieldname, fieldtype)| ((*fieldname).to_string(), (*fieldtype).to_string()))
                 .collect(),
             metric_name: parts.join("_").to_lowercase(),
             description: desc.to_owned(),
@@ -183,13 +181,11 @@ impl Metric {
         let parts = name_to_parts(name);
 
         MetricType::Counter(Metric {
-            variant: parts.iter().map(|f| f.clone().to_owned()).collect(),
+            variant: parts.iter().cloned().collect(),
             fields: fields
-                .unwrap_or(vec![])
+                .unwrap_or_else(|| vec![])
                 .iter()
-                .map(|&(ref fieldname, ref fieldtype)| {
-                    (fieldname.clone().to_owned(), fieldtype.clone().to_owned())
-                })
+                .map(|(fieldname, fieldtype)| ((*fieldname).to_string(), (*fieldtype).to_string()))
                 .collect(),
             metric_name: parts.join("_").to_lowercase(),
             description: desc.to_owned(),
@@ -391,7 +387,7 @@ pub enum Event {
         .collect();
 
     f.write_all(variants.join(",\n").as_bytes()).unwrap();
-    f.write_all("\n}\n\n".as_bytes()).unwrap();
+    f.write_all(b"\n}\n\n").unwrap();
 
     f.write_all(
         b"pub fn event_metric_name(event: &Event) -> String {
@@ -409,12 +405,11 @@ pub enum Event {
                 .map(|_| String::from("_"))
                 .collect();
 
-            let variant_match: String;
-            if fields.len() > 0 {
-                variant_match = format!("{}({})", &mtype.variant(), fields.join(", "));
+            let variant_match = if !fields.is_empty() {
+                format!("{}({})", &mtype.variant(), fields.join(", "))
             } else {
-                variant_match = format!("{}", &mtype.variant());
-            }
+                mtype.variant()
+            };
 
             format!(
                 "    Event::{} => String::from(\"{}\")",
@@ -425,12 +420,12 @@ pub enum Event {
         .collect();
 
     f.write_all(variants.join(",\n").as_bytes()).unwrap();
-    f.write_all("}\n  }".as_bytes()).unwrap();
+    f.write_all(b"}\n  }").unwrap();
 
     // Create a struct to hold all the possible metrics
     f.write_all(
         b"
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Clone)]
 pub struct MetricCollector {
 ",
     )
@@ -441,18 +436,26 @@ pub struct MetricCollector {
         .map(|mtype| {
             let mut fields: Vec<String> = mtype.enum_index_types();
             fields.push("String".to_owned()); // Instance
+            let fields_str = {
+                let s = fields.join(", ");
+                if fields.len() > 1 {
+                    format!("({})", s)
+                } else {
+                    s
+                }
+            };
 
             format!(
-                "  {}: Arc<Mutex<HashMap<({}),{}>>>",
+                "  {}: Arc<Mutex<HashMap<{},{}>>>",
                 mtype.metric_name(),
-                fields.join(", "),
+                fields_str,
                 mtype.collector_type(),
             )
         })
         .collect();
 
     f.write_all(variants.join(",\n").as_bytes()).unwrap();
-    f.write_all("\n}\n\n".as_bytes()).unwrap();
+    f.write_all(b"\n}\n\n").unwrap();
 
     // Create a struct to hold all the possible metrics
     f.write_all(
@@ -474,10 +477,10 @@ impl MetricCollector {
         .map(|mtype| {
             let fields: Vec<String> = mtype.enum_field_names();
 
-            let variant_match = if fields.len() > 0 {
+            let variant_match = if !fields.is_empty() {
                 format!("{}({})", &mtype.variant(), fields.join(", "))
             } else {
-                format!("{}", &mtype.variant())
+                mtype.variant()
             };
 
             let mut index_names: Vec<String> = mtype.enum_index_names();
@@ -510,8 +513,8 @@ impl MetricCollector {
         .collect();
 
     f.write_all(variants.join(",\n").as_bytes()).unwrap();
-    f.write_all("\n    }\n".as_bytes()).unwrap();
-    f.write_all("\n  }\n".as_bytes()).unwrap();
+    f.write_all(b"\n    }\n").unwrap();
+    f.write_all(b"\n  }\n").unwrap();
 
     f.write_all(
         b"pub fn prometheus_output(&self) -> String {
@@ -525,15 +528,13 @@ impl MetricCollector {
         .map(|mtype| {
             let mut index_fields: Vec<String> = mtype.enum_index_names();
             index_fields.push("instance".to_owned());
-            let ref_index_fields: Vec<String> =
-                index_fields.iter().map(|m| format!("{}", m)).collect();
+            let ref_index_fields: Vec<String> = index_fields.clone();
 
-            let for_matcher: String;
-            if index_fields.len() > 1 {
-                for_matcher = format!("({})", ref_index_fields.join(", "));
+            let for_matcher = if index_fields.len() > 1 {
+                format!("({})", ref_index_fields.join(", "))
             } else {
-                for_matcher = ref_index_fields.join(", ");
-            }
+                ref_index_fields.join(", ")
+            };
 
             let key_value_pairs: Vec<String> = index_fields
                 .iter()
@@ -572,6 +573,6 @@ impl MetricCollector {
         .collect();
 
     f.write_all(variants.join("\n").as_bytes()).unwrap();
-    f.write_all("output\n  }".as_bytes()).unwrap();
-    f.write_all("\n}".as_bytes()).unwrap();
+    f.write_all(b"output\n  }").unwrap();
+    f.write_all(b"\n}").unwrap();
 }

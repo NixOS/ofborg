@@ -162,7 +162,12 @@ mod tests {
         let result: BuildResult = serde_json::from_str(input).expect("result required");
         assert_eq!(result.status(), BuildStatus::Success);
         let output = serde_json::to_string(&result).expect("json required");
-        assert_eq!(output, r#"{"tag":"V1","repo":{"owner":"NixOS","name":"nixpkgs","full_name":"NixOS/nixpkgs","clone_url":"https://github.com/nixos/nixpkgs.git"},"pr":{"target_branch":"master","number":42,"head_sha":"0000000000000000000000000000000000000000"},"system":"x86_64-linux","output":["unpacking sources"],"attempt_id":"attempt-id-foo","request_id":"bogus-request-id","status":"Success","skipped_attrs":["AAAAAASomeThingsFailToEvaluate"],"attempted_attrs":["hello"]}"#, "json of: {:?}", result);
+        assert_eq!(
+            output,
+            r#"{"tag":"V1","repo":{"owner":"NixOS","name":"nixpkgs","full_name":"NixOS/nixpkgs","clone_url":"https://github.com/nixos/nixpkgs.git"},"pr":{"target_branch":"master","number":42,"head_sha":"0000000000000000000000000000000000000000"},"system":"x86_64-linux","output":["unpacking sources"],"attempt_id":"attempt-id-foo","request_id":"bogus-request-id","status":"Success","skipped_attrs":["AAAAAASomeThingsFailToEvaluate"],"attempted_attrs":["hello"]}"#,
+            "json of: {:?}",
+            result
+        );
     }
 
     #[test]
@@ -171,7 +176,12 @@ mod tests {
         let result: BuildResult = serde_json::from_str(input).expect("result required");
         assert_eq!(result.status(), BuildStatus::Success);
         let output = serde_json::to_string(&result).expect("json required");
-        assert_eq!(output, r#"{"repo":{"owner":"NixOS","name":"nixpkgs","full_name":"NixOS/nixpkgs","clone_url":"https://github.com/nixos/nixpkgs.git"},"pr":{"target_branch":"master","number":42,"head_sha":"0000000000000000000000000000000000000000"},"system":"x86_64-linux","output":["unpacking sources"],"attempt_id":"attempt-id-foo","request_id":"bogus-request-id","success":true,"status":"Success","skipped_attrs":["AAAAAASomeThingsFailToEvaluate"],"attempted_attrs":["hello"]}"#, "json of: {:?}", result);
+        assert_eq!(
+            output,
+            r#"{"repo":{"owner":"NixOS","name":"nixpkgs","full_name":"NixOS/nixpkgs","clone_url":"https://github.com/nixos/nixpkgs.git"},"pr":{"target_branch":"master","number":42,"head_sha":"0000000000000000000000000000000000000000"},"system":"x86_64-linux","output":["unpacking sources"],"attempt_id":"attempt-id-foo","request_id":"bogus-request-id","success":true,"status":"Success","skipped_attrs":["AAAAAASomeThingsFailToEvaluate"],"attempted_attrs":["hello"]}"#,
+            "json of: {:?}",
+            result
+        );
     }
 
     #[test]
@@ -180,7 +190,12 @@ mod tests {
         let result: BuildResult = serde_json::from_str(input).expect("result required");
         assert_eq!(result.status(), BuildStatus::Skipped);
         let output = serde_json::to_string(&result).expect("json required");
-        assert_eq!(output, r#"{"repo":{"owner":"NixOS","name":"nixpkgs","full_name":"NixOS/nixpkgs","clone_url":"https://github.com/nixos/nixpkgs.git"},"pr":{"target_branch":"master","number":42,"head_sha":"0000000000000000000000000000000000000000"},"system":"x86_64-linux","output":[],"attempt_id":"attempt-id-foo","request_id":"bogus-request-id","success":null,"status":null,"skipped_attrs":null,"attempted_attrs":null}"#, "json of: {:?}", result);
+        assert_eq!(
+            output,
+            r#"{"repo":{"owner":"NixOS","name":"nixpkgs","full_name":"NixOS/nixpkgs","clone_url":"https://github.com/nixos/nixpkgs.git"},"pr":{"target_branch":"master","number":42,"head_sha":"0000000000000000000000000000000000000000"},"system":"x86_64-linux","output":[],"attempt_id":"attempt-id-foo","request_id":"bogus-request-id","success":null,"status":null,"skipped_attrs":null,"attempted_attrs":null}"#,
+            "json of: {:?}",
+            result
+        );
     }
 
     #[test]
@@ -189,6 +204,11 @@ mod tests {
         let result: BuildResult = serde_json::from_str(input).expect("result required");
         assert_eq!(result.status(), BuildStatus::Success);
         let output = serde_json::to_string(&result).expect("json required");
-        assert_eq!(output, r#"{"repo":{"owner":"NixOS","name":"nixpkgs","full_name":"NixOS/nixpkgs","clone_url":"https://github.com/nixos/nixpkgs.git"},"pr":{"target_branch":"master","number":42,"head_sha":"0000000000000000000000000000000000000000"},"system":"x86_64-linux","output":["unpacking sources"],"attempt_id":"attempt-id-foo","request_id":"bogus-request-id","success":true,"status":null,"skipped_attrs":["AAAAAASomeThingsFailToEvaluate"],"attempted_attrs":["hello"]}"#, "json of: {:?}", result);
+        assert_eq!(
+            output,
+            r#"{"repo":{"owner":"NixOS","name":"nixpkgs","full_name":"NixOS/nixpkgs","clone_url":"https://github.com/nixos/nixpkgs.git"},"pr":{"target_branch":"master","number":42,"head_sha":"0000000000000000000000000000000000000000"},"system":"x86_64-linux","output":["unpacking sources"],"attempt_id":"attempt-id-foo","request_id":"bogus-request-id","success":true,"status":null,"skipped_attrs":["AAAAAASomeThingsFailToEvaluate"],"attempted_attrs":["hello"]}"#,
+            "json of: {:?}",
+            result
+        );
     }
 }

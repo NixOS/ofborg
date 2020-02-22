@@ -93,8 +93,8 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
         };
 
         let msg = evaluationjob::EvaluationJob {
-            repo: repo_msg.clone(),
-            pr: pr_msg.clone(),
+            repo: repo_msg,
+            pr: pr_msg,
         };
 
         return vec![

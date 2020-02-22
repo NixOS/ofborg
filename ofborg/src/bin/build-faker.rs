@@ -44,8 +44,8 @@ fn main() {
     let logbackrk = "NixOS/ofborg.42".to_owned();
 
     let msg = buildjob::BuildJob {
-        repo: repo_msg.clone(),
-        pr: pr_msg.clone(),
+        repo: repo_msg,
+        pr: pr_msg,
         subset: Some(commentparser::Subset::Nixpkgs),
         attrs: vec!["success".to_owned()],
         logs: Some((Some("logs".to_owned()), Some(logbackrk.to_lowercase()))),

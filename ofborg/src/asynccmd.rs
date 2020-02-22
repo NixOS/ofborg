@@ -28,7 +28,7 @@ pub struct AsyncCmd {
 }
 
 pub struct SpawnedAsyncCmd {
-    waiter: JoinHandle<(Option<Result<ExitStatus, io::Error>>)>,
+    waiter: JoinHandle<Option<Result<ExitStatus, io::Error>>>,
     rx: Receiver<String>,
 }
 
@@ -121,13 +121,13 @@ impl AsyncCmd {
             spawn_join(
                 WaitTarget::Stdout,
                 monitor_tx.clone(),
-                reader_tx(child.stdout.take().unwrap(), proc_tx.clone()),
+                reader_tx(child.stdout.take().unwrap(), proc_tx),
             ),
         );
 
         waiters.insert(
             WaitTarget::Child,
-            child_wait(WaitTarget::Child, monitor_tx.clone(), child),
+            child_wait(WaitTarget::Child, monitor_tx, child),
         );
 
         let head_waiter = thread::spawn(move || {

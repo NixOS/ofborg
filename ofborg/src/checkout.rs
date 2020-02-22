@@ -58,8 +58,8 @@ impl CachedProject {
         Ok(CachedProjectCo {
             root: new_root,
             id,
-            clone_url: self.clone_from().clone(),
-            local_reference: self.clone_to().clone(),
+            clone_url: self.clone_from(),
+            local_reference: self.clone_to(),
         })
     }
 

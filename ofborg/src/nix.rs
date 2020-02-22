@@ -147,8 +147,8 @@ impl Nix {
             .into_iter()
             .map(
                 |attr| match self.safely_instantiate_attrs(nixpkgs, file, vec![attr.clone()]) {
-                    Ok(_) => Ok(attr.clone()),
-                    Err(f) => Err((attr.clone(), lines_from_file(f))),
+                    Ok(_) => Ok(attr),
+                    Err(f) => Err((attr, lines_from_file(f))),
                 },
             )
             .collect();
