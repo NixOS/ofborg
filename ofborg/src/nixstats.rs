@@ -116,31 +116,23 @@ impl<'a> EvaluationStatsDiff<'a> {
             diff: String,
             diff_pct: String,
         }
+
         impl Row {
             fn from_u64(left: u64, right: u64) -> Row {
-                let diff: u64;
-                let direction: &str;
-                let diff_pct: String;
+                let (diff, direction): (u64, _) = match left.cmp(&right) {
+                    std::cmp::Ordering::Greater => (left - right, "↘ "),
+                    std::cmp::Ordering::Less => (right - left, "↗ "),
+                    std::cmp::Ordering::Equal => (0, ""),
+                };
 
-                if left > right {
-                    diff = left - right;
-                    direction = "↘ ";
-                } else if left < right {
-                    diff = right - left;
-                    direction = "↗ ";
-                } else {
-                    diff = 0;
-                    direction = "";
-                }
-
-                if diff > 0 {
-                    diff_pct = format!(
+                let diff_pct: String = if diff > 0 {
+                    format!(
                         "{:.2}%",
                         ((right as f64) - (left as f64)) / (left as f64) * 100.0
-                    );
+                    )
                 } else {
-                    diff_pct = String::from("");
-                }
+                    String::from("")
+                };
 
                 Row {
                     before: left.separated_string(),
@@ -151,29 +143,23 @@ impl<'a> EvaluationStatsDiff<'a> {
             }
 
             fn from_f32(left: f32, right: f32) -> Row {
-                let diff: f32;
-                let direction: &str;
-                let diff_pct: String;
+                let (diff, direction): (f32, _) = match left
+                    .partial_cmp(&right)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+                {
+                    std::cmp::Ordering::Greater => (left - right, "↘ "),
+                    std::cmp::Ordering::Less => (right - left, "↗ "),
+                    std::cmp::Ordering::Equal => (0 as f32, ""),
+                };
 
-                if left > right {
-                    diff = left - right;
-                    direction = "↘ ";
-                } else if left < right {
-                    diff = right - left;
-                    direction = "↗ ";
-                } else {
-                    diff = 0.0;
-                    direction = "";
-                }
-
-                if diff > 0.0 {
-                    diff_pct = format!(
+                let diff_pct: String = if diff > 0 as _ {
+                    format!(
                         "{:.2}%",
-                        (f64::from(right) - f64::from(left)) / f64::from(left) * 100.0
-                    );
+                        ((right as f64) - (left as f64)) / (left as f64) * 100.0
+                    )
                 } else {
-                    diff_pct = String::from("");
-                }
+                    String::from("")
+                };
 
                 Row {
                     before: format!("{:.2}", left),

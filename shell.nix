@@ -41,7 +41,7 @@ let
       latest.rustChannels.stable.rust
       git
       pkgconfig
-      openssl.dev
+      openssl_1_0_2.dev
     ]
       ++ stdenv.lib.optional stdenv.isDarwin pkgs.darwin.Security;
 
@@ -80,7 +80,7 @@ let
       latest.rustChannels.stable.rust
       #rustfmt
       #carnix
-      openssl.dev
+      openssl_1_0_2.dev
       pkgconfig
       git
     ]

@@ -216,7 +216,7 @@ impl<'a> NixpkgsStrategy<'a> {
                     self.record_impacted_maintainers(&dir, &attrs);
                 }
 
-                rebuild_tags.parse_attrs(attrs.clone());
+                rebuild_tags.parse_attrs(attrs);
             }
 
             update_labels(
