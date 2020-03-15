@@ -426,6 +426,17 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
                 self.nix.clone(),
             ),
             EvalChecker::new(
+                "lib-tests",
+                nix::Operation::Build,
+                vec![
+                    String::from("--arg"),
+                    String::from("pkgs"),
+                    String::from("import ./. {}"),
+                    String::from("./lib/tests/release.nix"),
+                ],
+                self.nix.clone(),
+            ),
+            EvalChecker::new(
                 "nixos",
                 nix::Operation::Instantiate,
                 vec![
