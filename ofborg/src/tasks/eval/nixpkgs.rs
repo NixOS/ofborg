@@ -406,6 +406,12 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
     }
 
     fn evaluation_checks(&self) -> Vec<EvalChecker> {
+        // the value that's passed as the nixpkgs arg
+        let nixpkgs_arg_value = format!(
+            "{{ outPath=./.; revCount=999999; shortRev=\"{}\"; rev=\"{}\"; }}",
+            &self.job.pr.head_sha[0..7],
+            &self.job.pr.head_sha,
+        );
         vec![
             EvalChecker::new(
                 "package-list",
@@ -431,7 +437,7 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
                 vec![
                     String::from("--arg"),
                     String::from("nixpkgs"),
-                    String::from("{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }"),
+                    nixpkgs_arg_value.clone(),
                     String::from("./nixos/release-combined.nix"),
                     String::from("-A"),
                     String::from("tested"),
@@ -444,7 +450,7 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
                 vec![
                     String::from("--arg"),
                     String::from("nixpkgs"),
-                    String::from("{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }"),
+                    nixpkgs_arg_value.clone(),
                     String::from("./nixos/release.nix"),
                     String::from("-A"),
                     String::from("options"),
@@ -457,7 +463,7 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
                 vec![
                     String::from("--arg"),
                     String::from("nixpkgs"),
-                    String::from("{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }"),
+                    nixpkgs_arg_value.clone(),
                     String::from("./nixos/release.nix"),
                     String::from("-A"),
                     String::from("manual"),
@@ -470,7 +476,7 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
                 vec![
                     String::from("--arg"),
                     String::from("nixpkgs"),
-                    String::from("{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }"),
+                    nixpkgs_arg_value.clone(),
                     String::from("./pkgs/top-level/release.nix"),
                     String::from("-A"),
                     String::from("manual"),
@@ -483,7 +489,7 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
                 vec![
                     String::from("--arg"),
                     String::from("nixpkgs"),
-                    String::from("{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }"),
+                    nixpkgs_arg_value.clone(),
                     String::from("./pkgs/top-level/release.nix"),
                     String::from("-A"),
                     String::from("tarball"),
@@ -496,7 +502,7 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
                 vec![
                     String::from("--arg"),
                     String::from("nixpkgs"),
-                    String::from("{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }"),
+                    nixpkgs_arg_value.clone(),
                     String::from("./pkgs/top-level/release.nix"),
                     String::from("-A"),
                     String::from("unstable"),
@@ -509,7 +515,7 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
                 vec![
                     String::from("--arg"),
                     String::from("nixpkgs"),
-                    String::from("{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }"),
+                    nixpkgs_arg_value,
                     String::from("./pkgs/top-level/release.nix"),
                     String::from("-A"),
                     String::from("darwin-tested"),
