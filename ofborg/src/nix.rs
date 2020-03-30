@@ -353,7 +353,7 @@ fn lines_from_file(file: fs::File) -> Vec<String> {
         .collect()
 }
 
-fn is_user_setting_warning(line: &str) -> bool {
+pub fn is_user_setting_warning(line: &str) -> bool {
     let line = line.trim();
     line.starts_with("warning: ignoring the user-specified setting '")
         && line.ends_with("because it is a restricted setting and you are not a trusted user")

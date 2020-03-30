@@ -43,6 +43,7 @@ impl HydraNixEnv {
                 .collect::<Result<Vec<String>, _>>()?
                 .into_iter()
                 .filter(|msg| msg.trim().len() > 0)
+                .filter(|line| !nix::is_user_setting_warning(line))
                 .collect::<Vec<String>>();
 
             if evaluation_errors.len() > 0 {
