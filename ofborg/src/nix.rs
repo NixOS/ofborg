@@ -219,7 +219,7 @@ impl Nix {
             args.push(String::from("--arg"));
             args.push(String::from("nixpkgs"));
             args.push(String::from(
-                "{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; }",
+                "{ outPath=./.; revCount=999999; shortRev=\"ofborg\"; rev=\"0000000000000000000000000000000000000000\"; }",
             ));
         }
         command.args(args);
@@ -659,7 +659,7 @@ mod tests {
             Expect::Pass,
             vec![
                 "./nixos/release.nix",
-                "--arg nixpkgs { outPath=./.; revCount=999999; shortRev=\"ofborg\"; }",
+                "--arg nixpkgs { outPath=./.; revCount=999999; shortRev=\"ofborg\"; rev=\"0000000000000000000000000000000000000000\"; }",
             ],
         );
     }
