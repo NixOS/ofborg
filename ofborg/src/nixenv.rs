@@ -6,11 +6,11 @@ use ofborg::nix;
 use serde_json;
 use std::fs;
 use std::fs::File;
-use std::io::BufReader;
 use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
 use std::io::Write;
+use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 
 pub struct HydraNixEnv {
@@ -32,15 +32,27 @@ impl HydraNixEnv {
         &self,
     ) -> Result<(outpathdiff::PackageOutPaths, EvaluationStats), Error> {
         self.place_nix()?;
-        let (status, stdout, mut stderr, mut stats) = self.run_nix_env();
+        let (status, stdout, stderr, mut stats) = self.run_nix_env();
         self.remove_nix()?;
 
         if status {
             let outpaths = outpathdiff::parse_lines(&mut BufReader::new(stdout));
-            let stats = serde_json::from_reader(&mut stderr).map_err(|err| {
-                let seek = stderr.seek(SeekFrom::Start(0));
 
-                Error::StatsParse(stderr, seek, err)
+            let evaluation_errors = BufReader::new(stderr)
+                .lines()
+                .collect::<Result<Vec<String>, _>>()?
+                .into_iter()
+                .filter(|msg| !is_user_setting_warning(msg))
+                .collect::<Vec<String>>();
+
+            if evaluation_errors.len() > 0 {
+                return Err(Error::UncleanEvaluation(evaluation_errors));
+            }
+
+            let stats = serde_json::from_reader(&mut stats).map_err(|err| {
+                let seek = stats.seek(SeekFrom::Start(0));
+
+                Error::StatsParse(stats, seek, err)
             })?;
             Ok((outpaths, stats))
         } else {
@@ -89,9 +101,10 @@ impl HydraNixEnv {
         cmd.env("NIX_SHOW_STATS", "1");
         cmd.env("NIX_SHOW_STATS_PATH", self.outpath_stats_path());
 
-        let (status, stdout, mut stderr) = self.nix.run_stderr_stdout(cmd);
-        let f = File::open(self.outpath_stats_path());
-        return (status, stdout, &mut stderr, &mut f)
+        let (status, stdout, stderr) = self.nix.run_stderr_stdout(cmd);
+        let stats =
+            File::open(self.outpath_stats_path()).expect("Failed to open stats path, not created?");
+        return (status, stdout, stderr, stats);
     }
 }
 
@@ -99,6 +112,7 @@ pub enum Error {
     Io(std::io::Error),
     CommandFailed(File),
     StatsParse(File, Result<u64, std::io::Error>, serde_json::Error),
+    UncleanEvaluation(Vec<String>),
 }
 
 impl From<std::io::Error> for Error {
@@ -123,6 +137,9 @@ impl Error {
                         e, bufstr
                     ),
                 }
+            }
+            Error::UncleanEvaluation(warnings) => {
+                format!("nix-env did not evaluate cleanly:\n {:#?}", warnings)
             }
             Error::StatsParse(mut fd, seek, parse_err) => {
                 let mut buffer = Vec::new();
@@ -154,4 +171,9 @@ impl Error {
             }
         }
     }
+}
+
+fn is_user_setting_warning(line: &str) -> bool {
+    line.starts_with("warning: ignoring the user-specified setting '")
+        && line.ends_with("because it is a restricted setting and you are not a trusted user")
 }
