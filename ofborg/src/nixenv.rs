@@ -32,7 +32,7 @@ impl HydraNixEnv {
         &self,
     ) -> Result<(outpathdiff::PackageOutPaths, EvaluationStats), Error> {
         self.place_nix()?;
-        let (status, stdout, mut stderr) = self.run_nix_env();
+        let (status, stdout, mut stderr, mut stats) = self.run_nix_env();
         self.remove_nix()?;
 
         if status {
@@ -59,6 +59,7 @@ impl HydraNixEnv {
 
     fn remove_nix(&self) -> Result<(), std::io::Error> {
         fs::remove_file(self.outpath_nix_path())?;
+        fs::remove_file(self.outpath_stats_path())?;
         Ok(())
     }
 
@@ -66,7 +67,11 @@ impl HydraNixEnv {
         self.path.join(".gc-of-borg-outpaths.nix")
     }
 
-    fn run_nix_env(&self) -> (bool, File, File) {
+    fn outpath_stats_path(&self) -> PathBuf {
+        self.path.join(".gc-of-borg-stats.json")
+    }
+
+    fn run_nix_env(&self) -> (bool, File, File, File) {
         let check_meta = if self.check_meta { "true" } else { "false" };
 
         let mut cmd = self.nix.safe_command(
@@ -82,7 +87,11 @@ impl HydraNixEnv {
             &[],
         );
         cmd.env("NIX_SHOW_STATS", "1");
-        self.nix.run_stderr_stdout(cmd)
+        cmd.env("NIX_SHOW_STATS_PATH", self.outpath_stats_path());
+
+        let (status, stdout, mut stderr) = self.nix.run_stderr_stdout(cmd);
+        let f = File::open(self.outpath_stats_path());
+        return (status, stdout, &mut stderr, &mut f)
     }
 }
 
