@@ -42,6 +42,7 @@ impl HydraNixEnv {
                 .lines()
                 .collect::<Result<Vec<String>, _>>()?
                 .into_iter()
+                .filter(|msg| msg.trim().len() > 0)
                 .filter(|msg| !is_user_setting_warning(msg))
                 .collect::<Vec<String>>();
 
@@ -174,6 +175,7 @@ impl Error {
 }
 
 fn is_user_setting_warning(line: &str) -> bool {
+    let line = line.trim();
     line.starts_with("warning: ignoring the user-specified setting '")
         && line.ends_with("because it is a restricted setting and you are not a trusted user")
 }
