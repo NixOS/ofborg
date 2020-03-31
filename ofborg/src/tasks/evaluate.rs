@@ -59,6 +59,92 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
             tag_paths,
         }
     }
+}
+
+impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E> {
+    type J = evaluationjob::EvaluationJob;
+
+    fn msg_to_job(
+        &mut self,
+        _: &Deliver,
+        _: &BasicProperties,
+        body: &[u8],
+    ) -> Result<Self::J, String> {
+        self.events.notify(Event::JobReceived);
+        match evaluationjob::from(body) {
+            Ok(e) => {
+                self.events.notify(Event::JobDecodeSuccess);
+                Ok(e)
+            }
+            Err(e) => {
+                self.events.notify(Event::JobDecodeFailure);
+                error!(
+                    "Failed to decode message: {:?}, Err: {:?}",
+                    String::from_utf8(body.to_vec()),
+                    e
+                );
+                Err("Failed to decode message".to_owned())
+            }
+        }
+    }
+
+    fn consumer(&mut self, job: &evaluationjob::EvaluationJob) -> worker::Actions {
+        let mut vending_machine = self
+            .github_vend
+            .write()
+            .expect("Failed to get write lock on github vending machine");
+
+        let github_client = vending_machine
+            .for_repo(&job.repo.owner, &job.repo.name)
+            .expect("Failed to get a github client token");
+
+        OneEval::new(
+            github_client,
+            &self.github,
+            &self.nix,
+            &self.acl,
+            &mut self.events,
+            &self.identity,
+            &self.tag_paths,
+            &self.cloner,
+        )
+        .evaluate_job(job)
+    }
+}
+
+struct OneEval<'a, E> {
+    client_app: &'a hubcaps::Github,
+    client_legacy: &'a hubcaps::Github,
+    nix: &'a nix::Nix,
+    acl: &'a ACL,
+    events: &'a mut E,
+    identity: &'a str,
+    tag_paths: &'a HashMap<String, Vec<String>>,
+    cloner: &'a checkout::CachedCloner,
+}
+
+impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
+    fn new(
+        client_app: &'a hubcaps::Github,
+        client_legacy: &'a hubcaps::Github,
+        nix: &'a nix::Nix,
+        acl: &'a ACL,
+        events: &'a mut E,
+        identity: &'a str,
+        tag_paths: &'a HashMap<String, Vec<String>>,
+        cloner: &'a checkout::CachedCloner,
+    ) -> OneEval<'a, E> {
+        OneEval {
+            client_app,
+            client_legacy,
+            nix,
+            acl,
+            events,
+            identity,
+            tag_paths,
+            cloner,
+        }
+    }
 
     fn actions(&self) -> evaluationjob::Actions {
         evaluationjob::Actions {}
@@ -85,15 +171,10 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
     }
 
     fn evaluate_job(&mut self, job: &evaluationjob::EvaluationJob) -> worker::Actions {
-        let mut vending_machine = self
-            .github_vend
-            .write()
-            .expect("Failed to get write lock on github vending machine");
-        let github_client = vending_machine
-            .for_repo(&job.repo.owner, &job.repo.name)
-            .expect("Failed to get a github client token");
-        let repo = github_client.repo(job.repo.owner.clone(), job.repo.name.clone());
-        let gists = self.github.gists();
+        let repo = self
+            .client_app
+            .repo(job.repo.owner.clone(), job.repo.name.clone());
+        let gists = self.client_legacy.gists();
         let pulls = repo.pulls();
         let pull = pulls.get(job.pr.number);
         let issue_ref = repo.issue(job.pr.number);
@@ -168,7 +249,7 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
 
         info!("Working on {}", job.pr.number);
         let co = project
-            .clone_for("mr-est".to_string(), self.identity.clone())
+            .clone_for("mr-est".to_string(), self.identity.to_string())
             .unwrap();
 
         let target_branch = match job.pr.target_branch.clone() {
@@ -331,38 +412,6 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
 
         info!("done!");
         self.actions().done(&job, response)
-    }
-}
-
-impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E> {
-    type J = evaluationjob::EvaluationJob;
-
-    fn msg_to_job(
-        &mut self,
-        _: &Deliver,
-        _: &BasicProperties,
-        body: &[u8],
-    ) -> Result<Self::J, String> {
-        self.events.notify(Event::JobReceived);
-        match evaluationjob::from(body) {
-            Ok(e) => {
-                self.events.notify(Event::JobDecodeSuccess);
-                Ok(e)
-            }
-            Err(e) => {
-                self.events.notify(Event::JobDecodeFailure);
-                error!(
-                    "Failed to decode message: {:?}, Err: {:?}",
-                    String::from_utf8(body.to_vec()),
-                    e
-                );
-                Err("Failed to decode message".to_owned())
-            }
-        }
-    }
-
-    fn consumer(&mut self, job: &evaluationjob::EvaluationJob) -> worker::Actions {
-        self.evaluate_job(job)
     }
 }
 
