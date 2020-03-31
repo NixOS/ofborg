@@ -74,6 +74,7 @@ impl<'a> CommitStatus<'a> {
     }
 }
 
+#[derive(Debug)]
 pub enum CommitStatusError {
     HubcapsError(hubcaps::Error),
 }
