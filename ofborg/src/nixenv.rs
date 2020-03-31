@@ -32,7 +32,7 @@ impl HydraNixEnv {
         &self,
     ) -> Result<(outpathdiff::PackageOutPaths, EvaluationStats), Error> {
         self.place_nix()?;
-        let (status, stdout, stderr, mut stats) = self.run_nix_env();
+        let (status, stdout, stderr, stats) = self.run_nix_env();
         self.remove_nix()?;
 
         if status {
@@ -50,6 +50,7 @@ impl HydraNixEnv {
                 return Err(Error::UncleanEvaluation(evaluation_errors));
             }
 
+            let mut stats = stats.expect("Failed to open stats path, not created?");
             let stats = serde_json::from_reader(&mut stats).map_err(|err| {
                 let seek = stats.seek(SeekFrom::Start(0));
 
@@ -84,7 +85,7 @@ impl HydraNixEnv {
         self.path.join(".gc-of-borg-stats.json")
     }
 
-    fn run_nix_env(&self) -> (bool, File, File, File) {
+    fn run_nix_env(&self) -> (bool, File, File, Result<File, std::io::Error>) {
         let check_meta = if self.check_meta { "true" } else { "false" };
 
         let mut cmd = self.nix.safe_command(
@@ -103,8 +104,7 @@ impl HydraNixEnv {
         cmd.env("NIX_SHOW_STATS_PATH", self.outpath_stats_path());
 
         let (status, stdout, stderr) = self.nix.run_stderr_stdout(cmd);
-        let stats =
-            File::open(self.outpath_stats_path()).expect("Failed to open stats path, not created?");
+        let stats = File::open(self.outpath_stats_path());
         return (status, stdout, stderr, stats);
     }
 }
