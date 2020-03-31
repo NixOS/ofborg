@@ -23,7 +23,6 @@ use std::path::Path;
 use std::sync::RwLock;
 use std::time::Instant;
 use tasks::eval;
-use tasks::eval::StepResult;
 
 pub struct EvaluationWorker<E> {
     cloner: checkout::CachedCloner,
@@ -107,20 +106,23 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             &self.identity,
             &self.tag_paths,
             &self.cloner,
+            job,
         )
-        .evaluate_job(job)
+        .worker_actions()
     }
 }
 
 struct OneEval<'a, E> {
     client_app: &'a hubcaps::Github,
-    client_legacy: &'a hubcaps::Github,
+    repo: hubcaps::repositories::Repository<'a>,
+    gists: Gists<'a>,
     nix: &'a nix::Nix,
     acl: &'a ACL,
     events: &'a mut E,
     identity: &'a str,
     tag_paths: &'a HashMap<String, Vec<String>>,
     cloner: &'a checkout::CachedCloner,
+    job: &'a evaluationjob::EvaluationJob,
 }
 
 impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
@@ -133,16 +135,23 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         identity: &'a str,
         tag_paths: &'a HashMap<String, Vec<String>>,
         cloner: &'a checkout::CachedCloner,
+        job: &'a evaluationjob::EvaluationJob,
     ) -> OneEval<'a, E> {
+        let gists = client_legacy.gists();
+
+        let repo = client_app.repo(job.repo.owner.clone(), job.repo.name.clone());
+
         OneEval {
             client_app,
-            client_legacy,
+            repo,
+            gists,
             nix,
             acl,
             events,
             identity,
             tag_paths,
             cloner,
+            job,
         }
     }
 
@@ -150,31 +159,76 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         evaluationjob::Actions {}
     }
 
-    fn handle_strategy_err(
+    fn update_status(
         &self,
-        ret: StepResult<()>,
-        gists: &Gists<'_>,
-        status: &mut CommitStatus,
-    ) -> Result<(), ()> {
-        match ret {
-            Ok(()) => Ok(()),
-            Err(eval::Error::Fail(msg)) => {
-                status.set_with_description(&msg, hubcaps::statuses::State::Failure);
-                Err(())
-            }
-            Err(eval::Error::FailWithGist(msg, filename, content)) => {
-                status.set_url(make_gist(&gists, &filename, Some("".to_owned()), content));
-                status.set_with_description(&msg, hubcaps::statuses::State::Failure);
-                Err(())
-            }
+        description: String,
+        url: Option<String>,
+        state: hubcaps::statuses::State,
+    ) -> Result<(), hubcaps::Error> {
+        let description = if description.len() >= 140 {
+            eprintln!(
+                "Warning: description is over 140 char; truncating: {:?}",
+                &description
+            );
+            description.chars().take(140).collect()
+        } else {
+            description
+        };
+
+        let mut builder = hubcaps::statuses::StatusOptions::builder(state);
+        builder.context("grahamcofborg-eval");
+        builder.description(description);
+
+        if let Some(url) = url {
+            builder.target_url(url);
         }
+
+        self.repo
+            .statuses()
+            .create(&self.job.pr.head_sha, &builder.build())
+            .map(|_| ())
     }
 
-    fn evaluate_job(&mut self, job: &evaluationjob::EvaluationJob) -> worker::Actions {
+    fn make_gist(
+        &self,
+        filename: &str,
+        description: Option<String>,
+        content: String,
+    ) -> Option<String> {
+        make_gist(&self.gists, filename, description, content)
+    }
+
+    fn worker_actions(&mut self) -> worker::Actions {
+        let eval_result = self.evaluate_job();
+        if let Ok(actions) = eval_result {
+            return actions;
+        }
+        let eval_result =
+            eval_result.expect_err("We have an OK, but just checked for an Ok before");
+
+        match eval_result {
+            EvalWorkerError::EvalError(eval::Error::Fail(msg)) => {
+                self.update_status(msg, None, hubcaps::statuses::State::Failure)
+                    .expect("Failed to set status");
+            }
+            EvalWorkerError::EvalError(eval::Error::FailWithGist(msg, filename, content)) => {
+                self.update_status(
+                    msg,
+                    self.make_gist(&filename, Some("".to_owned()), content),
+                    hubcaps::statuses::State::Failure,
+                )
+                .expect("Failed to set status");
+            }
+        }
+
+        return self.actions().skip(&self.job);
+    }
+
+    fn evaluate_job(&mut self) -> Result<worker::Actions, EvalWorkerError> {
+        let job = self.job;
         let repo = self
             .client_app
-            .repo(job.repo.owner.clone(), job.repo.name.clone());
-        let gists = self.client_legacy.gists();
+            .repo(self.job.repo.owner.clone(), self.job.repo.name.clone());
         let pulls = repo.pulls();
         let pull = pulls.get(job.pr.number);
         let issue_ref = repo.issue(job.pr.number);
@@ -186,7 +240,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 if iss.state == "closed" {
                     self.events.notify(Event::IssueAlreadyClosed);
                     info!("Skipping {} because it is closed", job.pr.number);
-                    return self.actions().skip(&job);
+                    return Ok(self.actions().skip(&job));
                 }
 
                 if issue_is_wip(&iss) {
@@ -205,7 +259,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 self.events.notify(Event::IssueFetchFailed);
                 info!("Error fetching {}!", job.pr.number);
                 info!("E: {:?}", e);
-                return self.actions().skip(&job);
+                return Ok(self.actions().skip(&job));
             }
         };
 
@@ -216,7 +270,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 &issue,
                 &issue_ref,
                 &repo,
-                &gists,
+                &self.gists,
                 self.nix.clone(),
                 &self.tag_paths,
             ))
@@ -234,12 +288,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         overall_status.set_with_description("Starting", hubcaps::statuses::State::Pending);
 
-        if self
-            .handle_strategy_err(evaluation_strategy.pre_clone(), &gists, &mut overall_status)
-            .is_err()
-        {
-            return self.actions().skip(&job);
-        }
+        evaluation_strategy.pre_clone()?;
 
         let project = self
             .cloner
@@ -264,16 +313,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         info!("Checking out target branch {}", &target_branch);
         let refpath = co.checkout_origin_ref(target_branch.as_ref()).unwrap();
 
-        if self
-            .handle_strategy_err(
-                evaluation_strategy.on_target_branch(&Path::new(&refpath), &mut overall_status),
-                &gists,
-                &mut overall_status,
-            )
-            .is_err()
-        {
-            return self.actions().skip(&job);
-        }
+        evaluation_strategy.on_target_branch(&Path::new(&refpath), &mut overall_status)?;
 
         let target_branch_rebuild_sniff_start = Instant::now();
 
@@ -293,19 +333,10 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 .set_with_description("Commit not found", hubcaps::statuses::State::Error);
 
             info!("Commit {} doesn't exist", job.pr.head_sha);
-            return self.actions().skip(&job);
+            return Ok(self.actions().skip(&job));
         }
 
-        if self
-            .handle_strategy_err(
-                evaluation_strategy.after_fetch(&co),
-                &gists,
-                &mut overall_status,
-            )
-            .is_err()
-        {
-            return self.actions().skip(&job);
-        }
+        evaluation_strategy.after_fetch(&co)?;
 
         overall_status.set_with_description("Merging PR", hubcaps::statuses::State::Pending);
 
@@ -317,19 +348,10 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
             evaluation_strategy.merge_conflict();
 
-            return self.actions().skip(&job);
+            return Ok(self.actions().skip(&job));
         }
 
-        if self
-            .handle_strategy_err(
-                evaluation_strategy.after_merge(&mut overall_status),
-                &gists,
-                &mut overall_status,
-            )
-            .is_err()
-        {
-            return self.actions().skip(&job);
-        }
+        evaluation_strategy.after_merge(&mut overall_status)?;
 
         println!("Got path: {:?}, building", refpath);
         overall_status
@@ -358,8 +380,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                     }
                     Err(mut out) => {
                         state = hubcaps::statuses::State::Failure;
-                        gist_url = make_gist(
-                            &gists,
+                        gist_url = self.make_gist(
                             &check.name(),
                             Some(format!("{:?}", state)),
                             file_to_str(&mut out),
@@ -382,23 +403,11 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         let mut response: worker::Actions = vec![];
 
         if eval_results {
-            let ret = evaluation_strategy
-                .all_evaluations_passed(&Path::new(&refpath), &mut overall_status);
-            match ret {
-                Ok(complete) => {
-                    send_check_statuses(complete.checks, &repo);
-                    response.extend(schedule_builds(complete.builds, auto_schedule_build_archs));
-                }
-                Err(e) => {
-                    info!("Failed after all the evaluations passed");
-                    if self
-                        .handle_strategy_err(Err(e), &gists, &mut overall_status)
-                        .is_err()
-                    {
-                        return self.actions().skip(&job);
-                    }
-                }
-            }
+            let complete = evaluation_strategy
+                .all_evaluations_passed(&Path::new(&refpath), &mut overall_status)?;
+
+            send_check_statuses(complete.checks, &repo);
+            response.extend(schedule_builds(complete.builds, auto_schedule_build_archs));
 
             info!("Just about done...");
 
@@ -411,7 +420,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         self.events.notify(Event::TaskEvaluationCheckComplete);
 
         info!("done!");
-        self.actions().done(&job, response)
+        Ok(self.actions().done(&job, response))
     }
 }
 
@@ -539,4 +548,14 @@ fn indicates_wip(text: &str) -> bool {
     }
 
     false
+}
+
+enum EvalWorkerError {
+    EvalError(eval::Error),
+}
+
+impl From<eval::Error> for EvalWorkerError {
+    fn from(e: eval::Error) -> EvalWorkerError {
+        EvalWorkerError::EvalError(e)
+    }
 }
