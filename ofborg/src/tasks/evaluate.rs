@@ -83,36 +83,8 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
             }
         }
     }
-}
 
-impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E> {
-    type J = evaluationjob::EvaluationJob;
-
-    fn msg_to_job(
-        &mut self,
-        _: &Deliver,
-        _: &BasicProperties,
-        body: &[u8],
-    ) -> Result<Self::J, String> {
-        self.events.notify(Event::JobReceived);
-        match evaluationjob::from(body) {
-            Ok(e) => {
-                self.events.notify(Event::JobDecodeSuccess);
-                Ok(e)
-            }
-            Err(e) => {
-                self.events.notify(Event::JobDecodeFailure);
-                error!(
-                    "Failed to decode message: {:?}, Err: {:?}",
-                    String::from_utf8(body.to_vec()),
-                    e
-                );
-                Err("Failed to decode message".to_owned())
-            }
-        }
-    }
-
-    fn consumer(&mut self, job: &evaluationjob::EvaluationJob) -> worker::Actions {
+    fn evaluate_job(&mut self, job: &evaluationjob::EvaluationJob) -> worker::Actions {
         let mut vending_machine = self
             .github_vend
             .write()
@@ -359,6 +331,38 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
 
         info!("done!");
         self.actions().done(&job, response)
+    }
+}
+
+impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E> {
+    type J = evaluationjob::EvaluationJob;
+
+    fn msg_to_job(
+        &mut self,
+        _: &Deliver,
+        _: &BasicProperties,
+        body: &[u8],
+    ) -> Result<Self::J, String> {
+        self.events.notify(Event::JobReceived);
+        match evaluationjob::from(body) {
+            Ok(e) => {
+                self.events.notify(Event::JobDecodeSuccess);
+                Ok(e)
+            }
+            Err(e) => {
+                self.events.notify(Event::JobDecodeFailure);
+                error!(
+                    "Failed to decode message: {:?}, Err: {:?}",
+                    String::from_utf8(body.to_vec()),
+                    e
+                );
+                Err("Failed to decode message".to_owned())
+            }
+        }
+    }
+
+    fn consumer(&mut self, job: &evaluationjob::EvaluationJob) -> worker::Actions {
+        self.evaluate_job(job)
     }
 }
 
