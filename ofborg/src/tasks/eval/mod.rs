@@ -6,7 +6,7 @@ mod generic;
 pub use self::generic::GenericStrategy;
 use hubcaps::checks::CheckRunOptions;
 use ofborg::checkout::CachedProjectCo;
-use ofborg::commitstatus::CommitStatus;
+use ofborg::commitstatus::{CommitStatus, CommitStatusError};
 use ofborg::evalchecker::EvalChecker;
 use ofborg::message::buildjob::BuildJob;
 use std::path::Path;
@@ -36,6 +36,13 @@ pub struct EvaluationComplete {
 
 #[derive(Debug)]
 pub enum Error {
+    CommitStatusWrite(CommitStatusError),
     Fail(String),
     FailWithGist(String, String, String),
+}
+
+impl From<CommitStatusError> for Error {
+    fn from(e: CommitStatusError) -> Error {
+        Error::CommitStatusWrite(e)
+    }
 }

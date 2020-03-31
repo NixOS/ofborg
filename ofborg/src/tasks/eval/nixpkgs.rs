@@ -206,14 +206,18 @@ impl<'a> NixpkgsStrategy<'a> {
         }
     }
 
-    fn update_rebuild_labels(&self, dir: &Path, overall_status: &mut CommitStatus) {
+    fn update_rebuild_labels(
+        &self,
+        dir: &Path,
+        overall_status: &mut CommitStatus,
+    ) -> Result<(), Error> {
         if let Some(ref rebuildsniff) = self.outpath_diff {
             let mut rebuild_tags = RebuildTagger::new();
 
             if let Some(attrs) = rebuildsniff.calculate_rebuild() {
                 if !attrs.is_empty() {
                     overall_status.set_url(self.gist_changed_paths(&attrs));
-                    self.record_impacted_maintainers(&dir, &attrs);
+                    self.record_impacted_maintainers(&dir, &attrs)?;
                 }
 
                 rebuild_tags.parse_attrs(attrs);
@@ -225,6 +229,7 @@ impl<'a> NixpkgsStrategy<'a> {
                 &rebuild_tags.tags_to_remove(),
             );
         }
+        Ok(())
     }
 
     fn gist_changed_paths(&self, attrs: &[PackageArch]) -> Option<String> {
@@ -240,7 +245,7 @@ impl<'a> NixpkgsStrategy<'a> {
         )
     }
 
-    fn record_impacted_maintainers(&self, dir: &Path, attrs: &[PackageArch]) {
+    fn record_impacted_maintainers(&self, dir: &Path, attrs: &[PackageArch]) -> Result<(), Error> {
         let changed_attributes = attrs
             .iter()
             .map(|attr| attr.package.split('.').collect::<Vec<&str>>())
@@ -271,7 +276,7 @@ impl<'a> NixpkgsStrategy<'a> {
                 String::from("matching changed paths to changed attrs..."),
                 gist_url,
             );
-            status.set(hubcaps::statuses::State::Success);
+            status.set(hubcaps::statuses::State::Success)?;
 
             if let Ok(ref maint) = m {
                 request_reviews(&maint, &self.pull);
@@ -285,6 +290,8 @@ impl<'a> NixpkgsStrategy<'a> {
                 );
             }
         }
+
+        Ok(())
     }
 
     fn check_meta_queue_builds(&self, dir: &Path) -> StepResult<Vec<BuildJob>> {
@@ -296,7 +303,7 @@ impl<'a> NixpkgsStrategy<'a> {
                 String::from("config.nix: checkMeta = true"),
                 None,
             );
-            status.set(hubcaps::statuses::State::Pending);
+            status.set(hubcaps::statuses::State::Pending)?;
 
             let nixenv = HydraNixEnv::new(self.nix.clone(), dir.to_path_buf(), true);
             match nixenv.execute_with_stats() {
@@ -310,7 +317,7 @@ impl<'a> NixpkgsStrategy<'a> {
                     try_build.dedup();
 
                     status.set_url(None);
-                    status.set(hubcaps::statuses::State::Success);
+                    status.set(hubcaps::statuses::State::Success)?;
 
                     if !try_build.is_empty() && try_build.len() <= 10 {
                         // In the case of trying to merge master in to
@@ -332,7 +339,7 @@ impl<'a> NixpkgsStrategy<'a> {
                 }
                 Err(out) => {
                     status.set_url(make_gist(&self.gists, "Meta Check", None, out.display()));
-                    status.set(hubcaps::statuses::State::Failure);
+                    status.set(hubcaps::statuses::State::Failure)?;
                     Err(Error::Fail(String::from(
                         "Failed to validate package metadata.",
                     )))
@@ -354,13 +361,13 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
         status.set_with_description(
             "Checking original stdenvs",
             hubcaps::statuses::State::Pending,
-        );
+        )?;
         self.check_stdenvs_before(dir);
 
         status.set_with_description(
             "Checking original out paths",
             hubcaps::statuses::State::Pending,
-        );
+        )?;
         self.check_outpaths_before(dir)?;
 
         Ok(())
@@ -396,10 +403,10 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
             &["2.status: merge conflict".to_owned()],
         );
 
-        status.set_with_description("Checking new stdenvs", hubcaps::statuses::State::Pending);
+        status.set_with_description("Checking new stdenvs", hubcaps::statuses::State::Pending)?;
         self.check_stdenvs_after();
 
-        status.set_with_description("Checking new out paths", hubcaps::statuses::State::Pending);
+        status.set_with_description("Checking new out paths", hubcaps::statuses::State::Pending)?;
         self.check_outpaths_after()?;
 
         Ok(())
@@ -535,10 +542,10 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
         status.set_with_description(
             "Calculating Changed Outputs",
             hubcaps::statuses::State::Pending,
-        );
+        )?;
 
         self.update_new_package_labels();
-        self.update_rebuild_labels(&dir, status);
+        self.update_rebuild_labels(&dir, status)?;
         let checks = self.performance_stats();
 
         let builds = self.check_meta_queue_builds(&dir)?;

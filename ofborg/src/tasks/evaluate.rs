@@ -9,7 +9,7 @@ use hubcaps::gists::Gists;
 use hubcaps::issues::Issue;
 use ofborg::acl::ACL;
 use ofborg::checkout;
-use ofborg::commitstatus::CommitStatus;
+use ofborg::commitstatus::{CommitStatus, CommitStatusError};
 use ofborg::config::GithubAppVendingMachine;
 use ofborg::files::file_to_str;
 use ofborg::message::{buildjob, evaluationjob};
@@ -140,7 +140,6 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         let gists = client_legacy.gists();
 
         let repo = client_app.repo(job.repo.owner.clone(), job.repo.name.clone());
-
         OneEval {
             client_app,
             repo,
@@ -207,6 +206,22 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             eval_result.expect_err("We have an OK, but just checked for an Ok before");
 
         match eval_result {
+            EvalWorkerError::CommitStatusWrite(e) => {
+                eprintln!(
+                    "Failed to write commit status, got error: {:#?}, marking internal error",
+                    e
+                );
+                let issue_ref = self.repo.issue(self.job.pr.number);
+                update_labels(&issue_ref, &[String::from("ofborg-internal-error")], &[]);
+            }
+            EvalWorkerError::EvalError(eval::Error::CommitStatusWrite(e)) => {
+                eprintln!(
+                    "Failed to write commit status, got error: {:#?}, marking internal error",
+                    e
+                );
+                let issue_ref = self.repo.issue(self.job.pr.number);
+                update_labels(&issue_ref, &[String::from("ofborg-internal-error")], &[]);
+            }
             EvalWorkerError::EvalError(eval::Error::Fail(msg)) => {
                 self.update_status(msg, None, hubcaps::statuses::State::Failure)
                     .expect("Failed to set status");
@@ -286,7 +301,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             None,
         );
 
-        overall_status.set_with_description("Starting", hubcaps::statuses::State::Pending);
+        overall_status.set_with_description("Starting", hubcaps::statuses::State::Pending)?;
 
         evaluation_strategy.pre_clone()?;
 
@@ -294,7 +309,8 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             .cloner
             .project(&job.repo.full_name, job.repo.clone_url.clone());
 
-        overall_status.set_with_description("Cloning project", hubcaps::statuses::State::Pending);
+        overall_status
+            .set_with_description("Cloning project", hubcaps::statuses::State::Pending)?;
 
         info!("Working on {}", job.pr.number);
         let co = project
@@ -309,7 +325,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         overall_status.set_with_description(
             format!("Checking out {}", &target_branch).as_ref(),
             hubcaps::statuses::State::Pending,
-        );
+        )?;
         info!("Checking out target branch {}", &target_branch);
         let refpath = co.checkout_origin_ref(target_branch.as_ref()).unwrap();
 
@@ -324,13 +340,13 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         self.events
             .notify(Event::EvaluationDurationCount(target_branch));
 
-        overall_status.set_with_description("Fetching PR", hubcaps::statuses::State::Pending);
+        overall_status.set_with_description("Fetching PR", hubcaps::statuses::State::Pending)?;
 
         co.fetch_pr(job.pr.number).unwrap();
 
         if !co.commit_exists(job.pr.head_sha.as_ref()) {
             overall_status
-                .set_with_description("Commit not found", hubcaps::statuses::State::Error);
+                .set_with_description("Commit not found", hubcaps::statuses::State::Error)?;
 
             info!("Commit {} doesn't exist", job.pr.head_sha);
             return Ok(self.actions().skip(&job));
@@ -338,11 +354,11 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         evaluation_strategy.after_fetch(&co)?;
 
-        overall_status.set_with_description("Merging PR", hubcaps::statuses::State::Pending);
+        overall_status.set_with_description("Merging PR", hubcaps::statuses::State::Pending)?;
 
         if co.merge_commit(job.pr.head_sha.as_ref()).is_err() {
             overall_status
-                .set_with_description("Failed to merge", hubcaps::statuses::State::Failure);
+                .set_with_description("Failed to merge", hubcaps::statuses::State::Failure)?;
 
             info!("Failed to merge {}", job.pr.head_sha);
 
@@ -355,7 +371,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         println!("Got path: {:?}, building", refpath);
         overall_status
-            .set_with_description("Beginning Evaluations", hubcaps::statuses::State::Pending);
+            .set_with_description("Beginning Evaluations", hubcaps::statuses::State::Pending)?;
 
         let eval_results: bool = evaluation_strategy
             .evaluation_checks()
@@ -369,7 +385,9 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                     None,
                 );
 
-                status.set(hubcaps::statuses::State::Pending);
+                status
+                    .set(hubcaps::statuses::State::Pending)
+                    .expect("Failed to set status on eval strategy");
 
                 let state: hubcaps::statuses::State;
                 let gist_url: Option<String>;
@@ -389,7 +407,9 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 }
 
                 status.set_url(gist_url);
-                status.set(state.clone());
+                status
+                    .set(state.clone())
+                    .expect("Failed to set status on eval strategy");
 
                 if state == hubcaps::statuses::State::Success {
                     Ok(())
@@ -411,10 +431,10 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
             info!("Just about done...");
 
-            overall_status.set_with_description("^.^!", hubcaps::statuses::State::Success);
+            overall_status.set_with_description("^.^!", hubcaps::statuses::State::Success)?;
         } else {
             overall_status
-                .set_with_description("Complete, with errors", hubcaps::statuses::State::Failure);
+                .set_with_description("Complete, with errors", hubcaps::statuses::State::Failure)?;
         }
 
         self.events.notify(Event::TaskEvaluationCheckComplete);
@@ -552,10 +572,17 @@ fn indicates_wip(text: &str) -> bool {
 
 enum EvalWorkerError {
     EvalError(eval::Error),
+    CommitStatusWrite(CommitStatusError),
 }
 
 impl From<eval::Error> for EvalWorkerError {
     fn from(e: eval::Error) -> EvalWorkerError {
         EvalWorkerError::EvalError(e)
+    }
+}
+
+impl From<CommitStatusError> for EvalWorkerError {
+    fn from(e: CommitStatusError) -> EvalWorkerError {
+        EvalWorkerError::CommitStatusWrite(e)
     }
 }
