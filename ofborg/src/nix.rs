@@ -359,7 +359,6 @@ pub fn is_user_setting_warning(line: &str) -> bool {
         && line.ends_with("because it is a restricted setting and you are not a trusted user")
 }
 
-
 #[cfg(test)]
 mod tests {
     fn nix() -> Nix {
