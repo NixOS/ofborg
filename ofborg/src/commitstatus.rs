@@ -36,25 +36,18 @@ impl<'a> CommitStatus<'a> {
         self.url = url.unwrap_or_else(|| String::from(""))
     }
 
-    pub fn set_with_description(
-        &mut self,
-        description: &str,
-        state: hubcaps::statuses::State,
-    ) -> Result<(), CommitStatusError> {
+    pub fn set_with_description(&mut self, description: &str, state: hubcaps::statuses::State) {
         self.set_description(description.to_owned());
-        self.set(state)
+        self.set(state);
     }
 
     pub fn set_description(&mut self, description: String) {
         self.description = description;
     }
 
-    pub fn set(&self, state: hubcaps::statuses::State) -> Result<(), CommitStatusError> {
+    pub fn set(&self, state: hubcaps::statuses::State) {
         let desc = if self.description.len() >= 140 {
-            eprintln!(
-                "Warning: description is over 140 char; truncating: {:?}",
-                &self.description
-            );
+            eprintln!("Warning: description is over 140 char; truncating: {:?}", &self.description);
             self.description.chars().take(140).collect()
         } else {
             self.description.clone()
@@ -69,11 +62,6 @@ impl<'a> CommitStatus<'a> {
                     .target_url(self.url.clone())
                     .build(),
             )
-            .map(|_| ())
-            .map_err(|e| CommitStatusError::HubcapsError(e))
+            .expect("Failed to mark final status on commit");
     }
-}
-
-pub enum CommitStatusError {
-    HubcapsError(hubcaps::Error),
 }
