@@ -84,10 +84,7 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
         }
     }
 
-    fn evaluate_job(
-        &mut self,
-        job: &evaluationjob::EvaluationJob,
-    ) -> Result<worker::Actions, EvalWorkerError> {
+    fn evaluate_job(&mut self, job: &evaluationjob::EvaluationJob) -> worker::Actions {
         let mut vending_machine = self
             .github_vend
             .write()
@@ -108,7 +105,7 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
                 if iss.state == "closed" {
                     self.events.notify(Event::IssueAlreadyClosed);
                     info!("Skipping {} because it is closed", job.pr.number);
-                    return Ok(self.actions().skip(&job));
+                    return self.actions().skip(&job);
                 }
 
                 if issue_is_wip(&iss) {
@@ -127,7 +124,7 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
                 self.events.notify(Event::IssueFetchFailed);
                 info!("Error fetching {}!", job.pr.number);
                 info!("E: {:?}", e);
-                return Ok(self.actions().skip(&job));
+                return self.actions().skip(&job);
             }
         };
 
@@ -156,7 +153,12 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
 
         overall_status.set_with_description("Starting", hubcaps::statuses::State::Pending);
 
-        evaluation_strategy.pre_clone()?;
+        if self
+            .handle_strategy_err(evaluation_strategy.pre_clone(), &gists, &mut overall_status)
+            .is_err()
+        {
+            return self.actions().skip(&job);
+        }
 
         let project = self
             .cloner
@@ -181,7 +183,16 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
         info!("Checking out target branch {}", &target_branch);
         let refpath = co.checkout_origin_ref(target_branch.as_ref()).unwrap();
 
-        evaluation_strategy.on_target_branch(&Path::new(&refpath), &mut overall_status)?;
+        if self
+            .handle_strategy_err(
+                evaluation_strategy.on_target_branch(&Path::new(&refpath), &mut overall_status),
+                &gists,
+                &mut overall_status,
+            )
+            .is_err()
+        {
+            return self.actions().skip(&job);
+        }
 
         let target_branch_rebuild_sniff_start = Instant::now();
 
@@ -201,10 +212,19 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
                 .set_with_description("Commit not found", hubcaps::statuses::State::Error);
 
             info!("Commit {} doesn't exist", job.pr.head_sha);
-            return Ok(self.actions().skip(&job));
+            return self.actions().skip(&job);
         }
 
-        evaluation_strategy.after_fetch(&co)?;
+        if self
+            .handle_strategy_err(
+                evaluation_strategy.after_fetch(&co),
+                &gists,
+                &mut overall_status,
+            )
+            .is_err()
+        {
+            return self.actions().skip(&job);
+        }
 
         overall_status.set_with_description("Merging PR", hubcaps::statuses::State::Pending);
 
@@ -216,10 +236,19 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
 
             evaluation_strategy.merge_conflict();
 
-            return Ok(self.actions().skip(&job));
+            return self.actions().skip(&job);
         }
 
-        evaluation_strategy.after_merge(&mut overall_status)?;
+        if self
+            .handle_strategy_err(
+                evaluation_strategy.after_merge(&mut overall_status),
+                &gists,
+                &mut overall_status,
+            )
+            .is_err()
+        {
+            return self.actions().skip(&job);
+        }
 
         println!("Got path: {:?}, building", refpath);
         overall_status
@@ -272,11 +301,23 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
         let mut response: worker::Actions = vec![];
 
         if eval_results {
-            let complete = evaluation_strategy
-                .all_evaluations_passed(&Path::new(&refpath), &mut overall_status)?;
-
-            send_check_statuses(complete.checks, &repo);
-            response.extend(schedule_builds(complete.builds, auto_schedule_build_archs));
+            let ret = evaluation_strategy
+                .all_evaluations_passed(&Path::new(&refpath), &mut overall_status);
+            match ret {
+                Ok(complete) => {
+                    send_check_statuses(complete.checks, &repo);
+                    response.extend(schedule_builds(complete.builds, auto_schedule_build_archs));
+                }
+                Err(e) => {
+                    info!("Failed after all the evaluations passed");
+                    if self
+                        .handle_strategy_err(Err(e), &gists, &mut overall_status)
+                        .is_err()
+                    {
+                        return self.actions().skip(&job);
+                    }
+                }
+            }
 
             info!("Just about done...");
 
@@ -289,7 +330,7 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
         self.events.notify(Event::TaskEvaluationCheckComplete);
 
         info!("done!");
-        Ok(self.actions().done(&job, response))
+        self.actions().done(&job, response)
     }
 }
 
@@ -449,14 +490,4 @@ fn indicates_wip(text: &str) -> bool {
     }
 
     false
-}
-
-enum EvalWorkerError {
-    EvalError(eval::Error),
-}
-
-impl From<eval::Error> for EvalWorkerError {
-    fn from(e: eval::Error) -> EvalWorkerError {
-        EvalWorkerError::EvalError(e)
-    }
 }
