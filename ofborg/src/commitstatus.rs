@@ -46,12 +46,19 @@ impl<'a> CommitStatus<'a> {
     }
 
     pub fn set(&self, state: hubcaps::statuses::State) {
+        let desc = if self.description.len() >= 140 {
+            eprintln!("Warning: description is over 140 char; truncating: {:?}", &self.description);
+            self.description.chars().take(140).collect()
+        } else {
+            self.description.clone()
+        };
+
         self.api
             .create(
                 self.sha.as_ref(),
                 &hubcaps::statuses::StatusOptions::builder(state)
                     .context(self.context.clone())
-                    .description(self.description.clone())
+                    .description(desc)
                     .target_url(self.url.clone())
                     .build(),
             )
