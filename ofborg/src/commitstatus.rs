@@ -1,8 +1,3 @@
-extern crate amqp;
-extern crate env_logger;
-
-use hubcaps;
-
 pub struct CommitStatus<'a> {
     api: hubcaps::statuses::Statuses<'a>,
     sha: String,

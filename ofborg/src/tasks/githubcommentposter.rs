@@ -1,15 +1,12 @@
-extern crate amqp;
-extern crate env_logger;
-
 use crate::config::GithubAppVendingMachine;
 use crate::message::buildjob::{BuildJob, QueuedBuildJobs};
 use crate::message::buildresult::{BuildResult, BuildStatus, LegacyBuildResult};
 use crate::message::Repo;
 use crate::worker;
+
 use amqp::protocol::basic::{BasicProperties, Deliver};
 use chrono::{DateTime, Utc};
 use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
-use serde_json;
 
 pub struct GitHubCommentPoster {
     github_vend: GithubAppVendingMachine,

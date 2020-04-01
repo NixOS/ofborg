@@ -7,29 +7,12 @@
 
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
-
-extern crate serde_json;
 
 #[macro_use]
 extern crate log;
 
 #[macro_use]
 extern crate nom;
-
-extern crate amqp;
-extern crate chrono;
-extern crate either;
-extern crate env_logger;
-extern crate fs2;
-extern crate hubcaps;
-extern crate hyper;
-extern crate hyper_native_tls;
-extern crate lru_cache;
-extern crate md5;
-extern crate separator;
-extern crate tempfile;
-extern crate uuid;
 
 use std::env;
 

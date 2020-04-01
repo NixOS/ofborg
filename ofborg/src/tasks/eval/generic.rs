@@ -2,6 +2,7 @@ use crate::checkout::CachedProjectCo;
 use crate::commitstatus::CommitStatus;
 use crate::evalchecker::EvalChecker;
 use crate::tasks::eval::{EvaluationComplete, EvaluationStrategy, StepResult};
+
 use std::path::Path;
 
 #[derive(Default)]

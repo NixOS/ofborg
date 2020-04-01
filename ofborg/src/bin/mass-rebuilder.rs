@@ -1,20 +1,14 @@
-extern crate amqp;
-extern crate env_logger;
-extern crate ofborg;
-extern crate sys_info;
-
+use amqp::Basic;
 use ofborg::checkout;
 use ofborg::config;
+use ofborg::easyamqp::{self, TypedWrappers};
+use ofborg::stats;
 use ofborg::tasks;
+use ofborg::worker;
+
 use std::env;
 use std::path::Path;
 use std::process;
-
-use amqp::Basic;
-use ofborg::easyamqp;
-use ofborg::easyamqp::TypedWrappers;
-use ofborg::stats;
-use ofborg::worker;
 
 fn main() {
     let memory_info = sys_info::mem_info().expect("Unable to get memory information from OS");

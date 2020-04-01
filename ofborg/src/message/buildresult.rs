@@ -1,4 +1,5 @@
 use crate::message::{Pr, Repo};
+
 use hubcaps::checks::Conclusion;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]

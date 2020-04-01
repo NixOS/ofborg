@@ -1,15 +1,12 @@
-extern crate amqp;
-extern crate env_logger;
-
 use crate::message::buildlogmsg::{BuildLogMsg, BuildLogStart};
 use crate::message::buildresult::BuildResult;
 use crate::worker;
 use crate::writetoline::LineWriter;
+
 use amqp::protocol::basic::{BasicProperties, Deliver};
 use lru_cache::LruCache;
-use serde_json;
-use std::fs;
-use std::fs::{File, OpenOptions};
+
+use std::fs::{self, File, OpenOptions};
 use std::io::Write;
 use std::path::{Component, PathBuf};
 

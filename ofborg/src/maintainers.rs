@@ -1,8 +1,10 @@
 use crate::nix::Nix;
+
+use tempfile::NamedTempFile;
+
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
 use std::path::Path;
-use tempfile::NamedTempFile;
 
 #[derive(Deserialize, Debug, Eq, PartialEq)]
 pub struct ImpactedMaintainers(HashMap<Maintainer, Vec<Package>>);

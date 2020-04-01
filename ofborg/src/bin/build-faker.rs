@@ -1,21 +1,11 @@
-extern crate amqp;
-extern crate env_logger;
-extern crate ofborg;
-
-extern crate hubcaps;
-extern crate hyper;
-extern crate hyper_native_tls;
-
-use std::env;
-
 use ofborg::commentparser;
 use ofborg::config;
 use ofborg::easyamqp;
-use ofborg::message::buildjob;
-use ofborg::message::{Pr, Repo};
-use ofborg::notifyworker;
-use ofborg::notifyworker::NotificationReceiver;
+use ofborg::message::{buildjob, Pr, Repo};
+use ofborg::notifyworker::{self, NotificationReceiver};
 use ofborg::worker;
+
+use std::env;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());

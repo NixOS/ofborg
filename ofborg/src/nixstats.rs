@@ -1,5 +1,6 @@
+//! Statistics emitted by Nix when NIX_SHOW_STATS=1
 use separator::Separatable;
-/// Statistics emitted by Nix when NIX_SHOW_STATS=1
+
 use std::collections::HashMap;
 
 #[derive(Deserialize)]

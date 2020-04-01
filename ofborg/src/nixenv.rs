@@ -1,16 +1,11 @@
+//! Evaluates the expression like Hydra would, with regards to
+//! architecture support and recursed packages.
 use crate::nix;
-/// Evaluates the expression like Hydra would, with regards to
-/// architecture support and recursed packages.
 use crate::nixstats::EvaluationStats;
 use crate::outpathdiff;
-use serde_json;
-use std::fs;
-use std::fs::File;
-use std::io::Read;
-use std::io::Seek;
-use std::io::SeekFrom;
-use std::io::Write;
-use std::io::{BufRead, BufReader};
+
+use std::fs::{self, File};
+use std::io::{BufRead, BufReader, Read, Seek, SeekFrom, Write};
 use std::path::PathBuf;
 
 pub struct HydraNixEnv {

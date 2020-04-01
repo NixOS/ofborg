@@ -1,18 +1,8 @@
-use std::thread;
-
 use std::collections::HashMap;
-use std::io;
-use std::io::BufRead;
-use std::io::BufReader;
-use std::io::Read;
-use std::process::Child;
-use std::process::Command;
-use std::process::ExitStatus;
-use std::process::Stdio;
-use std::sync::mpsc;
-use std::sync::mpsc::sync_channel;
-use std::sync::mpsc::{Receiver, SyncSender};
-use std::thread::JoinHandle;
+use std::io::{self, BufRead, BufReader, Read};
+use std::process::{Child, Command, ExitStatus, Stdio};
+use std::sync::mpsc::{self, sync_channel, Receiver, SyncSender};
+use std::thread::{self, JoinHandle};
 
 // Specifically set to fall under 1/2 of the AMQP library's
 // SyncSender limitation.

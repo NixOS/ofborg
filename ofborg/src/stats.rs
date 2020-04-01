@@ -1,7 +1,5 @@
 use amqp::protocol::basic::BasicProperties;
-use amqp::Basic;
-use amqp::Channel;
-use serde_json;
+use amqp::{Basic, Channel};
 
 include!(concat!(env!("OUT_DIR"), "/events.rs"));
 

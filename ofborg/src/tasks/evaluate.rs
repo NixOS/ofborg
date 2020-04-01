@@ -1,8 +1,4 @@
 /// This is what evaluates every pull-request
-extern crate amqp;
-extern crate env_logger;
-extern crate uuid;
-
 use crate::acl::ACL;
 use crate::checkout;
 use crate::commitstatus::{CommitStatus, CommitStatusError};
@@ -10,16 +6,16 @@ use crate::config::GithubAppVendingMachine;
 use crate::files::file_to_str;
 use crate::message::{buildjob, evaluationjob};
 use crate::nix;
-use crate::stats;
-use crate::stats::Event;
+use crate::stats::{self, Event};
 use crate::systems;
 use crate::tasks::eval;
 use crate::worker;
+
 use amqp::protocol::basic::{BasicProperties, Deliver};
-use hubcaps;
 use hubcaps::checks::CheckRunOptions;
 use hubcaps::gists::Gists;
 use hubcaps::issues::Issue;
+
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::RwLock;

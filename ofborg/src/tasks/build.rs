@@ -1,7 +1,3 @@
-extern crate amqp;
-extern crate env_logger;
-extern crate uuid;
-
 use crate::checkout;
 use crate::commentparser;
 use crate::message::buildresult::{BuildResult, BuildStatus, V1Tag};
@@ -9,9 +5,11 @@ use crate::message::{buildjob, buildlogmsg};
 use crate::nix;
 use crate::notifyworker;
 use crate::worker;
+
 use amqp::protocol::basic::{BasicProperties, Deliver};
-use std::collections::VecDeque;
 use uuid::Uuid;
+
+use std::collections::VecDeque;
 
 pub struct BuildWorker {
     cloner: checkout::CachedCloner,

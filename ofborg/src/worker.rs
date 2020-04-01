@@ -1,8 +1,7 @@
 use amqp::protocol::basic::{BasicProperties, Deliver};
-use amqp::Basic;
-use amqp::{Channel, Consumer};
+use amqp::{Basic, Channel, Consumer};
 use serde::Serialize;
-use serde_json;
+
 use std::marker::Send;
 
 pub struct Worker<T: SimpleWorker> {

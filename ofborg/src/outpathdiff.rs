@@ -1,7 +1,7 @@
 use crate::nix;
-use crate::nixenv::Error as NixEnvError;
-use crate::nixenv::HydraNixEnv;
+use crate::nixenv::{Error as NixEnvError, HydraNixEnv};
 use crate::nixstats::{EvaluationStats, EvaluationStatsDiff};
+
 use std::collections::{HashMap, HashSet};
 use std::io::BufRead;
 use std::path::PathBuf;

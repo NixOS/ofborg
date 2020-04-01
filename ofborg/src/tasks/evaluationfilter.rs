@@ -1,12 +1,9 @@
-extern crate amqp;
-extern crate env_logger;
-
 use crate::acl;
 use crate::ghevent;
 use crate::message::{evaluationjob, Pr, Repo};
 use crate::worker;
+
 use amqp::protocol::basic::{BasicProperties, Deliver};
-use serde_json;
 
 pub struct EvaluationFilterWorker {
     acl: acl::ACL,

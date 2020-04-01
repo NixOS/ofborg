@@ -1,6 +1,5 @@
 use crate::commentparser::Subset;
 use crate::message::{Pr, Repo};
-use serde_json;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BuildJob {

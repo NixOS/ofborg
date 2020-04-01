@@ -2,29 +2,29 @@ use crate::checkout::CachedProjectCo;
 use crate::commentparser::Subset;
 use crate::commitstatus::CommitStatus;
 use crate::evalchecker::EvalChecker;
-use crate::maintainers;
-use crate::maintainers::ImpactedMaintainers;
+use crate::maintainers::{self, ImpactedMaintainers};
 use crate::message::buildjob::BuildJob;
 use crate::message::evaluationjob::EvaluationJob;
-use crate::nix;
-use crate::nix::Nix;
+use crate::nix::{self, Nix};
 use crate::nixenv::HydraNixEnv;
 use crate::outpathdiff::{OutPathDiff, PackageArch};
-use crate::tagger::{MaintainerPRTagger, PathsTagger, RebuildTagger};
-use crate::tagger::{PkgsAddedRemovedTagger, StdenvTagger};
+use crate::tagger::{
+    MaintainerPRTagger, PathsTagger, PkgsAddedRemovedTagger, RebuildTagger, StdenvTagger,
+};
 use crate::tasks::eval::{
     stdenvs::Stdenvs, Error, EvaluationComplete, EvaluationStrategy, StepResult,
 };
-use crate::tasks::evaluate::make_gist;
-use crate::tasks::evaluate::update_labels;
+use crate::tasks::evaluate::{make_gist, update_labels};
+
 use chrono::Utc;
 use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
 use hubcaps::gists::Gists;
 use hubcaps::issues::{Issue, IssueRef};
 use hubcaps::repositories::Repository;
+use uuid::Uuid;
+
 use std::collections::HashMap;
 use std::path::Path;
-use uuid::Uuid;
 
 pub struct NixpkgsStrategy<'a> {
     job: &'a EvaluationJob,

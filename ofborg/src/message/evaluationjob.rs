@@ -1,6 +1,5 @@
 use crate::message::{Pr, Repo};
 use crate::worker;
-use serde_json;
 
 pub fn from(data: &[u8]) -> Result<EvaluationJob, serde_json::error::Error> {
     serde_json::from_slice(&data)

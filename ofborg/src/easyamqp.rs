@@ -1,6 +1,6 @@
 use crate::config::RabbitMQConfig;
 use crate::ofborg;
-use amqp;
+
 use amqp::Basic;
 
 pub struct ConsumeConfig {

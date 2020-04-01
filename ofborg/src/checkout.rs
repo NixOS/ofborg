@@ -1,8 +1,6 @@
-use crate::clone;
-use crate::clone::GitClonable;
-use md5;
-use std::ffi::OsStr;
-use std::ffi::OsString;
+use crate::clone::{self, GitClonable};
+
+use std::ffi::{OsStr, OsString};
 use std::fs;
 use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
