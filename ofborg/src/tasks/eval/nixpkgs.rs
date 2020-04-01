@@ -1,30 +1,30 @@
-use crate::maintainers;
-use crate::maintainers::ImpactedMaintainers;
+use crate::checkout::CachedProjectCo;
+use crate::commentparser::Subset;
+use crate::commitstatus::CommitStatus;
+use crate::evalchecker::EvalChecker;
+use crate::maintainers::{self, ImpactedMaintainers};
+use crate::message::buildjob::BuildJob;
+use crate::message::evaluationjob::EvaluationJob;
+use crate::nix::{self, Nix};
 use crate::nixenv::HydraNixEnv;
+use crate::outpathdiff::{OutPathDiff, PackageArch};
+use crate::tagger::{
+    MaintainerPRTagger, PathsTagger, PkgsAddedRemovedTagger, RebuildTagger, StdenvTagger,
+};
+use crate::tasks::eval::{
+    stdenvs::Stdenvs, Error, EvaluationComplete, EvaluationStrategy, StepResult,
+};
+use crate::tasks::evaluate::{make_gist, update_labels};
+
 use chrono::Utc;
 use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
 use hubcaps::gists::Gists;
 use hubcaps::issues::{Issue, IssueRef};
 use hubcaps::repositories::Repository;
-use ofborg::checkout::CachedProjectCo;
-use ofborg::commentparser::Subset;
-use ofborg::commitstatus::CommitStatus;
-use ofborg::evalchecker::EvalChecker;
-use ofborg::message::buildjob::BuildJob;
-use ofborg::message::evaluationjob::EvaluationJob;
-use ofborg::nix;
-use ofborg::nix::Nix;
-use ofborg::outpathdiff::{OutPathDiff, PackageArch};
-use ofborg::tagger::{MaintainerPRTagger, PathsTagger, RebuildTagger};
-use ofborg::tagger::{PkgsAddedRemovedTagger, StdenvTagger};
-use ofborg::tasks::eval::{
-    stdenvs::Stdenvs, Error, EvaluationComplete, EvaluationStrategy, StepResult,
-};
-use ofborg::tasks::evaluate::update_labels;
+use uuid::Uuid;
+
 use std::collections::HashMap;
 use std::path::Path;
-use tasks::evaluate::make_gist;
-use uuid::Uuid;
 
 pub struct NixpkgsStrategy<'a> {
     job: &'a EvaluationJob,

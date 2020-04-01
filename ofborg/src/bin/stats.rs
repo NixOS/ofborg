@@ -1,14 +1,9 @@
-extern crate amqp;
-extern crate hyper;
-extern crate ofborg;
-
-use ofborg::{config, easyamqp, stats, tasks, worker};
-use std::env;
-
 use amqp::Basic;
 use hyper::server::{Request, Response, Server};
 use ofborg::easyamqp::TypedWrappers;
+use ofborg::{config, easyamqp, stats, tasks, worker};
 
+use std::env;
 use std::thread;
 
 fn main() {

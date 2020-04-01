@@ -1,4 +1,4 @@
-use ofborg::ghevent::Repository;
+use crate::ghevent::Repository;
 
 #[derive(Serialize, Deserialize)]
 pub struct PullRequestEvent {

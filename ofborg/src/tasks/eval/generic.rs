@@ -1,8 +1,9 @@
-use ofborg::checkout::CachedProjectCo;
-use ofborg::commitstatus::CommitStatus;
-use ofborg::evalchecker::EvalChecker;
+use crate::checkout::CachedProjectCo;
+use crate::commitstatus::CommitStatus;
+use crate::evalchecker::EvalChecker;
+use crate::tasks::eval::{EvaluationComplete, EvaluationStrategy, StepResult};
+
 use std::path::Path;
-use tasks::eval::{EvaluationComplete, EvaluationStrategy, StepResult};
 
 #[derive(Default)]
 pub struct GenericStrategy {}

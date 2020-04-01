@@ -1,19 +1,12 @@
-extern crate amqp;
-extern crate env_logger;
-extern crate ofborg;
-
-#[macro_use]
-extern crate log;
-
-use std::env;
-
 use amqp::Basic;
+use log::{log, warn};
 use ofborg::checkout;
 use ofborg::config;
-use ofborg::easyamqp;
-use ofborg::easyamqp::TypedWrappers;
+use ofborg::easyamqp::{self, TypedWrappers};
 use ofborg::notifyworker;
 use ofborg::tasks;
+
+use std::env;
 use std::path::Path;
 
 fn main() {

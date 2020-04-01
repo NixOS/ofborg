@@ -1,11 +1,7 @@
-extern crate amqp;
-extern crate env_logger;
-extern crate ofborg;
-
-use std::env;
-
 use ofborg::config;
 use ofborg::nix;
+
+use std::env;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;

@@ -1,7 +1,7 @@
-use amqp;
+use crate::config::RabbitMQConfig;
+use crate::ofborg;
+
 use amqp::Basic;
-use ofborg;
-use ofborg::config::RabbitMQConfig;
 
 pub struct ConsumeConfig {
     /// Specifies the name of the queue to consume from.

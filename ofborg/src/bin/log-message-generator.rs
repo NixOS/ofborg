@@ -1,18 +1,12 @@
-extern crate amqp;
-extern crate env_logger;
-extern crate ofborg;
+use ofborg::config;
+use ofborg::easyamqp;
+use ofborg::message::{buildjob, Pr, Repo};
+use ofborg::notifyworker;
+use ofborg::tasks::build;
 
 use std::env;
 use std::thread;
 use std::time::Duration;
-
-use ofborg::message::{Pr, Repo};
-
-use ofborg::config;
-use ofborg::easyamqp;
-use ofborg::message::buildjob;
-use ofborg::notifyworker;
-use ofborg::tasks::build;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());

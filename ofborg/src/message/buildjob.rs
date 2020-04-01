@@ -1,6 +1,5 @@
-use ofborg::commentparser::Subset;
-use ofborg::message::{Pr, Repo};
-use serde_json;
+use crate::commentparser::Subset;
+use crate::message::{Pr, Repo};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BuildJob {

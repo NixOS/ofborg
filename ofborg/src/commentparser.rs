@@ -16,16 +16,21 @@ pub fn parse(text: &str) -> Option<Vec<Instruction>> {
     }
 }
 
-named!(normal_token(CompleteStr) -> CompleteStr,
-    verify!(take_while1!(|c: char| c.is_ascii_graphic()),
-            |s: CompleteStr| !s.0.eq_ignore_ascii_case("@grahamcofborg"))
+named!(
+    normal_token(CompleteStr) -> CompleteStr,
+    verify!(
+        take_while1!(|c: char| c.is_ascii_graphic()),
+        |s: CompleteStr| !s.0.eq_ignore_ascii_case("@grahamcofborg")
+    )
 );
-named!(parse_line_impl(CompleteStr) -> Option<Vec<Instruction>>, alt!(
-    do_parse!(
-        res: ws!(many1!(ws!(preceded!(
-            alt!(tag_no_case!("@grahamcofborg") | tag_no_case!("@ofborg")),
-            alt!(
-                ws!(do_parse!(
+named!(
+    parse_line_impl(CompleteStr) -> Option<Vec<Instruction>>,
+    alt!(
+        do_parse!(
+            res: ws!(many1!(ws!(preceded!(
+                alt!(tag_no_case!("@grahamcofborg") | tag_no_case!("@ofborg")),
+                alt!(
+                    ws!(do_parse!(
                     tag!("build") >>
                     pkgs: ws!(many1!(map!(normal_token, |s| s.0.to_owned()))) >>
                     (Some(Instruction::Build(Subset::Nixpkgs, pkgs)))
@@ -40,13 +45,12 @@ named!(parse_line_impl(CompleteStr) -> Option<Vec<Instruction>>, alt!(
                 // it would be better to return an error so that the caller would know one of the
                 // commands couldn't be handled?
                 value!(None, many_till!(take!(1), tag_no_case!("@grahamcofborg")))
-            )
-        )))) >>
-        eof!() >>
-        (Some(res.into_iter().filter_map(|x| x).collect()))
-    ) |
-    value!(None)
-));
+                )
+            )))) >> eof!()
+                >> (Some(res.into_iter().filter_map(|x| x).collect()))
+        ) | value!(None)
+    )
+);
 
 pub fn parse_line(text: &str) -> Option<Vec<Instruction>> {
     match parse_line_impl(CompleteStr(text)) {

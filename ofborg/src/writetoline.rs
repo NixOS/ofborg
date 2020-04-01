@@ -1,9 +1,5 @@
 use std::fs::File;
-use std::io::BufRead;
-use std::io::BufReader;
-use std::io::Seek;
-use std::io::SeekFrom;
-use std::io::Write;
+use std::io::{BufRead, BufReader, Seek, SeekFrom, Write};
 
 pub struct LineWriter {
     file: File,
@@ -84,7 +80,7 @@ impl LineWriter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ofborg::test_scratch::TestScratch;
+    use crate::test_scratch::TestScratch;
     use std::fs::File;
     use std::fs::OpenOptions;
     use std::io::Read;

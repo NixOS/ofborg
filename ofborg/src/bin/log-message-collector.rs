@@ -1,15 +1,10 @@
-extern crate amqp;
-extern crate env_logger;
-extern crate ofborg;
+use ofborg::config;
+use ofborg::easyamqp::{self, TypedWrappers};
+use ofborg::tasks;
+use ofborg::worker;
 
 use std::env;
 use std::path::PathBuf;
-
-use ofborg::config;
-use ofborg::easyamqp;
-use ofborg::easyamqp::TypedWrappers;
-use ofborg::tasks;
-use ofborg::worker;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());

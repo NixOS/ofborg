@@ -1,28 +1,25 @@
 /// This is what evaluates every pull-request
-extern crate amqp;
-extern crate env_logger;
-extern crate uuid;
+use crate::acl::ACL;
+use crate::checkout;
+use crate::commitstatus::{CommitStatus, CommitStatusError};
+use crate::config::GithubAppVendingMachine;
+use crate::files::file_to_str;
+use crate::message::{buildjob, evaluationjob};
+use crate::nix;
+use crate::stats::{self, Event};
+use crate::systems;
+use crate::tasks::eval;
+use crate::worker;
+
 use amqp::protocol::basic::{BasicProperties, Deliver};
-use hubcaps;
 use hubcaps::checks::CheckRunOptions;
 use hubcaps::gists::Gists;
 use hubcaps::issues::Issue;
-use ofborg::acl::ACL;
-use ofborg::checkout;
-use ofborg::commitstatus::{CommitStatus, CommitStatusError};
-use ofborg::config::GithubAppVendingMachine;
-use ofborg::files::file_to_str;
-use ofborg::message::{buildjob, evaluationjob};
-use ofborg::nix;
-use ofborg::stats;
-use ofborg::stats::Event;
-use ofborg::systems;
-use ofborg::worker;
+
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::RwLock;
 use std::time::Instant;
-use tasks::eval;
 
 pub struct EvaluationWorker<E> {
     cloner: checkout::CachedCloner,
@@ -126,6 +123,7 @@ struct OneEval<'a, E> {
 }
 
 impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
+    #[allow(clippy::too_many_arguments)]
     fn new(
         client_app: &'a hubcaps::Github,
         client_legacy: &'a hubcaps::Github,
@@ -236,7 +234,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             }
         }
 
-        return self.actions().skip(&self.job);
+        self.actions().skip(&self.job)
     }
 
     fn evaluate_job(&mut self) -> Result<worker::Actions, EvalWorkerError> {

@@ -1,16 +1,11 @@
-/// Evaluates the expression like Hydra would, with regards to
-/// architecture support and recursed packages.
+//! Evaluates the expression like Hydra would, with regards to
+//! architecture support and recursed packages.
+use crate::nix;
 use crate::nixstats::EvaluationStats;
 use crate::outpathdiff;
-use ofborg::nix;
-use serde_json;
-use std::fs;
-use std::fs::File;
-use std::io::Read;
-use std::io::Seek;
-use std::io::SeekFrom;
-use std::io::Write;
-use std::io::{BufRead, BufReader};
+
+use std::fs::{self, File};
+use std::io::{BufRead, BufReader, Read, Seek, SeekFrom, Write};
 use std::path::PathBuf;
 
 pub struct HydraNixEnv {
@@ -42,11 +37,11 @@ impl HydraNixEnv {
                 .lines()
                 .collect::<Result<Vec<String>, _>>()?
                 .into_iter()
-                .filter(|msg| msg.trim().len() > 0)
+                .filter(|msg| !msg.trim().is_empty())
                 .filter(|line| !nix::is_user_setting_warning(line))
                 .collect::<Vec<String>>();
 
-            if evaluation_errors.len() > 0 {
+            if !evaluation_errors.is_empty() {
                 return Err(Error::UncleanEvaluation(evaluation_errors));
             }
 
@@ -105,7 +100,8 @@ impl HydraNixEnv {
 
         let (status, stdout, stderr) = self.nix.run_stderr_stdout(cmd);
         let stats = File::open(self.outpath_stats_path());
-        return (status, stdout, stderr, stats);
+
+        (status, stdout, stderr, stats)
     }
 }
 

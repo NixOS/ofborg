@@ -1,6 +1,5 @@
-use ofborg::message::{Pr, Repo};
-use ofborg::worker;
-use serde_json;
+use crate::message::{Pr, Repo};
+use crate::worker;
 
 pub fn from(data: &[u8]) -> Result<EvaluationJob, serde_json::error::Error> {
     serde_json::from_slice(&data)
