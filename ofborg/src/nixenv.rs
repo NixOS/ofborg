@@ -37,11 +37,11 @@ impl HydraNixEnv {
                 .lines()
                 .collect::<Result<Vec<String>, _>>()?
                 .into_iter()
-                .filter(|msg| msg.trim().len() > 0)
+                .filter(|msg| !msg.trim().is_empty())
                 .filter(|line| !nix::is_user_setting_warning(line))
                 .collect::<Vec<String>>();
 
-            if evaluation_errors.len() > 0 {
+            if !evaluation_errors.is_empty() {
                 return Err(Error::UncleanEvaluation(evaluation_errors));
             }
 
@@ -100,7 +100,8 @@ impl HydraNixEnv {
 
         let (status, stdout, stderr) = self.nix.run_stderr_stdout(cmd);
         let stats = File::open(self.outpath_stats_path());
-        return (status, stdout, stderr, stats);
+
+        (status, stdout, stderr, stats)
     }
 }
 

@@ -123,6 +123,7 @@ struct OneEval<'a, E> {
 }
 
 impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
+    #[allow(clippy::too_many_arguments)]
     fn new(
         client_app: &'a hubcaps::Github,
         client_legacy: &'a hubcaps::Github,
@@ -233,7 +234,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             }
         }
 
-        return self.actions().skip(&self.job);
+        self.actions().skip(&self.job)
     }
 
     fn evaluate_job(&mut self) -> Result<worker::Actions, EvalWorkerError> {
