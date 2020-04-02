@@ -10,9 +10,9 @@ let
     };
   };
 
-  drv = (pkgs.callPackage ./ofborg/Cargo.nix {
+  drv = ((pkgs.callPackage ./ofborg/Cargo.nix {
     cratesIO = pkgs.callPackage ./ofborg/crates-io.nix {};
-  }).ofborg {};
+  }).ofborg {}).override { release = false; };
 
   src = stripDeps (drv.override ofborgOverrides);
 
