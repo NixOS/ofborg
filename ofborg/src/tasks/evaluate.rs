@@ -221,16 +221,23 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 update_labels(&issue_ref, &[String::from("ofborg-internal-error")], &[]);
             }
             EvalWorkerError::EvalError(eval::Error::Fail(msg)) => {
-                self.update_status(msg, None, hubcaps::statuses::State::Failure)
-                    .expect("Failed to set status");
+                self.update_status(msg.clone(), None, hubcaps::statuses::State::Failure)
+                    .unwrap_or_else(|e| {
+                        panic!("Failed to set plain status: {}; e: {:#?}", msg, e);
+                    });
             }
             EvalWorkerError::EvalError(eval::Error::FailWithGist(msg, filename, content)) => {
                 self.update_status(
-                    msg,
-                    self.make_gist(&filename, Some("".to_owned()), content),
+                    msg.clone(),
+                    self.make_gist(&filename, Some("".to_owned()), content.clone()),
                     hubcaps::statuses::State::Failure,
                 )
-                .expect("Failed to set status");
+                .unwrap_or_else(|e| {
+                    panic!(
+                        "Failed to set status with a gist: {}, {}, {}; e: {:#?}",
+                        msg, filename, content, e
+                    );
+                });
             }
         }
 
