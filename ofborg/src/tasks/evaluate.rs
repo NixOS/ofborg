@@ -174,11 +174,16 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         let mut builder = hubcaps::statuses::StatusOptions::builder(state);
         builder.context("grahamcofborg-eval");
-        builder.description(description);
+        builder.description(description.clone());
 
         if let Some(url) = url {
             builder.target_url(url);
         }
+
+        info!(
+            "Updating status on {}:{} -> {}",
+            &self.job.pr.number, &self.job.pr.head_sha, &description
+        );
 
         self.repo
             .statuses()
