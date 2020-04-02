@@ -312,6 +312,7 @@ impl<'a> NixpkgsStrategy<'a> {
                         .keys()
                         .map(|pkgarch| pkgarch.package.clone())
                         .filter(|pkg| possibly_touched_packages.contains(&pkg))
+                        .flat_map(|pkg| vec![pkg.clone(), pkg + ".passthru.tests"].into_iter())
                         .collect();
                     try_build.sort();
                     try_build.dedup();
@@ -319,11 +320,11 @@ impl<'a> NixpkgsStrategy<'a> {
                     status.set_url(None);
                     status.set(hubcaps::statuses::State::Success)?;
 
-                    if !try_build.is_empty() && try_build.len() <= 10 {
+                    if !try_build.is_empty() && try_build.len() <= 20 {
                         // In the case of trying to merge master in to
                         // a stable branch, we don't want to do this.
                         // Therefore, only schedule builds if there
-                        // less than or exactly 10
+                        // less than or exactly 20
                         Ok(vec![BuildJob::new(
                             self.job.repo.clone(),
                             self.job.pr.clone(),
