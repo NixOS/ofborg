@@ -225,6 +225,9 @@
             "nixos/tests/xfce.nix",
             "nixos/tests/xfce4-14.nix"
         ],
+        "6.topic: cinnamon": [
+            "pkgs/desktops/cinnamon"
+        ],
         "8.has: changelog": [
             "doc/manual/release-notes/"
         ],
