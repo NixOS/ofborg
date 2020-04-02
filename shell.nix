@@ -79,7 +79,7 @@ let
       nix-prefetch-git
       latest.rustChannels.stable.rust
       #rustfmt
-      #carnix
+      carnix
       openssl_1_0_2.dev
       pkgconfig
       git
