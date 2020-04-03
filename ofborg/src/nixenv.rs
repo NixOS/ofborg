@@ -5,7 +5,7 @@ use crate::nixstats::EvaluationStats;
 use crate::outpathdiff;
 
 use std::fs::{self, File};
-use std::io::{BufRead, BufReader, Read, Seek, SeekFrom, Write};
+use std::io::{self, BufRead, BufReader, Read, Seek, SeekFrom, Write};
 use std::path::PathBuf;
 
 pub struct HydraNixEnv {
@@ -59,16 +59,21 @@ impl HydraNixEnv {
 
     /// Put outpaths.nix in to the project root, which is what
     /// emulates Hydra's behavior.
-    fn place_nix(&self) -> Result<(), std::io::Error> {
-        let mut file = File::create(self.outpath_nix_path())?;
-        file.write_all(include_bytes!("outpaths.nix"))?;
+    fn place_nix(&self) -> Result<(), Error> {
+        let outpath = self.outpath_nix_path();
+        let mut file = File::create(&outpath).map_err(|e| Error::CreateFile(outpath, e))?;
 
-        Ok(())
+        file.write_all(include_bytes!("outpaths.nix"))
+            .map_err(|e| Error::WriteFile(file, e))
     }
 
-    fn remove_nix(&self) -> Result<(), std::io::Error> {
-        fs::remove_file(self.outpath_nix_path())?;
-        fs::remove_file(self.outpath_stats_path())?;
+    fn remove_nix(&self) -> Result<(), Error> {
+        let outpath_nix = self.outpath_nix_path();
+        let outpath_stats = self.outpath_stats_path();
+
+        fs::remove_file(&outpath_nix).map_err(|e| Error::RemoveFile(outpath_nix, e))?;
+        fs::remove_file(&outpath_stats).map_err(|e| Error::RemoveFile(outpath_stats, e))?;
+
         Ok(())
     }
 
@@ -80,7 +85,7 @@ impl HydraNixEnv {
         self.path.join(".gc-of-borg-stats.json")
     }
 
-    fn run_nix_env(&self) -> (bool, File, File, Result<File, std::io::Error>) {
+    fn run_nix_env(&self) -> (bool, File, File, Result<File, io::Error>) {
         let check_meta = if self.check_meta { "true" } else { "false" };
 
         let mut cmd = self.nix.safe_command(
@@ -106,14 +111,17 @@ impl HydraNixEnv {
 }
 
 pub enum Error {
-    Io(std::io::Error),
+    Io(io::Error),
+    CreateFile(PathBuf, io::Error),
+    RemoveFile(PathBuf, io::Error),
+    WriteFile(File, io::Error),
     CommandFailed(File),
-    StatsParse(File, Result<u64, std::io::Error>, serde_json::Error),
+    StatsParse(File, Result<u64, io::Error>, serde_json::Error),
     UncleanEvaluation(Vec<String>),
 }
 
-impl From<std::io::Error> for Error {
-    fn from(e: std::io::Error) -> Error {
+impl From<io::Error> for Error {
+    fn from(e: io::Error) -> Error {
         Error::Io(e)
     }
 }
@@ -122,6 +130,15 @@ impl Error {
     pub fn display(self) -> String {
         match self {
             Error::Io(e) => format!("Failed during the setup of executing nix-env: {:?}", e),
+            Error::CreateFile(path, err) => {
+                format!("Failed to create file '{:?}': {:?}", path, err)
+            }
+            Error::RemoveFile(path, err) => {
+                format!("Failed to remove file '{:?}': {:?}", path, err)
+            }
+            Error::WriteFile(file, err) => {
+                format!("Failed to write to file '{:?}': {:?}", file, err)
+            }
             Error::CommandFailed(mut fd) => {
                 let mut buffer = Vec::new();
                 let read_result = fd.read_to_end(&mut buffer);
