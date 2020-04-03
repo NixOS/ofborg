@@ -247,7 +247,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "hubcaps"
 version = "0.3.16"
-source = "git+https://github.com/grahamc/hubcaps.git#3638c7df3ecd46a773ea76a07c845e08bbd6d9ab"
+source = "git+https://github.com/grahamc/hubcaps.git#5e656ba35ab4ee74aa72b3b5c3a62e1bf351ff6a"
 dependencies = [
  "error-chain 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "frank_jwt 3.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
