@@ -67,8 +67,8 @@ rec {
       authors = [ "softprops <d.tangren@gmail.com>" ];
       src = fetchgit {
          url = "https://github.com/grahamc/hubcaps.git";
-         rev = "3638c7df3ecd46a773ea76a07c845e08bbd6d9ab";
-         sha256 = "1gx3fplnyna18f7a90jn9mi22xpqwyi9zpn8jvamlxb852lybmhd";
+         rev = "5e656ba35ab4ee74aa72b3b5c3a62e1bf351ff6a";
+         sha256 = "1p7rn8y71fjwfag65437gz7a56pysz9n69smaknvblyxpjdzmh4d";
          fetchSubmodules = false;
       };
       dependencies = mapFeatures features ([
