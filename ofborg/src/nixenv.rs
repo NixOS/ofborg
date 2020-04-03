@@ -61,29 +61,18 @@ impl HydraNixEnv {
     /// emulates Hydra's behavior.
     fn place_nix(&self) -> Result<(), Error> {
         let outpath = self.outpath_nix_path();
+        let mut file = File::create(&outpath).map_err(|e| Error::CreateFile(outpath, e))?;
 
-        let mut file = match File::create(&outpath) {
-            Ok(f) => f,
-            Err(e) => return Err(Error::CreateFile(outpath, e)),
-        };
-
-        match file.write_all(include_bytes!("outpaths.nix")) {
-            Ok(_) => Ok(()),
-            Err(e) => Err(Error::WriteFile(file, e)),
-        }
+        file.write_all(include_bytes!("outpaths.nix"))
+            .map_err(|e| Error::WriteFile(file, e))
     }
 
     fn remove_nix(&self) -> Result<(), Error> {
         let outpath_nix = self.outpath_nix_path();
         let outpath_stats = self.outpath_stats_path();
 
-        if let Err(e) = fs::remove_file(&outpath_nix) {
-            return Err(Error::RemoveFile(outpath_nix, e));
-        }
-
-        if let Err(e) = fs::remove_file(&outpath_stats) {
-            return Err(Error::RemoveFile(outpath_stats, e));
-        }
+        fs::remove_file(&outpath_nix).map_err(|e| Error::RemoveFile(outpath_nix, e))?;
+        fs::remove_file(&outpath_stats).map_err(|e| Error::RemoveFile(outpath_stats, e))?;
 
         Ok(())
     }
