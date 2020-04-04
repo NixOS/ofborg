@@ -72,7 +72,13 @@ impl HydraNixEnv {
         let outpath_stats = self.outpath_stats_path();
 
         fs::remove_file(&outpath_nix).map_err(|e| Error::RemoveFile(outpath_nix, e))?;
-        fs::remove_file(&outpath_stats).map_err(|e| Error::RemoveFile(outpath_stats, e))?;
+
+        // Removing the stats file can fail if `nix` itself errored, for example
+        // when it fails to evaluate something. In this case, we can ignore (but
+        // warn about) the error.
+        if let Err(e) = fs::remove_file(&outpath_stats) {
+            warn!("Failed to remove file {:?}: {:?}", outpath_stats, e)
+        }
 
         Ok(())
     }
