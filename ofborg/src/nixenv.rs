@@ -136,12 +136,8 @@ impl Error {
     pub fn display(self) -> String {
         match self {
             Error::Io(e) => format!("Failed during the setup of executing nix-env: {:?}", e),
-            Error::CreateFile(path, err) => {
-                format!("Failed to create file '{:?}': {:?}", path, err)
-            }
-            Error::RemoveFile(path, err) => {
-                format!("Failed to remove file '{:?}': {:?}", path, err)
-            }
+            Error::CreateFile(path, err) => format!("Failed to create file {:?}: {:?}", path, err),
+            Error::RemoveFile(path, err) => format!("Failed to remove file {:?}: {:?}", path, err),
             Error::WriteFile(file, err) => {
                 format!("Failed to write to file '{:?}': {:?}", file, err)
             }
