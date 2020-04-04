@@ -72,7 +72,13 @@ impl HydraNixEnv {
         let outpath_stats = self.outpath_stats_path();
 
         fs::remove_file(&outpath_nix).map_err(|e| Error::RemoveFile(outpath_nix, e))?;
-        fs::remove_file(&outpath_stats).map_err(|e| Error::RemoveFile(outpath_stats, e))?;
+
+        // Removing the stats file can fail if `nix` itself errored, for example
+        // when it fails to evaluate something. In this case, we can ignore (but
+        // warn about) the error.
+        if let Err(e) = fs::remove_file(&outpath_stats) {
+            warn!("Failed to remove file {:?}: {:?}", outpath_stats, e)
+        }
 
         Ok(())
     }
@@ -130,12 +136,8 @@ impl Error {
     pub fn display(self) -> String {
         match self {
             Error::Io(e) => format!("Failed during the setup of executing nix-env: {:?}", e),
-            Error::CreateFile(path, err) => {
-                format!("Failed to create file '{:?}': {:?}", path, err)
-            }
-            Error::RemoveFile(path, err) => {
-                format!("Failed to remove file '{:?}': {:?}", path, err)
-            }
+            Error::CreateFile(path, err) => format!("Failed to create file {:?}: {:?}", path, err),
+            Error::RemoveFile(path, err) => format!("Failed to remove file {:?}: {:?}", path, err),
             Error::WriteFile(file, err) => {
                 format!("Failed to write to file '{:?}': {:?}", file, err)
             }
