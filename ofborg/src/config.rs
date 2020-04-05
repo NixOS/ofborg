@@ -197,11 +197,11 @@ impl GithubAppVendingMachine {
 
             match lookup_gh.app().find_repo_installation(owner, repo) {
                 Ok(install_id) => {
-                    debug!("Received install ID {:#?}", install_id);
+                    debug!("Received install ID {:?}", install_id);
                     Some(install_id.id)
                 }
                 Err(e) => {
-                    warn!("Error during install ID lookup: {:#?}", e);
+                    warn!("Error during install ID lookup: {:?}", e);
                     None
                 }
             }

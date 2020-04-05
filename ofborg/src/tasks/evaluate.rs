@@ -211,7 +211,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         match eval_result {
             EvalWorkerError::CommitStatusWrite(e) => {
                 eprintln!(
-                    "Failed to write commit status, got error: {:#?}, marking internal error",
+                    "Failed to write commit status, got error: {:?}, marking internal error",
                     e
                 );
                 let issue_ref = self.repo.issue(self.job.pr.number);
@@ -219,7 +219,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             }
             EvalWorkerError::EvalError(eval::Error::CommitStatusWrite(e)) => {
                 eprintln!(
-                    "Failed to write commit status, got error: {:#?}, marking internal error",
+                    "Failed to write commit status, got error: {:?}, marking internal error",
                     e
                 );
                 let issue_ref = self.repo.issue(self.job.pr.number);
@@ -228,7 +228,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             EvalWorkerError::EvalError(eval::Error::Fail(msg)) => {
                 self.update_status(msg.clone(), None, hubcaps::statuses::State::Failure)
                     .unwrap_or_else(|e| {
-                        panic!("Failed to set plain status: {}; e: {:#?}", msg, e);
+                        panic!("Failed to set plain status: {}; e: {:?}", msg, e);
                     });
             }
             EvalWorkerError::EvalError(eval::Error::FailWithGist(msg, filename, content)) => {
@@ -239,7 +239,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 )
                 .unwrap_or_else(|e| {
                     panic!(
-                        "Failed to set status with a gist: {}, {}, {}; e: {:#?}",
+                        "Failed to set status with a gist: {}, {}, {}; e: {:?}",
                         msg, filename, content, e
                     );
                 });
@@ -469,7 +469,7 @@ fn schedule_builds(
 ) -> Vec<worker::Action> {
     let mut response = vec![];
     info!(
-        "Scheduling build jobs {:#?} on arches {:#?}",
+        "Scheduling build jobs {:?} on arches {:?}",
         builds, auto_schedule_build_archs
     );
     for buildjob in builds {
