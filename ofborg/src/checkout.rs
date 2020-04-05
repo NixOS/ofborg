@@ -117,6 +117,7 @@ impl CachedProjectCo {
         let result = Command::new("git")
             .arg("--no-pager")
             .arg("show")
+            .arg("--no-patch")
             .arg(commit)
             .current_dir(self.clone_to())
             .status()
