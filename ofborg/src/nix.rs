@@ -298,7 +298,7 @@ impl Nix {
     where
         S: AsRef<OsStr>,
     {
-        let nixpkgspath = format!("nixpkgs={}", nixpkgs.display());
+        let nixpkgspath = format!("ofborg-nixpkgs-pr={}", nixpkgs.display());
         let mut nixpath: Vec<String> = safe_paths
             .iter()
             .map(|path| format!("{}", path.display()))
@@ -577,7 +577,7 @@ mod tests {
             Expect::Pass,
             vec![
                 "HOME=/homeless-shelter",
-                "NIX_PATH=nixpkgs=",
+                "NIX_PATH=ofborg-nixpkgs-pr=",
                 "NIX_REMOTE=",
                 "PATH=",
             ],
@@ -604,7 +604,7 @@ mod tests {
             Expect::Pass,
             vec![
                 "HOME=/homeless-shelter",
-                "NIX_PATH=nixpkgs=",
+                "NIX_PATH=ofborg-nixpkgs-pr=",
                 "NIX_REMOTE=",
                 "PATH=",
                 "GC_INITIAL_HEAP_SIZE=4g",
