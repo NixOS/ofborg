@@ -209,21 +209,21 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             eval_result.expect_err("We have an OK, but just checked for an Ok before");
 
         match eval_result {
-            EvalWorkerError::CommitStatusWrite(e) => {
-                error!(
-                    "Failed to write commit status, got error: {:?}, marking internal error",
-                    e
-                );
-                let issue_ref = self.repo.issue(self.job.pr.number);
-                update_labels(&issue_ref, &[String::from("ofborg-internal-error")], &[]);
-            }
-            EvalWorkerError::EvalError(eval::Error::CommitStatusWrite(e)) => {
-                error!(
-                    "Failed to write commit status, got error: {:?}, marking internal error",
-                    e
-                );
-                let issue_ref = self.repo.issue(self.job.pr.number);
-                update_labels(&issue_ref, &[String::from("ofborg-internal-error")], &[]);
+            EvalWorkerError::CommitStatusWrite(e)
+            | EvalWorkerError::EvalError(eval::Error::CommitStatusWrite(e)) => {
+                if e.is_internal_error() {
+                    error!(
+                        "Internal error writing commit status: {:?}, marking internal error",
+                        e
+                    );
+                    let issue_ref = self.repo.issue(self.job.pr.number);
+                    update_labels(&issue_ref, &[String::from("ofborg-internal-error")], &[]);
+                } else {
+                    error!(
+                        "Ignorable error writing commit status: {:?}, marking internal error",
+                        e
+                    );
+                }
             }
             EvalWorkerError::EvalError(eval::Error::Fail(msg)) => {
                 self.update_status(msg.clone(), None, hubcaps::statuses::State::Failure)

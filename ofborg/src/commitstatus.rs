@@ -65,11 +65,36 @@ impl<'a> CommitStatus<'a> {
                     .build(),
             )
             .map(|_| ())
-            .map_err(|e| CommitStatusError::HubcapsError(e))
+            .map_err(|e| CommitStatusError::from(e))
     }
 }
 
 #[derive(Debug)]
 pub enum CommitStatusError {
-    HubcapsError(hubcaps::Error),
+    MissingSHA(hubcaps::Error),
+    Error(hubcaps::Error),
+}
+
+impl CommitStatusError {
+    pub fn is_internal_error(&self) -> bool {
+        match self {
+            CommitStatusError::MissingSHA(_) => false,
+            CommitStatusError::Error(_) => true,
+        }
+    }
+}
+
+impl From<hubcaps::Error> for CommitStatusError {
+    fn from(e: hubcaps::Error) -> CommitStatusError {
+        use hyper::status::StatusCode;
+        match e.kind() {
+            hubcaps::ErrorKind::Fault { code, error }
+                if code == &StatusCode::UnprocessableEntity
+                    && error.message.starts_with("No commit found for SHA:") =>
+            {
+                CommitStatusError::MissingSHA(e)
+            }
+            _otherwise => CommitStatusError::Error(e),
+        }
+    }
 }
