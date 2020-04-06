@@ -161,7 +161,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         description: String,
         url: Option<String>,
         state: hubcaps::statuses::State,
-    ) -> Result<(), hubcaps::Error> {
+    ) -> Result<(), CommitStatusError> {
         let description = if description.len() >= 140 {
             warn!(
                 "description is over 140 char; truncating: {:?}",
@@ -189,6 +189,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             .statuses()
             .create(&self.job.pr.head_sha, &builder.build())
             .map(|_| ())
+            .map_err(|e| CommitStatusError::from(e))
     }
 
     fn make_gist(
