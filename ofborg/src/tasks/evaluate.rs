@@ -161,7 +161,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         description: String,
         url: Option<String>,
         state: hubcaps::statuses::State,
-    ) -> Result<(), hubcaps::Error> {
+    ) -> Result<(), CommitStatusError> {
         let description = if description.len() >= 140 {
             warn!(
                 "description is over 140 char; truncating: {:?}",
@@ -189,6 +189,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             .statuses()
             .create(&self.job.pr.head_sha, &builder.build())
             .map(|_| ())
+            .map_err(|e| CommitStatusError::from(e))
     }
 
     fn make_gist(
@@ -201,52 +202,47 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
     }
 
     fn worker_actions(&mut self) -> worker::Actions {
-        let eval_result = self.evaluate_job();
-        if let Ok(actions) = eval_result {
-            return actions;
-        }
-        let eval_result =
-            eval_result.expect_err("We have an OK, but just checked for an Ok before");
+        let eval_result = self.evaluate_job().map_err(|eval_error| match eval_error {
+            // Handle error cases which expect us to post statuses
+            // to github. Convert Eval Errors in to Result<_, CommitStatusWrite>
+            EvalWorkerError::EvalError(eval::Error::Fail(msg)) => {
+                self.update_status(msg, None, hubcaps::statuses::State::Failure)
+            }
+            EvalWorkerError::EvalError(eval::Error::FailWithGist(msg, filename, content)) => self
+                .update_status(
+                    msg,
+                    self.make_gist(&filename, Some("".to_owned()), content),
+                    hubcaps::statuses::State::Failure,
+                ),
+            EvalWorkerError::EvalError(eval::Error::CommitStatusWrite(e)) => Err(e),
+            EvalWorkerError::CommitStatusWrite(e) => Err(e),
+        });
 
         match eval_result {
-            EvalWorkerError::CommitStatusWrite(e) => {
+            Ok(eval_actions) => eval_actions,
+            Err(Ok(())) => {
+                // There was an error during eval, but we successfully
+                // updated the PR.
+
+                self.actions().skip(&self.job)
+            }
+            Err(Err(cswerr)) if !cswerr.is_internal_error() => {
+                error!("Ignorable error writing commit status: {:?}", cswerr);
+
+                self.actions().skip(&self.job)
+            }
+
+            Err(Err(cswerr)) => {
                 error!(
-                    "Failed to write commit status, got error: {:?}, marking internal error",
-                    e
+                    "Internal error writing commit status: {:?}, marking internal error",
+                    cswerr
                 );
                 let issue_ref = self.repo.issue(self.job.pr.number);
                 update_labels(&issue_ref, &[String::from("ofborg-internal-error")], &[]);
-            }
-            EvalWorkerError::EvalError(eval::Error::CommitStatusWrite(e)) => {
-                error!(
-                    "Failed to write commit status, got error: {:?}, marking internal error",
-                    e
-                );
-                let issue_ref = self.repo.issue(self.job.pr.number);
-                update_labels(&issue_ref, &[String::from("ofborg-internal-error")], &[]);
-            }
-            EvalWorkerError::EvalError(eval::Error::Fail(msg)) => {
-                self.update_status(msg.clone(), None, hubcaps::statuses::State::Failure)
-                    .unwrap_or_else(|e| {
-                        panic!("Failed to set plain status: {}; e: {:?}", msg, e);
-                    });
-            }
-            EvalWorkerError::EvalError(eval::Error::FailWithGist(msg, filename, content)) => {
-                self.update_status(
-                    msg.clone(),
-                    self.make_gist(&filename, Some("".to_owned()), content.clone()),
-                    hubcaps::statuses::State::Failure,
-                )
-                .unwrap_or_else(|e| {
-                    panic!(
-                        "Failed to set status with a gist: {}, {}, {}; e: {:?}",
-                        msg, filename, content, e
-                    );
-                });
+
+                self.actions().skip(&self.job)
             }
         }
-
-        self.actions().skip(&self.job)
     }
 
     fn evaluate_job(&mut self) -> Result<worker::Actions, EvalWorkerError> {
