@@ -518,36 +518,43 @@ pub fn make_gist<'a>(
     )
 }
 
-pub fn update_labels(issue: &hubcaps::issues::IssueRef, add: &[String], remove: &[String]) {
-    let l = issue.labels();
+pub fn update_labels(issueref: &hubcaps::issues::IssueRef, add: &[String], remove: &[String]) {
+    let l = issueref.labels();
+    let issue = issueref.get().expect("Failed to get issue");
 
-    let existing: Vec<String> = issue
-        .get()
-        .unwrap()
-        .labels
-        .iter()
-        .map(|l| l.name.clone())
-        .collect();
-    info!("Already: {:?}", existing);
+    let existing: Vec<String> = issue.labels.iter().map(|l| l.name.clone()).collect();
 
-    let to_add = add
+    let to_add: Vec<&str> = add
         .iter()
         .filter(|l| !existing.contains(l)) // Remove labels already on the issue
         .map(|l| l.as_ref())
         .collect();
-    info!("Adding labels: {:?}", to_add);
 
     let to_remove: Vec<String> = remove
         .iter()
         .filter(|l| existing.contains(l)) // Remove labels already on the issue
         .cloned()
         .collect();
-    info!("Removing labels: {:?}", to_remove);
 
-    l.add(to_add).expect("Failed to add tags");
+    info!(
+        "Labeling issue #{}: + {:?} , - {:?}, = {:?}",
+        issue.id, to_add, to_remove, existing
+    );
+
+    l.add(to_add.clone()).unwrap_or_else(|e| {
+        panic!(
+            "Failed to add labels {:?} to issue #{}: {:?}",
+            to_add, issue.id, e
+        )
+    });
 
     for label in to_remove {
-        l.remove(&label).expect("Failed to remove tag");
+        l.remove(&label).unwrap_or_else(|e| {
+            panic!(
+                "Failed to remove label {:?} from issue #{}: {:?}",
+                label, issue.id, e
+            )
+        });
     }
 }
 
