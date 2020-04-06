@@ -1,5 +1,6 @@
 use amqp::Basic;
 use hyper::server::{Request, Response, Server};
+use log::{info, log};
 use ofborg::easyamqp::TypedWrappers;
 use ofborg::{config, easyamqp, stats, tasks, worker};
 
@@ -10,10 +11,10 @@ fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
     ofborg::setup_log();
 
-    println!("Hello, world!");
+    info!("Hello, world!");
 
     let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
-    println!("Connected to rabbitmq");
+    info!("Connected to rabbitmq");
 
     let events = stats::RabbitMQ::new(
         &format!("{}-{}", cfg.runner.identity.clone(), cfg.nix.system.clone()),
@@ -78,7 +79,7 @@ fn main() {
 
     thread::spawn(|| {
         let addr = "0.0.0.0:9898";
-        println!("listening addr {:?}", addr);
+        info!("listening addr {:?}", addr);
         Server::http(addr)
             .unwrap()
             .handle(move |_: Request, res: Response| {
@@ -89,10 +90,10 @@ fn main() {
 
     channel.start_consuming();
 
-    println!("Finished consuming?");
+    info!("Finished consuming?");
 
     channel.close(200, "Bye").unwrap();
-    println!("Closed the channel");
+    info!("Closed the channel");
     session.close(200, "Good Bye");
-    println!("Closed the session... EOF");
+    info!("Closed the session... EOF");
 }

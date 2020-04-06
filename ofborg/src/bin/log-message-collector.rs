@@ -1,3 +1,4 @@
+use log::{info, log};
 use ofborg::config;
 use ofborg::easyamqp::{self, TypedWrappers};
 use ofborg::tasks;
@@ -11,7 +12,7 @@ fn main() {
     ofborg::setup_log();
 
     let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
-    println!("Connected to rabbitmq");
+    info!("Connected to rabbitmq");
 
     let mut channel = session.open_channel(1).unwrap();
 
@@ -71,10 +72,10 @@ fn main() {
 
     channel.start_consuming();
 
-    println!("Finished consuming?");
+    info!("Finished consuming?");
 
     channel.close(200, "Bye").unwrap();
-    println!("Closed the channel");
+    info!("Closed the channel");
     session.close(200, "Good Bye");
-    println!("Closed the session... EOF");
+    info!("Closed the session... EOF");
 }

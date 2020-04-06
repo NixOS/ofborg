@@ -155,7 +155,7 @@ impl Error {
                 }
             }
             Error::UncleanEvaluation(warnings) => {
-                format!("nix-env did not evaluate cleanly:\n {:#?}", warnings)
+                format!("nix-env did not evaluate cleanly:\n {:?}", warnings)
             }
             Error::StatsParse(mut fd, seek, parse_err) => {
                 let mut buffer = Vec::new();

@@ -163,8 +163,8 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         state: hubcaps::statuses::State,
     ) -> Result<(), hubcaps::Error> {
         let description = if description.len() >= 140 {
-            eprintln!(
-                "Warning: description is over 140 char; truncating: {:?}",
+            warn!(
+                "description is over 140 char; truncating: {:?}",
                 &description
             );
             description.chars().take(140).collect()
@@ -210,16 +210,16 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         match eval_result {
             EvalWorkerError::CommitStatusWrite(e) => {
-                eprintln!(
-                    "Failed to write commit status, got error: {:#?}, marking internal error",
+                error!(
+                    "Failed to write commit status, got error: {:?}, marking internal error",
                     e
                 );
                 let issue_ref = self.repo.issue(self.job.pr.number);
                 update_labels(&issue_ref, &[String::from("ofborg-internal-error")], &[]);
             }
             EvalWorkerError::EvalError(eval::Error::CommitStatusWrite(e)) => {
-                eprintln!(
-                    "Failed to write commit status, got error: {:#?}, marking internal error",
+                error!(
+                    "Failed to write commit status, got error: {:?}, marking internal error",
                     e
                 );
                 let issue_ref = self.repo.issue(self.job.pr.number);
@@ -228,7 +228,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             EvalWorkerError::EvalError(eval::Error::Fail(msg)) => {
                 self.update_status(msg.clone(), None, hubcaps::statuses::State::Failure)
                     .unwrap_or_else(|e| {
-                        panic!("Failed to set plain status: {}; e: {:#?}", msg, e);
+                        panic!("Failed to set plain status: {}; e: {:?}", msg, e);
                     });
             }
             EvalWorkerError::EvalError(eval::Error::FailWithGist(msg, filename, content)) => {
@@ -239,7 +239,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 )
                 .unwrap_or_else(|e| {
                     panic!(
-                        "Failed to set status with a gist: {}, {}, {}; e: {:#?}",
+                        "Failed to set status with a gist: {}, {}, {}; e: {:?}",
                         msg, filename, content, e
                     );
                 });
@@ -379,7 +379,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         evaluation_strategy.after_merge(&mut overall_status)?;
 
-        println!("Got path: {:?}, building", refpath);
+        info!("Got path: {:?}, building", refpath);
         overall_status
             .set_with_description("Beginning Evaluations", hubcaps::statuses::State::Pending)?;
 
@@ -469,7 +469,7 @@ fn schedule_builds(
 ) -> Vec<worker::Action> {
     let mut response = vec![];
     info!(
-        "Scheduling build jobs {:#?} on arches {:#?}",
+        "Scheduling build jobs {:?} on arches {:?}",
         builds, auto_schedule_build_archs
     );
     for buildjob in builds {
@@ -532,7 +532,8 @@ pub fn update_labels(issue: &hubcaps::issues::IssueRef, add: &[String], remove: 
         .iter()
         .map(|l| l.name.clone())
         .collect();
-    println!("Already: {:?}", existing);
+    info!("Already: {:?}", existing);
+
     let to_add = add
         .iter()
         .filter(|l| !existing.contains(l)) // Remove labels already on the issue

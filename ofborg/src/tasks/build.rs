@@ -261,11 +261,11 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
     type J = buildjob::BuildJob;
 
     fn msg_to_job(&self, _: &Deliver, _: &BasicProperties, body: &[u8]) -> Result<Self::J, String> {
-        println!("lmao I got a job?");
+        info!("lmao I got a job?");
         match buildjob::from(body) {
             Ok(e) => Ok(e),
             Err(e) => {
-                println!("{:?}", String::from_utf8(body.to_vec()));
+                error!("{:?}", String::from_utf8(body.to_vec()));
                 panic!("{:?}", e);
             }
         }
@@ -316,7 +316,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             return;
         }
 
-        println!(
+        info!(
             "Got path: {:?}, determining which ones we can build ",
             refpath
         );
@@ -332,7 +332,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             .map(|(attr, _)| attr)
             .collect();
 
-        println!(
+        info!(
             "Can build: '{}', Cannot build: '{}'",
             can_build.join(", "),
             cannot_build_attrs.join(", ")
@@ -372,17 +372,17 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             },
         };
 
-        println!("ok built ({:?}), building", status);
-        println!("Lines:\n-----8<-----");
+        info!("ok built ({:?}), building", status);
+        info!("Lines:\n-----8<-----");
         actions
             .log_snippet()
             .iter()
-            .inspect(|x| println!("{}", x))
+            .inspect(|x| info!("{}", x))
             .last();
-        println!("----->8-----");
+        info!("----->8-----");
 
         actions.build_finished(status, can_build, cannot_build_attrs);
-        println!("Done!");
+        info!("Done!");
     }
 }
 

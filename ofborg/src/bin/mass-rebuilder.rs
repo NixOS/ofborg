@@ -1,4 +1,5 @@
 use amqp::Basic;
+use log::{error, info, log};
 use ofborg::checkout;
 use ofborg::config;
 use ofborg::easyamqp::{self, TypedWrappers};
@@ -15,7 +16,7 @@ fn main() {
 
     if memory_info.avail < 8 * 1024 * 1024 {
         // seems this stuff is in kilobytes?
-        println!(
+        error!(
             "Less than 8Gb of memory available (got {:.2}Gb). Aborting.",
             (memory_info.avail as f32) / 1024.0 / 1024.0
         );
@@ -26,10 +27,10 @@ fn main() {
 
     ofborg::setup_log();
 
-    println!("Hello, world!");
+    info!("Hello, world!");
 
     let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
-    println!("Connected to rabbitmq");
+    info!("Connected to rabbitmq");
 
     let mut channel = session.open_channel(1).unwrap();
 
@@ -82,10 +83,10 @@ fn main() {
 
     channel.start_consuming();
 
-    println!("Finished consuming?");
+    info!("Finished consuming?");
 
     channel.close(200, "Bye").unwrap();
-    println!("Closed the channel");
+    info!("Closed the channel");
     session.close(200, "Good Bye");
-    println!("Closed the session... EOF");
+    info!("Closed the session... EOF");
 }

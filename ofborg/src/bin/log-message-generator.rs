@@ -1,3 +1,4 @@
+use log::{info, log};
 use ofborg::config;
 use ofborg::easyamqp;
 use ofborg::message::{buildjob, Pr, Repo};
@@ -13,9 +14,9 @@ fn main() {
     ofborg::setup_log();
 
     let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
-    println!("Connected to rabbitmq");
+    info!("Connected to rabbitmq");
 
-    println!("About to open channel #1");
+    info!("About to open channel #1");
     let mut chan = session.open_channel(1).unwrap();
 
     let mut receiver = notifyworker::ChannelNotificationReceiver::new(&mut chan, 0);
@@ -39,7 +40,7 @@ fn main() {
     };
 
     loop {
-        println!("Starting a new build simulation");
+        info!("Starting a new build simulation");
         let mut actions =
             build::JobActions::new(&cfg.nix.system, &cfg.runner.identity, &job, &mut receiver);
         actions.log_started(vec![], vec![]);

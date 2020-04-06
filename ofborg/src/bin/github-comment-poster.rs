@@ -1,4 +1,5 @@
 use amqp::Basic;
+use log::{info, log};
 use ofborg::config;
 use ofborg::easyamqp::{self, TypedWrappers};
 use ofborg::tasks;
@@ -68,10 +69,10 @@ fn main() {
 
     channel.start_consuming();
 
-    println!("Finished consuming?");
+    info!("Finished consuming?");
 
     channel.close(200, "Bye").unwrap();
-    println!("Closed the channel");
+    info!("Closed the channel");
     session.close(200, "Good Bye");
-    println!("Closed the session... EOF");
+    info!("Closed the session... EOF");
 }

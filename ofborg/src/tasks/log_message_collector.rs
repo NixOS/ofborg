@@ -44,7 +44,7 @@ fn validate_path_segment(segment: &PathBuf) -> Result<(), String> {
     if segment.components().all(|component| match component {
         Component::Normal(_) => true,
         e => {
-            println!("Invalid path component: {:?}", e);
+            warn!("Invalid path component: {:?}", e);
             false
         }
     }) {

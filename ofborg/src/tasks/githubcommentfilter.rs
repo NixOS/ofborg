@@ -30,7 +30,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         match serde_json::from_slice(body) {
             Ok(e) => Ok(e),
             Err(e) => {
-                println!(
+                error!(
                     "Failed to deserialize IsssueComment: {:?}",
                     String::from_utf8(body.to_vec())
                 );
@@ -55,15 +55,15 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         );
 
         if build_destinations.is_empty() {
-            println!("No build destinations for: {:?}", job);
+            info!("No build destinations for: {:?}", job);
             // Don't process comments if they can't build anything
             return vec![worker::Action::Ack];
         }
 
-        println!("Got job: {:?}", job);
+        info!("Got job: {:?}", job);
 
         let instructions = commentparser::parse(&job.comment.body);
-        println!("Instructions: {:?}", instructions);
+        info!("Instructions: {:?}", instructions);
 
         let pr = self
             .github
