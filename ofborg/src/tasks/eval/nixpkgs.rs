@@ -575,7 +575,7 @@ fn request_reviews(maint: &maintainers::ImpactedMaintainers, pull: &hubcaps::pul
                         team_reviewers: vec![],
                     })
             {
-                println!("Failure requesting a review from {}: {:?}", maintainer, e,);
+                warn!("Failure requesting a review from {}: {:?}", maintainer, e,);
             }
         }
     }

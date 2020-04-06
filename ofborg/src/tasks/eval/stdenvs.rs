@@ -101,12 +101,12 @@ impl Stdenvs {
             true,
         );
 
-        println!("{:?}", result);
+        info!("{:?}", result);
 
         match result {
             Ok(mut out) => Some(file_to_str(&mut out)),
             Err(mut out) => {
-                println!("{:?}", file_to_str(&mut out));
+                warn!("{:?}", file_to_str(&mut out));
                 None
             }
         }

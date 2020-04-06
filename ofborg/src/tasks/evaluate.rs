@@ -163,8 +163,8 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         state: hubcaps::statuses::State,
     ) -> Result<(), hubcaps::Error> {
         let description = if description.len() >= 140 {
-            eprintln!(
-                "Warning: description is over 140 char; truncating: {:?}",
+            warn!(
+                "description is over 140 char; truncating: {:?}",
                 &description
             );
             description.chars().take(140).collect()
@@ -210,7 +210,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         match eval_result {
             EvalWorkerError::CommitStatusWrite(e) => {
-                eprintln!(
+                error!(
                     "Failed to write commit status, got error: {:?}, marking internal error",
                     e
                 );
@@ -218,7 +218,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 update_labels(&issue_ref, &[String::from("ofborg-internal-error")], &[]);
             }
             EvalWorkerError::EvalError(eval::Error::CommitStatusWrite(e)) => {
-                eprintln!(
+                error!(
                     "Failed to write commit status, got error: {:?}, marking internal error",
                     e
                 );
@@ -379,7 +379,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         evaluation_strategy.after_merge(&mut overall_status)?;
 
-        println!("Got path: {:?}, building", refpath);
+        info!("Got path: {:?}, building", refpath);
         overall_status
             .set_with_description("Beginning Evaluations", hubcaps::statuses::State::Pending)?;
 
@@ -532,7 +532,8 @@ pub fn update_labels(issue: &hubcaps::issues::IssueRef, add: &[String], remove: 
         .iter()
         .map(|l| l.name.clone())
         .collect();
-    println!("Already: {:?}", existing);
+    info!("Already: {:?}", existing);
+
     let to_add = add
         .iter()
         .filter(|l| !existing.contains(l)) // Remove labels already on the issue

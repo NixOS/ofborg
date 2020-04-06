@@ -46,8 +46,8 @@ impl<'a> CommitStatus<'a> {
 
     pub fn set(&self, state: hubcaps::statuses::State) -> Result<(), CommitStatusError> {
         let desc = if self.description.len() >= 140 {
-            eprintln!(
-                "Warning: description is over 140 char; truncating: {:?}",
+            warn!(
+                "description is over 140 char; truncating: {:?}",
                 &self.description
             );
             self.description.chars().take(140).collect()

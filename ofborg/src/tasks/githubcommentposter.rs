@@ -70,7 +70,7 @@ impl worker::SimpleWorker for GitHubCommentPoster {
         }
 
         for check in checks {
-            println!(":{:?}", check);
+            info!(":{:?}", check);
 
             let check_create_attempt = self
                 .github_vend
