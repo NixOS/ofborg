@@ -1,5 +1,5 @@
 use amqp::Basic;
-use log::{log, warn};
+use log::{info, log, warn};
 use ofborg::checkout;
 use ofborg::config;
 use ofborg::easyamqp::{self, TypedWrappers};
@@ -103,10 +103,10 @@ fn main() {
         )
         .unwrap();
 
-    println!("Fetching jobs from {}", &queue_name);
+    info!("Fetching jobs from {}", &queue_name);
     channel.start_consuming();
     channel.close(200, "Bye").unwrap();
-    println!("Closed the channel");
+    info!("Closed the channel");
     session.close(200, "Good Bye");
-    println!("Closed the session... EOF");
+    info!("Closed the session... EOF");
 }

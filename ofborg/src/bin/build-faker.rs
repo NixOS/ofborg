@@ -1,3 +1,4 @@
+use log::{info, log};
 use ofborg::commentparser;
 use ofborg::config;
 use ofborg::easyamqp;
@@ -11,10 +12,10 @@ fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
     ofborg::setup_log();
 
-    println!("Hello, world!");
+    info!("Hello, world!");
 
     let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
-    println!("Connected to rabbitmq");
+    info!("Connected to rabbitmq");
 
     let mut channel = session.open_channel(1).unwrap();
 
@@ -56,7 +57,7 @@ fn main() {
     }
 
     channel.close(200, "Bye").unwrap();
-    println!("Closed the channel");
+    info!("Closed the channel");
     session.close(200, "Good Bye");
-    println!("Closed the session... EOF");
+    info!("Closed the session... EOF");
 }
