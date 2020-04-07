@@ -75,15 +75,6 @@ pub enum CommitStatusError {
     Error(hubcaps::Error),
 }
 
-impl CommitStatusError {
-    pub fn is_internal_error(&self) -> bool {
-        match self {
-            CommitStatusError::MissingSHA(_) => false,
-            CommitStatusError::Error(_) => true,
-        }
-    }
-}
-
 impl From<hubcaps::Error> for CommitStatusError {
     fn from(e: hubcaps::Error) -> CommitStatusError {
         use hyper::status::StatusCode;
