@@ -566,8 +566,18 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
 }
 
 fn request_reviews(maint: &maintainers::ImpactedMaintainers, pull: &hubcaps::pulls::PullRequest) {
+    let pull_meta = pull.get();
+
     if maint.maintainers().len() < 10 {
         for maintainer in maint.maintainers() {
+            if let Ok(meta) = &pull_meta {
+                // GitHub doesn't let us request a review from the PR author, so
+                // we silently skip them.
+                if meta.user.login.to_ascii_lowercase() == maintainer.to_ascii_lowercase() {
+                    continue;
+                }
+            }
+
             if let Err(e) =
                 pull.review_requests()
                     .create(&hubcaps::review_requests::ReviewRequestOptions {
