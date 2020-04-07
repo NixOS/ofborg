@@ -71,6 +71,7 @@ impl<'a> CommitStatus<'a> {
 
 #[derive(Debug)]
 pub enum CommitStatusError {
+    ExpiredCreds(hubcaps::Error),
     MissingSHA(hubcaps::Error),
     Error(hubcaps::Error),
 }
@@ -79,6 +80,11 @@ impl From<hubcaps::Error> for CommitStatusError {
     fn from(e: hubcaps::Error) -> CommitStatusError {
         use hyper::status::StatusCode;
         match e.kind() {
+            hubcaps::ErrorKind::Fault { code, error }
+                if code == &StatusCode::Unauthorized && error.message == "Bad credentials" =>
+            {
+                CommitStatusError::ExpiredCreds(e)
+            }
             hubcaps::ErrorKind::Fault { code, error }
                 if code == &StatusCode::UnprocessableEntity
                     && error.message.starts_with("No commit found for SHA:") =>

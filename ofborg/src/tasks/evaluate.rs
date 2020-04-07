@@ -226,6 +226,10 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
                 self.actions().skip(&self.job)
             }
+            Err(Err(CommitStatusError::ExpiredCreds(e))) => {
+                error!("Failed writing commit status: creds expired: {:?}", e);
+                self.actions().retry_later(&self.job)
+            }
             Err(Err(CommitStatusError::MissingSHA(e))) => {
                 error!(
                     "Failed writing commit status: commit sha was force-pushed away: {:?}",

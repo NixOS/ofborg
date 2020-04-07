@@ -20,6 +20,10 @@ impl EvaluationJob {
 pub struct Actions {}
 
 impl Actions {
+    pub fn retry_later(&mut self, _job: &EvaluationJob) -> worker::Actions {
+        vec![worker::Action::NackRequeue]
+    }
+
     pub fn skip(&mut self, _job: &EvaluationJob) -> worker::Actions {
         vec![worker::Action::Ack]
     }
