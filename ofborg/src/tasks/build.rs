@@ -373,7 +373,8 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         };
 
         info!("ok built ({:?}), building", status);
-        info!("Lines:\n-----8<-----");
+        info!("Lines:");
+        info!("-----8<-----");
         actions
             .log_snippet()
             .iter()
