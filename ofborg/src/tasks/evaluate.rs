@@ -226,13 +226,19 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
                 self.actions().skip(&self.job)
             }
-            Err(Err(cswerr)) if !cswerr.is_internal_error() => {
-                error!("Ignorable error writing commit status: {:?}", cswerr);
-
+            Err(Err(CommitStatusError::ExpiredCreds(e))) => {
+                error!("Failed writing commit status: creds expired: {:?}", e);
+                self.actions().retry_later(&self.job)
+            }
+            Err(Err(CommitStatusError::MissingSHA(e))) => {
+                error!(
+                    "Failed writing commit status: commit sha was force-pushed away: {:?}",
+                    e
+                );
                 self.actions().skip(&self.job)
             }
 
-            Err(Err(cswerr)) => {
+            Err(Err(CommitStatusError::Error(cswerr))) => {
                 error!(
                     "Internal error writing commit status: {:?}, marking internal error",
                     cswerr
