@@ -4,7 +4,7 @@ use std::ffi::{OsStr, OsString};
 use std::fs;
 use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 pub struct CachedCloner {
     root: PathBuf,
@@ -95,11 +95,13 @@ impl CachedProjectCo {
     pub fn fetch_pr(&self, pr_id: u64) -> Result<(), Error> {
         let mut lock = self.lock()?;
 
+        info!("Fetching PR #{}", pr_id);
         let result = Command::new("git")
             .arg("fetch")
             .arg("origin")
             .arg(format!("+refs/pull/{}/head:pr", pr_id))
             .current_dir(self.clone_to())
+            .stdout(Stdio::null())
             .status()?;
 
         lock.unlock();
@@ -114,12 +116,13 @@ impl CachedProjectCo {
     pub fn commit_exists(&self, commit: &OsStr) -> bool {
         let mut lock = self.lock().expect("Failed to lock");
 
+        info!("Checking if commit '{:?}' exists", commit);
         let result = Command::new("git")
             .arg("--no-pager")
             .arg("show")
-            .arg("--no-patch")
             .arg(commit)
             .current_dir(self.clone_to())
+            .stdout(Stdio::null())
             .status()
             .expect("git show <commit> failed");
 
@@ -131,6 +134,7 @@ impl CachedProjectCo {
     pub fn merge_commit(&self, commit: &OsStr) -> Result<(), Error> {
         let mut lock = self.lock()?;
 
+        info!("Merging commit '{:?}'", commit);
         let result = Command::new("git")
             .arg("merge")
             .arg("--no-gpg-sign")
@@ -138,6 +142,7 @@ impl CachedProjectCo {
             .arg("Automatic merge for GrahamCOfBorg")
             .arg(commit)
             .current_dir(self.clone_to())
+            .stdout(Stdio::null())
             .status()?;
 
         lock.unlock();
