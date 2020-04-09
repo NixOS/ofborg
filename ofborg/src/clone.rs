@@ -4,7 +4,7 @@ use std::ffi::OsStr;
 use std::fs;
 use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 pub struct Lock {
     lock: Option<fs::File>,
@@ -67,6 +67,7 @@ pub trait GitClonable {
             .args(self.extra_clone_args())
             .arg(&self.clone_from())
             .arg(&self.clone_to())
+            .stdout(Stdio::null())
             .status()?;
 
         lock.unlock();
@@ -93,6 +94,7 @@ pub trait GitClonable {
             .arg("fetch")
             .arg("origin")
             .current_dir(self.clone_to())
+            .stdout(Stdio::null())
             .status()?;
 
         lock.unlock();
@@ -112,6 +114,8 @@ pub trait GitClonable {
             .arg("am")
             .arg("--abort")
             .current_dir(self.clone_to())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .status()?;
 
         info!("git merge --abort");
@@ -119,6 +123,8 @@ pub trait GitClonable {
             .arg("merge")
             .arg("--abort")
             .current_dir(self.clone_to())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .status()?;
 
         info!("git reset --hard");
@@ -126,6 +132,7 @@ pub trait GitClonable {
             .arg("reset")
             .arg("--hard")
             .current_dir(self.clone_to())
+            .stdout(Stdio::null())
             .status()?;
 
         lock.unlock();
@@ -137,11 +144,11 @@ pub trait GitClonable {
         let mut lock = self.lock()?;
 
         debug!("git checkout {:?}", git_ref);
-
         let result = Command::new("git")
             .arg("checkout")
             .arg(git_ref)
             .current_dir(self.clone_to())
+            .stdout(Stdio::null())
             .status()?;
 
         lock.unlock();
