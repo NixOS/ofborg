@@ -544,13 +544,13 @@ pub fn update_labels(issueref: &hubcaps::issues::IssueRef, add: &[String], remov
 
     info!(
         "Labeling issue #{}: + {:?} , - {:?}, = {:?}",
-        issue.id, to_add, to_remove, existing
+        issue.number, to_add, to_remove, existing
     );
 
     l.add(to_add.clone()).unwrap_or_else(|e| {
         panic!(
             "Failed to add labels {:?} to issue #{}: {:?}",
-            to_add, issue.id, e
+            to_add, issue.number, e
         )
     });
 
@@ -558,7 +558,7 @@ pub fn update_labels(issueref: &hubcaps::issues::IssueRef, add: &[String], remov
         l.remove(&label).unwrap_or_else(|e| {
             panic!(
                 "Failed to remove label {:?} from issue #{}: {:?}",
-                label, issue.id, e
+                label, issue.number, e
             )
         });
     }
