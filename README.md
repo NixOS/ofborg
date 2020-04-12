@@ -229,6 +229,39 @@ corruption.
 
 See also: https://github.com/NixOS/ofborg/wiki/Operating-a-Builder
 
+## Hacking
+
+```
+git clone https://github.com/NixOS/ofborg/
+cd ofborg
+nix-shell ./shell.nix
+cd ofborg # enter subdirectory with Rust code
+cargo build
+cargo check
+cargo test
+```
+
+Be sure to test your changes by running the following commands from the root of the repository:
+
+```
+nix-shell --run checkPhase -A mozilla-rust-overlay # checks rustfmt and Clippy
+nix-shell --run checkPhase # runs actual tests
+```
+
+Currently there's no way to set-up a testing instance easily.
+Send a PR if `check` and `test` are passing. Make sure
+to format your code with `cargo fmt` and check for additional
+warnings with `cargo clippy`.
+
+To disable warnings as errors, run your command with an empty `RUSTFLAGS`. For example:
+
+```
+RUSTFLAGS= cargo clippy
+```
+
+This is because `shell.nix` sets `RUSTFLAGS` to `-D warnings`,
+which tells clippy to treat warnings as errors.
+
 ## old php stuff...
 
 Only Graham needs to do this, since I run the only remaining PHP
