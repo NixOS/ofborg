@@ -752,7 +752,7 @@ mod tests {
         assert_run(
             ret,
             Expect::Fail,
-            vec!["You just can't", "assertion failed"],
+            vec!["You just can't", "assertion", "failed"],
         );
     }
 
