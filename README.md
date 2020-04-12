@@ -229,6 +229,46 @@ corruption.
 
 See also: https://github.com/NixOS/ofborg/wiki/Operating-a-Builder
 
+# Hacking
+
+```shell
+$ git clone https://github.com/NixOS/ofborg/
+$ cd ofborg
+$ nix-shell ./shell.nix
+$ cd ofborg # enter the subdirectory with Rust code
+# make your changes
+$ cargo build
+$ cargo check
+$ cargo test
+```
+
+To test whether or not Continuous Integration will pass with your changes, you
+can run the following commands from the root of your checkout:
+
+```shell
+$ nix-shell --run checkPhase -A mozilla-rust-overlay # checks rustfmt and clippy
+$ nix-shell --run checkPhase # runs the test suite
+$ nix-build -A ofborg.rs # build ofborg
+```
+
+Currently there is no easy way to set up a test instance of ofborg. If `cargo
+check` and `cargo test` both succeed, feel free to Pull Request your changes.
+Make sure to format your code with `cargo fmt` and check for additional warnings
+with `cargo clippy`. If you added, removed, or updated the dependencies, also be
+sure to update Carnix by running
+[`./nix/update-carnix.sh`](./nix/update-carnix.sh).
+
+To disable warnings as errors, run your command with an empty `RUSTFLAGS`. For
+example:
+
+```shell
+$ RUSTFLAGS= cargo clippy
+```
+
+This will override the default of `-D warnings` set in
+[`shell.nix`](./shell.nix), which tells Rust to error if it detects any
+warnings.
+
 ## old php stuff...
 
 Only Graham needs to do this, since I run the only remaining PHP
