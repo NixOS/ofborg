@@ -2,7 +2,7 @@
   overlays = [
     (import (builtins.fetchTarball https://github.com/mozilla/nixpkgs-mozilla/archive/master.tar.gz))
   ];
-}, useNix1 ? false }:
+} }:
 
 let
   # A random Nixpkgs revision *before* the default glibc
@@ -29,8 +29,7 @@ let
       php
       curl
       bash
-    ]
-      ++ stdenv.lib.optional useNix1 oldpkgs.nix1;
+    ];
 
     # HISTFILE = "${src}/.bash_hist";
   };
@@ -84,7 +83,6 @@ let
       pkgconfig
       git
     ]
-      ++ stdenv.lib.optional useNix1 oldpkgs.nix1
       ++ stdenv.lib.optional stdenv.isDarwin pkgs.darwin.Security;
 
     postHook = ''
