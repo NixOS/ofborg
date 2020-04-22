@@ -15,8 +15,8 @@ rec {
       authors = [ "Andrii Dmytrenko <andrey@reevoo.com>" ];
       src = fetchgit {
          url = "https://github.com/grahamc/rust-amqp.git";
-         rev = "f9aec2f40aef69a459f26003ce47048f8e2a08d1";
-         sha256 = "09k6fl7l0rcwilnckdfv3smiv1ilrwi1jxmrrkjwbrj64lky3jdy";
+         rev = "b58edf8822072688d882966f7427f0a9e67aee78";
+         sha256 = "0a0n8h71lnsl2rbi6v1zmy015f7hl91y5mgx3qzxlfrn3pjz8sy1";
          fetchSubmodules = false;
       };
       dependencies = mapFeatures features ([
