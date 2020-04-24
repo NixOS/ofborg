@@ -1,0 +1,11 @@
+[workspace]
+members = [
+    "ofborg"
+]
+
+[profile.release]
+debug = true
+
+[patch.crates-io]
+#hubcaps = { path = "../hubcaps" }
+#amq-proto = { path = "rust-amq-proto" }
