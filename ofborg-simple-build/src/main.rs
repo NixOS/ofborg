@@ -1,18 +1,22 @@
-use ofborg::config;
-use ofborg::nix;
+#[macro_use]
+extern crate log;
 
 use std::env;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
-fn main() {
-    let cfg = config::load(env::args().nth(1).unwrap().as_ref());
+use ofborg::config;
+use ofborg::nix;
 
+fn main() {
     ofborg::setup_log();
 
+    log::info!("Loading config...");
+    let cfg = config::load(env::args().nth(1).unwrap().as_ref());
     let nix = cfg.nix();
 
+    log::info!("Running build...");
     match nix.safely_build_attrs(
         &Path::new("./"),
         nix::File::DefaultNixpkgs,

@@ -1,6 +1,7 @@
 [workspace]
 members = [
-    "ofborg"
+    "ofborg",
+    "ofborg-simple-build"
 ]
 
 [profile.release]

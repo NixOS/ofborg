@@ -462,6 +462,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ofborg-simple-build"
+version = "0.1.0"
+dependencies = [
+ "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ofborg 0.1.8",
+]
+
+[[package]]
 name = "openssl"
 version = "0.9.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
