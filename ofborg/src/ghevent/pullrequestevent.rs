@@ -45,6 +45,9 @@ pub enum PullRequestAction {
     Opened,
     Edited,
     Closed,
+    ReadyForReview,
+    Locked,
+    Unlocked,
     Reopened,
     Synchronize,
 }
