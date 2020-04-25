@@ -445,7 +445,11 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
                 vec![
                     String::from("--arg"),
                     String::from("pkgs"),
-                    String::from("import ./. {}"),
+                    // lib tests only need a working pkgs version for supporting
+                    // tests, so we use the nixpkgs used by ofborg's build such
+                    // that stdenv rebuilds and such don't affect how much we
+                    // need to build
+                    String::from("import <nixpkgs-ofborg> {}"),
                     String::from("./lib/tests/release.nix"),
                 ],
                 self.nix.clone(),

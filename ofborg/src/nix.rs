@@ -305,6 +305,13 @@ impl Nix {
             .collect();
         nixpath.push(nixpkgspath);
 
+        // If BUILD_NIXPKGS_PATH is set, forward its value through
+        // <nixpkgs-ofborg> in NIX_PATH. This is for when Nix evaluation needs a
+        // nixpkgs version for testing utilities
+        if let Ok(build_nixpkgs) = env::var("BUILD_NIXPKGS_PATH") {
+            nixpath.push(format!("nixpkgs-ofborg={}", build_nixpkgs))
+        }
+
         let mut command = op.command();
         op.args(&mut command);
 

@@ -9,12 +9,20 @@ let
 
   src = stripDeps (drv.override { release = pkgs.stdenv.isDarwin; });
 
-  stripDeps = pkg: pkgs.runCommand "${pkg.name}-deps-stripped" {}
+  stripDeps = pkg: pkgs.runCommand "${pkg.name}-deps-stripped" {
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+  }
   ''
     cp -r ${pkg} $out
     chmod -R a+w $out
     rm -rf $out/lib
     find $out/bin -name '*.d' -delete
+
+    # While we're at it, give mass-rebuilder access to a nixpkgs version, so it
+    # can use it for PR evaluations
+    wrapProgram $out/bin/mass-rebuilder \
+      --set BUILD_NIXPKGS_PATH "${pkgs.path}"
+
     chmod -R a-w $out
   '';
 in
