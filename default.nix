@@ -1,20 +1,13 @@
 { pkgs ? import ./nix { overlays = [ (import ./nix/overlay.nix) ]; } }:
 
 let
-  ofborgOverrides = {
-    crateOverrides = pkgs.defaultCrateOverrides // {
-      ofborg = attrs: {
-        buildInputs = pkgs.lib.optional pkgs.stdenv.isDarwin
-          pkgs.darwin.apple_sdk.frameworks.Security;
-      };
-    };
+  ofborgCrates = pkgs.callPackage ./Cargo.nix {
+    cratesIO = pkgs.callPackage ./crates-io.nix {};
   };
 
-  drv = ((pkgs.callPackage ./ofborg/Cargo.nix {
-    cratesIO = pkgs.callPackage ./ofborg/crates-io.nix {};
-  }).ofborg {}).override { release = false; };
+  drv = ofborgCrates.ofborg {};
 
-  src = stripDeps (drv.override ofborgOverrides);
+  src = stripDeps (drv.override { release = pkgs.stdenv.isDarwin; });
 
   stripDeps = pkg: pkgs.runCommand "${pkg.name}-deps-stripped" {}
   ''
@@ -27,6 +20,8 @@ let
 in
 
 {
+  ofborg.simple-build = ofborgCrates.ofborg_simple_build {};
+
   ofborg.rs = pkgs.runCommand "ofborg-rs-symlink-compat" { inherit src; } ''
     mkdir -p $out/bin
     for f in $(find $src -type f); do

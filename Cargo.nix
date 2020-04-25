@@ -112,7 +112,8 @@ rec {
       version = "0.1.8";
       authors = [ "Graham Christensen <graham@grahamc.com>" ];
       edition = "2018";
-      src = include [ "Cargo.toml" "Cargo.lock" "src" "test-srcs" "build.rs" ] ./.;
+      src = include [ "Cargo.toml" "ofborg" ] ./.;
+      workspace_member = "ofborg";
       build = "build.rs";
       dependencies = mapFeatures features ([
         (crates."amqp"."${deps."ofborg"."0.1.8"."amqp"}" deps)
@@ -184,11 +185,37 @@ rec {
 
 
 # end
+# ofborg-simple-build-0.1.0
+
+    crates.ofborg_simple_build."0.1.0" = deps: { features?(features_.ofborg_simple_build."0.1.0" deps {}) }: buildRustCrate {
+      crateName = "ofborg-simple-build";
+      version = "0.1.0";
+      authors = [ "Daiderd Jordan <daiderd@gmail.com>" ];
+      edition = "2018";
+      src = include [ "Cargo.toml" "ofborg-simple-build" ] ./.;
+      workspace_member = "ofborg-simple-build";
+      dependencies = mapFeatures features ([
+        (cratesIO.crates."log"."${deps."ofborg_simple_build"."0.1.0"."log"}" deps)
+        (crates."ofborg"."${deps."ofborg_simple_build"."0.1.0"."ofborg"}" deps)
+      ]);
+    };
+    features_.ofborg_simple_build."0.1.0" = deps: f: updateFeatures f (rec {
+      log."${deps.ofborg_simple_build."0.1.0".log}".default = true;
+      ofborg."${deps.ofborg_simple_build."0.1.0".ofborg}".default = true;
+      ofborg_simple_build."0.1.0".default = (f.ofborg_simple_build."0.1.0".default or true);
+    }) [
+      (cratesIO.features_.log."${deps."ofborg_simple_build"."0.1.0"."log"}" deps)
+      (features_.ofborg."${deps."ofborg_simple_build"."0.1.0"."ofborg"}" deps)
+    ];
+
+
+# end
 
   };
 
   ofborg = crates.crates.ofborg."0.1.8" deps;
-  __all = [ (ofborg {}) ];
+  ofborg_simple_build = crates.crates.ofborg_simple_build."0.1.0" deps;
+  __all = [ (ofborg {}) (ofborg_simple_build {}) ];
   deps.aho_corasick."0.5.3" = {
     memchr = "0.1.11";
   };
@@ -388,6 +415,10 @@ rec {
     sys_info = "0.5.6";
     tempfile = "2.2.0";
     uuid = "0.4.0";
+  };
+  deps.ofborg_simple_build."0.1.0" = {
+    log = "0.3.8";
+    ofborg = "0.1.8";
   };
   deps.openssl."0.9.24" = {
     bitflags = "0.9.1";
