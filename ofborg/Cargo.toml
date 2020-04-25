@@ -2,7 +2,7 @@
 name = "ofborg"
 version = "0.1.8"
 authors = ["Graham Christensen <graham@grahamc.com>"]
-include = ["Cargo.toml", "Cargo.lock", "src", "test-srcs", "build.rs"]
+include = ["Cargo.toml", "src", "test-srcs", "build.rs"]
 build = "build.rs"
 edition = "2018"
 
