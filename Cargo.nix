@@ -112,7 +112,7 @@ rec {
       version = "0.1.8";
       authors = [ "Graham Christensen <graham@grahamc.com>" ];
       edition = "2018";
-      src = include [ "Cargo.toml" "src" "test-srcs" "build.rs" ] ./.;
+      src = include [ "Cargo.toml" "ofborg" ] ./.;
       workspace_member = "ofborg";
       build = "build.rs";
       dependencies = mapFeatures features ([
@@ -192,7 +192,7 @@ rec {
       version = "0.1.0";
       authors = [ "Daiderd Jordan <daiderd@gmail.com>" ];
       edition = "2018";
-      src = include [ "Cargo.toml" " ofborg-simple-build" ] ./.;
+      src = include [ "Cargo.toml" "ofborg-simple-build" ] ./.;
       workspace_member = "ofborg-simple-build";
       dependencies = mapFeatures features ([
         (cratesIO.crates."log"."${deps."ofborg_simple_build"."0.1.0"."log"}" deps)
