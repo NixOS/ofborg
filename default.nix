@@ -7,7 +7,7 @@ let
 
   drv = ofborgCrates.ofborg {};
 
-  src = stripDeps (drv.override { release = false; });
+  src = stripDeps (drv.override { release = pkgs.stdenv.isDarwin; });
 
   stripDeps = pkg: pkgs.runCommand "${pkg.name}-deps-stripped" {}
   ''
