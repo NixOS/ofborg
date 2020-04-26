@@ -1,5 +1,6 @@
 use crate::checkout;
 use crate::commentparser;
+use crate::config::CachixConfig;
 use crate::message::buildresult::{BuildResult, BuildStatus, V1Tag};
 use crate::message::{buildjob, buildlogmsg};
 use crate::nix;
@@ -10,12 +11,14 @@ use amqp::protocol::basic::{BasicProperties, Deliver};
 use uuid::Uuid;
 
 use std::collections::VecDeque;
+use std::process::Command;
 
 pub struct BuildWorker {
     cloner: checkout::CachedCloner,
     nix: nix::Nix,
     system: String,
     identity: String,
+    cachix: Option<CachixConfig>,
 }
 
 impl BuildWorker {
@@ -24,12 +27,14 @@ impl BuildWorker {
         nix: nix::Nix,
         system: String,
         identity: String,
+        cachix: Option<CachixConfig>,
     ) -> BuildWorker {
         BuildWorker {
             cloner,
             nix,
             system,
             identity,
+            cachix,
         }
     }
 
@@ -112,6 +117,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             attempted_attrs: None,
             skipped_attrs: None,
             status: BuildStatus::Failure,
+            cachix_uploaded: None,
         };
 
         let result_exchange = self.result_exchange.clone();
@@ -193,6 +199,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             skipped_attrs: Some(not_attempted_attrs),
             attempted_attrs: None,
             status: BuildStatus::Skipped,
+            cachix_uploaded: None,
         };
 
         let result_exchange = self.result_exchange.clone();
@@ -219,6 +226,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
         status: BuildStatus,
         attempted_attrs: Vec<String>,
         not_attempted_attrs: Vec<String>,
+        cachix_uploaded: bool,
     ) {
         let msg = BuildResult::V1 {
             tag: V1Tag::V1,
@@ -231,6 +239,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             status,
             attempted_attrs: Some(attempted_attrs),
             skipped_attrs: Some(not_attempted_attrs),
+            cachix_uploaded: Some(cachix_uploaded),
         };
 
         let result_exchange = self.result_exchange.clone();
@@ -346,6 +355,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             return;
         }
 
+        // Nix build begins here
         let mut spawned =
             self.nix
                 .safely_build_attrs_async(refpath.as_ref(), buildfile, can_build.clone());
@@ -382,8 +392,53 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             .last();
         info!("----->8-----");
 
-        actions.build_finished(status, can_build, cannot_build_attrs);
+        let cachix_result = match &self.cachix {
+            Some(conf) if status == BuildStatus::Success => cache_push(conf, actions.log_snippet()),
+            _ => {
+                info!("Skipping Cachix because it was either not configured, or the build failed");
+
+                false
+            }
+        };
+
+        actions.build_finished(status, can_build, cannot_build_attrs, cachix_result);
         info!("Done!");
+    }
+}
+
+fn cache_push(cfg: &CachixConfig, log: Vec<String>) -> bool {
+    if !log.is_empty() {
+        let store_path = log.last().unwrap();
+        let mut cmd = Command::new("cachix");
+
+        if let Some(path) = &cfg.config_path {
+            cmd.arg(format!("--config {}", path));
+        }
+
+        if let Some(host) = &cfg.host {
+            cmd.arg(format!("--host {}", host));
+        }
+
+        cmd.arg("push");
+
+        if let Some(jobs) = &cfg.push_jobs {
+            cmd.arg(format!("--jobs {}", jobs));
+        }
+
+        if let Some(level) = &cfg.push_compression_level {
+            cmd.arg(format!("--compression-level {}", level));
+        }
+
+        cmd.arg(&cfg.cache_name)
+            .arg(store_path)
+            .status()
+            .ok()
+            .map(|res| res.success())
+            .unwrap_or(false)
+    } else {
+        error!("Successful build with no output");
+
+        false
     }
 }
 
@@ -415,6 +470,7 @@ mod tests {
             nix,
             "x86_64-linux".to_owned(),
             "cargo-test-build".to_owned(),
+            None,
         );
 
         worker

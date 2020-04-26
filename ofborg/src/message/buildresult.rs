@@ -45,6 +45,7 @@ pub struct LegacyBuildResult {
     pub status: BuildStatus,
     pub skipped_attrs: Option<Vec<String>>,
     pub attempted_attrs: Option<Vec<String>>,
+    pub cachix_uploaded: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -67,6 +68,7 @@ pub enum BuildResult {
         status: BuildStatus,
         skipped_attrs: Option<Vec<String>>,
         attempted_attrs: Option<Vec<String>>,
+        cachix_uploaded: Option<bool>,
     },
     Legacy {
         repo: Repo,
@@ -79,6 +81,7 @@ pub enum BuildResult {
         status: Option<BuildStatus>,
         skipped_attrs: Option<Vec<String>>,
         attempted_attrs: Option<Vec<String>>,
+        cachix_uploaded: Option<bool>,
     },
 }
 
@@ -97,6 +100,7 @@ impl BuildResult {
                 ref request_id,
                 ref attempted_attrs,
                 ref skipped_attrs,
+                ref cachix_uploaded,
                 ..
             } => LegacyBuildResult {
                 repo: repo.to_owned(),
@@ -108,6 +112,7 @@ impl BuildResult {
                 status: self.status(),
                 attempted_attrs: attempted_attrs.to_owned(),
                 skipped_attrs: skipped_attrs.to_owned(),
+                cachix_uploaded: cachix_uploaded.to_owned(),
             },
             BuildResult::V1 {
                 ref repo,
@@ -118,6 +123,7 @@ impl BuildResult {
                 ref request_id,
                 ref attempted_attrs,
                 ref skipped_attrs,
+                ref cachix_uploaded,
                 ..
             } => LegacyBuildResult {
                 repo: repo.to_owned(),
@@ -129,6 +135,7 @@ impl BuildResult {
                 status: self.status(),
                 attempted_attrs: attempted_attrs.to_owned(),
                 skipped_attrs: skipped_attrs.to_owned(),
+                cachix_uploaded: cachix_uploaded.to_owned(),
             },
         }
     }
@@ -159,13 +166,13 @@ mod tests {
 
     #[test]
     fn v1_serialization() {
-        let input = r#"{"tag":"V1","repo":{"owner":"NixOS","name":"nixpkgs","full_name":"NixOS/nixpkgs","clone_url":"https://github.com/nixos/nixpkgs.git"},"pr":{"target_branch":"master","number":42,"head_sha":"0000000000000000000000000000000000000000"},"system":"x86_64-linux","output":["unpacking sources"],"attempt_id":"attempt-id-foo","request_id":"bogus-request-id","status":"Success","skipped_attrs":["AAAAAASomeThingsFailToEvaluate"],"attempted_attrs":["hello"]}"#;
+        let input = r#"{"tag":"V1","repo":{"owner":"NixOS","name":"nixpkgs","full_name":"NixOS/nixpkgs","clone_url":"https://github.com/nixos/nixpkgs.git"},"pr":{"target_branch":"master","number":42,"head_sha":"0000000000000000000000000000000000000000"},"system":"x86_64-linux","output":["unpacking sources"],"attempt_id":"attempt-id-foo","request_id":"bogus-request-id","status":"Success","skipped_attrs":["AAAAAASomeThingsFailToEvaluate"],"attempted_attrs":["hello"],"cachix_uploaded":null}"#;
         let result: BuildResult = serde_json::from_str(input).expect("result required");
         assert_eq!(result.status(), BuildStatus::Success);
         let output = serde_json::to_string(&result).expect("json required");
         assert_eq!(
             output,
-            r#"{"tag":"V1","repo":{"owner":"NixOS","name":"nixpkgs","full_name":"NixOS/nixpkgs","clone_url":"https://github.com/nixos/nixpkgs.git"},"pr":{"target_branch":"master","number":42,"head_sha":"0000000000000000000000000000000000000000"},"system":"x86_64-linux","output":["unpacking sources"],"attempt_id":"attempt-id-foo","request_id":"bogus-request-id","status":"Success","skipped_attrs":["AAAAAASomeThingsFailToEvaluate"],"attempted_attrs":["hello"]}"#,
+            r#"{"tag":"V1","repo":{"owner":"NixOS","name":"nixpkgs","full_name":"NixOS/nixpkgs","clone_url":"https://github.com/nixos/nixpkgs.git"},"pr":{"target_branch":"master","number":42,"head_sha":"0000000000000000000000000000000000000000"},"system":"x86_64-linux","output":["unpacking sources"],"attempt_id":"attempt-id-foo","request_id":"bogus-request-id","status":"Success","skipped_attrs":["AAAAAASomeThingsFailToEvaluate"],"attempted_attrs":["hello"],"cachix_uploaded":null}"#,
             "json of: {:?}",
             result
         );
@@ -179,7 +186,7 @@ mod tests {
         let output = serde_json::to_string(&result).expect("json required");
         assert_eq!(
             output,
-            r#"{"repo":{"owner":"NixOS","name":"nixpkgs","full_name":"NixOS/nixpkgs","clone_url":"https://github.com/nixos/nixpkgs.git"},"pr":{"target_branch":"master","number":42,"head_sha":"0000000000000000000000000000000000000000"},"system":"x86_64-linux","output":["unpacking sources"],"attempt_id":"attempt-id-foo","request_id":"bogus-request-id","success":true,"status":"Success","skipped_attrs":["AAAAAASomeThingsFailToEvaluate"],"attempted_attrs":["hello"]}"#,
+            r#"{"repo":{"owner":"NixOS","name":"nixpkgs","full_name":"NixOS/nixpkgs","clone_url":"https://github.com/nixos/nixpkgs.git"},"pr":{"target_branch":"master","number":42,"head_sha":"0000000000000000000000000000000000000000"},"system":"x86_64-linux","output":["unpacking sources"],"attempt_id":"attempt-id-foo","request_id":"bogus-request-id","success":true,"status":"Success","skipped_attrs":["AAAAAASomeThingsFailToEvaluate"],"attempted_attrs":["hello"],"cachix_uploaded":null}"#,
             "json of: {:?}",
             result
         );
@@ -193,7 +200,7 @@ mod tests {
         let output = serde_json::to_string(&result).expect("json required");
         assert_eq!(
             output,
-            r#"{"repo":{"owner":"NixOS","name":"nixpkgs","full_name":"NixOS/nixpkgs","clone_url":"https://github.com/nixos/nixpkgs.git"},"pr":{"target_branch":"master","number":42,"head_sha":"0000000000000000000000000000000000000000"},"system":"x86_64-linux","output":[],"attempt_id":"attempt-id-foo","request_id":"bogus-request-id","success":null,"status":null,"skipped_attrs":null,"attempted_attrs":null}"#,
+            r#"{"repo":{"owner":"NixOS","name":"nixpkgs","full_name":"NixOS/nixpkgs","clone_url":"https://github.com/nixos/nixpkgs.git"},"pr":{"target_branch":"master","number":42,"head_sha":"0000000000000000000000000000000000000000"},"system":"x86_64-linux","output":[],"attempt_id":"attempt-id-foo","request_id":"bogus-request-id","success":null,"status":null,"skipped_attrs":null,"attempted_attrs":null,"cachix_uploaded":null}"#,
             "json of: {:?}",
             result
         );
@@ -207,7 +214,7 @@ mod tests {
         let output = serde_json::to_string(&result).expect("json required");
         assert_eq!(
             output,
-            r#"{"repo":{"owner":"NixOS","name":"nixpkgs","full_name":"NixOS/nixpkgs","clone_url":"https://github.com/nixos/nixpkgs.git"},"pr":{"target_branch":"master","number":42,"head_sha":"0000000000000000000000000000000000000000"},"system":"x86_64-linux","output":["unpacking sources"],"attempt_id":"attempt-id-foo","request_id":"bogus-request-id","success":true,"status":null,"skipped_attrs":["AAAAAASomeThingsFailToEvaluate"],"attempted_attrs":["hello"]}"#,
+            r#"{"repo":{"owner":"NixOS","name":"nixpkgs","full_name":"NixOS/nixpkgs","clone_url":"https://github.com/nixos/nixpkgs.git"},"pr":{"target_branch":"master","number":42,"head_sha":"0000000000000000000000000000000000000000"},"system":"x86_64-linux","output":["unpacking sources"],"attempt_id":"attempt-id-foo","request_id":"bogus-request-id","success":true,"status":null,"skipped_attrs":["AAAAAASomeThingsFailToEvaluate"],"attempted_attrs":["hello"],"cachix_uploaded":null}"#,
             "json of: {:?}",
             result
         );

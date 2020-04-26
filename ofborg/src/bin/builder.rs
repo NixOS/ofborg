@@ -90,6 +90,7 @@ fn main() {
                 nix,
                 cfg.nix.system.clone(),
                 cfg.runner.identity.clone(),
+                cfg.cachix.clone(),
             )),
             easyamqp::ConsumeConfig {
                 queue: queue_name.clone(),

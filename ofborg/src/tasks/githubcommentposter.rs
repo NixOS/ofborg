@@ -151,6 +151,14 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
         ));
     }
 
+    if let Some(uploaded) = result.cachix_uploaded {
+        if uploaded {
+            summary.push(String::from("Build successfully uploaded to Cachix."));
+        } else {
+            summary.push(String::from("Failed to upload build to Cachix."));
+        }
+    }
+
     let text: String = if !result.output.is_empty() {
         let mut reply: Vec<String> = vec![];
 
@@ -281,6 +289,7 @@ mod tests {
             attempted_attrs: Some(vec!["foo".to_owned()]),
             skipped_attrs: Some(vec!["bar".to_owned()]),
             status: BuildStatus::Success,
+            cachix_uploaded: None,
         };
 
         let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
@@ -363,6 +372,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             attempted_attrs: Some(vec!["foo".to_owned()]),
             skipped_attrs: None,
             status: BuildStatus::Failure,
+            cachix_uploaded: None,
         };
 
         let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
@@ -442,6 +452,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             attempted_attrs: Some(vec!["foo".to_owned()]),
             skipped_attrs: None,
             status: BuildStatus::TimedOut,
+            cachix_uploaded: None,
         };
 
         let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
@@ -522,6 +533,7 @@ error: build of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' failed
             attempted_attrs: None,
             skipped_attrs: None,
             status: BuildStatus::Success,
+            cachix_uploaded: None,
         };
 
         let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
@@ -600,6 +612,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             attempted_attrs: None,
             skipped_attrs: None,
             status: BuildStatus::Failure,
+            cachix_uploaded: None,
         };
 
         let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
@@ -667,6 +680,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             attempted_attrs: None,
             skipped_attrs: Some(vec!["not-attempted".to_owned()]),
             status: BuildStatus::Skipped,
+            cachix_uploaded: None,
         };
 
         let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
@@ -720,6 +734,7 @@ foo
             attempted_attrs: None,
             skipped_attrs: Some(vec!["not-attempted".to_owned()]),
             status: BuildStatus::Skipped,
+            cachix_uploaded: None,
         };
 
         let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);

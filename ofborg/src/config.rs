@@ -22,6 +22,7 @@ pub struct Config {
     pub github_app: Option<GithubAppConfig>,
     pub log_storage: Option<LogStorage>,
     pub tag_paths: Option<HashMap<String, Vec<String>>>,
+    pub cachix: Option<CachixConfig>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -82,6 +83,15 @@ pub struct RunnerConfig {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CheckoutConfig {
     pub root: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CachixConfig {
+    pub cache_name: String,
+    pub config_path: Option<String>,
+    pub host: Option<String>,
+    pub push_jobs: Option<i8>,
+    pub push_compression_level: Option<i8>,
 }
 
 impl Config {

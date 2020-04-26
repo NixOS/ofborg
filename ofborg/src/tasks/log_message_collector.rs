@@ -436,6 +436,7 @@ mod tests {
                         status: BuildStatus::Success,
                         attempted_attrs: Some(vec!["foo".to_owned()]),
                         skipped_attrs: Some(vec!["bar".to_owned()]),
+                        cachix_uploaded: None,
                     }))
                 })
             );
@@ -463,6 +464,6 @@ mod tests {
         let mut sr = String::new();
         prr.push("routing-key-foo/attempt-id-foo.result.json");
         File::open(prr).unwrap().read_to_string(&mut sr).unwrap();
-        assert_eq!(&sr, "{\"tag\":\"V1\",\"repo\":{\"owner\":\"NixOS\",\"name\":\"ofborg\",\"full_name\":\"NixOS/ofborg\",\"clone_url\":\"https://github.com/nixos/ofborg.git\"},\"pr\":{\"target_branch\":\"scratch\",\"number\":42,\"head_sha\":\"6dd9f0265d52b946dd13daf996f30b64e4edb446\"},\"system\":\"x86_64-linux\",\"output\":[],\"attempt_id\":\"attempt-id-foo\",\"request_id\":\"bogus-request-id\",\"status\":\"Success\",\"skipped_attrs\":[\"bar\"],\"attempted_attrs\":[\"foo\"]}");
+        assert_eq!(&sr, "{\"tag\":\"V1\",\"repo\":{\"owner\":\"NixOS\",\"name\":\"ofborg\",\"full_name\":\"NixOS/ofborg\",\"clone_url\":\"https://github.com/nixos/ofborg.git\"},\"pr\":{\"target_branch\":\"scratch\",\"number\":42,\"head_sha\":\"6dd9f0265d52b946dd13daf996f30b64e4edb446\"},\"system\":\"x86_64-linux\",\"output\":[],\"attempt_id\":\"attempt-id-foo\",\"request_id\":\"bogus-request-id\",\"status\":\"Success\",\"skipped_attrs\":[\"bar\"],\"attempted_attrs\":[\"foo\"],\"cachix_uploaded\":null}");
     }
 }
