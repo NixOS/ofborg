@@ -2,7 +2,7 @@ use amqp::Basic;
 use log::{error, info, log};
 use ofborg::checkout;
 use ofborg::config;
-use ofborg::easyamqp::{self, TypedWrappers};
+use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
 use ofborg::stats;
 use ofborg::tasks;
 use ofborg::worker;
@@ -61,7 +61,6 @@ fn main() {
             exclusive: false,
             auto_delete: false,
             no_wait: false,
-            arguments: None,
         })
         .unwrap();
 
@@ -76,7 +75,6 @@ fn main() {
                 no_ack: false,
                 no_wait: false,
                 exclusive: false,
-                arguments: None,
             },
         )
         .unwrap();

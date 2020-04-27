@@ -41,10 +41,6 @@ pub struct ConsumeConfig {
     /// complete the method it will raise a channel or connection
     /// exception.
     pub no_wait: bool,
-
-    ///  A set of arguments for the consume. The syntax and semantics
-    /// of these arguments depends on the server implementation.
-    pub arguments: Option<amqp::Table>,
 }
 
 pub struct BindQueueConfig {
@@ -88,10 +84,6 @@ pub struct BindQueueConfig {
     /// complete the method it will raise a channel or connection
     /// exception.
     pub no_wait: bool,
-
-    ///  A set of arguments for the binding. The syntax and semantics
-    ///  of these arguments depends on the exchange class.
-    pub arguments: Option<amqp::Table>,
 }
 
 pub enum ExchangeType {
@@ -192,11 +184,6 @@ pub struct ExchangeConfig {
     /// complete the method it will raise a channel or connection
     /// exception.
     pub no_wait: bool,
-
-    /// A set of arguments for the declaration. The syntax and
-    /// semantics of these arguments depends on the server
-    /// implementation.
-    pub arguments: Option<amqp::Table>,
 }
 
 pub struct QueueConfig {
@@ -274,11 +261,6 @@ pub struct QueueConfig {
     /// complete the method it will raise a channel or connection
     /// exception.
     pub no_wait: bool,
-
-    /// A set of arguments for the declaration. The syntax and
-    /// semantics of these arguments depends on the server
-    /// implementation.
-    pub arguments: Option<amqp::Table>,
 }
 
 pub fn session_from_config(config: &RabbitMQConfig) -> Result<amqp::Session, amqp::AMQPError> {
@@ -314,48 +296,22 @@ pub fn session_from_config(config: &RabbitMQConfig) -> Result<amqp::Session, amq
     Ok(session)
 }
 
-pub trait TypedWrappers {
-    fn consume<T>(&mut self, callback: T, config: ConsumeConfig) -> Result<String, amqp::AMQPError>
-    where
-        T: amqp::Consumer + 'static;
-
-    fn declare_exchange(
-        &mut self,
-        config: ExchangeConfig,
-    ) -> Result<amqp::protocol::exchange::DeclareOk, amqp::AMQPError>;
-
-    fn declare_queue(
-        &mut self,
-        config: QueueConfig,
-    ) -> Result<amqp::protocol::queue::DeclareOk, amqp::AMQPError>;
-
-    fn bind_queue(
-        &mut self,
-        config: BindQueueConfig,
-    ) -> Result<amqp::protocol::queue::BindOk, amqp::AMQPError>;
+pub trait ChannelExt {
+    type Error;
+    fn declare_exchange(&mut self, config: ExchangeConfig) -> Result<(), Self::Error>;
+    fn declare_queue(&mut self, config: QueueConfig) -> Result<(), Self::Error>;
+    fn bind_queue(&mut self, config: BindQueueConfig) -> Result<(), Self::Error>;
 }
 
-impl TypedWrappers for amqp::Channel {
-    fn consume<T>(&mut self, callback: T, config: ConsumeConfig) -> Result<String, amqp::AMQPError>
-    where
-        T: amqp::Consumer + 'static,
-    {
-        self.basic_consume(
-            callback,
-            config.queue,
-            config.consumer_tag,
-            config.no_local,
-            config.no_ack,
-            config.exclusive,
-            config.no_wait,
-            config.arguments.unwrap_or_else(amqp::Table::new),
-        )
-    }
+pub trait ConsumerExt<T> {
+    type Error;
+    fn consume(&mut self, callback: T, config: ConsumeConfig) -> Result<(), Self::Error>;
+}
 
-    fn declare_exchange(
-        &mut self,
-        config: ExchangeConfig,
-    ) -> Result<amqp::protocol::exchange::DeclareOk, amqp::AMQPError> {
+impl ChannelExt for amqp::Channel {
+    type Error = amqp::AMQPError;
+
+    fn declare_exchange(&mut self, config: ExchangeConfig) -> Result<(), Self::Error> {
         self.exchange_declare(
             config.exchange,
             config.exchange_type.into(),
@@ -364,14 +320,12 @@ impl TypedWrappers for amqp::Channel {
             config.auto_delete,
             config.internal,
             config.no_wait,
-            config.arguments.unwrap_or_else(amqp::Table::new),
-        )
+            amqp::Table::new(),
+        )?;
+        Ok(())
     }
 
-    fn declare_queue(
-        &mut self,
-        config: QueueConfig,
-    ) -> Result<amqp::protocol::queue::DeclareOk, amqp::AMQPError> {
+    fn declare_queue(&mut self, config: QueueConfig) -> Result<(), Self::Error> {
         self.queue_declare(
             config.queue,
             config.passive,
@@ -379,20 +333,37 @@ impl TypedWrappers for amqp::Channel {
             config.exclusive,
             config.auto_delete,
             config.no_wait,
-            config.arguments.unwrap_or_else(amqp::Table::new),
-        )
+            amqp::Table::new(),
+        )?;
+        Ok(())
     }
 
-    fn bind_queue(
-        &mut self,
-        config: BindQueueConfig,
-    ) -> Result<amqp::protocol::queue::BindOk, amqp::AMQPError> {
+    fn bind_queue(&mut self, config: BindQueueConfig) -> Result<(), Self::Error> {
         self.queue_bind(
             config.queue,
             config.exchange,
             config.routing_key.unwrap_or_else(|| "".to_owned()),
             config.no_wait,
-            config.arguments.unwrap_or_else(amqp::Table::new),
-        )
+            amqp::Table::new(),
+        )?;
+        Ok(())
+    }
+}
+
+impl<T: amqp::Consumer + 'static> ConsumerExt<T> for amqp::Channel {
+    type Error = amqp::AMQPError;
+
+    fn consume(&mut self, callback: T, config: ConsumeConfig) -> Result<(), Self::Error> {
+        self.basic_consume(
+            callback,
+            config.queue,
+            config.consumer_tag,
+            config.no_local,
+            config.no_ack,
+            config.exclusive,
+            config.no_wait,
+            amqp::Table::new(),
+        )?;
+        Ok(())
     }
 }

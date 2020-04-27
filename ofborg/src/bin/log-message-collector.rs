@@ -1,6 +1,6 @@
 use log::{info, log};
 use ofborg::config;
-use ofborg::easyamqp::{self, TypedWrappers};
+use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
 use ofborg::tasks;
 use ofborg::worker;
 
@@ -25,22 +25,20 @@ fn main() {
             auto_delete: false,
             no_wait: false,
             internal: false,
-            arguments: None,
         })
         .unwrap();
 
-    let queue_name = channel
+    let queue_name = "".to_owned();
+    channel
         .declare_queue(easyamqp::QueueConfig {
-            queue: "".to_owned(),
+            queue: queue_name.clone(),
             passive: false,
             durable: false,
             exclusive: true,
             auto_delete: true,
             no_wait: false,
-            arguments: None,
         })
-        .unwrap()
-        .queue;
+        .unwrap();
 
     channel
         .bind_queue(easyamqp::BindQueueConfig {
@@ -48,7 +46,6 @@ fn main() {
             exchange: "logs".to_owned(),
             routing_key: Some("*.*".to_owned()),
             no_wait: false,
-            arguments: None,
         })
         .unwrap();
 
@@ -65,7 +62,6 @@ fn main() {
                 no_ack: false,
                 no_wait: false,
                 exclusive: false,
-                arguments: None,
             },
         )
         .unwrap();

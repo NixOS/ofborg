@@ -2,7 +2,7 @@ use amqp::Basic;
 use log::{info, log, warn};
 use ofborg::checkout;
 use ofborg::config;
-use ofborg::easyamqp::{self, TypedWrappers};
+use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
 use ofborg::notifyworker;
 use ofborg::tasks;
 
@@ -39,38 +39,37 @@ fn main() {
             auto_delete: false,
             no_wait: false,
             internal: false,
-            arguments: None,
         })
         .unwrap();
 
-    let queue_name: String = if cfg.runner.build_all_jobs != Some(true) {
+    let queue_name = if cfg.runner.build_all_jobs != Some(true) {
+        let queue_name = format!("build-inputs-{}", cfg.nix.system.clone());
         channel
             .declare_queue(easyamqp::QueueConfig {
-                queue: format!("build-inputs-{}", cfg.nix.system.clone()),
+                queue: queue_name.clone(),
                 passive: false,
                 durable: true,
                 exclusive: false,
                 auto_delete: false,
                 no_wait: false,
-                arguments: None,
             })
-            .unwrap()
-            .queue
+            .unwrap();
+        queue_name
     } else {
         warn!("Building all jobs, please don't use this unless you're");
         warn!("developing and have Graham's permission!");
+        let queue_name = "".to_owned();
         channel
             .declare_queue(easyamqp::QueueConfig {
-                queue: "".to_owned(),
+                queue: queue_name.clone(),
                 passive: false,
                 durable: false,
                 exclusive: true,
                 auto_delete: true,
                 no_wait: false,
-                arguments: None,
             })
-            .unwrap()
-            .queue
+            .unwrap();
+        queue_name
     };
 
     channel
@@ -79,7 +78,6 @@ fn main() {
             exchange: "build-jobs".to_owned(),
             routing_key: None,
             no_wait: false,
-            arguments: None,
         })
         .unwrap();
 
@@ -98,7 +96,6 @@ fn main() {
                 no_ack: false,
                 no_wait: false,
                 exclusive: false,
-                arguments: None,
             },
         )
         .unwrap();

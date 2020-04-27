@@ -1,7 +1,7 @@
 use amqp::Basic;
 use log::{info, log};
 use ofborg::config;
-use ofborg::easyamqp::{self, TypedWrappers};
+use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
 use ofborg::tasks;
 use ofborg::worker;
 
@@ -26,7 +26,6 @@ fn main() {
             auto_delete: false,
             no_wait: false,
             internal: false,
-            arguments: None,
         })
         .unwrap();
 
@@ -39,7 +38,6 @@ fn main() {
             auto_delete: false,
             no_wait: false,
             internal: false,
-            arguments: None,
         })
         .unwrap();
 
@@ -51,7 +49,6 @@ fn main() {
             exclusive: false,
             auto_delete: false,
             no_wait: false,
-            arguments: None,
         })
         .unwrap();
 
@@ -61,7 +58,6 @@ fn main() {
             exchange: "github-events".to_owned(),
             routing_key: Some("issue_comment.*".to_owned()),
             no_wait: false,
-            arguments: None,
         })
         .unwrap();
 
@@ -79,7 +75,6 @@ fn main() {
                 no_ack: false,
                 no_wait: false,
                 exclusive: false,
-                arguments: None,
             },
         )
         .unwrap();

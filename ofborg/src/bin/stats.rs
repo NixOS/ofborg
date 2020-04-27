@@ -1,7 +1,7 @@
 use amqp::Basic;
 use hyper::server::{Request, Response, Server};
 use log::{info, log};
-use ofborg::easyamqp::TypedWrappers;
+use ofborg::easyamqp::{ChannelExt, ConsumerExt};
 use ofborg::{config, easyamqp, stats, tasks, worker};
 
 use std::env;
@@ -35,7 +35,6 @@ fn main() {
             auto_delete: false,
             no_wait: false,
             internal: false,
-            arguments: None,
         })
         .unwrap();
 
@@ -47,7 +46,6 @@ fn main() {
             exclusive: false,
             auto_delete: false,
             no_wait: false,
-            arguments: None,
         })
         .unwrap();
 
@@ -57,7 +55,6 @@ fn main() {
             exchange: "stats".to_owned(),
             routing_key: None,
             no_wait: false,
-            arguments: None,
         })
         .unwrap();
 
@@ -72,7 +69,6 @@ fn main() {
                 no_ack: false,
                 no_wait: false,
                 exclusive: false,
-                arguments: None,
             },
         )
         .unwrap();
