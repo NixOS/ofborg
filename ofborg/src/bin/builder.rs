@@ -42,32 +42,34 @@ fn main() {
         })
         .unwrap();
 
-    let queue_name: String = if cfg.runner.build_all_jobs != Some(true) {
+    let queue_name = if cfg.runner.build_all_jobs != Some(true) {
+        let queue_name = format!("build-inputs-{}", cfg.nix.system.clone());
         channel
             .declare_queue(easyamqp::QueueConfig {
-                queue: format!("build-inputs-{}", cfg.nix.system.clone()),
+                queue: queue_name.clone(),
                 passive: false,
                 durable: true,
                 exclusive: false,
                 auto_delete: false,
                 no_wait: false,
             })
-            .unwrap()
-            .queue
+            .unwrap();
+        queue_name
     } else {
         warn!("Building all jobs, please don't use this unless you're");
         warn!("developing and have Graham's permission!");
+        let queue_name = "".to_owned();
         channel
             .declare_queue(easyamqp::QueueConfig {
-                queue: "".to_owned(),
+                queue: queue_name.clone(),
                 passive: false,
                 durable: false,
                 exclusive: true,
                 auto_delete: true,
                 no_wait: false,
             })
-            .unwrap()
-            .queue
+            .unwrap();
+        queue_name
     };
 
     channel

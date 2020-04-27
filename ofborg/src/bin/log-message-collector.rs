@@ -28,17 +28,17 @@ fn main() {
         })
         .unwrap();
 
-    let queue_name = channel
+    let queue_name = "".to_owned();
+    channel
         .declare_queue(easyamqp::QueueConfig {
-            queue: "".to_owned(),
+            queue: queue_name.clone(),
             passive: false,
             durable: false,
             exclusive: true,
             auto_delete: true,
             no_wait: false,
         })
-        .unwrap()
-        .queue;
+        .unwrap();
 
     channel
         .bind_queue(easyamqp::BindQueueConfig {
