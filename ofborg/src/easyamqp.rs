@@ -41,10 +41,6 @@ pub struct ConsumeConfig {
     /// complete the method it will raise a channel or connection
     /// exception.
     pub no_wait: bool,
-
-    ///  A set of arguments for the consume. The syntax and semantics
-    /// of these arguments depends on the server implementation.
-    pub arguments: Option<amqp::Table>,
 }
 
 pub struct BindQueueConfig {
@@ -88,10 +84,6 @@ pub struct BindQueueConfig {
     /// complete the method it will raise a channel or connection
     /// exception.
     pub no_wait: bool,
-
-    ///  A set of arguments for the binding. The syntax and semantics
-    ///  of these arguments depends on the exchange class.
-    pub arguments: Option<amqp::Table>,
 }
 
 pub enum ExchangeType {
@@ -192,11 +184,6 @@ pub struct ExchangeConfig {
     /// complete the method it will raise a channel or connection
     /// exception.
     pub no_wait: bool,
-
-    /// A set of arguments for the declaration. The syntax and
-    /// semantics of these arguments depends on the server
-    /// implementation.
-    pub arguments: Option<amqp::Table>,
 }
 
 pub struct QueueConfig {
@@ -274,11 +261,6 @@ pub struct QueueConfig {
     /// complete the method it will raise a channel or connection
     /// exception.
     pub no_wait: bool,
-
-    /// A set of arguments for the declaration. The syntax and
-    /// semantics of these arguments depends on the server
-    /// implementation.
-    pub arguments: Option<amqp::Table>,
 }
 
 pub fn session_from_config(config: &RabbitMQConfig) -> Result<amqp::Session, amqp::AMQPError> {
@@ -348,7 +330,7 @@ impl TypedWrappers for amqp::Channel {
             config.no_ack,
             config.exclusive,
             config.no_wait,
-            config.arguments.unwrap_or_else(amqp::Table::new),
+            amqp::Table::new(),
         )
     }
 
@@ -364,7 +346,7 @@ impl TypedWrappers for amqp::Channel {
             config.auto_delete,
             config.internal,
             config.no_wait,
-            config.arguments.unwrap_or_else(amqp::Table::new),
+            amqp::Table::new(),
         )
     }
 
@@ -379,7 +361,7 @@ impl TypedWrappers for amqp::Channel {
             config.exclusive,
             config.auto_delete,
             config.no_wait,
-            config.arguments.unwrap_or_else(amqp::Table::new),
+            amqp::Table::new(),
         )
     }
 
@@ -392,7 +374,7 @@ impl TypedWrappers for amqp::Channel {
             config.exchange,
             config.routing_key.unwrap_or_else(|| "".to_owned()),
             config.no_wait,
-            config.arguments.unwrap_or_else(amqp::Table::new),
+            amqp::Table::new(),
         )
     }
 }

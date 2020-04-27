@@ -39,7 +39,6 @@ fn main() {
             auto_delete: false,
             no_wait: false,
             internal: false,
-            arguments: None,
         })
         .unwrap();
 
@@ -52,7 +51,6 @@ fn main() {
                 exclusive: false,
                 auto_delete: false,
                 no_wait: false,
-                arguments: None,
             })
             .unwrap()
             .queue
@@ -67,7 +65,6 @@ fn main() {
                 exclusive: true,
                 auto_delete: true,
                 no_wait: false,
-                arguments: None,
             })
             .unwrap()
             .queue
@@ -79,7 +76,6 @@ fn main() {
             exchange: "build-jobs".to_owned(),
             routing_key: None,
             no_wait: false,
-            arguments: None,
         })
         .unwrap();
 
@@ -98,7 +94,6 @@ fn main() {
                 no_ack: false,
                 no_wait: false,
                 exclusive: false,
-                arguments: None,
             },
         )
         .unwrap();

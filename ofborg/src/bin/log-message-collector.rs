@@ -25,7 +25,6 @@ fn main() {
             auto_delete: false,
             no_wait: false,
             internal: false,
-            arguments: None,
         })
         .unwrap();
 
@@ -37,7 +36,6 @@ fn main() {
             exclusive: true,
             auto_delete: true,
             no_wait: false,
-            arguments: None,
         })
         .unwrap()
         .queue;
@@ -48,7 +46,6 @@ fn main() {
             exchange: "logs".to_owned(),
             routing_key: Some("*.*".to_owned()),
             no_wait: false,
-            arguments: None,
         })
         .unwrap();
 
@@ -65,7 +62,6 @@ fn main() {
                 no_ack: false,
                 no_wait: false,
                 exclusive: false,
-                arguments: None,
             },
         )
         .unwrap();

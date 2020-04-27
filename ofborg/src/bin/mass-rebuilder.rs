@@ -61,7 +61,6 @@ fn main() {
             exclusive: false,
             auto_delete: false,
             no_wait: false,
-            arguments: None,
         })
         .unwrap();
 
@@ -76,7 +75,6 @@ fn main() {
                 no_ack: false,
                 no_wait: false,
                 exclusive: false,
-                arguments: None,
             },
         )
         .unwrap();
