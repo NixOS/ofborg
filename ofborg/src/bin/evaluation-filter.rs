@@ -1,7 +1,7 @@
 use amqp::Basic;
 use log::{info, log};
 use ofborg::config;
-use ofborg::easyamqp::{self, TypedWrappers};
+use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
 use ofborg::tasks;
 use ofborg::worker;
 

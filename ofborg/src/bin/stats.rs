@@ -1,7 +1,7 @@
 use amqp::Basic;
 use hyper::server::{Request, Response, Server};
 use log::{info, log};
-use ofborg::easyamqp::TypedWrappers;
+use ofborg::easyamqp::{ChannelExt, ConsumerExt};
 use ofborg::{config, easyamqp, stats, tasks, worker};
 
 use std::env;
