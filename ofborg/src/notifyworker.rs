@@ -1,7 +1,7 @@
 use crate::worker::Action;
 
 use amqp::protocol::basic::{BasicProperties, Deliver};
-use amqp::{Basic, Channel, Consumer};
+use amqp::Basic;
 
 use std::marker::Send;
 
@@ -16,8 +16,8 @@ pub trait SimpleNotifyWorker {
 
     fn msg_to_job(
         &self,
-        method: &Deliver,
-        headers: &BasicProperties,
+        routing_key: &str,
+        content_type: &Option<String>,
         body: &[u8],
     ) -> Result<Self::J, String>;
 }
@@ -44,12 +44,15 @@ impl NotificationReceiver for DummyNotificationReceiver {
 }
 
 pub struct ChannelNotificationReceiver<'a> {
-    channel: &'a mut Channel,
+    channel: &'a mut amqp::Channel,
     delivery_tag: u64,
 }
 
 impl<'a> ChannelNotificationReceiver<'a> {
-    pub fn new(channel: &'a mut Channel, delivery_tag: u64) -> ChannelNotificationReceiver<'a> {
+    pub fn new(
+        channel: &'a mut amqp::Channel,
+        delivery_tag: u64,
+    ) -> ChannelNotificationReceiver<'a> {
         ChannelNotificationReceiver {
             channel,
             delivery_tag,
@@ -92,17 +95,20 @@ pub fn new<T: SimpleNotifyWorker>(worker: T) -> NotifyWorker<T> {
     NotifyWorker { internal: worker }
 }
 
-impl<T: SimpleNotifyWorker + Send> Consumer for NotifyWorker<T> {
+impl<T: SimpleNotifyWorker + Send> amqp::Consumer for NotifyWorker<T> {
     fn handle_delivery(
         &mut self,
-        channel: &mut Channel,
+        channel: &mut amqp::Channel,
         method: Deliver,
         headers: BasicProperties,
         body: Vec<u8>,
     ) {
         let mut receiver = ChannelNotificationReceiver::new(channel, method.delivery_tag);
 
-        let job = self.internal.msg_to_job(&method, &headers, &body).unwrap();
+        let job = self
+            .internal
+            .msg_to_job(&method.routing_key, &headers.content_type, &body)
+            .unwrap();
         self.internal.consumer(&job, &mut receiver);
     }
 }
