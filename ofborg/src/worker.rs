@@ -1,5 +1,5 @@
 use amqp::protocol::basic::{BasicProperties, Deliver};
-use amqp::{Basic, Channel, Consumer};
+use amqp::Basic;
 use serde::Serialize;
 
 use std::marker::Send;
@@ -53,15 +53,15 @@ where
     }))
 }
 
-pub trait SimpleWorker: Send + 'static {
+pub trait SimpleWorker: Send {
     type J: Send;
 
     fn consumer(&mut self, job: &Self::J) -> Actions;
 
     fn msg_to_job(
         &mut self,
-        method: &Deliver,
-        headers: &BasicProperties,
+        method: &str,
+        headers: &Option<String>,
         body: &[u8],
     ) -> Result<Self::J, String>;
 }
@@ -70,15 +70,17 @@ pub fn new<T: SimpleWorker>(worker: T) -> Worker<T> {
     Worker { internal: worker }
 }
 
-impl<T: SimpleWorker + Send> Consumer for Worker<T> {
+impl<T: SimpleWorker + Send> amqp::Consumer for Worker<T> {
     fn handle_delivery(
         &mut self,
-        channel: &mut Channel,
+        channel: &mut amqp::Channel,
         method: Deliver,
         headers: BasicProperties,
         body: Vec<u8>,
     ) {
-        let job = self.internal.msg_to_job(&method, &headers, &body);
+        let job = self
+            .internal
+            .msg_to_job(&method.routing_key, &headers.content_type, &body);
 
         if let Err(e) = job {
             error!("Error decoding job: {:?}", e);

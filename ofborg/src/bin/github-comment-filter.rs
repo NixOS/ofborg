@@ -62,7 +62,7 @@ fn main() {
         .unwrap();
 
     channel.basic_prefetch(1).unwrap();
-    channel
+    let mut channel = channel
         .consume(
             worker::new(tasks::githubcommentfilter::GitHubCommentWorker::new(
                 cfg.acl(),

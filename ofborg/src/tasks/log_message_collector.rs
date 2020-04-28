@@ -3,7 +3,6 @@ use crate::message::buildresult::BuildResult;
 use crate::worker;
 use crate::writetoline::LineWriter;
 
-use amqp::protocol::basic::{BasicProperties, Deliver};
 use lru_cache::LruCache;
 
 use std::fs::{self, File, OpenOptions};
@@ -174,8 +173,8 @@ impl worker::SimpleWorker for LogMessageCollector {
 
     fn msg_to_job(
         &mut self,
-        deliver: &Deliver,
-        _: &BasicProperties,
+        routing_key: &str,
+        _: &Option<String>,
         body: &[u8],
     ) -> Result<Self::J, String> {
         let message: MsgType;
@@ -203,7 +202,7 @@ impl worker::SimpleWorker for LogMessageCollector {
 
         Ok(LogMessage {
             from: LogFrom {
-                routing_key: deliver.routing_key.clone(),
+                routing_key: routing_key.to_string(),
                 attempt_id,
             },
             message,

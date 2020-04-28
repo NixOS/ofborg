@@ -81,7 +81,7 @@ fn main() {
         })
         .unwrap();
 
-    channel
+    let mut channel = channel
         .consume(
             notifyworker::new(tasks::build::BuildWorker::new(
                 cloner,

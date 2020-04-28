@@ -4,7 +4,6 @@ use crate::message::buildresult::{BuildResult, BuildStatus, LegacyBuildResult};
 use crate::message::Repo;
 use crate::worker;
 
-use amqp::protocol::basic::{BasicProperties, Deliver};
 use chrono::{DateTime, Utc};
 use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
 
@@ -42,12 +41,7 @@ impl PostableEvent {
 impl worker::SimpleWorker for GitHubCommentPoster {
     type J = PostableEvent;
 
-    fn msg_to_job(
-        &mut self,
-        _: &Deliver,
-        _: &BasicProperties,
-        body: &[u8],
-    ) -> Result<Self::J, String> {
+    fn msg_to_job(&mut self, _: &str, _: &Option<String>, body: &[u8]) -> Result<Self::J, String> {
         PostableEvent::from(body)
     }
 

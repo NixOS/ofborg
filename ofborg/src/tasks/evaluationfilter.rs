@@ -3,8 +3,6 @@ use crate::ghevent;
 use crate::message::{evaluationjob, Pr, Repo};
 use crate::worker;
 
-use amqp::protocol::basic::{BasicProperties, Deliver};
-
 pub struct EvaluationFilterWorker {
     acl: acl::ACL,
 }
@@ -20,8 +18,8 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
 
     fn msg_to_job(
         &mut self,
-        _: &Deliver,
-        _: &BasicProperties,
+        _: &str,
+        _: &Option<String>,
         body: &[u8],
     ) -> Result<Self::J, String> {
         match serde_json::from_slice(body) {
