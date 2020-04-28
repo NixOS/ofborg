@@ -117,6 +117,7 @@ rec {
       build = "build.rs";
       dependencies = mapFeatures features ([
         (crates."amqp"."${deps."ofborg"."0.1.8"."amqp"}" deps)
+        (cratesIO.crates."async_std"."${deps."ofborg"."0.1.8"."async_std"}" deps)
         (cratesIO.crates."chrono"."${deps."ofborg"."0.1.8"."chrono"}" deps)
         (cratesIO.crates."either"."${deps."ofborg"."0.1.8"."either"}" deps)
         (cratesIO.crates."env_logger"."${deps."ofborg"."0.1.8"."env_logger"}" deps)
@@ -124,6 +125,7 @@ rec {
         (crates."hubcaps"."${deps."ofborg"."0.1.8"."hubcaps"}" deps)
         (cratesIO.crates."hyper"."${deps."ofborg"."0.1.8"."hyper"}" deps)
         (cratesIO.crates."hyper_native_tls"."${deps."ofborg"."0.1.8"."hyper_native_tls"}" deps)
+        (cratesIO.crates."lapin"."${deps."ofborg"."0.1.8"."lapin"}" deps)
         (cratesIO.crates."log"."${deps."ofborg"."0.1.8"."log"}" deps)
         (cratesIO.crates."lru_cache"."${deps."ofborg"."0.1.8"."lru_cache"}" deps)
         (cratesIO.crates."md5"."${deps."ofborg"."0.1.8"."md5"}" deps)
@@ -139,6 +141,7 @@ rec {
     };
     features_.ofborg."0.1.8" = deps: f: updateFeatures f (rec {
       amqp."${deps.ofborg."0.1.8".amqp}".default = true;
+      async_std."${deps.ofborg."0.1.8".async_std}".default = true;
       chrono."${deps.ofborg."0.1.8".chrono}".default = true;
       either."${deps.ofborg."0.1.8".either}".default = true;
       env_logger."${deps.ofborg."0.1.8".env_logger}".default = true;
@@ -146,6 +149,7 @@ rec {
       hubcaps."${deps.ofborg."0.1.8".hubcaps}".default = true;
       hyper."${deps.ofborg."0.1.8".hyper}".default = true;
       hyper_native_tls."${deps.ofborg."0.1.8".hyper_native_tls}".default = true;
+      lapin."${deps.ofborg."0.1.8".lapin}".default = true;
       log."${deps.ofborg."0.1.8".log}".default = true;
       lru_cache."${deps.ofborg."0.1.8".lru_cache}".default = true;
       md5."${deps.ofborg."0.1.8".md5}".default = true;
@@ -163,6 +167,7 @@ rec {
       ];
     }) [
       (features_.amqp."${deps."ofborg"."0.1.8"."amqp"}" deps)
+      (cratesIO.features_.async_std."${deps."ofborg"."0.1.8"."async_std"}" deps)
       (cratesIO.features_.chrono."${deps."ofborg"."0.1.8"."chrono"}" deps)
       (cratesIO.features_.either."${deps."ofborg"."0.1.8"."either"}" deps)
       (cratesIO.features_.env_logger."${deps."ofborg"."0.1.8"."env_logger"}" deps)
@@ -170,6 +175,7 @@ rec {
       (features_.hubcaps."${deps."ofborg"."0.1.8"."hubcaps"}" deps)
       (cratesIO.features_.hyper."${deps."ofborg"."0.1.8"."hyper"}" deps)
       (cratesIO.features_.hyper_native_tls."${deps."ofborg"."0.1.8"."hyper_native_tls"}" deps)
+      (cratesIO.features_.lapin."${deps."ofborg"."0.1.8"."lapin"}" deps)
       (cratesIO.features_.log."${deps."ofborg"."0.1.8"."log"}" deps)
       (cratesIO.features_.lru_cache."${deps."ofborg"."0.1.8"."lru_cache"}" deps)
       (cratesIO.features_.md5."${deps."ofborg"."0.1.8"."md5"}" deps)
@@ -220,7 +226,7 @@ rec {
     memchr = "0.1.11";
   };
   deps.aho_corasick."0.6.9" = {
-    memchr = "2.1.2";
+    memchr = "2.3.3";
   };
   deps.amq_proto."0.1.0" = {
     bit_vec = "0.4.4";
@@ -229,6 +235,35 @@ rec {
     env_logger = "0.3.5";
     error_chain = "0.10.0";
     log = "0.3.8";
+  };
+  deps.amq_protocol."6.0.0-rc2" = {
+    amq_protocol_tcp = "6.0.0-rc2";
+    amq_protocol_types = "6.0.0-rc2";
+    amq_protocol_uri = "6.0.0-rc2";
+    cookie_factory = "0.3.1";
+    nom = "6.0.0-alpha1";
+    amq_protocol_codegen = "6.0.0-rc2";
+  };
+  deps.amq_protocol_codegen."6.0.0-rc2" = {
+    amq_protocol_types = "6.0.0-rc2";
+    handlebars = "3.0.1";
+    serde = "1.0.106";
+    serde_json = "1.0.52";
+  };
+  deps.amq_protocol_tcp."6.0.0-rc2" = {
+    amq_protocol_uri = "6.0.0-rc2";
+    log = "0.4.8";
+    tcp_stream = "0.15.0";
+  };
+  deps.amq_protocol_types."6.0.0-rc2" = {
+    cookie_factory = "0.3.1";
+    nom = "6.0.0-alpha1";
+    serde = "1.0.106";
+    serde_json = "1.0.52";
+  };
+  deps.amq_protocol_uri."6.0.0-rc2" = {
+    percent_encoding = "2.1.0";
+    url = "2.1.1";
   };
   deps.amqp."0.1.0" = {
     amq_proto = "0.1.0";
@@ -239,17 +274,43 @@ rec {
     url = "1.7.2";
   };
   deps.antidote."1.0.0" = {};
+  deps.arrayvec."0.5.1" = {};
+  deps.async_std."1.5.0" = {
+    async_task = "1.3.1";
+    crossbeam_channel = "0.4.2";
+    crossbeam_deque = "0.7.3";
+    crossbeam_utils = "0.7.2";
+    futures_core = "0.3.4";
+    futures_io = "0.3.4";
+    futures_timer = "2.0.2";
+    kv_log_macro = "1.0.4";
+    log = "0.4.8";
+    memchr = "2.3.3";
+    mio = "0.6.21";
+    mio_uds = "0.6.7";
+    num_cpus = "1.13.0";
+    once_cell = "1.3.1";
+    pin_project_lite = "0.1.4";
+    pin_utils = "0.1.0";
+    slab = "0.4.2";
+  };
+  deps.async_task."1.3.1" = {
+    libc = "0.2.69";
+    winapi = "0.3.8";
+  };
+  deps.async_task."3.0.0" = {};
   deps.autocfg."0.1.1" = {};
+  deps.autocfg."1.0.0" = {};
   deps.backtrace."0.3.13" = {
-    cfg_if = "0.1.6";
+    cfg_if = "0.1.10";
     rustc_demangle = "0.1.13";
     autocfg = "0.1.1";
     backtrace_sys = "0.1.28";
-    libc = "0.2.46";
-    winapi = "0.3.6";
+    libc = "0.2.69";
+    winapi = "0.3.8";
   };
   deps.backtrace_sys."0.1.28" = {
-    libc = "0.2.46";
+    libc = "0.2.69";
     cc = "1.0.28";
   };
   deps.base64."0.9.3" = {
@@ -261,23 +322,69 @@ rec {
   };
   deps.bit_vec."0.4.4" = {};
   deps.bitflags."0.9.1" = {};
-  deps.bitflags."1.0.4" = {};
+  deps.bitflags."1.2.1" = {};
+  deps.block_buffer."0.7.3" = {
+    block_padding = "0.1.5";
+    byte_tools = "0.3.1";
+    byteorder = "1.2.7";
+    generic_array = "0.12.3";
+  };
+  deps.block_padding."0.1.5" = {
+    byte_tools = "0.3.1";
+  };
+  deps.byte_tools."0.3.1" = {};
   deps.byteorder."0.5.3" = {};
   deps.byteorder."1.2.7" = {};
   deps.cc."1.0.28" = {};
-  deps.cfg_if."0.1.6" = {};
+  deps.cfg_if."0.1.10" = {};
   deps.chrono."0.4.6" = {
     num_integer = "0.1.39";
     num_traits = "0.2.6";
     time = "0.1.41";
   };
+  deps.cloudabi."0.0.3" = {
+    bitflags = "1.2.1";
+  };
+  deps.cookie_factory."0.3.1" = {};
   deps.core_foundation."0.2.3" = {
     core_foundation_sys = "0.2.3";
-    libc = "0.2.46";
+    libc = "0.2.69";
+  };
+  deps.core_foundation."0.7.0" = {
+    core_foundation_sys = "0.7.0";
+    libc = "0.2.69";
   };
   deps.core_foundation_sys."0.2.3" = {
-    libc = "0.2.46";
+    libc = "0.2.69";
   };
+  deps.core_foundation_sys."0.7.0" = {};
+  deps.crossbeam_channel."0.4.2" = {
+    crossbeam_utils = "0.7.2";
+    maybe_uninit = "2.0.0";
+  };
+  deps.crossbeam_deque."0.7.3" = {
+    crossbeam_epoch = "0.8.2";
+    crossbeam_utils = "0.7.2";
+    maybe_uninit = "2.0.0";
+  };
+  deps.crossbeam_epoch."0.8.2" = {
+    cfg_if = "0.1.10";
+    crossbeam_utils = "0.7.2";
+    lazy_static = "1.4.0";
+    maybe_uninit = "2.0.0";
+    memoffset = "0.5.4";
+    scopeguard = "1.1.0";
+    autocfg = "1.0.0";
+  };
+  deps.crossbeam_utils."0.7.2" = {
+    cfg_if = "0.1.10";
+    lazy_static = "1.4.0";
+    autocfg = "1.0.0";
+  };
+  deps.digest."0.8.1" = {
+    generic_array = "0.12.3";
+  };
+  deps.doc_comment."0.3.3" = {};
   deps.either."1.5.0" = {};
   deps.enum_primitive."0.1.1" = {
     num_traits = "0.1.43";
@@ -293,34 +400,57 @@ rec {
   deps.error_chain."0.10.0" = {
     backtrace = "0.3.13";
   };
+  deps.fake_simd."0.1.2" = {};
   deps.foreign_types."0.3.2" = {
     foreign_types_shared = "0.1.1";
   };
   deps.foreign_types_shared."0.1.1" = {};
   deps.frank_jwt."3.1.0" = {
     base64 = "0.10.0";
-    openssl = "0.10.16";
-    serde = "1.0.84";
-    serde_json = "1.0.34";
+    openssl = "0.10.29";
+    serde = "1.0.106";
+    serde_json = "1.0.52";
   };
   deps.fs2."0.4.3" = {
-    libc = "0.2.46";
-    winapi = "0.3.6";
+    libc = "0.2.69";
+    winapi = "0.3.8";
   };
   deps.fuchsia_zircon."0.3.3" = {
-    bitflags = "1.0.4";
+    bitflags = "1.2.1";
     fuchsia_zircon_sys = "0.3.3";
   };
   deps.fuchsia_zircon_sys."0.3.3" = {};
+  deps.futures_core."0.3.4" = {};
+  deps.futures_io."0.3.4" = {};
+  deps.futures_timer."2.0.2" = {};
+  deps.generic_array."0.12.3" = {
+    typenum = "1.12.0";
+  };
+  deps.getrandom."0.1.14" = {
+    cfg_if = "0.1.10";
+    wasi = "0.9.0+wasi-snapshot-preview1";
+    libc = "0.2.69";
+  };
+  deps.handlebars."3.0.1" = {
+    log = "0.4.8";
+    pest = "2.1.3";
+    pest_derive = "2.1.0";
+    quick_error = "1.2.3";
+    serde = "1.0.106";
+    serde_json = "1.0.52";
+  };
+  deps.hermit_abi."0.1.12" = {
+    libc = "0.2.69";
+  };
   deps.httparse."1.3.3" = {};
   deps.hubcaps."0.3.16" = {
     error_chain = "0.10.0";
     frank_jwt = "3.1.0";
     hyper = "0.10.15";
     log = "0.3.8";
-    serde = "1.0.84";
-    serde_derive = "1.0.84";
-    serde_json = "1.0.34";
+    serde = "1.0.106";
+    serde_derive = "1.0.106";
+    serde_json = "1.0.52";
     url = "1.7.2";
   };
   deps.hyper."0.10.15" = {
@@ -329,7 +459,7 @@ rec {
     language_tags = "0.2.2";
     log = "0.3.8";
     mime = "0.2.6";
-    num_cpus = "1.9.0";
+    num_cpus = "1.13.0";
     time = "0.1.41";
     traitobject = "0.1.0";
     typeable = "0.1.2";
@@ -346,44 +476,142 @@ rec {
     unicode_bidi = "0.3.4";
     unicode_normalization = "0.1.7";
   };
+  deps.idna."0.2.0" = {
+    matches = "0.1.8";
+    unicode_bidi = "0.3.4";
+    unicode_normalization = "0.1.7";
+  };
+  deps.iovec."0.1.4" = {
+    libc = "0.2.69";
+  };
   deps.itoa."0.4.3" = {};
   deps.kernel32_sys."0.2.2" = {
     winapi = "0.2.8";
     winapi_build = "0.1.1";
   };
+  deps.kv_log_macro."1.0.4" = {
+    log = "0.4.8";
+  };
   deps.language_tags."0.2.2" = {};
+  deps.lapin."1.0.0-beta3" = {
+    amq_protocol = "6.0.0-rc2";
+    async_task = "3.0.0";
+    crossbeam_channel = "0.4.2";
+    futures_core = "0.3.4";
+    log = "0.4.8";
+    mio = "0.7.0";
+    parking_lot = "0.10.2";
+    pinky_swear = "4.0.0";
+    amq_protocol_codegen = "6.0.0-rc2";
+    serde_json = "1.0.52";
+  };
   deps.lazy_static."0.2.11" = {};
-  deps.lazy_static."1.2.0" = {};
-  deps.libc."0.2.46" = {};
+  deps.lazy_static."1.4.0" = {};
+  deps.lexical_core."0.7.4" = {
+    arrayvec = "0.5.1";
+    bitflags = "1.2.1";
+    cfg_if = "0.1.10";
+    ryu = "1.0.4";
+    static_assertions = "1.1.0";
+  };
+  deps.libc."0.2.69" = {};
   deps.linked_hash_map."0.4.2" = {};
+  deps.lock_api."0.3.4" = {
+    scopeguard = "1.1.0";
+  };
   deps.log."0.3.8" = {};
+  deps.log."0.4.8" = {
+    cfg_if = "0.1.10";
+  };
   deps.lru_cache."0.1.1" = {
     linked_hash_map = "0.4.2";
   };
+  deps.maplit."1.0.2" = {};
   deps.matches."0.1.8" = {};
+  deps.maybe_uninit."2.0.0" = {};
   deps.md5."0.3.8" = {};
   deps.memchr."0.1.11" = {
-    libc = "0.2.46";
+    libc = "0.2.69";
   };
-  deps.memchr."2.1.2" = {
-    cfg_if = "0.1.6";
-    libc = "0.2.46";
-    version_check = "0.1.5";
+  deps.memchr."2.3.3" = {};
+  deps.memoffset."0.5.4" = {
+    autocfg = "1.0.0";
   };
   deps.mime."0.2.6" = {
     log = "0.3.8";
   };
+  deps.mio."0.6.21" = {
+    cfg_if = "0.1.10";
+    iovec = "0.1.4";
+    log = "0.4.8";
+    net2 = "0.2.33";
+    slab = "0.4.2";
+    fuchsia_zircon = "0.3.3";
+    fuchsia_zircon_sys = "0.3.3";
+    libc = "0.2.69";
+    kernel32_sys = "0.2.2";
+    miow = "0.2.1";
+    winapi = "0.2.8";
+  };
+  deps.mio."0.7.0" = {
+    log = "0.4.8";
+    libc = "0.2.69";
+    lazy_static = "1.4.0";
+    miow = "0.3.3";
+    ntapi = "0.3.3";
+    winapi = "0.3.8";
+  };
+  deps.mio_uds."0.6.7" = {
+    iovec = "0.1.4";
+    libc = "0.2.69";
+    mio = "0.6.21";
+  };
+  deps.miow."0.2.1" = {
+    kernel32_sys = "0.2.2";
+    net2 = "0.2.33";
+    winapi = "0.2.8";
+    ws2_32_sys = "0.2.1";
+  };
+  deps.miow."0.3.3" = {
+    socket2 = "0.3.12";
+    winapi = "0.3.8";
+  };
   deps.native_tls."0.1.5" = {
     lazy_static = "0.2.11";
-    libc = "0.2.46";
+    libc = "0.2.69";
     security_framework = "0.1.16";
     security_framework_sys = "0.1.16";
     tempdir = "0.3.7";
     openssl = "0.9.24";
-    schannel = "0.1.14";
+    schannel = "0.1.18";
+  };
+  deps.native_tls."0.2.4" = {
+    lazy_static = "1.4.0";
+    libc = "0.2.69";
+    security_framework = "0.4.3";
+    security_framework_sys = "0.4.3";
+    tempfile = "3.1.0";
+    log = "0.4.8";
+    openssl = "0.10.29";
+    openssl_probe = "0.1.2";
+    openssl_sys = "0.9.55";
+    schannel = "0.1.18";
+  };
+  deps.net2."0.2.33" = {
+    cfg_if = "0.1.10";
+    libc = "0.2.69";
+    winapi = "0.3.8";
   };
   deps.nom."4.1.1" = {
-    memchr = "2.1.2";
+    memchr = "2.3.3";
+  };
+  deps.nom."6.0.0-alpha1" = {
+    lexical_core = "0.7.4";
+    memchr = "2.3.3";
+    version_check = "0.9.1";
+  };
+  deps.ntapi."0.3.3" = {
+    winapi = "0.3.8";
   };
   deps.num_integer."0.1.39" = {
     num_traits = "0.2.6";
@@ -392,11 +620,13 @@ rec {
     num_traits = "0.2.6";
   };
   deps.num_traits."0.2.6" = {};
-  deps.num_cpus."1.9.0" = {
-    libc = "0.2.46";
+  deps.num_cpus."1.13.0" = {
+    libc = "0.2.69";
+    hermit_abi = "0.1.12";
   };
   deps.ofborg."0.1.8" = {
     amqp = "0.1.0";
+    async_std = "1.5.0";
     chrono = "0.4.6";
     either = "1.5.0";
     env_logger = "0.4.3";
@@ -404,14 +634,15 @@ rec {
     hubcaps = "0.3.16";
     hyper = "0.10.15";
     hyper_native_tls = "0.2.4";
+    lapin = "1.0.0-beta3";
     log = "0.3.8";
     lru_cache = "0.1.1";
     md5 = "0.3.8";
     nom = "4.1.1";
     separator = "0.4.1";
-    serde = "1.0.84";
-    serde_derive = "1.0.84";
-    serde_json = "1.0.34";
+    serde = "1.0.106";
+    serde_derive = "1.0.106";
+    serde_json = "1.0.52";
     sys_info = "0.5.6";
     tempfile = "2.2.0";
     uuid = "0.4.0";
@@ -420,43 +651,104 @@ rec {
     log = "0.3.8";
     ofborg = "0.1.8";
   };
+  deps.once_cell."1.3.1" = {};
+  deps.opaque_debug."0.2.3" = {};
   deps.openssl."0.9.24" = {
     bitflags = "0.9.1";
     foreign_types = "0.3.2";
-    lazy_static = "1.2.0";
-    libc = "0.2.46";
-    openssl_sys = "0.9.40";
+    lazy_static = "1.4.0";
+    libc = "0.2.69";
+    openssl_sys = "0.9.55";
   };
-  deps.openssl."0.10.16" = {
-    bitflags = "1.0.4";
-    cfg_if = "0.1.6";
+  deps.openssl."0.10.29" = {
+    bitflags = "1.2.1";
+    cfg_if = "0.1.10";
     foreign_types = "0.3.2";
-    lazy_static = "1.2.0";
-    libc = "0.2.46";
-    openssl_sys = "0.9.40";
+    lazy_static = "1.4.0";
+    libc = "0.2.69";
+    openssl_sys = "0.9.55";
   };
-  deps.openssl_sys."0.9.40" = {
-    libc = "0.2.46";
+  deps.openssl_probe."0.1.2" = {};
+  deps.openssl_sys."0.9.55" = {
+    libc = "0.2.69";
+    autocfg = "1.0.0";
     cc = "1.0.28";
     pkg_config = "0.3.14";
   };
-  deps.percent_encoding."1.0.1" = {};
-  deps.pkg_config."0.3.14" = {};
-  deps.proc_macro2."0.4.24" = {
-    unicode_xid = "0.1.0";
+  deps.parking_lot."0.10.2" = {
+    lock_api = "0.3.4";
+    parking_lot_core = "0.7.2";
   };
-  deps.quote."0.6.10" = {
-    proc_macro2 = "0.4.24";
+  deps.parking_lot_core."0.7.2" = {
+    cfg_if = "0.1.10";
+    smallvec = "1.4.0";
+    cloudabi = "0.0.3";
+    redox_syscall = "0.1.50";
+    libc = "0.2.69";
+    winapi = "0.3.8";
+  };
+  deps.percent_encoding."1.0.1" = {};
+  deps.percent_encoding."2.1.0" = {};
+  deps.pest."2.1.3" = {
+    ucd_trie = "0.1.3";
+  };
+  deps.pest_derive."2.1.0" = {
+    pest = "2.1.3";
+    pest_generator = "2.1.3";
+  };
+  deps.pest_generator."2.1.3" = {
+    pest = "2.1.3";
+    pest_meta = "2.1.3";
+    proc_macro2 = "1.0.10";
+    quote = "1.0.3";
+    syn = "1.0.18";
+  };
+  deps.pest_meta."2.1.3" = {
+    maplit = "1.0.2";
+    pest = "2.1.3";
+    sha_1 = "0.8.2";
+  };
+  deps.pin_project_lite."0.1.4" = {};
+  deps.pin_utils."0.1.0" = {};
+  deps.pinky_swear."4.0.0" = {
+    doc_comment = "0.3.3";
+    log = "0.4.8";
+    parking_lot = "0.10.2";
+  };
+  deps.pkg_config."0.3.14" = {};
+  deps.ppv_lite86."0.2.6" = {};
+  deps.proc_macro2."1.0.10" = {
+    unicode_xid = "0.2.0";
+  };
+  deps.quick_error."1.2.3" = {};
+  deps.quote."1.0.3" = {
+    proc_macro2 = "1.0.10";
   };
   deps.rand."0.3.22" = {
-    libc = "0.2.46";
+    libc = "0.2.69";
     rand = "0.4.3";
     fuchsia_zircon = "0.3.3";
   };
   deps.rand."0.4.3" = {
     fuchsia_zircon = "0.3.3";
-    libc = "0.2.46";
-    winapi = "0.3.6";
+    libc = "0.2.69";
+    winapi = "0.3.8";
+  };
+  deps.rand."0.7.3" = {
+    rand_core = "0.5.1";
+    rand_chacha = "0.2.2";
+    rand_hc = "0.2.0";
+    libc = "0.2.69";
+  };
+  deps.rand_chacha."0.2.2" = {
+    ppv_lite86 = "0.2.6";
+    rand_core = "0.5.1";
+  };
+  deps.rand_core."0.5.1" = {
+    getrandom = "0.1.14";
+  };
+  deps.rand_hc."0.2.0" = {
+    rand_core = "0.5.1";
   };
   deps.redox_syscall."0.1.50" = {};
   deps.regex."0.1.80" = {
@@ -468,7 +760,7 @@ rec {
   };
   deps.regex."0.2.11" = {
     aho_corasick = "0.6.9";
-    memchr = "2.1.2";
+    memchr = "2.3.3";
     regex_syntax = "0.5.6";
     thread_local = "0.3.6";
     utf8_ranges = "1.0.2";
@@ -478,45 +770,79 @@ rec {
     ucd_util = "0.1.3";
   };
   deps.remove_dir_all."0.5.1" = {
-    winapi = "0.3.6";
+    winapi = "0.3.8";
   };
   deps.rustc_demangle."0.1.13" = {};
-  deps.ryu."0.2.7" = {};
+  deps.ryu."1.0.4" = {};
   deps.safemem."0.3.0" = {};
-  deps.schannel."0.1.14" = {
-    lazy_static = "1.2.0";
-    winapi = "0.3.6";
+  deps.schannel."0.1.18" = {
+    lazy_static = "1.4.0";
+    winapi = "0.3.8";
   };
+  deps.scopeguard."1.1.0" = {};
   deps.security_framework."0.1.16" = {
     core_foundation = "0.2.3";
     core_foundation_sys = "0.2.3";
-    libc = "0.2.46";
+    libc = "0.2.69";
     security_framework_sys = "0.1.16";
+  };
+  deps.security_framework."0.4.3" = {
+    bitflags = "1.2.1";
+    core_foundation = "0.7.0";
+    core_foundation_sys = "0.7.0";
+    libc = "0.2.69";
+    security_framework_sys = "0.4.3";
   };
   deps.security_framework_sys."0.1.16" = {
     core_foundation_sys = "0.2.3";
-    libc = "0.2.46";
+    libc = "0.2.69";
+  };
+  deps.security_framework_sys."0.4.3" = {
+    core_foundation_sys = "0.7.0";
+    libc = "0.2.69";
   };
   deps.separator."0.4.1" = {};
-  deps.serde."1.0.84" = {};
-  deps.serde_derive."1.0.84" = {
-    proc_macro2 = "0.4.24";
-    quote = "0.6.10";
-    syn = "0.15.23";
+  deps.serde."1.0.106" = {
+    serde_derive = "1.0.106";
   };
-  deps.serde_json."1.0.34" = {
+  deps.serde_derive."1.0.106" = {
+    proc_macro2 = "1.0.10";
+    quote = "1.0.3";
+    syn = "1.0.18";
+  };
+  deps.serde_json."1.0.52" = {
     itoa = "0.4.3";
-    ryu = "0.2.7";
-    serde = "1.0.84";
+    ryu = "1.0.4";
+    serde = "1.0.106";
   };
-  deps.syn."0.15.23" = {
-    proc_macro2 = "0.4.24";
-    quote = "0.6.10";
-    unicode_xid = "0.1.0";
+  deps.sha_1."0.8.2" = {
+    block_buffer = "0.7.3";
+    digest = "0.8.1";
+    fake_simd = "0.1.2";
+    opaque_debug = "0.2.3";
+  };
+  deps.slab."0.4.2" = {};
+  deps.smallvec."1.4.0" = {};
+  deps.socket2."0.3.12" = {
+    cfg_if = "0.1.10";
+    libc = "0.2.69";
+    redox_syscall = "0.1.50";
+    winapi = "0.3.8";
+  };
+  deps.static_assertions."1.1.0" = {};
+  deps.syn."1.0.18" = {
+    proc_macro2 = "1.0.10";
+    quote = "1.0.3";
+    unicode_xid = "0.2.0";
   };
   deps.sys_info."0.5.6" = {
-    libc = "0.2.46";
+    libc = "0.2.69";
     cc = "1.0.28";
+  };
+  deps.tcp_stream."0.15.0" = {
+    cfg_if = "0.1.10";
+    mio = "0.7.0";
+    native_tls = "0.2.4";
   };
   deps.tempdir."0.3.7" = {
     rand = "0.4.3";
@@ -525,27 +851,37 @@ rec {
   deps.tempfile."2.2.0" = {
     rand = "0.3.22";
     redox_syscall = "0.1.50";
-    libc = "0.2.46";
+    libc = "0.2.69";
     kernel32_sys = "0.2.2";
     winapi = "0.2.8";
   };
+  deps.tempfile."3.1.0" = {
+    cfg_if = "0.1.10";
+    rand = "0.7.3";
+    remove_dir_all = "0.5.1";
+    redox_syscall = "0.1.50";
+    libc = "0.2.69";
+    winapi = "0.3.8";
+  };
   deps.thread_id."2.0.0" = {
     kernel32_sys = "0.2.2";
-    libc = "0.2.46";
+    libc = "0.2.69";
   };
   deps.thread_local."0.2.7" = {
     thread_id = "2.0.0";
   };
   deps.thread_local."0.3.6" = {
-    lazy_static = "1.2.0";
+    lazy_static = "1.4.0";
   };
   deps.time."0.1.41" = {
-    libc = "0.2.46";
+    libc = "0.2.69";
     redox_syscall = "0.1.50";
-    winapi = "0.3.6";
+    winapi = "0.3.8";
   };
   deps.traitobject."0.1.0" = {};
   deps.typeable."0.1.2" = {};
+  deps.typenum."1.12.0" = {};
+  deps.ucd_trie."0.1.3" = {};
   deps.ucd_util."0.1.3" = {};
   deps.unicase."1.4.2" = {
     version_check = "0.1.5";
@@ -554,25 +890,36 @@ rec {
     matches = "0.1.8";
   };
   deps.unicode_normalization."0.1.7" = {};
-  deps.unicode_xid."0.1.0" = {};
+  deps.unicode_xid."0.2.0" = {};
   deps.url."1.7.2" = {
     idna = "0.1.5";
     matches = "0.1.8";
     percent_encoding = "1.0.1";
+  };
+  deps.url."2.1.1" = {
+    idna = "0.2.0";
+    matches = "0.1.8";
+    percent_encoding = "2.1.0";
   };
   deps.utf8_ranges."0.1.3" = {};
   deps.utf8_ranges."1.0.2" = {};
   deps.uuid."0.4.0" = {
     rand = "0.3.22";
   };
-  deps.vcpkg."0.2.6" = {};
+  deps.vcpkg."0.2.8" = {};
   deps.version_check."0.1.5" = {};
+  deps.version_check."0.9.1" = {};
+  deps.wasi."0.9.0+wasi-snapshot-preview1" = {};
   deps.winapi."0.2.8" = {};
-  deps.winapi."0.3.6" = {
+  deps.winapi."0.3.8" = {
     winapi_i686_pc_windows_gnu = "0.4.0";
     winapi_x86_64_pc_windows_gnu = "0.4.0";
   };
   deps.winapi_build."0.1.1" = {};
   deps.winapi_i686_pc_windows_gnu."0.4.0" = {};
   deps.winapi_x86_64_pc_windows_gnu."0.4.0" = {};
+  deps.ws2_32_sys."0.2.1" = {
+    winapi = "0.2.8";
+    winapi_build = "0.1.1";
+  };
 }
