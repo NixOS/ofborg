@@ -24,6 +24,7 @@ pub mod commentparser;
 pub mod commitstatus;
 pub mod config;
 pub mod easyamqp;
+pub mod easylapin;
 pub mod evalchecker;
 pub mod files;
 pub mod ghevent;
