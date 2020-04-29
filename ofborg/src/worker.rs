@@ -1,5 +1,5 @@
 use amqp::protocol::basic::{BasicProperties, Deliver};
-use amqp::{Basic, Channel, Consumer};
+use amqp::Basic;
 use serde::Serialize;
 
 use std::marker::Send;
@@ -26,7 +26,7 @@ pub struct QueueMsg {
     pub routing_key: Option<String>,
     pub mandatory: bool,
     pub immediate: bool,
-    pub properties: Option<BasicProperties>,
+    pub content_type: Option<String>,
     pub content: Vec<u8>,
 }
 
@@ -38,30 +38,25 @@ pub fn publish_serde_action<T: ?Sized>(
 where
     T: Serialize,
 {
-    let props = BasicProperties {
-        content_type: Some("application/json".to_owned()),
-        ..Default::default()
-    };
-
     Action::Publish(Box::new(QueueMsg {
         exchange,
         routing_key,
         mandatory: false,
         immediate: false,
-        properties: Some(props),
+        content_type: Some("application/json".to_owned()),
         content: serde_json::to_string(&msg).unwrap().into_bytes(),
     }))
 }
 
-pub trait SimpleWorker: Send + 'static {
+pub trait SimpleWorker: Send {
     type J: Send;
 
     fn consumer(&mut self, job: &Self::J) -> Actions;
 
     fn msg_to_job(
         &mut self,
-        method: &Deliver,
-        headers: &BasicProperties,
+        method: &str,
+        headers: &Option<String>,
         body: &[u8],
     ) -> Result<Self::J, String>;
 }
@@ -70,15 +65,17 @@ pub fn new<T: SimpleWorker>(worker: T) -> Worker<T> {
     Worker { internal: worker }
 }
 
-impl<T: SimpleWorker + Send> Consumer for Worker<T> {
+impl<T: SimpleWorker + Send> amqp::Consumer for Worker<T> {
     fn handle_delivery(
         &mut self,
-        channel: &mut Channel,
+        channel: &mut amqp::Channel,
         method: Deliver,
         headers: BasicProperties,
         body: Vec<u8>,
     ) {
-        let job = self.internal.msg_to_job(&method, &headers, &body);
+        let job = self
+            .internal
+            .msg_to_job(&method.routing_key, &headers.content_type, &body);
 
         if let Err(e) = job {
             error!("Error decoding job: {:?}", e);
@@ -105,9 +102,10 @@ impl<T: SimpleWorker + Send> Consumer for Worker<T> {
                     let exch = msg.exchange.take().unwrap_or_else(|| "".to_owned());
                     let key = msg.routing_key.take().unwrap_or_else(|| "".to_owned());
 
-                    let props = msg.properties.take().unwrap_or(BasicProperties {
+                    let props = BasicProperties {
+                        content_type: msg.content_type,
                         ..Default::default()
-                    });
+                    };
                     channel
                         .basic_publish(exch, key, msg.mandatory, msg.immediate, props, msg.content)
                         .unwrap();

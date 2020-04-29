@@ -11,7 +11,6 @@ use crate::systems;
 use crate::tasks::eval;
 use crate::worker;
 
-use amqp::protocol::basic::{BasicProperties, Deliver};
 use hubcaps::checks::CheckRunOptions;
 use hubcaps::gists::Gists;
 use hubcaps::issues::Issue;
@@ -60,12 +59,7 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
 impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E> {
     type J = evaluationjob::EvaluationJob;
 
-    fn msg_to_job(
-        &mut self,
-        _: &Deliver,
-        _: &BasicProperties,
-        body: &[u8],
-    ) -> Result<Self::J, String> {
+    fn msg_to_job(&mut self, _: &str, _: &Option<String>, body: &[u8]) -> Result<Self::J, String> {
         self.events.notify(Event::JobReceived);
         match evaluationjob::from(body) {
             Ok(e) => {

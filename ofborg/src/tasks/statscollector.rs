@@ -1,8 +1,6 @@
 use crate::stats;
 use crate::worker;
 
-use amqp::protocol::basic::{BasicProperties, Deliver};
-
 pub struct StatCollectorWorker<E> {
     events: E,
     collector: stats::MetricCollector,
@@ -17,12 +15,7 @@ impl<E: stats::SysEvents + 'static> StatCollectorWorker<E> {
 impl<E: stats::SysEvents + 'static> worker::SimpleWorker for StatCollectorWorker<E> {
     type J = stats::EventMessage;
 
-    fn msg_to_job(
-        &mut self,
-        _: &Deliver,
-        _: &BasicProperties,
-        body: &[u8],
-    ) -> Result<Self::J, String> {
+    fn msg_to_job(&mut self, _: &str, _: &Option<String>, body: &[u8]) -> Result<Self::J, String> {
         match serde_json::from_slice(body) {
             Ok(e) => Ok(e),
             Err(_) => {

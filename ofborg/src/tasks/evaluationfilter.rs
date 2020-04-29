@@ -3,8 +3,6 @@ use crate::ghevent;
 use crate::message::{evaluationjob, Pr, Repo};
 use crate::worker;
 
-use amqp::protocol::basic::{BasicProperties, Deliver};
-
 pub struct EvaluationFilterWorker {
     acl: acl::ACL,
 }
@@ -18,12 +16,7 @@ impl EvaluationFilterWorker {
 impl worker::SimpleWorker for EvaluationFilterWorker {
     type J = ghevent::PullRequestEvent;
 
-    fn msg_to_job(
-        &mut self,
-        _: &Deliver,
-        _: &BasicProperties,
-        body: &[u8],
-    ) -> Result<Self::J, String> {
+    fn msg_to_job(&mut self, _: &str, _: &Option<String>, body: &[u8]) -> Result<Self::J, String> {
         match serde_json::from_slice(body) {
             Ok(e) => Ok(e),
             Err(e) => Err(format!(

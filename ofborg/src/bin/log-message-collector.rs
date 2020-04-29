@@ -49,7 +49,7 @@ fn main() {
         })
         .unwrap();
 
-    channel
+    let mut channel = channel
         .consume(
             worker::new(tasks::log_message_collector::LogMessageCollector::new(
                 PathBuf::from(cfg.log_storage.clone().unwrap().path),

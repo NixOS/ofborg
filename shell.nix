@@ -1,5 +1,6 @@
 { pkgs ? import ./nix {
   overlays = [
+    (import ./nix/overlay.nix)
     (import (builtins.fetchTarball https://github.com/mozilla/nixpkgs-mozilla/archive/master.tar.gz))
   ];
 } }:

@@ -6,7 +6,6 @@ use crate::nix;
 use crate::notifyworker;
 use crate::worker;
 
-use amqp::protocol::basic::{BasicProperties, Deliver};
 use uuid::Uuid;
 
 use std::collections::VecDeque;
@@ -260,7 +259,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
 impl notifyworker::SimpleNotifyWorker for BuildWorker {
     type J = buildjob::BuildJob;
 
-    fn msg_to_job(&self, _: &Deliver, _: &BasicProperties, body: &[u8]) -> Result<Self::J, String> {
+    fn msg_to_job(&self, _: &str, _: &Option<String>, body: &[u8]) -> Result<Self::J, String> {
         info!("lmao I got a job?");
         match buildjob::from(body) {
             Ok(e) => Ok(e),

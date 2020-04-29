@@ -303,9 +303,10 @@ pub trait ChannelExt {
     fn bind_queue(&mut self, config: BindQueueConfig) -> Result<(), Self::Error>;
 }
 
-pub trait ConsumerExt<T> {
+pub trait ConsumerExt<C> {
     type Error;
-    fn consume(&mut self, callback: T, config: ConsumeConfig) -> Result<(), Self::Error>;
+    type Handle;
+    fn consume(self, callback: C, config: ConsumeConfig) -> Result<Self::Handle, Self::Error>;
 }
 
 impl ChannelExt for amqp::Channel {
@@ -350,10 +351,11 @@ impl ChannelExt for amqp::Channel {
     }
 }
 
-impl<T: amqp::Consumer + 'static> ConsumerExt<T> for amqp::Channel {
+impl<C: amqp::Consumer + 'static> ConsumerExt<C> for amqp::Channel {
     type Error = amqp::AMQPError;
+    type Handle = Self;
 
-    fn consume(&mut self, callback: T, config: ConsumeConfig) -> Result<(), Self::Error> {
+    fn consume(mut self, callback: C, config: ConsumeConfig) -> Result<Self::Handle, Self::Error> {
         self.basic_consume(
             callback,
             config.queue,
@@ -364,6 +366,6 @@ impl<T: amqp::Consumer + 'static> ConsumerExt<T> for amqp::Channel {
             config.no_wait,
             amqp::Table::new(),
         )?;
-        Ok(())
+        Ok(self)
     }
 }
