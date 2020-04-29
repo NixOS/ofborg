@@ -1,4 +1,5 @@
 use std::env;
+use std::error::Error;
 use std::path::Path;
 
 use async_std::task;
@@ -8,10 +9,11 @@ use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
 use ofborg::easylapin;
 use ofborg::{checkout, config, tasks};
 
-fn main() {
-    let cfg = config::load(env::args().nth(1).unwrap().as_ref());
-
+fn main() -> Result<(), Box<dyn Error>> {
     ofborg::setup_log();
+
+    let arg = env::args().nth(1).expect("usage: builder <config>");
+    let cfg = config::load(arg.as_ref());
 
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
     let nix = cfg.nix();
@@ -26,8 +28,8 @@ fn main() {
         panic!();
     };
 
-    let conn = easylapin::from_config(&cfg.rabbitmq).unwrap();
-    let mut chan = task::block_on(conn.create_channel()).unwrap();
+    let conn = easylapin::from_config(&cfg.rabbitmq)?;
+    let mut chan = task::block_on(conn.create_channel())?;
 
     chan.declare_exchange(easyamqp::ExchangeConfig {
         exchange: "build-jobs".to_owned(),
@@ -37,8 +39,7 @@ fn main() {
         auto_delete: false,
         no_wait: false,
         internal: false,
-    })
-    .unwrap();
+    })?;
 
     let queue_name = if cfg.runner.build_all_jobs != Some(true) {
         let queue_name = format!("build-inputs-{}", cfg.nix.system.clone());
@@ -49,8 +50,7 @@ fn main() {
             exclusive: false,
             auto_delete: false,
             no_wait: false,
-        })
-        .unwrap();
+        })?;
         queue_name
     } else {
         warn!("Building all jobs, please don't use this unless you're");
@@ -63,8 +63,7 @@ fn main() {
             exclusive: true,
             auto_delete: true,
             no_wait: false,
-        })
-        .unwrap();
+        })?;
         queue_name
     };
 
@@ -73,31 +72,29 @@ fn main() {
         exchange: "build-jobs".to_owned(),
         routing_key: None,
         no_wait: false,
-    })
-    .unwrap();
+    })?;
 
-    let handle = easylapin::NotifyChannel(chan)
-        .consume(
-            tasks::build::BuildWorker::new(
-                cloner,
-                nix,
-                cfg.nix.system.clone(),
-                cfg.runner.identity.clone(),
-            ),
-            easyamqp::ConsumeConfig {
-                queue: queue_name.clone(),
-                consumer_tag: format!("{}-builder", cfg.whoami()),
-                no_local: false,
-                no_ack: false,
-                no_wait: false,
-                exclusive: false,
-            },
-        )
-        .unwrap();
+    let handle = easylapin::NotifyChannel(chan).consume(
+        tasks::build::BuildWorker::new(
+            cloner,
+            nix,
+            cfg.nix.system.clone(),
+            cfg.runner.identity.clone(),
+        ),
+        easyamqp::ConsumeConfig {
+            queue: queue_name.clone(),
+            consumer_tag: format!("{}-builder", cfg.whoami()),
+            no_local: false,
+            no_ack: false,
+            no_wait: false,
+            exclusive: false,
+        },
+    )?;
 
     info!("Fetching jobs from {}", &queue_name);
     task::block_on(handle);
 
     drop(conn); // Close connection.
     info!("Closed the session... EOF");
+    Ok(())
 }
