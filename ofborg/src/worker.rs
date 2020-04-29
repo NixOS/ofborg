@@ -26,7 +26,7 @@ pub struct QueueMsg {
     pub routing_key: Option<String>,
     pub mandatory: bool,
     pub immediate: bool,
-    pub properties: Option<BasicProperties>,
+    pub content_type: Option<String>,
     pub content: Vec<u8>,
 }
 
@@ -38,17 +38,12 @@ pub fn publish_serde_action<T: ?Sized>(
 where
     T: Serialize,
 {
-    let props = BasicProperties {
-        content_type: Some("application/json".to_owned()),
-        ..Default::default()
-    };
-
     Action::Publish(Box::new(QueueMsg {
         exchange,
         routing_key,
         mandatory: false,
         immediate: false,
-        properties: Some(props),
+        content_type: Some("application/json".to_owned()),
         content: serde_json::to_string(&msg).unwrap().into_bytes(),
     }))
 }
@@ -107,9 +102,10 @@ impl<T: SimpleWorker + Send> amqp::Consumer for Worker<T> {
                     let exch = msg.exchange.take().unwrap_or_else(|| "".to_owned());
                     let key = msg.routing_key.take().unwrap_or_else(|| "".to_owned());
 
-                    let props = msg.properties.take().unwrap_or(BasicProperties {
+                    let props = BasicProperties {
+                        content_type: msg.content_type,
                         ..Default::default()
-                    });
+                    };
                     channel
                         .basic_publish(exch, key, msg.mandatory, msg.immediate, props, msg.content)
                         .unwrap();

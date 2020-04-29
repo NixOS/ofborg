@@ -80,9 +80,10 @@ impl<'a> NotificationReceiver for ChannelNotificationReceiver<'a> {
                 let exch = msg.exchange.take().unwrap_or_else(|| "".to_owned());
                 let key = msg.routing_key.take().unwrap_or_else(|| "".to_owned());
 
-                let props = msg.properties.take().unwrap_or(BasicProperties {
+                let props = BasicProperties {
+                    content_type: msg.content_type,
                     ..Default::default()
-                });
+                };
                 self.channel
                     .basic_publish(exch, key, msg.mandatory, msg.immediate, props, msg.content)
                     .unwrap();

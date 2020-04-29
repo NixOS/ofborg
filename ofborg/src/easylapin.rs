@@ -85,9 +85,10 @@ impl<W: SimpleWorker + 'static> ConsumerExt<W> for CloseOnDrop<Channel> {
         ))?;
         Ok(Box::pin(async move {
             while let Some(Ok(deliver)) = consumer.next().await {
+                let content_type = deliver.properties.content_type();
                 let job = worker.msg_to_job(
                     deliver.routing_key.as_str(),
-                    &None, // TODO content type
+                    &content_type.as_ref().map(|s| s.to_string()),
                     &deliver.data,
                 );
 
@@ -134,9 +135,10 @@ impl<W: SimpleNotifyWorker + 'static> ConsumerExt<W> for NotifyChannel {
                     deliver: &deliver,
                 };
 
+                let content_type = deliver.properties.content_type();
                 let job = worker.msg_to_job(
                     deliver.routing_key.as_str(),
-                    &None, // TODO content type
+                    &content_type.as_ref().map(|s| s.to_string()),
                     &deliver.data,
                 );
 
