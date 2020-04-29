@@ -1,7 +1,10 @@
 use std::pin::Pin;
 
 use crate::config::RabbitMQConfig;
-use crate::easyamqp::*;
+use crate::easyamqp::{
+    BindQueueConfig, ChannelExt, ConsumeConfig, ConsumerExt, ExchangeConfig, ExchangeType,
+    QueueConfig,
+};
 use crate::notifyworker::{NotificationReceiver, SimpleNotifyWorker};
 use crate::ofborg;
 use crate::worker::{Action, SimpleWorker};
@@ -9,9 +12,14 @@ use crate::worker::{Action, SimpleWorker};
 use async_std::future::Future;
 use async_std::stream::StreamExt;
 use async_std::task;
+use lapin::message::Delivery;
+use lapin::options::{
+    BasicAckOptions, BasicConsumeOptions, BasicNackOptions, BasicPublishOptions,
+    ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions,
+};
+use lapin::types::{AMQPValue, FieldTable};
 use lapin::{
-    message::Delivery, options::*, types::AMQPValue, types::FieldTable, BasicProperties, Channel,
-    CloseOnDrop, Connection, ConnectionProperties, ExchangeKind,
+    BasicProperties, Channel, CloseOnDrop, Connection, ConnectionProperties, ExchangeKind,
 };
 
 pub fn from_config(cfg: &RabbitMQConfig) -> Result<CloseOnDrop<Connection>, lapin::Error> {
