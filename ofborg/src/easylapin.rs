@@ -3,19 +3,25 @@ use std::pin::Pin;
 use crate::config::RabbitMQConfig;
 use crate::easyamqp::*;
 use crate::notifyworker::{NotificationReceiver, SimpleNotifyWorker};
+use crate::ofborg;
 use crate::worker::{Action, SimpleWorker};
 
 use async_std::future::Future;
 use async_std::stream::StreamExt;
 use async_std::task;
 use lapin::{
-    message::Delivery, options::*, types::FieldTable, BasicProperties, Channel, CloseOnDrop,
+    types::AMQPValue, message::Delivery, options::*, types::FieldTable, BasicProperties, Channel, CloseOnDrop,
     Connection, ConnectionProperties, ExchangeKind,
 };
 
 pub fn from_config(cfg: &RabbitMQConfig) -> Result<CloseOnDrop<Connection>, lapin::Error> {
-    let opts = ConnectionProperties::default();
-    // TODO version
+    let mut props = FieldTable::default();
+    props.insert(
+        "ofborg_version".into(),
+        AMQPValue::LongString(ofborg::VERSION.into()),
+    );
+    let mut opts = ConnectionProperties::default();
+    opts.client_properties = props;
     task::block_on(Connection::connect(&cfg.as_uri(), opts))
 }
 
