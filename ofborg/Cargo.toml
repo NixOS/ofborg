@@ -1,6 +1,6 @@
 [package]
 name = "ofborg"
-version = "0.1.8"
+version = "0.1.9"
 authors = ["Graham Christensen <graham@grahamc.com>"]
 include = ["Cargo.toml", "ofborg"]  # TODO remove when carnix is fixed
 build = "build.rs"

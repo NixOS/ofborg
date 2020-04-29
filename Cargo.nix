@@ -105,88 +105,88 @@ rec {
 
 
 # end
-# ofborg-0.1.8
+# ofborg-0.1.9
 
-    crates.ofborg."0.1.8" = deps: { features?(features_.ofborg."0.1.8" deps {}) }: buildRustCrate {
+    crates.ofborg."0.1.9" = deps: { features?(features_.ofborg."0.1.9" deps {}) }: buildRustCrate {
       crateName = "ofborg";
-      version = "0.1.8";
+      version = "0.1.9";
       authors = [ "Graham Christensen <graham@grahamc.com>" ];
       edition = "2018";
       src = include [ "Cargo.toml" "ofborg" ] ./.;
       workspace_member = "ofborg";
       build = "build.rs";
       dependencies = mapFeatures features ([
-        (crates."amqp"."${deps."ofborg"."0.1.8"."amqp"}" deps)
-        (cratesIO.crates."async_std"."${deps."ofborg"."0.1.8"."async_std"}" deps)
-        (cratesIO.crates."chrono"."${deps."ofborg"."0.1.8"."chrono"}" deps)
-        (cratesIO.crates."either"."${deps."ofborg"."0.1.8"."either"}" deps)
-        (cratesIO.crates."env_logger"."${deps."ofborg"."0.1.8"."env_logger"}" deps)
-        (cratesIO.crates."fs2"."${deps."ofborg"."0.1.8"."fs2"}" deps)
-        (crates."hubcaps"."${deps."ofborg"."0.1.8"."hubcaps"}" deps)
-        (cratesIO.crates."hyper"."${deps."ofborg"."0.1.8"."hyper"}" deps)
-        (cratesIO.crates."hyper_native_tls"."${deps."ofborg"."0.1.8"."hyper_native_tls"}" deps)
-        (cratesIO.crates."lapin"."${deps."ofborg"."0.1.8"."lapin"}" deps)
-        (cratesIO.crates."log"."${deps."ofborg"."0.1.8"."log"}" deps)
-        (cratesIO.crates."lru_cache"."${deps."ofborg"."0.1.8"."lru_cache"}" deps)
-        (cratesIO.crates."md5"."${deps."ofborg"."0.1.8"."md5"}" deps)
-        (cratesIO.crates."nom"."${deps."ofborg"."0.1.8"."nom"}" deps)
-        (cratesIO.crates."separator"."${deps."ofborg"."0.1.8"."separator"}" deps)
-        (cratesIO.crates."serde"."${deps."ofborg"."0.1.8"."serde"}" deps)
-        (cratesIO.crates."serde_derive"."${deps."ofborg"."0.1.8"."serde_derive"}" deps)
-        (cratesIO.crates."serde_json"."${deps."ofborg"."0.1.8"."serde_json"}" deps)
-        (cratesIO.crates."sys_info"."${deps."ofborg"."0.1.8"."sys_info"}" deps)
-        (cratesIO.crates."tempfile"."${deps."ofborg"."0.1.8"."tempfile"}" deps)
-        (cratesIO.crates."uuid"."${deps."ofborg"."0.1.8"."uuid"}" deps)
+        (crates."amqp"."${deps."ofborg"."0.1.9"."amqp"}" deps)
+        (cratesIO.crates."async_std"."${deps."ofborg"."0.1.9"."async_std"}" deps)
+        (cratesIO.crates."chrono"."${deps."ofborg"."0.1.9"."chrono"}" deps)
+        (cratesIO.crates."either"."${deps."ofborg"."0.1.9"."either"}" deps)
+        (cratesIO.crates."env_logger"."${deps."ofborg"."0.1.9"."env_logger"}" deps)
+        (cratesIO.crates."fs2"."${deps."ofborg"."0.1.9"."fs2"}" deps)
+        (crates."hubcaps"."${deps."ofborg"."0.1.9"."hubcaps"}" deps)
+        (cratesIO.crates."hyper"."${deps."ofborg"."0.1.9"."hyper"}" deps)
+        (cratesIO.crates."hyper_native_tls"."${deps."ofborg"."0.1.9"."hyper_native_tls"}" deps)
+        (cratesIO.crates."lapin"."${deps."ofborg"."0.1.9"."lapin"}" deps)
+        (cratesIO.crates."log"."${deps."ofborg"."0.1.9"."log"}" deps)
+        (cratesIO.crates."lru_cache"."${deps."ofborg"."0.1.9"."lru_cache"}" deps)
+        (cratesIO.crates."md5"."${deps."ofborg"."0.1.9"."md5"}" deps)
+        (cratesIO.crates."nom"."${deps."ofborg"."0.1.9"."nom"}" deps)
+        (cratesIO.crates."separator"."${deps."ofborg"."0.1.9"."separator"}" deps)
+        (cratesIO.crates."serde"."${deps."ofborg"."0.1.9"."serde"}" deps)
+        (cratesIO.crates."serde_derive"."${deps."ofborg"."0.1.9"."serde_derive"}" deps)
+        (cratesIO.crates."serde_json"."${deps."ofborg"."0.1.9"."serde_json"}" deps)
+        (cratesIO.crates."sys_info"."${deps."ofborg"."0.1.9"."sys_info"}" deps)
+        (cratesIO.crates."tempfile"."${deps."ofborg"."0.1.9"."tempfile"}" deps)
+        (cratesIO.crates."uuid"."${deps."ofborg"."0.1.9"."uuid"}" deps)
       ]);
     };
-    features_.ofborg."0.1.8" = deps: f: updateFeatures f (rec {
-      amqp."${deps.ofborg."0.1.8".amqp}".default = true;
-      async_std."${deps.ofborg."0.1.8".async_std}".default = true;
-      chrono."${deps.ofborg."0.1.8".chrono}".default = true;
-      either."${deps.ofborg."0.1.8".either}".default = true;
-      env_logger."${deps.ofborg."0.1.8".env_logger}".default = true;
-      fs2."${deps.ofborg."0.1.8".fs2}".default = true;
-      hubcaps."${deps.ofborg."0.1.8".hubcaps}".default = true;
-      hyper."${deps.ofborg."0.1.8".hyper}".default = true;
-      hyper_native_tls."${deps.ofborg."0.1.8".hyper_native_tls}".default = true;
-      lapin."${deps.ofborg."0.1.8".lapin}".default = true;
-      log."${deps.ofborg."0.1.8".log}".default = true;
-      lru_cache."${deps.ofborg."0.1.8".lru_cache}".default = true;
-      md5."${deps.ofborg."0.1.8".md5}".default = true;
-      nom."${deps.ofborg."0.1.8".nom}".default = true;
-      ofborg."0.1.8".default = (f.ofborg."0.1.8".default or true);
-      separator."${deps.ofborg."0.1.8".separator}".default = true;
-      serde."${deps.ofborg."0.1.8".serde}".default = true;
-      serde_derive."${deps.ofborg."0.1.8".serde_derive}".default = true;
-      serde_json."${deps.ofborg."0.1.8".serde_json}".default = true;
-      sys_info."${deps.ofborg."0.1.8".sys_info}".default = true;
-      tempfile."${deps.ofborg."0.1.8".tempfile}".default = true;
+    features_.ofborg."0.1.9" = deps: f: updateFeatures f (rec {
+      amqp."${deps.ofborg."0.1.9".amqp}".default = true;
+      async_std."${deps.ofborg."0.1.9".async_std}".default = true;
+      chrono."${deps.ofborg."0.1.9".chrono}".default = true;
+      either."${deps.ofborg."0.1.9".either}".default = true;
+      env_logger."${deps.ofborg."0.1.9".env_logger}".default = true;
+      fs2."${deps.ofborg."0.1.9".fs2}".default = true;
+      hubcaps."${deps.ofborg."0.1.9".hubcaps}".default = true;
+      hyper."${deps.ofborg."0.1.9".hyper}".default = true;
+      hyper_native_tls."${deps.ofborg."0.1.9".hyper_native_tls}".default = true;
+      lapin."${deps.ofborg."0.1.9".lapin}".default = true;
+      log."${deps.ofborg."0.1.9".log}".default = true;
+      lru_cache."${deps.ofborg."0.1.9".lru_cache}".default = true;
+      md5."${deps.ofborg."0.1.9".md5}".default = true;
+      nom."${deps.ofborg."0.1.9".nom}".default = true;
+      ofborg."0.1.9".default = (f.ofborg."0.1.9".default or true);
+      separator."${deps.ofborg."0.1.9".separator}".default = true;
+      serde."${deps.ofborg."0.1.9".serde}".default = true;
+      serde_derive."${deps.ofborg."0.1.9".serde_derive}".default = true;
+      serde_json."${deps.ofborg."0.1.9".serde_json}".default = true;
+      sys_info."${deps.ofborg."0.1.9".sys_info}".default = true;
+      tempfile."${deps.ofborg."0.1.9".tempfile}".default = true;
       uuid = fold recursiveUpdate {} [
-        { "${deps.ofborg."0.1.8".uuid}"."v4" = true; }
-        { "${deps.ofborg."0.1.8".uuid}".default = true; }
+        { "${deps.ofborg."0.1.9".uuid}"."v4" = true; }
+        { "${deps.ofborg."0.1.9".uuid}".default = true; }
       ];
     }) [
-      (features_.amqp."${deps."ofborg"."0.1.8"."amqp"}" deps)
-      (cratesIO.features_.async_std."${deps."ofborg"."0.1.8"."async_std"}" deps)
-      (cratesIO.features_.chrono."${deps."ofborg"."0.1.8"."chrono"}" deps)
-      (cratesIO.features_.either."${deps."ofborg"."0.1.8"."either"}" deps)
-      (cratesIO.features_.env_logger."${deps."ofborg"."0.1.8"."env_logger"}" deps)
-      (cratesIO.features_.fs2."${deps."ofborg"."0.1.8"."fs2"}" deps)
-      (features_.hubcaps."${deps."ofborg"."0.1.8"."hubcaps"}" deps)
-      (cratesIO.features_.hyper."${deps."ofborg"."0.1.8"."hyper"}" deps)
-      (cratesIO.features_.hyper_native_tls."${deps."ofborg"."0.1.8"."hyper_native_tls"}" deps)
-      (cratesIO.features_.lapin."${deps."ofborg"."0.1.8"."lapin"}" deps)
-      (cratesIO.features_.log."${deps."ofborg"."0.1.8"."log"}" deps)
-      (cratesIO.features_.lru_cache."${deps."ofborg"."0.1.8"."lru_cache"}" deps)
-      (cratesIO.features_.md5."${deps."ofborg"."0.1.8"."md5"}" deps)
-      (cratesIO.features_.nom."${deps."ofborg"."0.1.8"."nom"}" deps)
-      (cratesIO.features_.separator."${deps."ofborg"."0.1.8"."separator"}" deps)
-      (cratesIO.features_.serde."${deps."ofborg"."0.1.8"."serde"}" deps)
-      (cratesIO.features_.serde_derive."${deps."ofborg"."0.1.8"."serde_derive"}" deps)
-      (cratesIO.features_.serde_json."${deps."ofborg"."0.1.8"."serde_json"}" deps)
-      (cratesIO.features_.sys_info."${deps."ofborg"."0.1.8"."sys_info"}" deps)
-      (cratesIO.features_.tempfile."${deps."ofborg"."0.1.8"."tempfile"}" deps)
-      (cratesIO.features_.uuid."${deps."ofborg"."0.1.8"."uuid"}" deps)
+      (features_.amqp."${deps."ofborg"."0.1.9"."amqp"}" deps)
+      (cratesIO.features_.async_std."${deps."ofborg"."0.1.9"."async_std"}" deps)
+      (cratesIO.features_.chrono."${deps."ofborg"."0.1.9"."chrono"}" deps)
+      (cratesIO.features_.either."${deps."ofborg"."0.1.9"."either"}" deps)
+      (cratesIO.features_.env_logger."${deps."ofborg"."0.1.9"."env_logger"}" deps)
+      (cratesIO.features_.fs2."${deps."ofborg"."0.1.9"."fs2"}" deps)
+      (features_.hubcaps."${deps."ofborg"."0.1.9"."hubcaps"}" deps)
+      (cratesIO.features_.hyper."${deps."ofborg"."0.1.9"."hyper"}" deps)
+      (cratesIO.features_.hyper_native_tls."${deps."ofborg"."0.1.9"."hyper_native_tls"}" deps)
+      (cratesIO.features_.lapin."${deps."ofborg"."0.1.9"."lapin"}" deps)
+      (cratesIO.features_.log."${deps."ofborg"."0.1.9"."log"}" deps)
+      (cratesIO.features_.lru_cache."${deps."ofborg"."0.1.9"."lru_cache"}" deps)
+      (cratesIO.features_.md5."${deps."ofborg"."0.1.9"."md5"}" deps)
+      (cratesIO.features_.nom."${deps."ofborg"."0.1.9"."nom"}" deps)
+      (cratesIO.features_.separator."${deps."ofborg"."0.1.9"."separator"}" deps)
+      (cratesIO.features_.serde."${deps."ofborg"."0.1.9"."serde"}" deps)
+      (cratesIO.features_.serde_derive."${deps."ofborg"."0.1.9"."serde_derive"}" deps)
+      (cratesIO.features_.serde_json."${deps."ofborg"."0.1.9"."serde_json"}" deps)
+      (cratesIO.features_.sys_info."${deps."ofborg"."0.1.9"."sys_info"}" deps)
+      (cratesIO.features_.tempfile."${deps."ofborg"."0.1.9"."tempfile"}" deps)
+      (cratesIO.features_.uuid."${deps."ofborg"."0.1.9"."uuid"}" deps)
     ];
 
 
@@ -219,7 +219,7 @@ rec {
 
   };
 
-  ofborg = crates.crates.ofborg."0.1.8" deps;
+  ofborg = crates.crates.ofborg."0.1.9" deps;
   ofborg_simple_build = crates.crates.ofborg_simple_build."0.1.0" deps;
   __all = [ (ofborg {}) (ofborg_simple_build {}) ];
   deps.aho_corasick."0.5.3" = {
@@ -624,7 +624,7 @@ rec {
     libc = "0.2.69";
     hermit_abi = "0.1.12";
   };
-  deps.ofborg."0.1.8" = {
+  deps.ofborg."0.1.9" = {
     amqp = "0.1.0";
     async_std = "1.5.0";
     chrono = "0.4.6";
@@ -649,7 +649,7 @@ rec {
   };
   deps.ofborg_simple_build."0.1.0" = {
     log = "0.3.8";
-    ofborg = "0.1.8";
+    ofborg = "0.1.9";
   };
   deps.once_cell."1.3.1" = {};
   deps.opaque_debug."0.2.3" = {};
