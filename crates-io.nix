@@ -660,7 +660,7 @@ rec {
       (crates."cfg_if"."${deps."backtrace"."0.3.13"."cfg_if"}" deps)
       (crates."rustc_demangle"."${deps."backtrace"."0.3.13"."rustc_demangle"}" deps)
     ])
-      ++ (if (kernel == "linux" || kernel == "darwin") && !(kernel == "fuchsia") && !(kernel == "emscripten") && !(kernel == "darwin") && !(kernel == "ios") then mapFeatures features ([
+      ++ (if ((kernel == "linux" || kernel == "darwin") && !(kernel == "fuchsia") && !(kernel == "emscripten") && !(kernel == "darwin") && !(kernel == "ios")) then mapFeatures features ([
     ]
       ++ (if features.backtrace."0.3.13".backtrace-sys or false then [ (crates.backtrace_sys."${deps."backtrace"."0.3.13".backtrace_sys}" deps) ] else [])) else [])
       ++ (if (kernel == "linux" || kernel == "darwin") then mapFeatures features ([
@@ -3015,13 +3015,13 @@ rec {
     dependencies = mapFeatures features ([
       (crates."lazy_static"."${deps."native_tls"."0.1.5"."lazy_static"}" deps)
     ])
-      ++ (if kernel == "darwin" || kernel == "ios" then mapFeatures features ([
+      ++ (if (kernel == "darwin" || kernel == "ios") then mapFeatures features ([
       (crates."libc"."${deps."native_tls"."0.1.5"."libc"}" deps)
       (crates."security_framework"."${deps."native_tls"."0.1.5"."security_framework"}" deps)
       (crates."security_framework_sys"."${deps."native_tls"."0.1.5"."security_framework_sys"}" deps)
       (crates."tempdir"."${deps."native_tls"."0.1.5"."tempdir"}" deps)
     ]) else [])
-      ++ (if !(kernel == "windows" || kernel == "darwin" || kernel == "ios") then mapFeatures features ([
+      ++ (if !((kernel == "windows" || kernel == "darwin" || kernel == "ios")) then mapFeatures features ([
       (crates."openssl"."${deps."native_tls"."0.1.5"."openssl"}" deps)
     ]) else [])
       ++ (if kernel == "windows" then mapFeatures features ([
@@ -3060,14 +3060,14 @@ rec {
     description = "A wrapper over a platform's native TLS implementation";
     authors = [ "Steven Fackler <sfackler@gmail.com>" ];
     sha256 = "05da1ai360zkdflh47dbaja3v5d8x4wl23g4zi32hh4n5g5adrm5";
-    dependencies = (if kernel == "darwin" || kernel == "ios" then mapFeatures features ([
+    dependencies = (if (kernel == "darwin" || kernel == "ios") then mapFeatures features ([
       (crates."lazy_static"."${deps."native_tls"."0.2.4"."lazy_static"}" deps)
       (crates."libc"."${deps."native_tls"."0.2.4"."libc"}" deps)
       (crates."security_framework"."${deps."native_tls"."0.2.4"."security_framework"}" deps)
       (crates."security_framework_sys"."${deps."native_tls"."0.2.4"."security_framework_sys"}" deps)
       (crates."tempfile"."${deps."native_tls"."0.2.4"."tempfile"}" deps)
     ]) else [])
-      ++ (if !(kernel == "windows" || kernel == "darwin" || kernel == "ios") then mapFeatures features ([
+      ++ (if !((kernel == "windows" || kernel == "darwin" || kernel == "ios")) then mapFeatures features ([
       (crates."log"."${deps."native_tls"."0.2.4"."log"}" deps)
       (crates."openssl"."${deps."native_tls"."0.2.4"."openssl"}" deps)
       (crates."openssl_probe"."${deps."native_tls"."0.2.4"."openssl_probe"}" deps)
@@ -3116,7 +3116,7 @@ rec {
     dependencies = mapFeatures features ([
       (crates."cfg_if"."${deps."net2"."0.2.33"."cfg_if"}" deps)
     ])
-      ++ (if kernel == "redox" || (kernel == "linux" || kernel == "darwin") then mapFeatures features ([
+      ++ (if (kernel == "redox" || (kernel == "linux" || kernel == "darwin")) then mapFeatures features ([
       (crates."libc"."${deps."net2"."0.2.33"."libc"}" deps)
     ]) else [])
       ++ (if kernel == "windows" then mapFeatures features ([
@@ -3401,7 +3401,7 @@ rec {
     dependencies = mapFeatures features ([
       (crates."libc"."${deps."num_cpus"."1.13.0"."libc"}" deps)
     ])
-      ++ (if cpu == "x86_64" || cpu == "aarch64" && kernel == "hermit" then mapFeatures features ([
+      ++ (if ((cpu == "x86_64" || cpu == "aarch64") && kernel == "hermit") then mapFeatures features ([
       (crates."hermit_abi"."${deps."num_cpus"."1.13.0"."hermit_abi"}" deps)
     ]) else []);
   };
@@ -5068,7 +5068,7 @@ rec {
     authors = [ "Alex Crichton <alex@alexcrichton.com>" ];
     edition = "2018";
     sha256 = "1raci7p3yi5yhcyz2sybn63px0kdy5wv7wjkcyhwhvzfxs9kd3gw";
-    dependencies = (if (kernel == "linux" || kernel == "darwin") || kernel == "redox" then mapFeatures features ([
+    dependencies = (if ((kernel == "linux" || kernel == "darwin") || kernel == "redox") then mapFeatures features ([
       (crates."cfg_if"."${deps."socket2"."0.3.12"."cfg_if"}" deps)
       (crates."libc"."${deps."socket2"."0.3.12"."libc"}" deps)
     ]) else [])
