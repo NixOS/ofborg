@@ -194,13 +194,19 @@ async fn action_deliver(
             let key = msg.routing_key.take().unwrap_or_else(|| "".to_owned());
             log::debug!("action publish {}", exch);
 
+            let mut props = BasicProperties::default().with_delivery_mode(2); // persistent.
+
+            if let Some(s) = msg.content_type {
+                props = props.with_content_type(s.into());
+            }
+
             let _confirmaton = chan
                 .basic_publish(
                     &exch,
                     &key,
                     BasicPublishOptions::default(),
                     msg.content,
-                    BasicProperties::default(),
+                    props,
                 )
                 .await?
                 .await?;
