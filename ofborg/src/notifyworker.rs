@@ -82,6 +82,7 @@ impl<'a> NotificationReceiver for ChannelNotificationReceiver<'a> {
 
                 let props = BasicProperties {
                     content_type: msg.content_type,
+                    delivery_mode: Some(2), // persistent
                     ..Default::default()
                 };
                 self.channel
