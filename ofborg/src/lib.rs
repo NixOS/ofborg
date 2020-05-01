@@ -11,6 +11,8 @@ extern crate serde_derive;
 #[macro_use]
 extern crate nom;
 
+use std::env;
+
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
 
@@ -88,15 +90,25 @@ pub mod ofborg {
 }
 
 pub fn setup_log() {
-    let fmt_layer = tracing_subscriber::fmt::layer();
     let filter_layer = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info"))
         .unwrap();
 
-    tracing_subscriber::registry()
-        .with(filter_layer)
-        .with(fmt_layer)
-        .init();
+    let log_json = env::var("RUST_LOG_JSON").map_or(false, |s| s == "1");
+
+    if log_json {
+        let fmt_layer = tracing_subscriber::fmt::layer().json();
+        tracing_subscriber::registry()
+            .with(filter_layer)
+            .with(fmt_layer)
+            .init();
+    } else {
+        let fmt_layer = tracing_subscriber::fmt::layer();
+        tracing_subscriber::registry()
+            .with(filter_layer)
+            .with(fmt_layer)
+            .init();
+    }
 
     tracing::info!("Logging configured");
 }

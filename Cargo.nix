@@ -160,7 +160,10 @@ rec {
       sys_info."${deps.ofborg."0.1.9".sys_info}".default = true;
       tempfile."${deps.ofborg."0.1.9".tempfile}".default = true;
       tracing."${deps.ofborg."0.1.9".tracing}".default = true;
-      tracing_subscriber."${deps.ofborg."0.1.9".tracing_subscriber}".default = true;
+      tracing_subscriber = fold recursiveUpdate {} [
+        { "${deps.ofborg."0.1.9".tracing_subscriber}"."json" = true; }
+        { "${deps.ofborg."0.1.9".tracing_subscriber}".default = true; }
+      ];
       uuid = fold recursiveUpdate {} [
         { "${deps.ofborg."0.1.9".uuid}"."v4" = true; }
         { "${deps.ofborg."0.1.9".uuid}".default = true; }

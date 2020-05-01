@@ -18,7 +18,7 @@ serde_derive = "1.0"
 serde_json = "1.0"
 tempfile = "2.2.0"
 tracing = "0.1.13"
-tracing-subscriber = "0.2.5"
+tracing-subscriber = { version = "0.2.5", features = ["json"] }
 hubcaps = { git = "https://github.com/grahamc/hubcaps.git" }
 #hubcaps = { path = "../../../grahamc/hubcaps/" } # for testing patches
 hyper = "0.10.*"
