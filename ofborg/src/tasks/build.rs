@@ -361,23 +361,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             actions.log_line(&line);
         }
 
-        // TODO: this belongs in the nix module.
-        let status = match spawned.wait() {
-            Ok(s) => match s.code() {
-                Some(0) => BuildStatus::Success,
-                Some(100) => BuildStatus::Failure, // nix permanent failure
-                Some(101) => BuildStatus::TimedOut, // nix build timedout
-                Some(i) => BuildStatus::UnexpectedError {
-                    err: format!("command failed with exit code {}", i),
-                },
-                None => BuildStatus::UnexpectedError {
-                    err: "unexpected build failure".into(),
-                },
-            },
-            e => BuildStatus::UnexpectedError {
-                err: format!("failed on interior command {:?}", e),
-            },
-        };
+        let status = nix::wait_for_build_status(spawned);
 
         info!("ok built ({:?}), building", status);
         info!("Lines:");

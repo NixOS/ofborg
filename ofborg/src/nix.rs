@@ -1,7 +1,6 @@
 use crate::asynccmd::{AsyncCmd, SpawnedAsyncCmd};
+use crate::message::buildresult::BuildStatus;
 use crate::ofborg::partition_result;
-
-use tempfile::tempfile;
 
 use std::collections::HashMap;
 use std::env;
@@ -11,6 +10,8 @@ use std::fs;
 use std::io::{BufRead, BufReader, Seek, SeekFrom};
 use std::path::Path;
 use std::process::{Command, Stdio};
+
+use tempfile::tempfile;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum File {
@@ -356,6 +357,25 @@ pub fn is_user_setting_warning(line: &str) -> bool {
     let line = line.trim();
     line.starts_with("warning: ignoring the user-specified setting '")
         && line.ends_with("because it is a restricted setting and you are not a trusted user")
+}
+
+pub fn wait_for_build_status(spawned: SpawnedAsyncCmd) -> BuildStatus {
+    match spawned.wait() {
+        Ok(s) => match s.code() {
+            Some(0) => BuildStatus::Success,
+            Some(100) => BuildStatus::Failure, // nix permanent failure
+            Some(101) => BuildStatus::TimedOut, // nix build timedout
+            Some(i) => BuildStatus::UnexpectedError {
+                err: format!("command failed with exit code {}", i),
+            },
+            None => BuildStatus::UnexpectedError {
+                err: "unexpected build failure".into(),
+            },
+        },
+        e => BuildStatus::UnexpectedError {
+            err: format!("failed on interior command {:?}", e),
+        },
+    }
 }
 
 #[cfg(test)]
