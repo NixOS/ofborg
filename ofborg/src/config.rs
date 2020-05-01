@@ -126,11 +126,7 @@ impl Config {
 
     pub fn nix(&self) -> Nix {
         if self.nix.build_timeout_seconds < 1200 {
-            error!(
-                "Note: {} is way too low for build_timeout_seconds!",
-                self.nix.build_timeout_seconds
-            );
-            error!("Please set build_timeout_seconds to at least 1200");
+            error!(?self.nix.build_timeout_seconds, "Please set build_timeout_seconds to at least 1200");
             panic!();
         }
 

@@ -8,8 +8,8 @@ use crate::worker;
 
 use std::collections::VecDeque;
 
+use tracing::{debug, debug_span, error, info};
 use uuid::Uuid;
-use tracing::{error, info};
 
 pub struct BuildWorker {
     cloner: checkout::CachedCloner,
@@ -276,14 +276,21 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         job: &buildjob::BuildJob,
         notifier: &mut dyn notifyworker::NotificationReceiver,
     ) {
+        let span = debug_span!("job", pr = ?job.pr.number);
+        let _enter = span.enter();
+
         let mut actions = self.actions(&job, notifier);
 
         if job.attrs.is_empty() {
+            debug!("No attrs to build");
             actions.nothing_to_do();
             return;
         }
 
-        info!("Working on {}", job.pr.number);
+        info!(
+            "Working on https://github.com/{}/pull/{}",
+            job.repo.full_name, job.pr.number
+        );
         let project = self
             .cloner
             .project(&job.repo.full_name, job.repo.clone_url.clone());
