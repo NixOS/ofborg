@@ -6,6 +6,8 @@ use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
+use tracing::info;
+
 pub struct CachedCloner {
     root: PathBuf,
 }

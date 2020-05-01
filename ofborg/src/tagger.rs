@@ -4,6 +4,8 @@ use crate::tasks;
 
 use std::collections::HashMap;
 
+use tracing::info;
+
 pub struct StdenvTagger {
     possible: Vec<String>,
     selected: Vec<String>,

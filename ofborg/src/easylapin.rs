@@ -21,6 +21,7 @@ use lapin::types::{AMQPValue, FieldTable};
 use lapin::{
     BasicProperties, Channel, CloseOnDrop, Connection, ConnectionProperties, ExchangeKind,
 };
+use tracing::debug;
 
 pub fn from_config(cfg: &RabbitMQConfig) -> Result<CloseOnDrop<Connection>, lapin::Error> {
     let mut props = FieldTable::default();
@@ -146,7 +147,7 @@ impl<W: SimpleNotifyWorker + 'static> ConsumerExt<W> for NotifyChannel {
         let mut chan = self.0;
         Ok(Box::pin(async move {
             while let Some(Ok(deliver)) = consumer.next().await {
-                log::debug!("delivery {}", deliver.delivery_tag);
+                debug!("delivery {}", deliver.delivery_tag);
                 let mut receiver = ChannelNotificationReceiver {
                     channel: &mut chan,
                     deliver: &deliver,
@@ -174,25 +175,25 @@ async fn action_deliver(
 ) -> Result<(), lapin::Error> {
     match action {
         Action::Ack => {
-            log::debug!("action ack");
+            debug!("action ack");
             chan.basic_ack(deliver.delivery_tag, BasicAckOptions::default())
                 .await
         }
         Action::NackRequeue => {
-            log::debug!("action nack requeue");
+            debug!("action nack requeue");
             let mut opts = BasicNackOptions::default();
             opts.requeue = true;
             chan.basic_nack(deliver.delivery_tag, opts).await
         }
         Action::NackDump => {
-            log::debug!("action nack dump");
+            debug!("action nack dump");
             chan.basic_nack(deliver.delivery_tag, BasicNackOptions::default())
                 .await
         }
         Action::Publish(mut msg) => {
             let exch = msg.exchange.take().unwrap_or_else(|| "".to_owned());
             let key = msg.routing_key.take().unwrap_or_else(|| "".to_owned());
-            log::debug!("action publish {}", exch);
+            debug!("action publish {}", exch);
 
             let mut props = BasicProperties::default().with_delivery_mode(2); // persistent.
 

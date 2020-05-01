@@ -2,6 +2,7 @@ use crate::config::RabbitMQConfig;
 use crate::ofborg;
 
 use amqp::Basic;
+use tracing::info;
 
 pub struct ConsumeConfig {
     /// Specifies the name of the queue to consume from.

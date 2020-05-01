@@ -16,15 +16,16 @@ use crate::tasks::eval::{
 };
 use crate::tasks::evaluate::{make_gist, update_labels};
 
+use std::collections::HashMap;
+use std::path::Path;
+
 use chrono::Utc;
 use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
 use hubcaps::gists::Gists;
 use hubcaps::issues::{Issue, IssueRef};
 use hubcaps::repositories::Repository;
+use tracing::warn;
 use uuid::Uuid;
-
-use std::collections::HashMap;
-use std::path::Path;
 
 pub struct NixpkgsStrategy<'a> {
     job: &'a EvaluationJob,

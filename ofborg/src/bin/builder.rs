@@ -3,7 +3,7 @@ use std::error::Error;
 use std::path::Path;
 
 use async_std::task;
-use log::{info, log, warn};
+use tracing::{info, warn};
 
 use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
 use ofborg::easylapin;

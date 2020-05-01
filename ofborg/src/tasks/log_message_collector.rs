@@ -3,11 +3,12 @@ use crate::message::buildresult::BuildResult;
 use crate::worker;
 use crate::writetoline::LineWriter;
 
-use lru_cache::LruCache;
-
 use std::fs::{self, File, OpenOptions};
 use std::io::Write;
 use std::path::{Component, PathBuf};
+
+use lru_cache::LruCache;
+use tracing::warn;
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone)]
 pub struct LogFrom {

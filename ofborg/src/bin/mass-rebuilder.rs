@@ -1,5 +1,3 @@
-use amqp::Basic;
-use log::{error, info, log};
 use ofborg::checkout;
 use ofborg::config;
 use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
@@ -10,6 +8,9 @@ use ofborg::worker;
 use std::env;
 use std::path::Path;
 use std::process;
+
+use amqp::Basic;
+use tracing::{error, info};
 
 fn main() {
     let memory_info = sys_info::mem_info().expect("Unable to get memory information from OS");

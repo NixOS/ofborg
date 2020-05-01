@@ -4,6 +4,7 @@ use crate::ghevent;
 use crate::message::{buildjob, evaluationjob, Pr, Repo};
 use crate::worker;
 
+use tracing::{error, info};
 use uuid::Uuid;
 
 pub struct GitHubCommentWorker {

@@ -11,14 +11,15 @@ use crate::systems;
 use crate::tasks::eval;
 use crate::worker;
 
-use hubcaps::checks::CheckRunOptions;
-use hubcaps::gists::Gists;
-use hubcaps::issues::Issue;
-
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::RwLock;
 use std::time::Instant;
+
+use hubcaps::checks::CheckRunOptions;
+use hubcaps::gists::Gists;
+use hubcaps::issues::Issue;
+use tracing::{error, info, warn};
 
 pub struct EvaluationWorker<E> {
     cloner: checkout::CachedCloner,

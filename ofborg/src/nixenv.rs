@@ -8,6 +8,8 @@ use std::fs::{self, File};
 use std::io::{self, BufRead, BufReader, Read, Seek, SeekFrom, Write};
 use std::path::PathBuf;
 
+use tracing::warn;
+
 pub struct HydraNixEnv {
     path: PathBuf,
     nix: nix::Nix,

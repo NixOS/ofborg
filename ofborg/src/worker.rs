@@ -1,8 +1,9 @@
+use std::marker::Send;
+
 use amqp::protocol::basic::{BasicProperties, Deliver};
 use amqp::Basic;
 use serde::Serialize;
-
-use std::marker::Send;
+use tracing::error;
 
 pub struct Worker<T: SimpleWorker> {
     internal: T,

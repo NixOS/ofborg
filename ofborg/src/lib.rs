@@ -9,12 +9,10 @@
 extern crate serde_derive;
 
 #[macro_use]
-extern crate log;
-
-#[macro_use]
 extern crate nom;
 
-use std::env;
+use tracing_subscriber::prelude::*;
+use tracing_subscriber::EnvFilter;
 
 pub mod acl;
 pub mod asynccmd;
@@ -90,11 +88,15 @@ pub mod ofborg {
 }
 
 pub fn setup_log() {
-    if env::var("RUST_LOG").is_err() {
-        env::set_var("RUST_LOG", "info");
-        env_logger::init().unwrap();
-        info!("Defaulting RUST_LOG environment variable to info");
-    } else {
-        env_logger::init().unwrap();
-    }
+    let fmt_layer = tracing_subscriber::fmt::layer();
+    let filter_layer = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info"))
+        .unwrap();
+
+    tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(fmt_layer)
+        .init();
+
+    tracing::info!("Logging configured");
 }

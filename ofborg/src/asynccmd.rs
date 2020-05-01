@@ -4,6 +4,8 @@ use std::process::{Child, Command, ExitStatus, Stdio};
 use std::sync::mpsc::{self, sync_channel, Receiver, SyncSender};
 use std::thread::{self, JoinHandle};
 
+use tracing::{debug, error, info};
+
 // Specifically set to fall under 1/2 of the AMQP library's
 // SyncSender limitation.
 const OUT_CHANNEL_BUFFER_SIZE: usize = 30;

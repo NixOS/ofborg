@@ -1,4 +1,3 @@
-use log::{info, log};
 use ofborg::commentparser;
 use ofborg::config;
 use ofborg::easyamqp;
@@ -7,6 +6,8 @@ use ofborg::notifyworker::{self, NotificationReceiver};
 use ofborg::worker;
 
 use std::env;
+
+use tracing::info;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());

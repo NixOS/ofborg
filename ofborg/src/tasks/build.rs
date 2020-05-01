@@ -6,9 +6,10 @@ use crate::nix;
 use crate::notifyworker;
 use crate::worker;
 
-use uuid::Uuid;
-
 use std::collections::VecDeque;
+
+use uuid::Uuid;
+use tracing::{error, info};
 
 pub struct BuildWorker {
     cloner: checkout::CachedCloner,

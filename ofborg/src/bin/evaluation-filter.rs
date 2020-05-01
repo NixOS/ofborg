@@ -1,11 +1,12 @@
 use amqp::Basic;
-use log::{info, log};
 use ofborg::config;
 use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
 use ofborg::tasks;
 use ofborg::worker;
 
 use std::env;
+
+use tracing::info;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());

@@ -6,6 +6,8 @@ use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
+use tracing::{debug, info, warn};
+
 pub struct Lock {
     lock: Option<fs::File>,
 }
