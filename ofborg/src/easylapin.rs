@@ -80,9 +80,9 @@ impl ChannelExt for CloseOnDrop<Channel> {
     }
 }
 
-impl<W: SimpleWorker + 'static> ConsumerExt<W> for CloseOnDrop<Channel> {
+impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for CloseOnDrop<Channel> {
     type Error = lapin::Error;
-    type Handle = Pin<Box<dyn Future<Output = ()> + 'static>>;
+    type Handle = Pin<Box<dyn Future<Output = ()> + 'a>>;
 
     fn consume(self, mut worker: W, config: ConsumeConfig) -> Result<Self::Handle, Self::Error> {
         task::block_on(self.basic_qos(1, BasicQosOptions::default()))?;
@@ -130,9 +130,9 @@ impl<'a> NotificationReceiver for ChannelNotificationReceiver<'a> {
 // but one could probably be implemented in terms of the other instead.
 pub struct NotifyChannel(pub CloseOnDrop<Channel>);
 
-impl<W: SimpleNotifyWorker + 'static> ConsumerExt<W> for NotifyChannel {
+impl<'a, W: SimpleNotifyWorker + 'a> ConsumerExt<'a, W> for NotifyChannel {
     type Error = lapin::Error;
-    type Handle = Pin<Box<dyn Future<Output = ()> + 'static>>;
+    type Handle = Pin<Box<dyn Future<Output = ()> + 'a>>;
 
     fn consume(self, worker: W, config: ConsumeConfig) -> Result<Self::Handle, Self::Error> {
         task::block_on(self.0.basic_qos(1, BasicQosOptions::default()))?;
