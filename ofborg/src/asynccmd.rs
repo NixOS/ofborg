@@ -149,6 +149,8 @@ impl SpawnedAsyncCmd {
     }
 }
 
+// FIXME: remove with rust/cargo update
+#[allow(clippy::cognitive_complexity)]
 fn block_on_waiters(
     monitor_rx: mpsc::Receiver<(WaitTarget, WaitResult<()>)>,
     mut waiters: HashMap<WaitTarget, thread::JoinHandle<()>>,

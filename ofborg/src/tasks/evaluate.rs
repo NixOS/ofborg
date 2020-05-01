@@ -246,6 +246,8 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         }
     }
 
+    // FIXME: remove with rust/cargo update
+    #[allow(clippy::cognitive_complexity)]
     fn evaluate_job(&mut self) -> Result<worker::Actions, EvalWorkerError> {
         let job = self.job;
         let repo = self

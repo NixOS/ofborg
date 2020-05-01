@@ -9,6 +9,8 @@ use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
 use ofborg::easylapin;
 use ofborg::{checkout, config, tasks};
 
+// FIXME: remove with rust/cargo update
+#[allow(clippy::cognitive_complexity)]
 fn main() -> Result<(), Box<dyn Error>> {
     ofborg::setup_log();
 

@@ -271,6 +271,8 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         }
     }
 
+    // FIXME: remove with rust/cargo update
+    #[allow(clippy::cognitive_complexity)]
     fn consumer(
         &self,
         job: &buildjob::BuildJob,

@@ -12,6 +12,8 @@ use std::process;
 use amqp::Basic;
 use tracing::{error, info};
 
+// FIXME: remove with rust/cargo update
+#[allow(clippy::cognitive_complexity)]
 fn main() {
     let memory_info = sys_info::mem_info().expect("Unable to get memory information from OS");
 
