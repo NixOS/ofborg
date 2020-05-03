@@ -21,7 +21,7 @@ use lapin::types::{AMQPValue, FieldTable};
 use lapin::{
     BasicProperties, Channel, CloseOnDrop, Connection, ConnectionProperties, ExchangeKind,
 };
-use tracing::debug;
+use tracing::{debug, trace};
 
 pub fn from_config(cfg: &RabbitMQConfig) -> Result<CloseOnDrop<Connection>, lapin::Error> {
     let mut props = FieldTable::default();
@@ -196,7 +196,7 @@ async fn action_deliver(
         Action::Publish(mut msg) => {
             let exch = msg.exchange.take().unwrap_or_else(|| "".to_owned());
             let key = msg.routing_key.take().unwrap_or_else(|| "".to_owned());
-            debug!(?exch, ?key, "action publish");
+            trace!(?exch, ?key, "action publish");
 
             let mut props = BasicProperties::default().with_delivery_mode(2); // persistent.
 
