@@ -1,11 +1,12 @@
-use amqp::Basic;
-use hyper::server::{Request, Response, Server};
-use log::{info, log};
 use ofborg::easyamqp::{ChannelExt, ConsumerExt};
 use ofborg::{config, easyamqp, stats, tasks, worker};
 
 use std::env;
 use std::thread;
+
+use amqp::Basic;
+use hyper::server::{Request, Response, Server};
+use tracing::info;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());

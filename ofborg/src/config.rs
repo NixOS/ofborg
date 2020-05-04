@@ -1,15 +1,16 @@
 use crate::acl;
 use crate::nix::Nix;
 
-use hubcaps::{Credentials, Github, InstallationTokenGenerator, JWTCredentials};
-use hyper::net::HttpsConnector;
-use hyper::Client;
-use hyper_native_tls::NativeTlsClient;
-
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+
+use hubcaps::{Credentials, Github, InstallationTokenGenerator, JWTCredentials};
+use hyper::net::HttpsConnector;
+use hyper::Client;
+use hyper_native_tls::NativeTlsClient;
+use tracing::{debug, error, info, warn};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
@@ -125,11 +126,7 @@ impl Config {
 
     pub fn nix(&self) -> Nix {
         if self.nix.build_timeout_seconds < 1200 {
-            error!(
-                "Note: {} is way too low for build_timeout_seconds!",
-                self.nix.build_timeout_seconds
-            );
-            error!("Please set build_timeout_seconds to at least 1200");
+            error!(?self.nix.build_timeout_seconds, "Please set build_timeout_seconds to at least 1200");
             panic!();
         }
 

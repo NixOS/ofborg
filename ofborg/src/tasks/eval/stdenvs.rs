@@ -3,6 +3,8 @@ use crate::nix;
 
 use std::path::PathBuf;
 
+use tracing::{info, warn};
+
 enum StdenvFrom {
     Before,
     After,

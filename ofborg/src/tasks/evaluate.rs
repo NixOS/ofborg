@@ -11,14 +11,15 @@ use crate::systems;
 use crate::tasks::eval;
 use crate::worker;
 
-use hubcaps::checks::CheckRunOptions;
-use hubcaps::gists::Gists;
-use hubcaps::issues::Issue;
-
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::RwLock;
 use std::time::Instant;
+
+use hubcaps::checks::CheckRunOptions;
+use hubcaps::gists::Gists;
+use hubcaps::issues::Issue;
+use tracing::{debug_span, error, info, warn};
 
 pub struct EvaluationWorker<E> {
     cloner: checkout::CachedCloner,
@@ -245,7 +246,12 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         }
     }
 
+    // FIXME: remove with rust/cargo update
+    #[allow(clippy::cognitive_complexity)]
     fn evaluate_job(&mut self) -> Result<worker::Actions, EvalWorkerError> {
+        let span = debug_span!("job", pr = ?self.job.pr.number);
+        let _enter = span.enter();
+
         let job = self.job;
         let repo = self
             .client_app

@@ -1,3 +1,5 @@
+use tracing::warn;
+
 pub struct CommitStatus<'a> {
     api: hubcaps::statuses::Statuses<'a>,
     sha: String,

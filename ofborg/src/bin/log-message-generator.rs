@@ -1,4 +1,3 @@
-use log::{info, log};
 use ofborg::config;
 use ofborg::easyamqp;
 use ofborg::message::{buildjob, Pr, Repo};
@@ -8,6 +7,8 @@ use ofborg::tasks::build;
 use std::env;
 use std::thread;
 use std::time::Duration;
+
+use tracing::info;
 
 fn main() {
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());

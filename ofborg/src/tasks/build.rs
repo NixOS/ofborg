@@ -6,9 +6,10 @@ use crate::nix;
 use crate::notifyworker;
 use crate::worker;
 
-use uuid::Uuid;
-
 use std::collections::VecDeque;
+
+use tracing::{debug, debug_span, error, info};
+use uuid::Uuid;
 
 pub struct BuildWorker {
     cloner: checkout::CachedCloner,
@@ -270,19 +271,28 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         }
     }
 
+    // FIXME: remove with rust/cargo update
+    #[allow(clippy::cognitive_complexity)]
     fn consumer(
         &self,
         job: &buildjob::BuildJob,
         notifier: &mut dyn notifyworker::NotificationReceiver,
     ) {
+        let span = debug_span!("job", pr = ?job.pr.number);
+        let _enter = span.enter();
+
         let mut actions = self.actions(&job, notifier);
 
         if job.attrs.is_empty() {
+            debug!("No attrs to build");
             actions.nothing_to_do();
             return;
         }
 
-        info!("Working on {}", job.pr.number);
+        info!(
+            "Working on https://github.com/{}/pull/{}",
+            job.repo.full_name, job.pr.number
+        );
         let project = self
             .cloner
             .project(&job.repo.full_name, job.repo.clone_url.clone());
@@ -353,23 +363,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             actions.log_line(&line);
         }
 
-        // TODO: this belongs in the nix module.
-        let status = match spawned.wait() {
-            Ok(s) => match s.code() {
-                Some(0) => BuildStatus::Success,
-                Some(100) => BuildStatus::Failure, // nix permanent failure
-                Some(101) => BuildStatus::TimedOut, // nix build timedout
-                Some(i) => BuildStatus::UnexpectedError {
-                    err: format!("command failed with exit code {}", i),
-                },
-                None => BuildStatus::UnexpectedError {
-                    err: "unexpected build failure".into(),
-                },
-            },
-            e => BuildStatus::UnexpectedError {
-                err: format!("failed on interior command {:?}", e),
-            },
-        };
+        let status = nix::wait_for_build_status(spawned);
 
         info!("ok built ({:?}), building", status);
         info!("Lines:");

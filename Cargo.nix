@@ -120,13 +120,11 @@ rec {
         (cratesIO.crates."async_std"."${deps."ofborg"."0.1.9"."async_std"}" deps)
         (cratesIO.crates."chrono"."${deps."ofborg"."0.1.9"."chrono"}" deps)
         (cratesIO.crates."either"."${deps."ofborg"."0.1.9"."either"}" deps)
-        (cratesIO.crates."env_logger"."${deps."ofborg"."0.1.9"."env_logger"}" deps)
         (cratesIO.crates."fs2"."${deps."ofborg"."0.1.9"."fs2"}" deps)
         (crates."hubcaps"."${deps."ofborg"."0.1.9"."hubcaps"}" deps)
         (cratesIO.crates."hyper"."${deps."ofborg"."0.1.9"."hyper"}" deps)
         (cratesIO.crates."hyper_native_tls"."${deps."ofborg"."0.1.9"."hyper_native_tls"}" deps)
         (cratesIO.crates."lapin"."${deps."ofborg"."0.1.9"."lapin"}" deps)
-        (cratesIO.crates."log"."${deps."ofborg"."0.1.9"."log"}" deps)
         (cratesIO.crates."lru_cache"."${deps."ofborg"."0.1.9"."lru_cache"}" deps)
         (cratesIO.crates."md5"."${deps."ofborg"."0.1.9"."md5"}" deps)
         (cratesIO.crates."nom"."${deps."ofborg"."0.1.9"."nom"}" deps)
@@ -136,6 +134,8 @@ rec {
         (cratesIO.crates."serde_json"."${deps."ofborg"."0.1.9"."serde_json"}" deps)
         (cratesIO.crates."sys_info"."${deps."ofborg"."0.1.9"."sys_info"}" deps)
         (cratesIO.crates."tempfile"."${deps."ofborg"."0.1.9"."tempfile"}" deps)
+        (cratesIO.crates."tracing"."${deps."ofborg"."0.1.9"."tracing"}" deps)
+        (cratesIO.crates."tracing_subscriber"."${deps."ofborg"."0.1.9"."tracing_subscriber"}" deps)
         (cratesIO.crates."uuid"."${deps."ofborg"."0.1.9"."uuid"}" deps)
       ]);
     };
@@ -144,13 +144,11 @@ rec {
       async_std."${deps.ofborg."0.1.9".async_std}".default = true;
       chrono."${deps.ofborg."0.1.9".chrono}".default = true;
       either."${deps.ofborg."0.1.9".either}".default = true;
-      env_logger."${deps.ofborg."0.1.9".env_logger}".default = true;
       fs2."${deps.ofborg."0.1.9".fs2}".default = true;
       hubcaps."${deps.ofborg."0.1.9".hubcaps}".default = true;
       hyper."${deps.ofborg."0.1.9".hyper}".default = true;
       hyper_native_tls."${deps.ofborg."0.1.9".hyper_native_tls}".default = true;
       lapin."${deps.ofborg."0.1.9".lapin}".default = true;
-      log."${deps.ofborg."0.1.9".log}".default = true;
       lru_cache."${deps.ofborg."0.1.9".lru_cache}".default = true;
       md5."${deps.ofborg."0.1.9".md5}".default = true;
       nom."${deps.ofborg."0.1.9".nom}".default = true;
@@ -161,6 +159,11 @@ rec {
       serde_json."${deps.ofborg."0.1.9".serde_json}".default = true;
       sys_info."${deps.ofborg."0.1.9".sys_info}".default = true;
       tempfile."${deps.ofborg."0.1.9".tempfile}".default = true;
+      tracing."${deps.ofborg."0.1.9".tracing}".default = true;
+      tracing_subscriber = fold recursiveUpdate {} [
+        { "${deps.ofborg."0.1.9".tracing_subscriber}"."json" = true; }
+        { "${deps.ofborg."0.1.9".tracing_subscriber}".default = true; }
+      ];
       uuid = fold recursiveUpdate {} [
         { "${deps.ofborg."0.1.9".uuid}"."v4" = true; }
         { "${deps.ofborg."0.1.9".uuid}".default = true; }
@@ -170,13 +173,11 @@ rec {
       (cratesIO.features_.async_std."${deps."ofborg"."0.1.9"."async_std"}" deps)
       (cratesIO.features_.chrono."${deps."ofborg"."0.1.9"."chrono"}" deps)
       (cratesIO.features_.either."${deps."ofborg"."0.1.9"."either"}" deps)
-      (cratesIO.features_.env_logger."${deps."ofborg"."0.1.9"."env_logger"}" deps)
       (cratesIO.features_.fs2."${deps."ofborg"."0.1.9"."fs2"}" deps)
       (features_.hubcaps."${deps."ofborg"."0.1.9"."hubcaps"}" deps)
       (cratesIO.features_.hyper."${deps."ofborg"."0.1.9"."hyper"}" deps)
       (cratesIO.features_.hyper_native_tls."${deps."ofborg"."0.1.9"."hyper_native_tls"}" deps)
       (cratesIO.features_.lapin."${deps."ofborg"."0.1.9"."lapin"}" deps)
-      (cratesIO.features_.log."${deps."ofborg"."0.1.9"."log"}" deps)
       (cratesIO.features_.lru_cache."${deps."ofborg"."0.1.9"."lru_cache"}" deps)
       (cratesIO.features_.md5."${deps."ofborg"."0.1.9"."md5"}" deps)
       (cratesIO.features_.nom."${deps."ofborg"."0.1.9"."nom"}" deps)
@@ -186,6 +187,8 @@ rec {
       (cratesIO.features_.serde_json."${deps."ofborg"."0.1.9"."serde_json"}" deps)
       (cratesIO.features_.sys_info."${deps."ofborg"."0.1.9"."sys_info"}" deps)
       (cratesIO.features_.tempfile."${deps."ofborg"."0.1.9"."tempfile"}" deps)
+      (cratesIO.features_.tracing."${deps."ofborg"."0.1.9"."tracing"}" deps)
+      (cratesIO.features_.tracing_subscriber."${deps."ofborg"."0.1.9"."tracing_subscriber"}" deps)
       (cratesIO.features_.uuid."${deps."ofborg"."0.1.9"."uuid"}" deps)
     ];
 
@@ -225,7 +228,7 @@ rec {
   deps.aho_corasick."0.5.3" = {
     memchr = "0.1.11";
   };
-  deps.aho_corasick."0.6.9" = {
+  deps.aho_corasick."0.7.10" = {
     memchr = "2.3.3";
   };
   deps.amq_proto."0.1.0" = {
@@ -272,6 +275,9 @@ rec {
     openssl = "0.9.24";
     time = "0.1.41";
     url = "1.7.2";
+  };
+  deps.ansi_term."0.11.0" = {
+    winapi = "0.3.8";
   };
   deps.antidote."1.0.0" = {};
   deps.arrayvec."0.5.1" = {};
@@ -392,10 +398,6 @@ rec {
   deps.env_logger."0.3.5" = {
     log = "0.3.8";
     regex = "0.1.80";
-  };
-  deps.env_logger."0.4.3" = {
-    log = "0.3.8";
-    regex = "0.2.11";
   };
   deps.error_chain."0.10.0" = {
     backtrace = "0.3.13";
@@ -527,6 +529,9 @@ rec {
     linked_hash_map = "0.4.2";
   };
   deps.maplit."1.0.2" = {};
+  deps.matchers."0.0.1" = {
+    regex_automata = "0.1.9";
+  };
   deps.matches."0.1.8" = {};
   deps.maybe_uninit."2.0.0" = {};
   deps.md5."0.3.8" = {};
@@ -629,13 +634,11 @@ rec {
     async_std = "1.5.0";
     chrono = "0.4.6";
     either = "1.5.0";
-    env_logger = "0.4.3";
     fs2 = "0.4.3";
     hubcaps = "0.3.16";
     hyper = "0.10.15";
     hyper_native_tls = "0.2.4";
     lapin = "1.0.0-beta3";
-    log = "0.3.8";
     lru_cache = "0.1.1";
     md5 = "0.3.8";
     nom = "4.1.1";
@@ -645,6 +648,8 @@ rec {
     serde_json = "1.0.52";
     sys_info = "0.5.6";
     tempfile = "2.2.0";
+    tracing = "0.1.13";
+    tracing_subscriber = "0.2.5";
     uuid = "0.4.0";
   };
   deps.ofborg_simple_build."0.1.0" = {
@@ -758,17 +763,18 @@ rec {
     thread_local = "0.2.7";
     utf8_ranges = "0.1.3";
   };
-  deps.regex."0.2.11" = {
-    aho_corasick = "0.6.9";
+  deps.regex."1.3.7" = {
+    aho_corasick = "0.7.10";
     memchr = "2.3.3";
-    regex_syntax = "0.5.6";
-    thread_local = "0.3.6";
-    utf8_ranges = "1.0.2";
+    regex_syntax = "0.6.17";
+    thread_local = "1.0.1";
+  };
+  deps.regex_automata."0.1.9" = {
+    byteorder = "1.2.7";
+    regex_syntax = "0.6.17";
   };
   deps.regex_syntax."0.3.9" = {};
-  deps.regex_syntax."0.5.6" = {
-    ucd_util = "0.1.3";
-  };
+  deps.regex_syntax."0.6.17" = {};
   deps.remove_dir_all."0.5.1" = {
     winapi = "0.3.8";
   };
@@ -821,6 +827,9 @@ rec {
     fake_simd = "0.1.2";
     opaque_debug = "0.2.3";
   };
+  deps.sharded_slab."0.0.9" = {
+    lazy_static = "1.4.0";
+  };
   deps.slab."0.4.2" = {};
   deps.smallvec."1.4.0" = {};
   deps.socket2."0.3.12" = {
@@ -870,7 +879,7 @@ rec {
   deps.thread_local."0.2.7" = {
     thread_id = "2.0.0";
   };
-  deps.thread_local."0.3.6" = {
+  deps.thread_local."1.0.1" = {
     lazy_static = "1.4.0";
   };
   deps.time."0.1.41" = {
@@ -878,11 +887,45 @@ rec {
     redox_syscall = "0.1.50";
     winapi = "0.3.8";
   };
+  deps.tracing."0.1.13" = {
+    cfg_if = "0.1.10";
+    tracing_attributes = "0.1.7";
+    tracing_core = "0.1.10";
+  };
+  deps.tracing_attributes."0.1.7" = {
+    quote = "1.0.3";
+    syn = "1.0.18";
+  };
+  deps.tracing_core."0.1.10" = {
+    lazy_static = "1.4.0";
+  };
+  deps.tracing_log."0.1.1" = {
+    lazy_static = "1.4.0";
+    log = "0.4.8";
+    tracing_core = "0.1.10";
+  };
+  deps.tracing_serde."0.1.1" = {
+    serde = "1.0.106";
+    tracing_core = "0.1.10";
+  };
+  deps.tracing_subscriber."0.2.5" = {
+    ansi_term = "0.11.0";
+    chrono = "0.4.6";
+    lazy_static = "1.4.0";
+    matchers = "0.0.1";
+    regex = "1.3.7";
+    serde = "1.0.106";
+    serde_json = "1.0.52";
+    sharded_slab = "0.0.9";
+    smallvec = "1.4.0";
+    tracing_core = "0.1.10";
+    tracing_log = "0.1.1";
+    tracing_serde = "0.1.1";
+  };
   deps.traitobject."0.1.0" = {};
   deps.typeable."0.1.2" = {};
   deps.typenum."1.12.0" = {};
   deps.ucd_trie."0.1.3" = {};
-  deps.ucd_util."0.1.3" = {};
   deps.unicase."1.4.2" = {
     version_check = "0.1.5";
   };
@@ -902,7 +945,6 @@ rec {
     percent_encoding = "2.1.0";
   };
   deps.utf8_ranges."0.1.3" = {};
-  deps.utf8_ranges."1.0.2" = {};
   deps.uuid."0.4.0" = {
     rand = "0.3.22";
   };

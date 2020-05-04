@@ -4,6 +4,8 @@ use std::process::{Child, Command, ExitStatus, Stdio};
 use std::sync::mpsc::{self, sync_channel, Receiver, SyncSender};
 use std::thread::{self, JoinHandle};
 
+use tracing::{debug, error, info};
+
 // Specifically set to fall under 1/2 of the AMQP library's
 // SyncSender limitation.
 const OUT_CHANNEL_BUFFER_SIZE: usize = 30;
@@ -120,48 +122,7 @@ impl AsyncCmd {
             child_wait(WaitTarget::Child, monitor_tx, child),
         );
 
-        let head_waiter = thread::spawn(move || {
-            let mut return_status: Option<Result<ExitStatus, io::Error>> = None;
-
-            for (id, interior_result) in monitor_rx.iter() {
-                match waiters.remove(&id) {
-                    Some(handle) => {
-                        info!("Received notice that {:?} finished", id);
-                        let waiter_result = handle.join();
-
-                        info!("waiter status: {:?}", waiter_result);
-                        info!("interior status: {:?}", interior_result);
-
-                        match interior_result {
-                            WaitResult::Thread(t) => {
-                                debug!("thread result: {:?}", t);
-                            }
-                            WaitResult::Process(t) => {
-                                return_status = Some(t);
-                            }
-                        }
-                    }
-                    None => {
-                        error!(
-                            "Received notice that {:?} finished, but it isn't being waited on?",
-                            id
-                        );
-                    }
-                }
-
-                if waiters.is_empty() {
-                    debug!("Closing up the waiter receiver thread, no more waiters.");
-                    break;
-                }
-            }
-
-            info!(
-                "Out of the child waiter recv, with {:?} remaining waits",
-                waiters.len()
-            );
-
-            return_status
-        });
+        let head_waiter = thread::spawn(move || block_on_waiters(monitor_rx, waiters));
 
         SpawnedAsyncCmd {
             waiter: head_waiter,
@@ -186,6 +147,54 @@ impl SpawnedAsyncCmd {
             })
             .and_then(|res| res)
     }
+}
+
+// FIXME: remove with rust/cargo update
+#[allow(clippy::cognitive_complexity)]
+fn block_on_waiters(
+    monitor_rx: mpsc::Receiver<(WaitTarget, WaitResult<()>)>,
+    mut waiters: HashMap<WaitTarget, thread::JoinHandle<()>>,
+) -> Option<Result<ExitStatus, io::Error>> {
+    let mut status = None;
+
+    for (id, interior_result) in monitor_rx.iter() {
+        match waiters.remove(&id) {
+            Some(handle) => {
+                info!("Received notice that {:?} finished", id);
+                let waiter_result = handle.join();
+
+                info!("waiter status: {:?}", waiter_result);
+                info!("interior status: {:?}", interior_result);
+
+                match interior_result {
+                    WaitResult::Thread(t) => {
+                        debug!("thread result: {:?}", t);
+                    }
+                    WaitResult::Process(t) => {
+                        status = Some(t);
+                    }
+                }
+            }
+            None => {
+                error!(
+                    "Received notice that {:?} finished, but it isn't being waited on?",
+                    id
+                );
+            }
+        }
+
+        if waiters.is_empty() {
+            debug!("Closing up the waiter receiver thread, no more waiters.");
+            break;
+        }
+    }
+
+    info!(
+        "Out of the child waiter recv, with {:?} remaining waits",
+        waiters.len()
+    );
+
+    status
 }
 
 #[cfg(test)]

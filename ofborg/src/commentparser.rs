@@ -1,4 +1,5 @@
 use nom::types::CompleteStr;
+use tracing::warn;
 
 pub fn parse(text: &str) -> Option<Vec<Instruction>> {
     let instructions: Vec<Instruction> = text

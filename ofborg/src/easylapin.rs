@@ -21,6 +21,7 @@ use lapin::types::{AMQPValue, FieldTable};
 use lapin::{
     BasicProperties, Channel, CloseOnDrop, Connection, ConnectionProperties, ExchangeKind,
 };
+use tracing::{debug, trace};
 
 pub fn from_config(cfg: &RabbitMQConfig) -> Result<CloseOnDrop<Connection>, lapin::Error> {
     let mut props = FieldTable::default();
@@ -95,6 +96,7 @@ impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for CloseOnDrop<Channel> {
         ))?;
         Ok(Box::pin(async move {
             while let Some(Ok(deliver)) = consumer.next().await {
+                debug!(?deliver.delivery_tag, "consumed delivery");
                 let content_type = deliver.properties.content_type();
                 let job = worker
                     .msg_to_job(
@@ -109,6 +111,7 @@ impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for CloseOnDrop<Channel> {
                         .await
                         .expect("action deliver failure");
                 }
+                debug!(?deliver.delivery_tag, "done");
             }
         }))
     }
@@ -146,7 +149,7 @@ impl<'a, W: SimpleNotifyWorker + 'a> ConsumerExt<'a, W> for NotifyChannel {
         let mut chan = self.0;
         Ok(Box::pin(async move {
             while let Some(Ok(deliver)) = consumer.next().await {
-                log::debug!("delivery {}", deliver.delivery_tag);
+                debug!(?deliver.delivery_tag, "consumed delivery");
                 let mut receiver = ChannelNotificationReceiver {
                     channel: &mut chan,
                     deliver: &deliver,
@@ -162,6 +165,7 @@ impl<'a, W: SimpleNotifyWorker + 'a> ConsumerExt<'a, W> for NotifyChannel {
                     .expect("worker unexpected message consumed");
 
                 worker.consumer(&job, &mut receiver);
+                debug!(?deliver.delivery_tag, "done");
             }
         }))
     }
@@ -174,25 +178,25 @@ async fn action_deliver(
 ) -> Result<(), lapin::Error> {
     match action {
         Action::Ack => {
-            log::debug!("action ack");
+            debug!(?deliver.delivery_tag, "action ack");
             chan.basic_ack(deliver.delivery_tag, BasicAckOptions::default())
                 .await
         }
         Action::NackRequeue => {
-            log::debug!("action nack requeue");
+            debug!(?deliver.delivery_tag, "action nack requeue");
             let mut opts = BasicNackOptions::default();
             opts.requeue = true;
             chan.basic_nack(deliver.delivery_tag, opts).await
         }
         Action::NackDump => {
-            log::debug!("action nack dump");
+            debug!(?deliver.delivery_tag, "action nack dump");
             chan.basic_nack(deliver.delivery_tag, BasicNackOptions::default())
                 .await
         }
         Action::Publish(mut msg) => {
             let exch = msg.exchange.take().unwrap_or_else(|| "".to_owned());
             let key = msg.routing_key.take().unwrap_or_else(|| "".to_owned());
-            log::debug!("action publish {}", exch);
+            trace!(?exch, ?key, "action publish");
 
             let mut props = BasicProperties::default().with_delivery_mode(2); // persistent.
 

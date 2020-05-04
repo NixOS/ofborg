@@ -3,6 +3,8 @@ use crate::ghevent;
 use crate::message::{evaluationjob, Pr, Repo};
 use crate::worker;
 
+use tracing::info;
+
 pub struct EvaluationFilterWorker {
     acl: acl::ACL,
 }

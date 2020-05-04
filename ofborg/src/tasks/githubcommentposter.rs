@@ -6,6 +6,7 @@ use crate::worker;
 
 use chrono::{DateTime, Utc};
 use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
+use tracing::info;
 
 pub struct GitHubCommentPoster {
     github_vend: GithubAppVendingMachine,

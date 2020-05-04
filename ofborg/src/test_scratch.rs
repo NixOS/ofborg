@@ -2,6 +2,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use tracing::debug;
+
 pub struct TestScratch {
     root: PathBuf,
 }

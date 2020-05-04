@@ -6,6 +6,8 @@ use std::collections::{HashMap, HashSet};
 use std::io::BufRead;
 use std::path::PathBuf;
 
+use tracing::{debug, info, trace};
+
 pub struct OutPathDiff {
     calculator: HydraNixEnv,
     pub original: Option<(PackageOutPaths, EvaluationStats)>,
