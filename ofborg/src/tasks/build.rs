@@ -325,10 +325,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             return;
         }
 
-        info!(
-            "Got path: {:?}, determining which ones we can build ",
-            refpath
-        );
+        info!("Determining which attributes we can build");
         let (can_build, cannot_build) = self.nix.safely_partition_instantiable_attrs(
             refpath.as_ref(),
             buildfile,
@@ -340,6 +337,25 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             .into_iter()
             .map(|(attr, _)| attr)
             .collect();
+
+        info!("Checking for stdenv rebuild");
+        match self.nix.safely_query_cache_for_attr(
+            refpath.as_ref(),
+            buildfile,
+            String::from("stdenv"),
+        ) {
+            Ok(false) => {
+                info!(
+                    "Skip build: '{}', Cannot build: '{}'",
+                    can_build.join(", "),
+                    cannot_build_attrs.join(", ")
+                );
+                actions.build_not_attempted(job.attrs.clone());
+                return;
+            }
+            Ok(true) => (),
+            Err(err) => error!("Failed to detect stdenv rebuild: {:?}", err),
+        }
 
         info!(
             "Can build: '{}', Cannot build: '{}'",
