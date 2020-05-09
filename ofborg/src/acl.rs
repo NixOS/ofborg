@@ -2,25 +2,18 @@ use crate::systems::System;
 
 pub struct ACL {
     trusted_users: Vec<String>,
-    known_users: Vec<String>,
     repos: Vec<String>,
 }
 
 impl ACL {
-    pub fn new(
-        repos: Vec<String>,
-        mut trusted_users: Vec<String>,
-        mut known_users: Vec<String>,
-    ) -> ACL {
+    pub fn new(repos: Vec<String>, mut trusted_users: Vec<String>) -> ACL {
         trusted_users
             .iter_mut()
             .map(|x| *x = x.to_lowercase())
             .last();
-        known_users.iter_mut().map(|x| *x = x.to_lowercase()).last();
 
         ACL {
             trusted_users,
-            known_users,
             repos,
         }
     }
@@ -51,14 +44,6 @@ impl ACL {
             .iter()
             .map(|system| system.as_build_destination())
             .collect()
-    }
-
-    pub fn can_build_restricted(&self, user: &str, repo: &str) -> bool {
-        if repo.to_lowercase() != "nixos/nixpkgs" {
-            return false;
-        }
-
-        self.known_users.contains(&user.to_lowercase())
     }
 
     pub fn can_build_unrestricted(&self, user: &str, repo: &str) -> bool {
