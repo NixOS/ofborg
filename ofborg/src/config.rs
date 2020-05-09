@@ -69,7 +69,6 @@ pub struct RunnerConfig {
     pub identity: String,
     pub repos: Option<Vec<String>>,
     pub trusted_users: Option<Vec<String>>,
-    pub known_users: Option<Vec<String>>,
 
     /// If true, will create its own queue attached to the build job
     /// exchange. This means that builders with this enabled will
@@ -100,10 +99,6 @@ impl Config {
                 .trusted_users
                 .clone()
                 .expect("fetching config's runner.trusted_users"),
-            self.runner
-                .known_users
-                .clone()
-                .expect("fetching config's runner.known_users"),
         )
     }
 

@@ -107,11 +107,8 @@ mod tests {
         let job: ghevent::PullRequestEvent =
             serde_json::from_str(&data.to_string()).expect("Should properly deserialize");
 
-        let mut worker = EvaluationFilterWorker::new(acl::ACL::new(
-            vec!["nixos/nixpkgs".to_owned()],
-            vec![],
-            vec![],
-        ));
+        let mut worker =
+            EvaluationFilterWorker::new(acl::ACL::new(vec!["nixos/nixpkgs".to_owned()], vec![]));
 
         assert_eq!(
             worker.consumer(&job),
