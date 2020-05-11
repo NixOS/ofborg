@@ -1,91 +1,78 @@
-use ofborg::config;
-use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
-use ofborg::tasks;
-use ofborg::worker;
-
 use std::env;
+use std::error::Error;
 
-use amqp::Basic;
+use async_std::task;
 use tracing::info;
 
-fn main() {
-    let cfg = config::load(env::args().nth(1).unwrap().as_ref());
+use ofborg::config;
+use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
+use ofborg::easylapin;
+use ofborg::tasks;
+
+fn main() -> Result<(), Box<dyn Error>> {
     ofborg::setup_log();
 
-    info!("Hello, world!");
+    let arg = env::args()
+        .nth(1)
+        .expect("usage: github-comment-filter <config>");
+    let cfg = config::load(arg.as_ref());
 
-    let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
-    info!("Connected to rabbitmq");
+    let conn = easylapin::from_config(&cfg.rabbitmq)?;
+    let mut chan = task::block_on(conn.create_channel())?;
 
-    let mut channel = session.open_channel(1).unwrap();
-    channel
-        .declare_exchange(easyamqp::ExchangeConfig {
-            exchange: "github-events".to_owned(),
-            exchange_type: easyamqp::ExchangeType::Topic,
-            passive: false,
-            durable: true,
-            auto_delete: false,
-            no_wait: false,
-            internal: false,
-        })
-        .unwrap();
+    chan.declare_exchange(easyamqp::ExchangeConfig {
+        exchange: "github-events".to_owned(),
+        exchange_type: easyamqp::ExchangeType::Topic,
+        passive: false,
+        durable: true,
+        auto_delete: false,
+        no_wait: false,
+        internal: false,
+    })?;
 
-    channel
-        .declare_exchange(easyamqp::ExchangeConfig {
-            exchange: "build-jobs".to_owned(),
-            exchange_type: easyamqp::ExchangeType::Fanout,
-            passive: false,
-            durable: true,
-            auto_delete: false,
-            no_wait: false,
-            internal: false,
-        })
-        .unwrap();
+    chan.declare_exchange(easyamqp::ExchangeConfig {
+        exchange: "build-jobs".to_owned(),
+        exchange_type: easyamqp::ExchangeType::Fanout,
+        passive: false,
+        durable: true,
+        auto_delete: false,
+        no_wait: false,
+        internal: false,
+    })?;
 
-    channel
-        .declare_queue(easyamqp::QueueConfig {
+    let queue_name = "build-inputs";
+    chan.declare_queue(easyamqp::QueueConfig {
+        queue: queue_name.to_owned(),
+        passive: false,
+        durable: true,
+        exclusive: false,
+        auto_delete: false,
+        no_wait: false,
+    })?;
+
+    chan.bind_queue(easyamqp::BindQueueConfig {
+        queue: "build-inputs".to_owned(),
+        exchange: "github-events".to_owned(),
+        routing_key: Some("issue_comment.*".to_owned()),
+        no_wait: false,
+    })?;
+
+    let handle = chan.consume(
+        tasks::githubcommentfilter::GitHubCommentWorker::new(cfg.acl(), cfg.github()),
+        easyamqp::ConsumeConfig {
             queue: "build-inputs".to_owned(),
-            passive: false,
-            durable: true,
+            consumer_tag: format!("{}-github-comment-filter", cfg.whoami()),
+            no_local: false,
+            no_ack: false,
+            no_wait: false,
             exclusive: false,
-            auto_delete: false,
-            no_wait: false,
-        })
-        .unwrap();
+        },
+    )?;
 
-    channel
-        .bind_queue(easyamqp::BindQueueConfig {
-            queue: "build-inputs".to_owned(),
-            exchange: "github-events".to_owned(),
-            routing_key: Some("issue_comment.*".to_owned()),
-            no_wait: false,
-        })
-        .unwrap();
+    info!("Fetching jobs from {}", &queue_name);
+    task::block_on(handle);
 
-    channel.basic_prefetch(1).unwrap();
-    let mut channel = channel
-        .consume(
-            worker::new(tasks::githubcommentfilter::GitHubCommentWorker::new(
-                cfg.acl(),
-                cfg.github(),
-            )),
-            easyamqp::ConsumeConfig {
-                queue: "build-inputs".to_owned(),
-                consumer_tag: format!("{}-github-comment-filter", cfg.whoami()),
-                no_local: false,
-                no_ack: false,
-                no_wait: false,
-                exclusive: false,
-            },
-        )
-        .unwrap();
-
-    channel.start_consuming();
-
-    info!("Finished consuming?");
-
-    channel.close(200, "Bye").unwrap();
-    info!("Closed the channel");
-    session.close(200, "Good Bye");
+    drop(conn); // Close connection.
     info!("Closed the session... EOF");
+    Ok(())
 }

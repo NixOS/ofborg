@@ -34,6 +34,8 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         }
     }
 
+    // FIXME: remove with rust/cargo update
+    #[allow(clippy::cognitive_complexity)]
     fn consumer(&mut self, job: &ghevent::IssueComment) -> worker::Actions {
         if job.action == ghevent::IssueCommentAction::Deleted {
             return vec![worker::Action::Ack];
