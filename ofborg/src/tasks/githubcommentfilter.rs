@@ -4,7 +4,7 @@ use crate::ghevent;
 use crate::message::{buildjob, evaluationjob, Pr, Repo};
 use crate::worker;
 
-use tracing::{error, info};
+use tracing::{debug_span, error, info};
 use uuid::Uuid;
 
 pub struct GitHubCommentWorker {
@@ -37,6 +37,9 @@ impl worker::SimpleWorker for GitHubCommentWorker {
     // FIXME: remove with rust/cargo update
     #[allow(clippy::cognitive_complexity)]
     fn consumer(&mut self, job: &ghevent::IssueComment) -> worker::Actions {
+        let span = debug_span!("job", pr = ?job.issue.number);
+        let _enter = span.enter();
+
         if job.action == ghevent::IssueCommentAction::Deleted {
             return vec![worker::Action::Ack];
         }
