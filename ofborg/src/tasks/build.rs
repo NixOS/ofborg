@@ -376,7 +376,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         info!("----->8-----");
 
         actions.build_finished(status, can_build, cannot_build_attrs);
-        info!("Done!");
+        info!("Build done!");
     }
 }
 

@@ -118,7 +118,7 @@ impl CachedProjectCo {
     pub fn commit_exists(&self, commit: &OsStr) -> bool {
         let mut lock = self.lock().expect("Failed to lock");
 
-        info!("Checking if commit '{:?}' exists", commit);
+        info!("Checking if commit {:?} exists", commit);
         let result = Command::new("git")
             .arg("--no-pager")
             .arg("show")
@@ -136,7 +136,7 @@ impl CachedProjectCo {
     pub fn merge_commit(&self, commit: &OsStr) -> Result<(), Error> {
         let mut lock = self.lock()?;
 
-        info!("Merging commit '{:?}'", commit);
+        info!("Merging commit {:?}", commit);
         let result = Command::new("git")
             .arg("merge")
             .arg("--no-gpg-sign")

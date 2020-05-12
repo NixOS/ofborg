@@ -91,6 +91,7 @@ impl Stdenvs {
     /// This is used to find out what the output path of the stdenv for the
     /// given system.
     fn evalstdenv(&self, system: &str) -> Option<String> {
+        info!(?system, "query stdenv output");
         let result = self.nix.with_system(system.to_owned()).safely(
             &nix::Operation::QueryPackagesOutputs,
             &self.co,
@@ -102,8 +103,6 @@ impl Stdenvs {
             ],
             true,
         );
-
-        info!("{:?}", result);
 
         match result {
             Ok(mut out) => Some(file_to_str(&mut out)),

@@ -26,7 +26,7 @@ pub trait GitClonable {
     fn lock_path(&self) -> PathBuf;
 
     fn lock(&self) -> Result<Lock, Error> {
-        info!("Locking {:?}", self.lock_path());
+        debug!("Locking {:?}", self.lock_path());
 
         match fs::File::create(self.lock_path()) {
             Err(e) => {
@@ -111,7 +111,7 @@ pub trait GitClonable {
     fn clean(&self) -> Result<(), Error> {
         let mut lock = self.lock()?;
 
-        info!("git am --abort");
+        debug!("git am --abort");
         Command::new("git")
             .arg("am")
             .arg("--abort")
@@ -120,7 +120,7 @@ pub trait GitClonable {
             .stderr(Stdio::null())
             .status()?;
 
-        info!("git merge --abort");
+        debug!("git merge --abort");
         Command::new("git")
             .arg("merge")
             .arg("--abort")
@@ -129,7 +129,7 @@ pub trait GitClonable {
             .stderr(Stdio::null())
             .status()?;
 
-        info!("git reset --hard");
+        debug!("git reset --hard");
         Command::new("git")
             .arg("reset")
             .arg("--hard")

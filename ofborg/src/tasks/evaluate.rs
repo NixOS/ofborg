@@ -19,7 +19,7 @@ use std::time::Instant;
 use hubcaps::checks::CheckRunOptions;
 use hubcaps::gists::Gists;
 use hubcaps::issues::Issue;
-use tracing::{debug_span, error, info, warn};
+use tracing::{debug, debug_span, error, info, warn};
 
 pub struct EvaluationWorker<E> {
     cloner: checkout::CachedCloner,
@@ -441,8 +441,6 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             send_check_statuses(complete.checks, &repo);
             response.extend(schedule_builds(complete.builds, auto_schedule_build_archs));
 
-            info!("Just about done...");
-
             overall_status.set_with_description("^.^!", hubcaps::statuses::State::Success)?;
         } else {
             overall_status
@@ -451,7 +449,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         self.events.notify(Event::TaskEvaluationCheckComplete);
 
-        info!("done!");
+        info!("Evaluations done!");
         Ok(self.actions().done(&job, response))
     }
 }
@@ -459,8 +457,8 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 fn send_check_statuses(checks: Vec<CheckRunOptions>, repo: &hubcaps::repositories::Repository) {
     for check in checks {
         match repo.checkruns().create(&check) {
-            Ok(_) => info!("Sent check update"),
-            Err(e) => info!("Failed to send check update: {:?}", e),
+            Ok(_) => debug!("Sent check update"),
+            Err(e) => warn!("Failed to send check update: {:?}", e),
         }
     }
 }
