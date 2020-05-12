@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  pedantry:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install Nix
+      uses: cachix/install-nix-action@v9
+    - name: Cargo Pedantry
+      run: nix-shell --run checkPhase -A mozilla-rust-overlay
+  
+  checkPhase:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Nix
+        uses: cachix/install-nix-action@v9
+      - name: Set up git
+        run: |
+          git config --global user.email "ofborg@example.com"
+          git config --global user.name "ofborg"
+      - name: checkPhase
+        run: nix-shell --run checkPhase
+  
+  nix-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Nix
+        uses: cachix/install-nix-action@v9
+      - name: nix-build
+        run: nix-build -A ofborg.rs -A ofborg.php
