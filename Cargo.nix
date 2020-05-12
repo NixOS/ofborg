@@ -239,32 +239,32 @@ rec {
     error_chain = "0.10.0";
     log = "0.3.8";
   };
-  deps.amq_protocol."6.0.0-rc2" = {
-    amq_protocol_tcp = "6.0.0-rc2";
-    amq_protocol_types = "6.0.0-rc2";
-    amq_protocol_uri = "6.0.0-rc2";
+  deps.amq_protocol."6.0.0-rc3" = {
+    amq_protocol_tcp = "6.0.0-rc3";
+    amq_protocol_types = "6.0.0-rc3";
+    amq_protocol_uri = "6.0.0-rc3";
     cookie_factory = "0.3.1";
     nom = "6.0.0-alpha1";
-    amq_protocol_codegen = "6.0.0-rc2";
+    amq_protocol_codegen = "6.0.0-rc3";
   };
-  deps.amq_protocol_codegen."6.0.0-rc2" = {
-    amq_protocol_types = "6.0.0-rc2";
+  deps.amq_protocol_codegen."6.0.0-rc3" = {
+    amq_protocol_types = "6.0.0-rc3";
     handlebars = "3.0.1";
     serde = "1.0.106";
     serde_json = "1.0.52";
   };
-  deps.amq_protocol_tcp."6.0.0-rc2" = {
-    amq_protocol_uri = "6.0.0-rc2";
+  deps.amq_protocol_tcp."6.0.0-rc3" = {
+    amq_protocol_uri = "6.0.0-rc3";
     log = "0.4.8";
-    tcp_stream = "0.15.0";
+    tcp_stream = "0.15.4";
   };
-  deps.amq_protocol_types."6.0.0-rc2" = {
+  deps.amq_protocol_types."6.0.0-rc3" = {
     cookie_factory = "0.3.1";
     nom = "6.0.0-alpha1";
     serde = "1.0.106";
     serde_json = "1.0.52";
   };
-  deps.amq_protocol_uri."6.0.0-rc2" = {
+  deps.amq_protocol_uri."6.0.0-rc3" = {
     percent_encoding = "2.1.0";
     url = "2.1.1";
   };
@@ -495,8 +495,8 @@ rec {
     log = "0.4.8";
   };
   deps.language_tags."0.2.2" = {};
-  deps.lapin."1.0.0-beta3" = {
-    amq_protocol = "6.0.0-rc2";
+  deps.lapin."1.0.0-beta4" = {
+    amq_protocol = "6.0.0-rc3";
     async_task = "3.0.0";
     crossbeam_channel = "0.4.2";
     futures_core = "0.3.4";
@@ -504,7 +504,7 @@ rec {
     mio = "0.7.0";
     parking_lot = "0.10.2";
     pinky_swear = "4.0.0";
-    amq_protocol_codegen = "6.0.0-rc2";
+    amq_protocol_codegen = "6.0.0-rc3";
     serde_json = "1.0.52";
   };
   deps.lazy_static."0.2.11" = {};
@@ -638,7 +638,7 @@ rec {
     hubcaps = "0.3.16";
     hyper = "0.10.15";
     hyper_native_tls = "0.2.4";
-    lapin = "1.0.0-beta3";
+    lapin = "1.0.0-beta4";
     lru_cache = "0.1.1";
     md5 = "0.3.8";
     nom = "4.1.1";
@@ -848,7 +848,7 @@ rec {
     libc = "0.2.69";
     cc = "1.0.28";
   };
-  deps.tcp_stream."0.15.0" = {
+  deps.tcp_stream."0.15.4" = {
     cfg_if = "0.1.10";
     mio = "0.7.0";
     native_tls = "0.2.4";
