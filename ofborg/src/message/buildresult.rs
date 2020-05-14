@@ -133,6 +133,13 @@ impl BuildResult {
         }
     }
 
+    pub fn pr(&self) -> Pr {
+        match self {
+            BuildResult::Legacy { pr, .. } => pr.to_owned(),
+            BuildResult::V1 { pr, .. } => pr.to_owned(),
+        }
+    }
+
     pub fn status(&self) -> BuildStatus {
         match *self {
             BuildResult::Legacy {
