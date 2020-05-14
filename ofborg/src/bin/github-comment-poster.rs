@@ -1,75 +1,66 @@
-use ofborg::config;
-use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
-use ofborg::tasks;
-use ofborg::worker;
-
 use std::env;
+use std::error::Error;
 
-use amqp::Basic;
+use async_std::task;
 use tracing::info;
 
-fn main() {
-    let cfg = config::load(env::args().nth(1).unwrap().as_ref());
+use ofborg::config;
+use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
+use ofborg::easylapin;
+use ofborg::tasks;
+
+fn main() -> Result<(), Box<dyn Error>> {
     ofborg::setup_log();
 
-    let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
-    let mut channel = session.open_channel(1).unwrap();
+    let arg = env::args()
+        .nth(1)
+        .expect("usage: github-comment-poster <config>");
+    let cfg = config::load(arg.as_ref());
 
-    channel
-        .declare_exchange(easyamqp::ExchangeConfig {
-            exchange: "build-results".to_owned(),
-            exchange_type: easyamqp::ExchangeType::Fanout,
-            passive: false,
-            durable: true,
-            auto_delete: false,
-            no_wait: false,
-            internal: false,
-        })
-        .unwrap();
+    let conn = easylapin::from_config(&cfg.rabbitmq)?;
+    let mut chan = task::block_on(conn.create_channel())?;
 
-    channel
-        .declare_queue(easyamqp::QueueConfig {
+    chan.declare_exchange(easyamqp::ExchangeConfig {
+        exchange: "build-results".to_owned(),
+        exchange_type: easyamqp::ExchangeType::Fanout,
+        passive: false,
+        durable: true,
+        auto_delete: false,
+        no_wait: false,
+        internal: false,
+    })?;
+
+    chan.declare_queue(easyamqp::QueueConfig {
+        queue: "build-results".to_owned(),
+        passive: false,
+        durable: true,
+        exclusive: false,
+        auto_delete: false,
+        no_wait: false,
+    })?;
+
+    chan.bind_queue(easyamqp::BindQueueConfig {
+        queue: "build-results".to_owned(),
+        exchange: "build-results".to_owned(),
+        routing_key: None,
+        no_wait: false,
+    })?;
+
+    let handle = chan.consume(
+        tasks::githubcommentposter::GitHubCommentPoster::new(cfg.github_app_vendingmachine()),
+        easyamqp::ConsumeConfig {
             queue: "build-results".to_owned(),
-            passive: false,
-            durable: true,
+            consumer_tag: format!("{}-github-comment-poster", cfg.whoami()),
+            no_local: false,
+            no_ack: false,
+            no_wait: false,
             exclusive: false,
-            auto_delete: false,
-            no_wait: false,
-        })
-        .unwrap();
+        },
+    )?;
 
-    channel
-        .bind_queue(easyamqp::BindQueueConfig {
-            queue: "build-results".to_owned(),
-            exchange: "build-results".to_owned(),
-            routing_key: None,
-            no_wait: false,
-        })
-        .unwrap();
+    task::block_on(handle);
 
-    channel.basic_prefetch(1).unwrap();
-    let mut channel = channel
-        .consume(
-            worker::new(tasks::githubcommentposter::GitHubCommentPoster::new(
-                cfg.github_app_vendingmachine(),
-            )),
-            easyamqp::ConsumeConfig {
-                queue: "build-results".to_owned(),
-                consumer_tag: format!("{}-github-comment-poster", cfg.whoami()),
-                no_local: false,
-                no_ack: false,
-                no_wait: false,
-                exclusive: false,
-            },
-        )
-        .unwrap();
-
-    channel.start_consuming();
-
-    info!("Finished consuming?");
-
-    channel.close(200, "Bye").unwrap();
-    info!("Closed the channel");
-    session.close(200, "Good Bye");
+    drop(conn); // Close connection.
     info!("Closed the session... EOF");
+    Ok(())
 }
