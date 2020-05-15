@@ -24,8 +24,10 @@ use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
 use hubcaps::gists::Gists;
 use hubcaps::issues::{Issue, IssueRef};
 use hubcaps::repositories::Repository;
-use tracing::warn;
+use tracing::{info, warn};
 use uuid::Uuid;
+
+static MAINTAINER_REVIEW_MAX_CHANGED_PATHS: usize = 64;
 
 pub struct NixpkgsStrategy<'a> {
     job: &'a EvaluationJob,
@@ -269,6 +271,22 @@ impl<'a> NixpkgsStrategy<'a> {
                     Err(ref e) => format!("Ignorable calculation error:\n{:?}", e),
                 },
             );
+
+            if changed_paths.len() > MAINTAINER_REVIEW_MAX_CHANGED_PATHS {
+                info!(
+                    "pull request has {} changed paths, skipping review requests",
+                    changed_paths.len()
+                );
+                let status = CommitStatus::new(
+                    self.repo.statuses(),
+                    self.job.pr.head_sha.clone(),
+                    String::from("grahamcofborg-eval-check-maintainers"),
+                    String::from("large change, skipping automatic review requests"),
+                    gist_url,
+                );
+                status.set(hubcaps::statuses::State::Success)?;
+                return Ok(());
+            }
 
             let status = CommitStatus::new(
                 self.repo.statuses(),
