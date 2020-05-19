@@ -6,7 +6,7 @@ use crate::worker;
 
 use chrono::{DateTime, Utc};
 use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
-use tracing::info;
+use tracing::{debug, debug_span, info};
 
 pub struct GitHubCommentPoster {
     github_vend: GithubAppVendingMachine,
@@ -50,22 +50,33 @@ impl worker::SimpleWorker for GitHubCommentPoster {
         let mut checks: Vec<CheckRunOptions> = vec![];
         let repo: Repo;
 
-        match job {
+        let pr = match job {
             PostableEvent::BuildQueued(queued_job) => {
                 repo = queued_job.job.repo.clone();
                 for architecture in queued_job.architectures.iter() {
                     checks.push(job_to_check(&queued_job.job, &architecture, Utc::now()));
                 }
+                queued_job.job.pr.to_owned()
             }
             PostableEvent::BuildFinished(finished_job) => {
                 let result = finished_job.legacy();
                 repo = result.repo.clone();
                 checks.push(result_to_check(&result, Utc::now()));
+                finished_job.pr()
             }
-        }
+        };
+
+        let span = debug_span!("job", pr = ?pr.number);
+        let _enter = span.enter();
 
         for check in checks {
-            info!(":{:?}", check);
+            info!(
+                "check {:?} {} {}",
+                check.status,
+                check.name,
+                check.details_url.as_ref().unwrap_or(&String::from("-"))
+            );
+            debug!("{:?}", check);
 
             let check_create_attempt = self
                 .github_vend
