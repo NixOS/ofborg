@@ -17,7 +17,7 @@ fn main() {
     let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
     info!("Connected to rabbitmq");
 
-    let events = stats::RabbitMQ::new(
+    let events = stats::RabbitMQ::from_amqp(
         &format!("{}-{}", cfg.runner.identity.clone(), cfg.nix.system.clone()),
         session.open_channel(3).unwrap(),
     );
