@@ -1,7 +1,8 @@
 [workspace]
 members = [
     "ofborg",
-    "ofborg-simple-build"
+    "ofborg-simple-build",
+    "packet-exporter"
 ]
 
 [profile.release]

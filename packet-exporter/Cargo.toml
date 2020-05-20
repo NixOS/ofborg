@@ -1,0 +1,16 @@
+[package]
+name = "packet-exporter"
+version = "0.1.0"
+authors = ["Daiderd Jordan <daiderd@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-std = "=1.5.0"
+lazy_static = "1.4.0"
+prometheus = "0.8"
+serde = "1.0"
+serde_derive = "1.0"
+surf = "2.0.0-alpha.2"  # stable futures
+tide = "0.8.0"
