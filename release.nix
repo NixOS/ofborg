@@ -2,7 +2,9 @@
 , supportedSystems ? [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" ]
 }:
 let
-  pkgs = import nixpkgs {};
+  pkgs = import nixpkgs {
+    overlays = [ (import ./nix/overlay.nix) ];
+  };
   inherit (pkgs) lib;
 
   # An attrset of borgpkgs per supportedSystem:
