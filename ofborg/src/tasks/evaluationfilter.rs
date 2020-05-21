@@ -3,7 +3,7 @@ use crate::ghevent;
 use crate::message::{evaluationjob, Pr, Repo};
 use crate::worker;
 
-use tracing::info;
+use tracing::{debug_span, info};
 
 pub struct EvaluationFilterWorker {
     acl: acl::ACL,
@@ -30,6 +30,9 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
     }
 
     fn consumer(&mut self, job: &ghevent::PullRequestEvent) -> worker::Actions {
+        let span = debug_span!("job", pr = ?job.number);
+        let _enter = span.enter();
+
         if !self.acl.is_repo_eligible(&job.repository.full_name) {
             info!("Repo not authorized ({})", job.repository.full_name);
             return vec![worker::Action::Ack];
