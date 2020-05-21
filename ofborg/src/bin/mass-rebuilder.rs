@@ -1,20 +1,26 @@
-use ofborg::checkout;
-use ofborg::config;
-use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
-use ofborg::stats;
-use ofborg::tasks;
-use ofborg::worker;
-
 use std::env;
+use std::error::Error;
 use std::path::Path;
 use std::process;
 
-use amqp::Basic;
+use async_std::task;
 use tracing::{error, info};
+
+use ofborg::checkout;
+use ofborg::config;
+use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
+use ofborg::easylapin;
+use ofborg::stats;
+use ofborg::tasks;
 
 // FIXME: remove with rust/cargo update
 #[allow(clippy::cognitive_complexity)]
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
+    ofborg::setup_log();
+
+    let arg = env::args().nth(1).expect("usage: mass-rebuilder <config>");
+    let cfg = config::load(arg.as_ref());
+
     let memory_info = sys_info::mem_info().expect("Unable to get memory information from OS");
 
     if memory_info.avail < 8 * 1024 * 1024 {
@@ -26,68 +32,52 @@ fn main() {
         process::exit(1);
     };
 
-    let cfg = config::load(env::args().nth(1).unwrap().as_ref());
-
-    ofborg::setup_log();
-
-    info!("Hello, world!");
-
-    let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
-    info!("Connected to rabbitmq");
-
-    let mut channel = session.open_channel(1).unwrap();
+    let conn = easylapin::from_config(&cfg.rabbitmq)?;
+    let mut chan = task::block_on(conn.create_channel())?;
 
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
     let nix = cfg.nix();
 
-    let events = stats::RabbitMQ::from_amqp(
+    let events = stats::RabbitMQ::from_lapin(
         &format!("{}-{}", cfg.runner.identity.clone(), cfg.nix.system.clone()),
-        session.open_channel(3).unwrap(),
+        task::block_on(conn.create_channel())?,
     );
 
-    let mrw = tasks::evaluate::EvaluationWorker::new(
-        cloner,
-        &nix,
-        cfg.github(),
-        cfg.github_app_vendingmachine(),
-        cfg.acl(),
-        cfg.runner.identity.clone(),
-        events,
-        cfg.tag_paths.clone().unwrap(),
-    );
+    let queue_name = String::from("mass-rebuild-check-jobs");
+    chan.declare_queue(easyamqp::QueueConfig {
+        queue: queue_name.clone(),
+        passive: false,
+        durable: true,
+        exclusive: false,
+        auto_delete: false,
+        no_wait: false,
+    })?;
 
-    channel
-        .declare_queue(easyamqp::QueueConfig {
-            queue: "mass-rebuild-check-jobs".to_owned(),
-            passive: false,
-            durable: true,
-            exclusive: false,
-            auto_delete: false,
+    let handle = chan.consume(
+        tasks::evaluate::EvaluationWorker::new(
+            cloner,
+            &nix,
+            cfg.github(),
+            cfg.github_app_vendingmachine(),
+            cfg.acl(),
+            cfg.runner.identity.clone(),
+            events,
+            cfg.tag_paths.clone().unwrap(),
+        ),
+        easyamqp::ConsumeConfig {
+            queue: queue_name.clone(),
+            consumer_tag: format!("{}-mass-rebuild-checker", cfg.whoami()),
+            no_local: false,
+            no_ack: false,
             no_wait: false,
-        })
-        .unwrap();
+            exclusive: false,
+        },
+    )?;
 
-    channel.basic_prefetch(1).unwrap();
-    let mut channel = channel
-        .consume(
-            worker::new(mrw),
-            easyamqp::ConsumeConfig {
-                queue: "mass-rebuild-check-jobs".to_owned(),
-                consumer_tag: format!("{}-mass-rebuild-checker", cfg.whoami()),
-                no_local: false,
-                no_ack: false,
-                no_wait: false,
-                exclusive: false,
-            },
-        )
-        .unwrap();
+    info!("Fetching jobs from {}", queue_name);
+    task::block_on(handle);
 
-    channel.start_consuming();
-
-    info!("Finished consuming?");
-
-    channel.close(200, "Bye").unwrap();
-    info!("Closed the channel");
-    session.close(200, "Good Bye");
+    drop(conn); // Close connection.
     info!("Closed the session... EOF");
+    Ok(())
 }
