@@ -1,5 +1,8 @@
-use amqp::protocol::basic::BasicProperties;
-use amqp::{Basic, Channel};
+use amqp::protocol::basic;
+use amqp::Basic;
+use async_std::task;
+use lapin::options::BasicPublishOptions;
+use lapin::CloseOnDrop;
 
 include!(concat!(env!("OUT_DIR"), "/events.rs"));
 
@@ -19,13 +22,13 @@ pub struct EventMessage {
     pub events: Vec<Event>,
 }
 
-pub struct RabbitMQ {
+pub struct RabbitMQ<C> {
     identity: String,
-    channel: Channel,
+    channel: C,
 }
 
-impl RabbitMQ {
-    pub fn new(identity: &str, channel: Channel) -> RabbitMQ {
+impl RabbitMQ<amqp::Channel> {
+    pub fn from_amqp(identity: &str, channel: amqp::Channel) -> Self {
         RabbitMQ {
             identity: identity.to_owned(),
             channel,
@@ -33,9 +36,9 @@ impl RabbitMQ {
     }
 }
 
-impl SysEvents for RabbitMQ {
+impl SysEvents for RabbitMQ<amqp::Channel> {
     fn notify(&mut self, event: Event) {
-        let props = BasicProperties {
+        let props = basic::BasicProperties {
             ..Default::default()
         };
         self.channel
@@ -53,5 +56,40 @@ impl SysEvents for RabbitMQ {
                 .into_bytes(),
             )
             .unwrap();
+    }
+}
+
+impl RabbitMQ<CloseOnDrop<lapin::Channel>> {
+    pub fn from_lapin(identity: &str, channel: CloseOnDrop<lapin::Channel>) -> Self {
+        RabbitMQ {
+            identity: identity.to_owned(),
+            channel,
+        }
+    }
+}
+
+impl SysEvents for RabbitMQ<CloseOnDrop<lapin::Channel>> {
+    fn notify(&mut self, event: Event) {
+        let props = lapin::BasicProperties::default().with_content_type("application/json".into());
+        task::block_on(async {
+            let _confirmaton = self
+                .channel
+                .basic_publish(
+                    &String::from("stats"),
+                    &"".to_owned(),
+                    BasicPublishOptions::default(),
+                    serde_json::to_string(&EventMessage {
+                        sender: self.identity.clone(),
+                        events: vec![event],
+                    })
+                    .unwrap()
+                    .into_bytes(),
+                    props,
+                )
+                .await
+                .unwrap()
+                .await
+                .unwrap();
+        });
     }
 }

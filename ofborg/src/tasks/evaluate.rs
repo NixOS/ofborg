@@ -80,6 +80,9 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
     }
 
     fn consumer(&mut self, job: &evaluationjob::EvaluationJob) -> worker::Actions {
+        let span = debug_span!("job", pr = ?job.pr.number);
+        let _enter = span.enter();
+
         let mut vending_machine = self
             .github_vend
             .write()
@@ -249,9 +252,6 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
     // FIXME: remove with rust/cargo update
     #[allow(clippy::cognitive_complexity)]
     fn evaluate_job(&mut self) -> Result<worker::Actions, EvalWorkerError> {
-        let span = debug_span!("job", pr = ?self.job.pr.number);
-        let _enter = span.enter();
-
         let job = self.job;
         let repo = self
             .client_app
