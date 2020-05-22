@@ -48,6 +48,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         no_wait: false,
     })?;
 
+    // Regular channel, we want prefetching here.
     let handle = chan.consume(
         tasks::log_message_collector::LogMessageCollector::new(
             PathBuf::from(cfg.log_storage.clone().unwrap().path),

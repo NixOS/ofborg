@@ -57,7 +57,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         no_wait: false,
     })?;
 
-    let handle = chan.consume(
+    let handle = easylapin::WorkerChannel(chan).consume(
         tasks::githubcommentfilter::GitHubCommentWorker::new(cfg.acl(), cfg.github()),
         easyamqp::ConsumeConfig {
             queue: "build-inputs".to_owned(),
