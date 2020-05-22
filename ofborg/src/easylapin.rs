@@ -129,9 +129,15 @@ impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for WorkerChannel {
     }
 }
 
-struct ChannelNotificationReceiver<'a> {
+pub struct ChannelNotificationReceiver<'a> {
     channel: &'a mut CloseOnDrop<lapin::Channel>,
     deliver: &'a Delivery,
+}
+
+impl<'a> ChannelNotificationReceiver<'a> {
+    pub fn new(channel: &'a mut CloseOnDrop<lapin::Channel>, deliver: &'a Delivery) -> Self {
+        ChannelNotificationReceiver { channel, deliver }
+    }
 }
 
 impl<'a> NotificationReceiver for ChannelNotificationReceiver<'a> {

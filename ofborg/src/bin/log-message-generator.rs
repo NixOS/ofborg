@@ -1,26 +1,38 @@
-use ofborg::config;
-use ofborg::easyamqp;
-use ofborg::message::{buildjob, Pr, Repo};
-use ofborg::notifyworker;
-use ofborg::tasks::build;
-
 use std::env;
+use std::error::Error;
 use std::thread;
 use std::time::Duration;
 
+use async_std::task;
+use lapin::message::Delivery;
+use lapin::BasicProperties;
 use tracing::info;
 
-fn main() {
-    let cfg = config::load(env::args().nth(1).unwrap().as_ref());
+use ofborg::config;
+use ofborg::easylapin;
+use ofborg::message::{buildjob, Pr, Repo};
+use ofborg::tasks::build;
+
+fn main() -> Result<(), Box<dyn Error>> {
     ofborg::setup_log();
 
-    let mut session = easyamqp::session_from_config(&cfg.rabbitmq).unwrap();
-    info!("Connected to rabbitmq");
+    let arg = env::args()
+        .nth(1)
+        .expect("usage: log-message-generator <config>");
+    let cfg = config::load(arg.as_ref());
 
-    info!("About to open channel #1");
-    let mut chan = session.open_channel(1).unwrap();
+    let conn = easylapin::from_config(&cfg.rabbitmq)?;
+    let mut chan = task::block_on(conn.create_channel())?;
 
-    let mut receiver = notifyworker::ChannelNotificationReceiver::new(&mut chan, 0);
+    let deliver = Delivery {
+        delivery_tag: 0,
+        exchange: "no-exchange".into(),
+        routing_key: "".into(),
+        redelivered: false,
+        properties: BasicProperties::default(),
+        data: vec![],
+    };
+    let mut receiver = easylapin::ChannelNotificationReceiver::new(&mut chan, &deliver);
     let job = buildjob::BuildJob {
         attrs: vec![],
         pr: Pr {
