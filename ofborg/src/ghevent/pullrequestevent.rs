@@ -50,6 +50,7 @@ pub enum PullRequestAction {
     Unlocked,
     Reopened,
     Synchronize,
+    ConvertedToDraft,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
