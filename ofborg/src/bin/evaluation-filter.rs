@@ -39,7 +39,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         no_wait: false,
     })?;
 
-    let queue_name = String::from("mass-rebuild-check-jobs");
+    let queue_name = String::from("mass-rebuild-check-inputs");
     chan.declare_queue(easyamqp::QueueConfig {
         queue: queue_name.clone(),
         passive: false,
