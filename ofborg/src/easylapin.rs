@@ -115,8 +115,8 @@ impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for CloseOnDrop<Channel> {
     }
 }
 
-// Same as a regular channel, but without prefetching,
-// used for services with multiple instances.
+/// Same as a regular channel, but without prefetching,
+/// used for services with multiple instances.
 pub struct WorkerChannel(pub CloseOnDrop<Channel>);
 
 impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for WorkerChannel {
