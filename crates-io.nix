@@ -100,264 +100,264 @@ rec {
 
 
 # end
-# amq-protocol-6.0.0-rc3
+# amq-protocol-6.0.0-rc7
 
-  crates.amq_protocol."6.0.0-rc3" = deps: { features?(features_.amq_protocol."6.0.0-rc3" deps {}) }: buildRustCrate {
+  crates.amq_protocol."6.0.0-rc7" = deps: { features?(features_.amq_protocol."6.0.0-rc7" deps {}) }: buildRustCrate {
     crateName = "amq-protocol";
-    version = "6.0.0-rc3";
+    version = "6.0.0-rc7";
     description = "AMQP specifications";
     authors = [ "Marc-Antoine Perennou <%arc-Antoine@Perennou.com>" ];
     edition = "2018";
-    sha256 = "0xq8k28cz0dkryijrq470gm7qmb8d5mbx28kic1d4wyjhws0294h";
+    sha256 = "1nmkbg2zpk2lxjfgknaw5lhwcip33n67nrq6s1wz6fppmvnblv41";
     libName = "amq_protocol";
     build = "build.rs";
     dependencies = mapFeatures features ([
-      (crates."amq_protocol_tcp"."${deps."amq_protocol"."6.0.0-rc3"."amq_protocol_tcp"}" deps)
-      (crates."amq_protocol_types"."${deps."amq_protocol"."6.0.0-rc3"."amq_protocol_types"}" deps)
-      (crates."amq_protocol_uri"."${deps."amq_protocol"."6.0.0-rc3"."amq_protocol_uri"}" deps)
-      (crates."cookie_factory"."${deps."amq_protocol"."6.0.0-rc3"."cookie_factory"}" deps)
-      (crates."nom"."${deps."amq_protocol"."6.0.0-rc3"."nom"}" deps)
+      (crates."amq_protocol_tcp"."${deps."amq_protocol"."6.0.0-rc7"."amq_protocol_tcp"}" deps)
+      (crates."amq_protocol_types"."${deps."amq_protocol"."6.0.0-rc7"."amq_protocol_types"}" deps)
+      (crates."amq_protocol_uri"."${deps."amq_protocol"."6.0.0-rc7"."amq_protocol_uri"}" deps)
+      (crates."cookie_factory"."${deps."amq_protocol"."6.0.0-rc7"."cookie_factory"}" deps)
+      (crates."nom"."${deps."amq_protocol"."6.0.0-rc7"."nom"}" deps)
     ]);
 
     buildDependencies = mapFeatures features ([
-      (crates."amq_protocol_codegen"."${deps."amq_protocol"."6.0.0-rc3"."amq_protocol_codegen"}" deps)
+      (crates."amq_protocol_codegen"."${deps."amq_protocol"."6.0.0-rc7"."amq_protocol_codegen"}" deps)
     ]);
-    features = mkFeatures (features."amq_protocol"."6.0.0-rc3" or {});
+    features = mkFeatures (features."amq_protocol"."6.0.0-rc7" or {});
   };
-  features_.amq_protocol."6.0.0-rc3" = deps: f: updateFeatures f (rec {
+  features_.amq_protocol."6.0.0-rc7" = deps: f: updateFeatures f (rec {
     amq_protocol = fold recursiveUpdate {} [
-      { "6.0.0-rc3"."native-tls" =
-        (f.amq_protocol."6.0.0-rc3"."native-tls" or false) ||
-        (f.amq_protocol."6.0.0-rc3".default or false) ||
-        (amq_protocol."6.0.0-rc3"."default" or false); }
-      { "6.0.0-rc3".default = (f.amq_protocol."6.0.0-rc3".default or true); }
+      { "6.0.0-rc7"."native-tls" =
+        (f.amq_protocol."6.0.0-rc7"."native-tls" or false) ||
+        (f.amq_protocol."6.0.0-rc7".default or false) ||
+        (amq_protocol."6.0.0-rc7"."default" or false); }
+      { "6.0.0-rc7".default = (f.amq_protocol."6.0.0-rc7".default or true); }
     ];
-    amq_protocol_codegen."${deps.amq_protocol."6.0.0-rc3".amq_protocol_codegen}".default = true;
+    amq_protocol_codegen."${deps.amq_protocol."6.0.0-rc7".amq_protocol_codegen}".default = true;
     amq_protocol_tcp = fold recursiveUpdate {} [
-      { "${deps.amq_protocol."6.0.0-rc3".amq_protocol_tcp}"."native-tls" =
-        (f.amq_protocol_tcp."${deps.amq_protocol."6.0.0-rc3".amq_protocol_tcp}"."native-tls" or false) ||
-        (amq_protocol."6.0.0-rc3"."native-tls" or false) ||
-        (f."amq_protocol"."6.0.0-rc3"."native-tls" or false); }
-      { "${deps.amq_protocol."6.0.0-rc3".amq_protocol_tcp}"."openssl" =
-        (f.amq_protocol_tcp."${deps.amq_protocol."6.0.0-rc3".amq_protocol_tcp}"."openssl" or false) ||
-        (amq_protocol."6.0.0-rc3"."openssl" or false) ||
-        (f."amq_protocol"."6.0.0-rc3"."openssl" or false); }
-      { "${deps.amq_protocol."6.0.0-rc3".amq_protocol_tcp}"."rustls" =
-        (f.amq_protocol_tcp."${deps.amq_protocol."6.0.0-rc3".amq_protocol_tcp}"."rustls" or false) ||
-        (amq_protocol."6.0.0-rc3"."rustls" or false) ||
-        (f."amq_protocol"."6.0.0-rc3"."rustls" or false); }
-      { "${deps.amq_protocol."6.0.0-rc3".amq_protocol_tcp}"."rustls-native-certs" =
-        (f.amq_protocol_tcp."${deps.amq_protocol."6.0.0-rc3".amq_protocol_tcp}"."rustls-native-certs" or false) ||
-        (amq_protocol."6.0.0-rc3"."rustls-native-certs" or false) ||
-        (f."amq_protocol"."6.0.0-rc3"."rustls-native-certs" or false); }
-      { "${deps.amq_protocol."6.0.0-rc3".amq_protocol_tcp}"."rustls-webpki-roots-certs" =
-        (f.amq_protocol_tcp."${deps.amq_protocol."6.0.0-rc3".amq_protocol_tcp}"."rustls-webpki-roots-certs" or false) ||
-        (amq_protocol."6.0.0-rc3"."rustls-webpki-roots-certs" or false) ||
-        (f."amq_protocol"."6.0.0-rc3"."rustls-webpki-roots-certs" or false); }
-      { "${deps.amq_protocol."6.0.0-rc3".amq_protocol_tcp}"."vendored-openssl" =
-        (f.amq_protocol_tcp."${deps.amq_protocol."6.0.0-rc3".amq_protocol_tcp}"."vendored-openssl" or false) ||
-        (amq_protocol."6.0.0-rc3"."vendored-openssl" or false) ||
-        (f."amq_protocol"."6.0.0-rc3"."vendored-openssl" or false); }
-      { "${deps.amq_protocol."6.0.0-rc3".amq_protocol_tcp}".default = (f.amq_protocol_tcp."${deps.amq_protocol."6.0.0-rc3".amq_protocol_tcp}".default or false); }
+      { "${deps.amq_protocol."6.0.0-rc7".amq_protocol_tcp}"."native-tls" =
+        (f.amq_protocol_tcp."${deps.amq_protocol."6.0.0-rc7".amq_protocol_tcp}"."native-tls" or false) ||
+        (amq_protocol."6.0.0-rc7"."native-tls" or false) ||
+        (f."amq_protocol"."6.0.0-rc7"."native-tls" or false); }
+      { "${deps.amq_protocol."6.0.0-rc7".amq_protocol_tcp}"."openssl" =
+        (f.amq_protocol_tcp."${deps.amq_protocol."6.0.0-rc7".amq_protocol_tcp}"."openssl" or false) ||
+        (amq_protocol."6.0.0-rc7"."openssl" or false) ||
+        (f."amq_protocol"."6.0.0-rc7"."openssl" or false); }
+      { "${deps.amq_protocol."6.0.0-rc7".amq_protocol_tcp}"."rustls" =
+        (f.amq_protocol_tcp."${deps.amq_protocol."6.0.0-rc7".amq_protocol_tcp}"."rustls" or false) ||
+        (amq_protocol."6.0.0-rc7"."rustls" or false) ||
+        (f."amq_protocol"."6.0.0-rc7"."rustls" or false); }
+      { "${deps.amq_protocol."6.0.0-rc7".amq_protocol_tcp}"."rustls-native-certs" =
+        (f.amq_protocol_tcp."${deps.amq_protocol."6.0.0-rc7".amq_protocol_tcp}"."rustls-native-certs" or false) ||
+        (amq_protocol."6.0.0-rc7"."rustls-native-certs" or false) ||
+        (f."amq_protocol"."6.0.0-rc7"."rustls-native-certs" or false); }
+      { "${deps.amq_protocol."6.0.0-rc7".amq_protocol_tcp}"."rustls-webpki-roots-certs" =
+        (f.amq_protocol_tcp."${deps.amq_protocol."6.0.0-rc7".amq_protocol_tcp}"."rustls-webpki-roots-certs" or false) ||
+        (amq_protocol."6.0.0-rc7"."rustls-webpki-roots-certs" or false) ||
+        (f."amq_protocol"."6.0.0-rc7"."rustls-webpki-roots-certs" or false); }
+      { "${deps.amq_protocol."6.0.0-rc7".amq_protocol_tcp}"."vendored-openssl" =
+        (f.amq_protocol_tcp."${deps.amq_protocol."6.0.0-rc7".amq_protocol_tcp}"."vendored-openssl" or false) ||
+        (amq_protocol."6.0.0-rc7"."vendored-openssl" or false) ||
+        (f."amq_protocol"."6.0.0-rc7"."vendored-openssl" or false); }
+      { "${deps.amq_protocol."6.0.0-rc7".amq_protocol_tcp}".default = (f.amq_protocol_tcp."${deps.amq_protocol."6.0.0-rc7".amq_protocol_tcp}".default or false); }
     ];
     amq_protocol_types = fold recursiveUpdate {} [
-      { "${deps.amq_protocol."6.0.0-rc3".amq_protocol_types}"."verbose-errors" =
-        (f.amq_protocol_types."${deps.amq_protocol."6.0.0-rc3".amq_protocol_types}"."verbose-errors" or false) ||
-        (amq_protocol."6.0.0-rc3"."verbose-errors" or false) ||
-        (f."amq_protocol"."6.0.0-rc3"."verbose-errors" or false); }
-      { "${deps.amq_protocol."6.0.0-rc3".amq_protocol_types}".default = true; }
+      { "${deps.amq_protocol."6.0.0-rc7".amq_protocol_types}"."verbose-errors" =
+        (f.amq_protocol_types."${deps.amq_protocol."6.0.0-rc7".amq_protocol_types}"."verbose-errors" or false) ||
+        (amq_protocol."6.0.0-rc7"."verbose-errors" or false) ||
+        (f."amq_protocol"."6.0.0-rc7"."verbose-errors" or false); }
+      { "${deps.amq_protocol."6.0.0-rc7".amq_protocol_types}".default = true; }
     ];
-    amq_protocol_uri."${deps.amq_protocol."6.0.0-rc3".amq_protocol_uri}".default = true;
+    amq_protocol_uri."${deps.amq_protocol."6.0.0-rc7".amq_protocol_uri}".default = true;
     cookie_factory = fold recursiveUpdate {} [
-      { "${deps.amq_protocol."6.0.0-rc3".cookie_factory}"."std" = true; }
-      { "${deps.amq_protocol."6.0.0-rc3".cookie_factory}".default = true; }
+      { "${deps.amq_protocol."6.0.0-rc7".cookie_factory}"."std" = true; }
+      { "${deps.amq_protocol."6.0.0-rc7".cookie_factory}".default = true; }
     ];
     nom = fold recursiveUpdate {} [
-      { "${deps.amq_protocol."6.0.0-rc3".nom}"."std" = true; }
-      { "${deps.amq_protocol."6.0.0-rc3".nom}".default = true; }
+      { "${deps.amq_protocol."6.0.0-rc7".nom}"."std" = true; }
+      { "${deps.amq_protocol."6.0.0-rc7".nom}".default = true; }
     ];
   }) [
-    (features_.amq_protocol_tcp."${deps."amq_protocol"."6.0.0-rc3"."amq_protocol_tcp"}" deps)
-    (features_.amq_protocol_types."${deps."amq_protocol"."6.0.0-rc3"."amq_protocol_types"}" deps)
-    (features_.amq_protocol_uri."${deps."amq_protocol"."6.0.0-rc3"."amq_protocol_uri"}" deps)
-    (features_.cookie_factory."${deps."amq_protocol"."6.0.0-rc3"."cookie_factory"}" deps)
-    (features_.nom."${deps."amq_protocol"."6.0.0-rc3"."nom"}" deps)
-    (features_.amq_protocol_codegen."${deps."amq_protocol"."6.0.0-rc3"."amq_protocol_codegen"}" deps)
+    (features_.amq_protocol_tcp."${deps."amq_protocol"."6.0.0-rc7"."amq_protocol_tcp"}" deps)
+    (features_.amq_protocol_types."${deps."amq_protocol"."6.0.0-rc7"."amq_protocol_types"}" deps)
+    (features_.amq_protocol_uri."${deps."amq_protocol"."6.0.0-rc7"."amq_protocol_uri"}" deps)
+    (features_.cookie_factory."${deps."amq_protocol"."6.0.0-rc7"."cookie_factory"}" deps)
+    (features_.nom."${deps."amq_protocol"."6.0.0-rc7"."nom"}" deps)
+    (features_.amq_protocol_codegen."${deps."amq_protocol"."6.0.0-rc7"."amq_protocol_codegen"}" deps)
   ];
 
 
 # end
-# amq-protocol-codegen-6.0.0-rc3
+# amq-protocol-codegen-6.0.0-rc7
 
-  crates.amq_protocol_codegen."6.0.0-rc3" = deps: { features?(features_.amq_protocol_codegen."6.0.0-rc3" deps {}) }: buildRustCrate {
+  crates.amq_protocol_codegen."6.0.0-rc7" = deps: { features?(features_.amq_protocol_codegen."6.0.0-rc7" deps {}) }: buildRustCrate {
     crateName = "amq-protocol-codegen";
-    version = "6.0.0-rc3";
+    version = "6.0.0-rc7";
     description = "AMQP specifications - codegen";
     authors = [ "Marc-Antoine Perennou <%arc-Antoine@Perennou.com>" ];
     edition = "2018";
-    sha256 = "1zr8j806fknmr6hifml6dq3jj5plzngjfpm25fqjl4ljqdcdn28z";
+    sha256 = "18f12kkamw6q95cpx51xgym6p0qg6j13jm1ldzj7rlm83l3jk37a";
     libName = "amq_protocol_codegen";
     dependencies = mapFeatures features ([
-      (crates."amq_protocol_types"."${deps."amq_protocol_codegen"."6.0.0-rc3"."amq_protocol_types"}" deps)
-      (crates."handlebars"."${deps."amq_protocol_codegen"."6.0.0-rc3"."handlebars"}" deps)
-      (crates."serde"."${deps."amq_protocol_codegen"."6.0.0-rc3"."serde"}" deps)
-      (crates."serde_json"."${deps."amq_protocol_codegen"."6.0.0-rc3"."serde_json"}" deps)
+      (crates."amq_protocol_types"."${deps."amq_protocol_codegen"."6.0.0-rc7"."amq_protocol_types"}" deps)
+      (crates."handlebars"."${deps."amq_protocol_codegen"."6.0.0-rc7"."handlebars"}" deps)
+      (crates."serde"."${deps."amq_protocol_codegen"."6.0.0-rc7"."serde"}" deps)
+      (crates."serde_json"."${deps."amq_protocol_codegen"."6.0.0-rc7"."serde_json"}" deps)
     ]);
   };
-  features_.amq_protocol_codegen."6.0.0-rc3" = deps: f: updateFeatures f (rec {
-    amq_protocol_codegen."6.0.0-rc3".default = (f.amq_protocol_codegen."6.0.0-rc3".default or true);
-    amq_protocol_types."${deps.amq_protocol_codegen."6.0.0-rc3".amq_protocol_types}".default = true;
-    handlebars."${deps.amq_protocol_codegen."6.0.0-rc3".handlebars}".default = true;
+  features_.amq_protocol_codegen."6.0.0-rc7" = deps: f: updateFeatures f (rec {
+    amq_protocol_codegen."6.0.0-rc7".default = (f.amq_protocol_codegen."6.0.0-rc7".default or true);
+    amq_protocol_types."${deps.amq_protocol_codegen."6.0.0-rc7".amq_protocol_types}".default = true;
+    handlebars."${deps.amq_protocol_codegen."6.0.0-rc7".handlebars}".default = true;
     serde = fold recursiveUpdate {} [
-      { "${deps.amq_protocol_codegen."6.0.0-rc3".serde}"."derive" = true; }
-      { "${deps.amq_protocol_codegen."6.0.0-rc3".serde}".default = true; }
+      { "${deps.amq_protocol_codegen."6.0.0-rc7".serde}"."derive" = true; }
+      { "${deps.amq_protocol_codegen."6.0.0-rc7".serde}".default = true; }
     ];
-    serde_json."${deps.amq_protocol_codegen."6.0.0-rc3".serde_json}".default = true;
+    serde_json."${deps.amq_protocol_codegen."6.0.0-rc7".serde_json}".default = true;
   }) [
-    (features_.amq_protocol_types."${deps."amq_protocol_codegen"."6.0.0-rc3"."amq_protocol_types"}" deps)
-    (features_.handlebars."${deps."amq_protocol_codegen"."6.0.0-rc3"."handlebars"}" deps)
-    (features_.serde."${deps."amq_protocol_codegen"."6.0.0-rc3"."serde"}" deps)
-    (features_.serde_json."${deps."amq_protocol_codegen"."6.0.0-rc3"."serde_json"}" deps)
+    (features_.amq_protocol_types."${deps."amq_protocol_codegen"."6.0.0-rc7"."amq_protocol_types"}" deps)
+    (features_.handlebars."${deps."amq_protocol_codegen"."6.0.0-rc7"."handlebars"}" deps)
+    (features_.serde."${deps."amq_protocol_codegen"."6.0.0-rc7"."serde"}" deps)
+    (features_.serde_json."${deps."amq_protocol_codegen"."6.0.0-rc7"."serde_json"}" deps)
   ];
 
 
 # end
-# amq-protocol-tcp-6.0.0-rc3
+# amq-protocol-tcp-6.0.0-rc7
 
-  crates.amq_protocol_tcp."6.0.0-rc3" = deps: { features?(features_.amq_protocol_tcp."6.0.0-rc3" deps {}) }: buildRustCrate {
+  crates.amq_protocol_tcp."6.0.0-rc7" = deps: { features?(features_.amq_protocol_tcp."6.0.0-rc7" deps {}) }: buildRustCrate {
     crateName = "amq-protocol-tcp";
-    version = "6.0.0-rc3";
+    version = "6.0.0-rc7";
     description = "AMQP URI TCP connection handling";
     authors = [ "Marc-Antoine Perennou <%arc-Antoine@Perennou.com>" ];
     edition = "2018";
-    sha256 = "0ix0zzdjqaq31ysfdr06h6jv7avink1y3rkbcqmw4q4r48snyrn0";
+    sha256 = "0w34ampcpp3hkak8p27bxyvsilmjxjbkkxcxb9j35k89hil9dmc9";
     libName = "amq_protocol_tcp";
     dependencies = mapFeatures features ([
-      (crates."amq_protocol_uri"."${deps."amq_protocol_tcp"."6.0.0-rc3"."amq_protocol_uri"}" deps)
-      (crates."log"."${deps."amq_protocol_tcp"."6.0.0-rc3"."log"}" deps)
-      (crates."tcp_stream"."${deps."amq_protocol_tcp"."6.0.0-rc3"."tcp_stream"}" deps)
+      (crates."amq_protocol_uri"."${deps."amq_protocol_tcp"."6.0.0-rc7"."amq_protocol_uri"}" deps)
+      (crates."log"."${deps."amq_protocol_tcp"."6.0.0-rc7"."log"}" deps)
+      (crates."tcp_stream"."${deps."amq_protocol_tcp"."6.0.0-rc7"."tcp_stream"}" deps)
     ]);
-    features = mkFeatures (features."amq_protocol_tcp"."6.0.0-rc3" or {});
+    features = mkFeatures (features."amq_protocol_tcp"."6.0.0-rc7" or {});
   };
-  features_.amq_protocol_tcp."6.0.0-rc3" = deps: f: updateFeatures f (rec {
+  features_.amq_protocol_tcp."6.0.0-rc7" = deps: f: updateFeatures f (rec {
     amq_protocol_tcp = fold recursiveUpdate {} [
-      { "6.0.0-rc3"."native-tls" =
-        (f.amq_protocol_tcp."6.0.0-rc3"."native-tls" or false) ||
-        (f.amq_protocol_tcp."6.0.0-rc3".default or false) ||
-        (amq_protocol_tcp."6.0.0-rc3"."default" or false); }
-      { "6.0.0-rc3"."rustls-connector" =
-        (f.amq_protocol_tcp."6.0.0-rc3"."rustls-connector" or false) ||
-        (f.amq_protocol_tcp."6.0.0-rc3".rustls-native-certs or false) ||
-        (amq_protocol_tcp."6.0.0-rc3"."rustls-native-certs" or false) ||
-        (f.amq_protocol_tcp."6.0.0-rc3".rustls-webpki-roots-certs or false) ||
-        (amq_protocol_tcp."6.0.0-rc3"."rustls-webpki-roots-certs" or false); }
-      { "6.0.0-rc3"."rustls-native-certs" =
-        (f.amq_protocol_tcp."6.0.0-rc3"."rustls-native-certs" or false) ||
-        (f.amq_protocol_tcp."6.0.0-rc3".rustls or false) ||
-        (amq_protocol_tcp."6.0.0-rc3"."rustls" or false); }
-      { "6.0.0-rc3".default = (f.amq_protocol_tcp."6.0.0-rc3".default or true); }
+      { "6.0.0-rc7"."native-tls" =
+        (f.amq_protocol_tcp."6.0.0-rc7"."native-tls" or false) ||
+        (f.amq_protocol_tcp."6.0.0-rc7".default or false) ||
+        (amq_protocol_tcp."6.0.0-rc7"."default" or false); }
+      { "6.0.0-rc7"."rustls-connector" =
+        (f.amq_protocol_tcp."6.0.0-rc7"."rustls-connector" or false) ||
+        (f.amq_protocol_tcp."6.0.0-rc7".rustls-native-certs or false) ||
+        (amq_protocol_tcp."6.0.0-rc7"."rustls-native-certs" or false) ||
+        (f.amq_protocol_tcp."6.0.0-rc7".rustls-webpki-roots-certs or false) ||
+        (amq_protocol_tcp."6.0.0-rc7"."rustls-webpki-roots-certs" or false); }
+      { "6.0.0-rc7"."rustls-native-certs" =
+        (f.amq_protocol_tcp."6.0.0-rc7"."rustls-native-certs" or false) ||
+        (f.amq_protocol_tcp."6.0.0-rc7".rustls or false) ||
+        (amq_protocol_tcp."6.0.0-rc7"."rustls" or false); }
+      { "6.0.0-rc7".default = (f.amq_protocol_tcp."6.0.0-rc7".default or true); }
     ];
-    amq_protocol_uri."${deps.amq_protocol_tcp."6.0.0-rc3".amq_protocol_uri}".default = true;
-    log."${deps.amq_protocol_tcp."6.0.0-rc3".log}".default = true;
+    amq_protocol_uri."${deps.amq_protocol_tcp."6.0.0-rc7".amq_protocol_uri}".default = true;
+    log."${deps.amq_protocol_tcp."6.0.0-rc7".log}".default = true;
     tcp_stream = fold recursiveUpdate {} [
-      { "${deps.amq_protocol_tcp."6.0.0-rc3".tcp_stream}"."native-tls" =
-        (f.tcp_stream."${deps.amq_protocol_tcp."6.0.0-rc3".tcp_stream}"."native-tls" or false) ||
-        (amq_protocol_tcp."6.0.0-rc3"."native-tls" or false) ||
-        (f."amq_protocol_tcp"."6.0.0-rc3"."native-tls" or false); }
-      { "${deps.amq_protocol_tcp."6.0.0-rc3".tcp_stream}"."openssl" =
-        (f.tcp_stream."${deps.amq_protocol_tcp."6.0.0-rc3".tcp_stream}"."openssl" or false) ||
-        (amq_protocol_tcp."6.0.0-rc3"."openssl" or false) ||
-        (f."amq_protocol_tcp"."6.0.0-rc3"."openssl" or false); }
-      { "${deps.amq_protocol_tcp."6.0.0-rc3".tcp_stream}"."rustls-connector" =
-        (f.tcp_stream."${deps.amq_protocol_tcp."6.0.0-rc3".tcp_stream}"."rustls-connector" or false) ||
-        (amq_protocol_tcp."6.0.0-rc3"."rustls-connector" or false) ||
-        (f."amq_protocol_tcp"."6.0.0-rc3"."rustls-connector" or false); }
-      { "${deps.amq_protocol_tcp."6.0.0-rc3".tcp_stream}"."rustls-native-certs" =
-        (f.tcp_stream."${deps.amq_protocol_tcp."6.0.0-rc3".tcp_stream}"."rustls-native-certs" or false) ||
-        (amq_protocol_tcp."6.0.0-rc3"."rustls-native-certs" or false) ||
-        (f."amq_protocol_tcp"."6.0.0-rc3"."rustls-native-certs" or false); }
-      { "${deps.amq_protocol_tcp."6.0.0-rc3".tcp_stream}"."rustls-webpki-roots-certs" =
-        (f.tcp_stream."${deps.amq_protocol_tcp."6.0.0-rc3".tcp_stream}"."rustls-webpki-roots-certs" or false) ||
-        (amq_protocol_tcp."6.0.0-rc3"."rustls-webpki-roots-certs" or false) ||
-        (f."amq_protocol_tcp"."6.0.0-rc3"."rustls-webpki-roots-certs" or false); }
-      { "${deps.amq_protocol_tcp."6.0.0-rc3".tcp_stream}"."vendored-openssl" =
-        (f.tcp_stream."${deps.amq_protocol_tcp."6.0.0-rc3".tcp_stream}"."vendored-openssl" or false) ||
-        (amq_protocol_tcp."6.0.0-rc3"."vendored-openssl" or false) ||
-        (f."amq_protocol_tcp"."6.0.0-rc3"."vendored-openssl" or false); }
-      { "${deps.amq_protocol_tcp."6.0.0-rc3".tcp_stream}".default = (f.tcp_stream."${deps.amq_protocol_tcp."6.0.0-rc3".tcp_stream}".default or false); }
+      { "${deps.amq_protocol_tcp."6.0.0-rc7".tcp_stream}"."native-tls" =
+        (f.tcp_stream."${deps.amq_protocol_tcp."6.0.0-rc7".tcp_stream}"."native-tls" or false) ||
+        (amq_protocol_tcp."6.0.0-rc7"."native-tls" or false) ||
+        (f."amq_protocol_tcp"."6.0.0-rc7"."native-tls" or false); }
+      { "${deps.amq_protocol_tcp."6.0.0-rc7".tcp_stream}"."openssl" =
+        (f.tcp_stream."${deps.amq_protocol_tcp."6.0.0-rc7".tcp_stream}"."openssl" or false) ||
+        (amq_protocol_tcp."6.0.0-rc7"."openssl" or false) ||
+        (f."amq_protocol_tcp"."6.0.0-rc7"."openssl" or false); }
+      { "${deps.amq_protocol_tcp."6.0.0-rc7".tcp_stream}"."rustls-connector" =
+        (f.tcp_stream."${deps.amq_protocol_tcp."6.0.0-rc7".tcp_stream}"."rustls-connector" or false) ||
+        (amq_protocol_tcp."6.0.0-rc7"."rustls-connector" or false) ||
+        (f."amq_protocol_tcp"."6.0.0-rc7"."rustls-connector" or false); }
+      { "${deps.amq_protocol_tcp."6.0.0-rc7".tcp_stream}"."rustls-native-certs" =
+        (f.tcp_stream."${deps.amq_protocol_tcp."6.0.0-rc7".tcp_stream}"."rustls-native-certs" or false) ||
+        (amq_protocol_tcp."6.0.0-rc7"."rustls-native-certs" or false) ||
+        (f."amq_protocol_tcp"."6.0.0-rc7"."rustls-native-certs" or false); }
+      { "${deps.amq_protocol_tcp."6.0.0-rc7".tcp_stream}"."rustls-webpki-roots-certs" =
+        (f.tcp_stream."${deps.amq_protocol_tcp."6.0.0-rc7".tcp_stream}"."rustls-webpki-roots-certs" or false) ||
+        (amq_protocol_tcp."6.0.0-rc7"."rustls-webpki-roots-certs" or false) ||
+        (f."amq_protocol_tcp"."6.0.0-rc7"."rustls-webpki-roots-certs" or false); }
+      { "${deps.amq_protocol_tcp."6.0.0-rc7".tcp_stream}"."vendored-openssl" =
+        (f.tcp_stream."${deps.amq_protocol_tcp."6.0.0-rc7".tcp_stream}"."vendored-openssl" or false) ||
+        (amq_protocol_tcp."6.0.0-rc7"."vendored-openssl" or false) ||
+        (f."amq_protocol_tcp"."6.0.0-rc7"."vendored-openssl" or false); }
+      { "${deps.amq_protocol_tcp."6.0.0-rc7".tcp_stream}".default = (f.tcp_stream."${deps.amq_protocol_tcp."6.0.0-rc7".tcp_stream}".default or false); }
     ];
   }) [
-    (features_.amq_protocol_uri."${deps."amq_protocol_tcp"."6.0.0-rc3"."amq_protocol_uri"}" deps)
-    (features_.log."${deps."amq_protocol_tcp"."6.0.0-rc3"."log"}" deps)
-    (features_.tcp_stream."${deps."amq_protocol_tcp"."6.0.0-rc3"."tcp_stream"}" deps)
+    (features_.amq_protocol_uri."${deps."amq_protocol_tcp"."6.0.0-rc7"."amq_protocol_uri"}" deps)
+    (features_.log."${deps."amq_protocol_tcp"."6.0.0-rc7"."log"}" deps)
+    (features_.tcp_stream."${deps."amq_protocol_tcp"."6.0.0-rc7"."tcp_stream"}" deps)
   ];
 
 
 # end
-# amq-protocol-types-6.0.0-rc3
+# amq-protocol-types-6.0.0-rc7
 
-  crates.amq_protocol_types."6.0.0-rc3" = deps: { features?(features_.amq_protocol_types."6.0.0-rc3" deps {}) }: buildRustCrate {
+  crates.amq_protocol_types."6.0.0-rc7" = deps: { features?(features_.amq_protocol_types."6.0.0-rc7" deps {}) }: buildRustCrate {
     crateName = "amq-protocol-types";
-    version = "6.0.0-rc3";
+    version = "6.0.0-rc7";
     description = "AMQP specifications - types";
     authors = [ "Marc-Antoine Perennou <%arc-Antoine@Perennou.com>" ];
     edition = "2018";
-    sha256 = "04kpa1mazbd24y5j3j5gk3cr311993plyipg59hcf8sqaq706vjs";
+    sha256 = "0p7zycqxq21q9x6b4caf624hrqmr5pz1shxq8i74bkcza8vjwh53";
     libName = "amq_protocol_types";
     dependencies = mapFeatures features ([
-      (crates."cookie_factory"."${deps."amq_protocol_types"."6.0.0-rc3"."cookie_factory"}" deps)
-      (crates."nom"."${deps."amq_protocol_types"."6.0.0-rc3"."nom"}" deps)
-      (crates."serde"."${deps."amq_protocol_types"."6.0.0-rc3"."serde"}" deps)
-      (crates."serde_json"."${deps."amq_protocol_types"."6.0.0-rc3"."serde_json"}" deps)
+      (crates."cookie_factory"."${deps."amq_protocol_types"."6.0.0-rc7"."cookie_factory"}" deps)
+      (crates."nom"."${deps."amq_protocol_types"."6.0.0-rc7"."nom"}" deps)
+      (crates."serde"."${deps."amq_protocol_types"."6.0.0-rc7"."serde"}" deps)
+      (crates."serde_json"."${deps."amq_protocol_types"."6.0.0-rc7"."serde_json"}" deps)
     ]);
-    features = mkFeatures (features."amq_protocol_types"."6.0.0-rc3" or {});
+    features = mkFeatures (features."amq_protocol_types"."6.0.0-rc7" or {});
   };
-  features_.amq_protocol_types."6.0.0-rc3" = deps: f: updateFeatures f (rec {
-    amq_protocol_types."6.0.0-rc3".default = (f.amq_protocol_types."6.0.0-rc3".default or true);
+  features_.amq_protocol_types."6.0.0-rc7" = deps: f: updateFeatures f (rec {
+    amq_protocol_types."6.0.0-rc7".default = (f.amq_protocol_types."6.0.0-rc7".default or true);
     cookie_factory = fold recursiveUpdate {} [
-      { "${deps.amq_protocol_types."6.0.0-rc3".cookie_factory}"."std" = true; }
-      { "${deps.amq_protocol_types."6.0.0-rc3".cookie_factory}".default = true; }
+      { "${deps.amq_protocol_types."6.0.0-rc7".cookie_factory}"."std" = true; }
+      { "${deps.amq_protocol_types."6.0.0-rc7".cookie_factory}".default = true; }
     ];
     nom = fold recursiveUpdate {} [
-      { "${deps.amq_protocol_types."6.0.0-rc3".nom}"."std" = true; }
-      { "${deps.amq_protocol_types."6.0.0-rc3".nom}".default = true; }
+      { "${deps.amq_protocol_types."6.0.0-rc7".nom}"."std" = true; }
+      { "${deps.amq_protocol_types."6.0.0-rc7".nom}".default = true; }
     ];
     serde = fold recursiveUpdate {} [
-      { "${deps.amq_protocol_types."6.0.0-rc3".serde}"."derive" = true; }
-      { "${deps.amq_protocol_types."6.0.0-rc3".serde}".default = true; }
+      { "${deps.amq_protocol_types."6.0.0-rc7".serde}"."derive" = true; }
+      { "${deps.amq_protocol_types."6.0.0-rc7".serde}".default = true; }
     ];
-    serde_json."${deps.amq_protocol_types."6.0.0-rc3".serde_json}".default = true;
+    serde_json."${deps.amq_protocol_types."6.0.0-rc7".serde_json}".default = true;
   }) [
-    (features_.cookie_factory."${deps."amq_protocol_types"."6.0.0-rc3"."cookie_factory"}" deps)
-    (features_.nom."${deps."amq_protocol_types"."6.0.0-rc3"."nom"}" deps)
-    (features_.serde."${deps."amq_protocol_types"."6.0.0-rc3"."serde"}" deps)
-    (features_.serde_json."${deps."amq_protocol_types"."6.0.0-rc3"."serde_json"}" deps)
+    (features_.cookie_factory."${deps."amq_protocol_types"."6.0.0-rc7"."cookie_factory"}" deps)
+    (features_.nom."${deps."amq_protocol_types"."6.0.0-rc7"."nom"}" deps)
+    (features_.serde."${deps."amq_protocol_types"."6.0.0-rc7"."serde"}" deps)
+    (features_.serde_json."${deps."amq_protocol_types"."6.0.0-rc7"."serde_json"}" deps)
   ];
 
 
 # end
-# amq-protocol-uri-6.0.0-rc3
+# amq-protocol-uri-6.0.0-rc7
 
-  crates.amq_protocol_uri."6.0.0-rc3" = deps: { features?(features_.amq_protocol_uri."6.0.0-rc3" deps {}) }: buildRustCrate {
+  crates.amq_protocol_uri."6.0.0-rc7" = deps: { features?(features_.amq_protocol_uri."6.0.0-rc7" deps {}) }: buildRustCrate {
     crateName = "amq-protocol-uri";
-    version = "6.0.0-rc3";
+    version = "6.0.0-rc7";
     description = "AMQP URI manipulation";
     authors = [ "Marc-Antoine Perennou <%arc-Antoine@Perennou.com>" ];
     edition = "2018";
-    sha256 = "16p1v2z1hwx4b5d6v6qv8m42xfcwfl8hwh2670i489zm5d9fjgcg";
+    sha256 = "1kzgm6frk5cq63mgqsq4nwc3pxjngr71sjzy654bjnn8b1g546rp";
     libName = "amq_protocol_uri";
     dependencies = mapFeatures features ([
-      (crates."percent_encoding"."${deps."amq_protocol_uri"."6.0.0-rc3"."percent_encoding"}" deps)
-      (crates."url"."${deps."amq_protocol_uri"."6.0.0-rc3"."url"}" deps)
+      (crates."percent_encoding"."${deps."amq_protocol_uri"."6.0.0-rc7"."percent_encoding"}" deps)
+      (crates."url"."${deps."amq_protocol_uri"."6.0.0-rc7"."url"}" deps)
     ]);
   };
-  features_.amq_protocol_uri."6.0.0-rc3" = deps: f: updateFeatures f (rec {
-    amq_protocol_uri."6.0.0-rc3".default = (f.amq_protocol_uri."6.0.0-rc3".default or true);
-    percent_encoding."${deps.amq_protocol_uri."6.0.0-rc3".percent_encoding}".default = true;
-    url."${deps.amq_protocol_uri."6.0.0-rc3".url}".default = true;
+  features_.amq_protocol_uri."6.0.0-rc7" = deps: f: updateFeatures f (rec {
+    amq_protocol_uri."6.0.0-rc7".default = (f.amq_protocol_uri."6.0.0-rc7".default or true);
+    percent_encoding."${deps.amq_protocol_uri."6.0.0-rc7".percent_encoding}".default = true;
+    url."${deps.amq_protocol_uri."6.0.0-rc7".url}".default = true;
   }) [
-    (features_.percent_encoding."${deps."amq_protocol_uri"."6.0.0-rc3"."percent_encoding"}" deps)
-    (features_.url."${deps."amq_protocol_uri"."6.0.0-rc3"."url"}" deps)
+    (features_.percent_encoding."${deps."amq_protocol_uri"."6.0.0-rc7"."percent_encoding"}" deps)
+    (features_.url."${deps."amq_protocol_uri"."6.0.0-rc7"."url"}" deps)
   ];
 
 
@@ -871,6 +871,29 @@ rec {
   }) [
     (features_.byteorder."${deps."base64"."0.10.0"."byteorder"}" deps)
   ];
+
+
+# end
+# base64-0.11.0
+
+  crates.base64."0.11.0" = deps: { features?(features_.base64."0.11.0" deps {}) }: buildRustCrate {
+    crateName = "base64";
+    version = "0.11.0";
+    description = "encodes and decodes base64 as bytes or utf8";
+    authors = [ "Alice Maz <alice@alicemaz.com>" "Marshall Pierce <marshall@mpierce.org>" ];
+    edition = "2018";
+    sha256 = "1idkqdfza39zyhl7ml4i2wq6dv2y331vj2nm9lshvmqbrc23j890";
+    features = mkFeatures (features."base64"."0.11.0" or {});
+  };
+  features_.base64."0.11.0" = deps: f: updateFeatures f (rec {
+    base64 = fold recursiveUpdate {} [
+      { "0.11.0"."std" =
+        (f.base64."0.11.0"."std" or false) ||
+        (f.base64."0.11.0".default or false) ||
+        (base64."0.11.0"."default" or false); }
+      { "0.11.0".default = (f.base64."0.11.0".default or true); }
+    ];
+  }) [];
 
 
 # end
@@ -2254,92 +2277,92 @@ rec {
 
 
 # end
-# lapin-1.0.0-beta4
+# lapin-1.0.0-rc6
 
-  crates.lapin."1.0.0-beta4" = deps: { features?(features_.lapin."1.0.0-beta4" deps {}) }: buildRustCrate {
+  crates.lapin."1.0.0-rc6" = deps: { features?(features_.lapin."1.0.0-rc6" deps {}) }: buildRustCrate {
     crateName = "lapin";
-    version = "1.0.0-beta4";
+    version = "1.0.0-rc6";
     description = "AMQP client library";
     authors = [ "Geoffroy Couprie <geo.couprie@gmail.com>" "Marc-Antoine Perennou <Marc-Antoine@Perennou.com>" ];
     edition = "2018";
-    sha256 = "1wjnq0j34fvs0ymplas3v58nfy6c39h0rm0skv8ph97l1clncajv";
+    sha256 = "14n8mk7bhbn825ndpyx9b0llgk0c2i6n9rms1a49pa09yxcbxj29";
     build = "build.rs";
     dependencies = mapFeatures features ([
-      (crates."amq_protocol"."${deps."lapin"."1.0.0-beta4"."amq_protocol"}" deps)
-      (crates."async_task"."${deps."lapin"."1.0.0-beta4"."async_task"}" deps)
-      (crates."crossbeam_channel"."${deps."lapin"."1.0.0-beta4"."crossbeam_channel"}" deps)
-      (crates."futures_core"."${deps."lapin"."1.0.0-beta4"."futures_core"}" deps)
-      (crates."log"."${deps."lapin"."1.0.0-beta4"."log"}" deps)
-      (crates."mio"."${deps."lapin"."1.0.0-beta4"."mio"}" deps)
-      (crates."parking_lot"."${deps."lapin"."1.0.0-beta4"."parking_lot"}" deps)
-      (crates."pinky_swear"."${deps."lapin"."1.0.0-beta4"."pinky_swear"}" deps)
+      (crates."amq_protocol"."${deps."lapin"."1.0.0-rc6"."amq_protocol"}" deps)
+      (crates."async_task"."${deps."lapin"."1.0.0-rc6"."async_task"}" deps)
+      (crates."crossbeam_channel"."${deps."lapin"."1.0.0-rc6"."crossbeam_channel"}" deps)
+      (crates."futures_core"."${deps."lapin"."1.0.0-rc6"."futures_core"}" deps)
+      (crates."log"."${deps."lapin"."1.0.0-rc6"."log"}" deps)
+      (crates."mio"."${deps."lapin"."1.0.0-rc6"."mio"}" deps)
+      (crates."parking_lot"."${deps."lapin"."1.0.0-rc6"."parking_lot"}" deps)
+      (crates."pinky_swear"."${deps."lapin"."1.0.0-rc6"."pinky_swear"}" deps)
     ]);
 
     buildDependencies = mapFeatures features ([
-      (crates."amq_protocol_codegen"."${deps."lapin"."1.0.0-beta4"."amq_protocol_codegen"}" deps)
-      (crates."serde_json"."${deps."lapin"."1.0.0-beta4"."serde_json"}" deps)
+      (crates."amq_protocol_codegen"."${deps."lapin"."1.0.0-rc6"."amq_protocol_codegen"}" deps)
+      (crates."serde_json"."${deps."lapin"."1.0.0-rc6"."serde_json"}" deps)
     ]);
-    features = mkFeatures (features."lapin"."1.0.0-beta4" or {});
+    features = mkFeatures (features."lapin"."1.0.0-rc6" or {});
   };
-  features_.lapin."1.0.0-beta4" = deps: f: updateFeatures f (rec {
+  features_.lapin."1.0.0-rc6" = deps: f: updateFeatures f (rec {
     amq_protocol = fold recursiveUpdate {} [
-      { "${deps.lapin."1.0.0-beta4".amq_protocol}"."native-tls" =
-        (f.amq_protocol."${deps.lapin."1.0.0-beta4".amq_protocol}"."native-tls" or false) ||
-        (lapin."1.0.0-beta4"."native-tls" or false) ||
-        (f."lapin"."1.0.0-beta4"."native-tls" or false); }
-      { "${deps.lapin."1.0.0-beta4".amq_protocol}"."openssl" =
-        (f.amq_protocol."${deps.lapin."1.0.0-beta4".amq_protocol}"."openssl" or false) ||
-        (lapin."1.0.0-beta4"."openssl" or false) ||
-        (f."lapin"."1.0.0-beta4"."openssl" or false); }
-      { "${deps.lapin."1.0.0-beta4".amq_protocol}"."rustls-native-certs" =
-        (f.amq_protocol."${deps.lapin."1.0.0-beta4".amq_protocol}"."rustls-native-certs" or false) ||
-        (lapin."1.0.0-beta4"."rustls-native-certs" or false) ||
-        (f."lapin"."1.0.0-beta4"."rustls-native-certs" or false); }
-      { "${deps.lapin."1.0.0-beta4".amq_protocol}"."rustls-webpki-roots-certs" =
-        (f.amq_protocol."${deps.lapin."1.0.0-beta4".amq_protocol}"."rustls-webpki-roots-certs" or false) ||
-        (lapin."1.0.0-beta4"."rustls-webpki-roots-certs" or false) ||
-        (f."lapin"."1.0.0-beta4"."rustls-webpki-roots-certs" or false); }
-      { "${deps.lapin."1.0.0-beta4".amq_protocol}"."vendored-openssl" =
-        (f.amq_protocol."${deps.lapin."1.0.0-beta4".amq_protocol}"."vendored-openssl" or false) ||
-        (lapin."1.0.0-beta4"."vendored-openssl" or false) ||
-        (f."lapin"."1.0.0-beta4"."vendored-openssl" or false); }
-      { "${deps.lapin."1.0.0-beta4".amq_protocol}".default = (f.amq_protocol."${deps.lapin."1.0.0-beta4".amq_protocol}".default or false); }
+      { "${deps.lapin."1.0.0-rc6".amq_protocol}"."native-tls" =
+        (f.amq_protocol."${deps.lapin."1.0.0-rc6".amq_protocol}"."native-tls" or false) ||
+        (lapin."1.0.0-rc6"."native-tls" or false) ||
+        (f."lapin"."1.0.0-rc6"."native-tls" or false); }
+      { "${deps.lapin."1.0.0-rc6".amq_protocol}"."openssl" =
+        (f.amq_protocol."${deps.lapin."1.0.0-rc6".amq_protocol}"."openssl" or false) ||
+        (lapin."1.0.0-rc6"."openssl" or false) ||
+        (f."lapin"."1.0.0-rc6"."openssl" or false); }
+      { "${deps.lapin."1.0.0-rc6".amq_protocol}"."rustls-native-certs" =
+        (f.amq_protocol."${deps.lapin."1.0.0-rc6".amq_protocol}"."rustls-native-certs" or false) ||
+        (lapin."1.0.0-rc6"."rustls-native-certs" or false) ||
+        (f."lapin"."1.0.0-rc6"."rustls-native-certs" or false); }
+      { "${deps.lapin."1.0.0-rc6".amq_protocol}"."rustls-webpki-roots-certs" =
+        (f.amq_protocol."${deps.lapin."1.0.0-rc6".amq_protocol}"."rustls-webpki-roots-certs" or false) ||
+        (lapin."1.0.0-rc6"."rustls-webpki-roots-certs" or false) ||
+        (f."lapin"."1.0.0-rc6"."rustls-webpki-roots-certs" or false); }
+      { "${deps.lapin."1.0.0-rc6".amq_protocol}"."vendored-openssl" =
+        (f.amq_protocol."${deps.lapin."1.0.0-rc6".amq_protocol}"."vendored-openssl" or false) ||
+        (lapin."1.0.0-rc6"."vendored-openssl" or false) ||
+        (f."lapin"."1.0.0-rc6"."vendored-openssl" or false); }
+      { "${deps.lapin."1.0.0-rc6".amq_protocol}".default = (f.amq_protocol."${deps.lapin."1.0.0-rc6".amq_protocol}".default or false); }
     ];
-    amq_protocol_codegen."${deps.lapin."1.0.0-beta4".amq_protocol_codegen}".default = true;
-    async_task."${deps.lapin."1.0.0-beta4".async_task}".default = true;
-    crossbeam_channel."${deps.lapin."1.0.0-beta4".crossbeam_channel}".default = true;
-    futures_core."${deps.lapin."1.0.0-beta4".futures_core}".default = true;
+    amq_protocol_codegen."${deps.lapin."1.0.0-rc6".amq_protocol_codegen}".default = true;
+    async_task."${deps.lapin."1.0.0-rc6".async_task}".default = true;
+    crossbeam_channel."${deps.lapin."1.0.0-rc6".crossbeam_channel}".default = true;
+    futures_core."${deps.lapin."1.0.0-rc6".futures_core}".default = true;
     lapin = fold recursiveUpdate {} [
-      { "1.0.0-beta4"."native-tls" =
-        (f.lapin."1.0.0-beta4"."native-tls" or false) ||
-        (f.lapin."1.0.0-beta4".default or false) ||
-        (lapin."1.0.0-beta4"."default" or false); }
-      { "1.0.0-beta4"."rustls-native-certs" =
-        (f.lapin."1.0.0-beta4"."rustls-native-certs" or false) ||
-        (f.lapin."1.0.0-beta4".rustls or false) ||
-        (lapin."1.0.0-beta4"."rustls" or false); }
-      { "1.0.0-beta4".default = (f.lapin."1.0.0-beta4".default or true); }
+      { "1.0.0-rc6"."native-tls" =
+        (f.lapin."1.0.0-rc6"."native-tls" or false) ||
+        (f.lapin."1.0.0-rc6".default or false) ||
+        (lapin."1.0.0-rc6"."default" or false); }
+      { "1.0.0-rc6"."rustls-native-certs" =
+        (f.lapin."1.0.0-rc6"."rustls-native-certs" or false) ||
+        (f.lapin."1.0.0-rc6".rustls or false) ||
+        (lapin."1.0.0-rc6"."rustls" or false); }
+      { "1.0.0-rc6".default = (f.lapin."1.0.0-rc6".default or true); }
     ];
-    log."${deps.lapin."1.0.0-beta4".log}".default = true;
+    log."${deps.lapin."1.0.0-rc6".log}".default = true;
     mio = fold recursiveUpdate {} [
-      { "${deps.lapin."1.0.0-beta4".mio}"."os-poll" = true; }
-      { "${deps.lapin."1.0.0-beta4".mio}"."tcp" = true; }
-      { "${deps.lapin."1.0.0-beta4".mio}".default = true; }
+      { "${deps.lapin."1.0.0-rc6".mio}"."os-poll" = true; }
+      { "${deps.lapin."1.0.0-rc6".mio}"."tcp" = true; }
+      { "${deps.lapin."1.0.0-rc6".mio}".default = true; }
     ];
-    parking_lot."${deps.lapin."1.0.0-beta4".parking_lot}".default = true;
-    pinky_swear."${deps.lapin."1.0.0-beta4".pinky_swear}".default = true;
-    serde_json."${deps.lapin."1.0.0-beta4".serde_json}".default = true;
+    parking_lot."${deps.lapin."1.0.0-rc6".parking_lot}".default = true;
+    pinky_swear."${deps.lapin."1.0.0-rc6".pinky_swear}".default = true;
+    serde_json."${deps.lapin."1.0.0-rc6".serde_json}".default = true;
   }) [
-    (features_.amq_protocol."${deps."lapin"."1.0.0-beta4"."amq_protocol"}" deps)
-    (features_.async_task."${deps."lapin"."1.0.0-beta4"."async_task"}" deps)
-    (features_.crossbeam_channel."${deps."lapin"."1.0.0-beta4"."crossbeam_channel"}" deps)
-    (features_.futures_core."${deps."lapin"."1.0.0-beta4"."futures_core"}" deps)
-    (features_.log."${deps."lapin"."1.0.0-beta4"."log"}" deps)
-    (features_.mio."${deps."lapin"."1.0.0-beta4"."mio"}" deps)
-    (features_.parking_lot."${deps."lapin"."1.0.0-beta4"."parking_lot"}" deps)
-    (features_.pinky_swear."${deps."lapin"."1.0.0-beta4"."pinky_swear"}" deps)
-    (features_.amq_protocol_codegen."${deps."lapin"."1.0.0-beta4"."amq_protocol_codegen"}" deps)
-    (features_.serde_json."${deps."lapin"."1.0.0-beta4"."serde_json"}" deps)
+    (features_.amq_protocol."${deps."lapin"."1.0.0-rc6"."amq_protocol"}" deps)
+    (features_.async_task."${deps."lapin"."1.0.0-rc6"."async_task"}" deps)
+    (features_.crossbeam_channel."${deps."lapin"."1.0.0-rc6"."crossbeam_channel"}" deps)
+    (features_.futures_core."${deps."lapin"."1.0.0-rc6"."futures_core"}" deps)
+    (features_.log."${deps."lapin"."1.0.0-rc6"."log"}" deps)
+    (features_.mio."${deps."lapin"."1.0.0-rc6"."mio"}" deps)
+    (features_.parking_lot."${deps."lapin"."1.0.0-rc6"."parking_lot"}" deps)
+    (features_.pinky_swear."${deps."lapin"."1.0.0-rc6"."pinky_swear"}" deps)
+    (features_.amq_protocol_codegen."${deps."lapin"."1.0.0-rc6"."amq_protocol_codegen"}" deps)
+    (features_.serde_json."${deps."lapin"."1.0.0-rc6"."serde_json"}" deps)
   ];
 
 
@@ -3735,6 +3758,34 @@ rec {
     (features_.redox_syscall."${deps."parking_lot_core"."0.7.2"."redox_syscall"}" deps)
     (features_.libc."${deps."parking_lot_core"."0.7.2"."libc"}" deps)
     (features_.winapi."${deps."parking_lot_core"."0.7.2"."winapi"}" deps)
+  ];
+
+
+# end
+# pem-0.7.0
+
+  crates.pem."0.7.0" = deps: { features?(features_.pem."0.7.0" deps {}) }: buildRustCrate {
+    crateName = "pem";
+    version = "0.7.0";
+    description = "Parse and encode PEM-encoded data.";
+    authors = [ "Jonathan Creekmore <jonathan@thecreekmores.org>" ];
+    edition = "2018";
+    sha256 = "15a3kbf9xg8r864yfpy0p5gy5b7k1nhyc2pqacqvwafc59dn85yz";
+    dependencies = mapFeatures features ([
+      (crates."base64"."${deps."pem"."0.7.0"."base64"}" deps)
+      (crates."lazy_static"."${deps."pem"."0.7.0"."lazy_static"}" deps)
+      (crates."regex"."${deps."pem"."0.7.0"."regex"}" deps)
+    ]);
+  };
+  features_.pem."0.7.0" = deps: f: updateFeatures f (rec {
+    base64."${deps.pem."0.7.0".base64}".default = true;
+    lazy_static."${deps.pem."0.7.0".lazy_static}".default = true;
+    pem."0.7.0".default = (f.pem."0.7.0".default or true);
+    regex."${deps.pem."0.7.0".regex}".default = true;
+  }) [
+    (features_.base64."${deps."pem"."0.7.0"."base64"}" deps)
+    (features_.lazy_static."${deps."pem"."0.7.0"."lazy_static"}" deps)
+    (features_.regex."${deps."pem"."0.7.0"."regex"}" deps)
   ];
 
 
@@ -5440,52 +5491,68 @@ rec {
 
 
 # end
-# tcp-stream-0.15.4
+# tcp-stream-0.19.1
 
-  crates.tcp_stream."0.15.4" = deps: { features?(features_.tcp_stream."0.15.4" deps {}) }: buildRustCrate {
+  crates.tcp_stream."0.19.1" = deps: { features?(features_.tcp_stream."0.19.1" deps {}) }: buildRustCrate {
     crateName = "tcp-stream";
-    version = "0.15.4";
+    version = "0.19.1";
     description = "mio's TcpStream on steroids";
     authors = [ "Marc-Antoine Perennou <Marc-Antoine@Perennou.com>" ];
     edition = "2018";
-    sha256 = "0pcl7258rgq805xadknpgcxygc2gfv9nbciy40clm6d4i8gswywj";
+    sha256 = "05zq6m4zglbg117m602qi20v3l59a9l6b7xygb72wbzl27c4znmk";
     libName = "tcp_stream";
     dependencies = mapFeatures features ([
-      (crates."cfg_if"."${deps."tcp_stream"."0.15.4"."cfg_if"}" deps)
-      (crates."mio"."${deps."tcp_stream"."0.15.4"."mio"}" deps)
+      (crates."cfg_if"."${deps."tcp_stream"."0.19.1"."cfg_if"}" deps)
+      (crates."mio"."${deps."tcp_stream"."0.19.1"."mio"}" deps)
     ]
-      ++ (if features.tcp_stream."0.15.4".native-tls or false then [ (crates.native_tls."${deps."tcp_stream"."0.15.4".native_tls}" deps) ] else []));
-    features = mkFeatures (features."tcp_stream"."0.15.4" or {});
+      ++ (if features.tcp_stream."0.19.1".pem or false then [ (crates.pem."${deps."tcp_stream"."0.19.1".pem}" deps) ] else []));
+    features = mkFeatures (features."tcp_stream"."0.19.1" or {});
   };
-  features_.tcp_stream."0.15.4" = deps: f: updateFeatures f (rec {
-    cfg_if."${deps.tcp_stream."0.15.4".cfg_if}".default = true;
+  features_.tcp_stream."0.19.1" = deps: f: updateFeatures f (rec {
+    cfg_if."${deps.tcp_stream."0.19.1".cfg_if}".default = true;
     mio = fold recursiveUpdate {} [
-      { "${deps.tcp_stream."0.15.4".mio}"."os-poll" = true; }
-      { "${deps.tcp_stream."0.15.4".mio}"."tcp" = true; }
-      { "${deps.tcp_stream."0.15.4".mio}".default = (f.mio."${deps.tcp_stream."0.15.4".mio}".default or false); }
+      { "${deps.tcp_stream."0.19.1".mio}"."os-poll" = true; }
+      { "${deps.tcp_stream."0.19.1".mio}"."tcp" = true; }
+      { "${deps.tcp_stream."0.19.1".mio}".default = (f.mio."${deps.tcp_stream."0.19.1".mio}".default or false); }
     ];
-    native_tls."${deps.tcp_stream."0.15.4".native_tls}".default = true;
+    pem."${deps.tcp_stream."0.19.1".pem}".default = true;
     tcp_stream = fold recursiveUpdate {} [
-      { "0.15.4"."native-tls" =
-        (f.tcp_stream."0.15.4"."native-tls" or false) ||
-        (f.tcp_stream."0.15.4".default or false) ||
-        (tcp_stream."0.15.4"."default" or false); }
-      { "0.15.4"."rustls-connector" =
-        (f.tcp_stream."0.15.4"."rustls-connector" or false) ||
-        (f.tcp_stream."0.15.4".rustls-native-certs or false) ||
-        (tcp_stream."0.15.4"."rustls-native-certs" or false) ||
-        (f.tcp_stream."0.15.4".rustls-webpki-roots-certs or false) ||
-        (tcp_stream."0.15.4"."rustls-webpki-roots-certs" or false); }
-      { "0.15.4"."rustls-native-certs" =
-        (f.tcp_stream."0.15.4"."rustls-native-certs" or false) ||
-        (f.tcp_stream."0.15.4".rustls or false) ||
-        (tcp_stream."0.15.4"."rustls" or false); }
-      { "0.15.4".default = (f.tcp_stream."0.15.4".default or true); }
+      { "0.19.1"."native-tls" =
+        (f.tcp_stream."0.19.1"."native-tls" or false) ||
+        (f.tcp_stream."0.19.1".default or false) ||
+        (tcp_stream."0.19.1"."default" or false); }
+      { "0.19.1"."native-tls-crate" =
+        (f.tcp_stream."0.19.1"."native-tls-crate" or false) ||
+        (f.tcp_stream."0.19.1".native-tls or false) ||
+        (tcp_stream."0.19.1"."native-tls" or false); }
+      { "0.19.1"."p12" =
+        (f.tcp_stream."0.19.1"."p12" or false) ||
+        (f.tcp_stream."0.19.1".rustls-common or false) ||
+        (tcp_stream."0.19.1"."rustls-common" or false); }
+      { "0.19.1"."pem" =
+        (f.tcp_stream."0.19.1"."pem" or false) ||
+        (f.tcp_stream."0.19.1".native-tls or false) ||
+        (tcp_stream."0.19.1"."native-tls" or false); }
+      { "0.19.1"."rustls-common" =
+        (f.tcp_stream."0.19.1"."rustls-common" or false) ||
+        (f.tcp_stream."0.19.1".rustls-native-certs or false) ||
+        (tcp_stream."0.19.1"."rustls-native-certs" or false) ||
+        (f.tcp_stream."0.19.1".rustls-webpki-roots-certs or false) ||
+        (tcp_stream."0.19.1"."rustls-webpki-roots-certs" or false); }
+      { "0.19.1"."rustls-connector" =
+        (f.tcp_stream."0.19.1"."rustls-connector" or false) ||
+        (f.tcp_stream."0.19.1".rustls-common or false) ||
+        (tcp_stream."0.19.1"."rustls-common" or false); }
+      { "0.19.1"."rustls-native-certs" =
+        (f.tcp_stream."0.19.1"."rustls-native-certs" or false) ||
+        (f.tcp_stream."0.19.1".rustls or false) ||
+        (tcp_stream."0.19.1"."rustls" or false); }
+      { "0.19.1".default = (f.tcp_stream."0.19.1".default or true); }
     ];
   }) [
-    (features_.cfg_if."${deps."tcp_stream"."0.15.4"."cfg_if"}" deps)
-    (features_.mio."${deps."tcp_stream"."0.15.4"."mio"}" deps)
-    (features_.native_tls."${deps."tcp_stream"."0.15.4"."native_tls"}" deps)
+    (features_.cfg_if."${deps."tcp_stream"."0.19.1"."cfg_if"}" deps)
+    (features_.mio."${deps."tcp_stream"."0.19.1"."mio"}" deps)
+    (features_.pem."${deps."tcp_stream"."0.19.1"."pem"}" deps)
   ];
 
 
