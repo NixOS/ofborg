@@ -86,8 +86,6 @@ impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for CloseOnDrop<Channel> {
     type Handle = Pin<Box<dyn Future<Output = ()> + 'a>>;
 
     fn consume(self, mut worker: W, config: ConsumeConfig) -> Result<Self::Handle, Self::Error> {
-        task::block_on(self.basic_qos(1, BasicQosOptions::default()))?;
-
         let mut consumer = task::block_on(self.basic_consume(
             &config.queue,
             &config.consumer_tag,
@@ -114,6 +112,20 @@ impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for CloseOnDrop<Channel> {
                 debug!(?deliver.delivery_tag, "done");
             }
         }))
+    }
+}
+
+/// Same as a regular channel, but without prefetching,
+/// used for services with multiple instances.
+pub struct WorkerChannel(pub CloseOnDrop<Channel>);
+
+impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for WorkerChannel {
+    type Error = lapin::Error;
+    type Handle = Pin<Box<dyn Future<Output = ()> + 'a>>;
+
+    fn consume(self, worker: W, config: ConsumeConfig) -> Result<Self::Handle, Self::Error> {
+        task::block_on(self.0.basic_qos(1, BasicQosOptions::default()))?;
+        self.0.consume(worker, config)
     }
 }
 

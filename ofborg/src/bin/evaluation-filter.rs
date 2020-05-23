@@ -56,7 +56,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         no_wait: false,
     })?;
 
-    let handle = chan.consume(
+    let handle = easylapin::WorkerChannel(chan).consume(
         tasks::evaluationfilter::EvaluationFilterWorker::new(cfg.acl()),
         easyamqp::ConsumeConfig {
             queue: queue_name.clone(),

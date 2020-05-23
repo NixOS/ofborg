@@ -53,7 +53,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         no_wait: false,
     })?;
 
-    let handle = chan.consume(
+    let handle = easylapin::WorkerChannel(chan).consume(
         tasks::evaluate::EvaluationWorker::new(
             cloner,
             &nix,

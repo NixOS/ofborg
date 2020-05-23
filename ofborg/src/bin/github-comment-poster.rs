@@ -46,7 +46,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         no_wait: false,
     })?;
 
-    let handle = chan.consume(
+    let handle = easylapin::WorkerChannel(chan).consume(
         tasks::githubcommentposter::GitHubCommentPoster::new(cfg.github_app_vendingmachine()),
         easyamqp::ConsumeConfig {
             queue: "build-results".to_owned(),
