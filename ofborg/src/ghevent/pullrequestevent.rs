@@ -36,21 +36,12 @@ pub enum PullRequestState {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum PullRequestAction {
-    Assigned,
-    Unassigned,
-    ReviewRequested,
-    ReviewRequestRemoved,
-    Labeled,
-    Unlabeled,
-    Opened,
     Edited,
-    Closed,
-    ReadyForReview,
-    Locked,
-    Unlocked,
+    Opened,
     Reopened,
     Synchronize,
-    ConvertedToDraft,
+    #[serde(other)]
+    Unknown,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -73,10 +64,20 @@ mod tests {
     use serde_json;
 
     #[test]
-    fn test_parse_pr_event() {
+    fn test_parse_changed_base() {
         let data = include_str!("../../test-srcs/events/pr-changed-base.json");
 
-        let _p: PullRequestEvent =
+        let pr: PullRequestEvent =
             serde_json::from_str(&data.to_string()).expect("Should properly deserialize");
+        assert_eq!(pr.action, PullRequestAction::Edited);
+    }
+
+    #[test]
+    fn test_parse_unknown_action() {
+        let data = include_str!("../../test-srcs/events/pr-converted-to-draft.json");
+
+        let pr: PullRequestEvent =
+            serde_json::from_str(&data.to_string()).expect("Should properly deserialize");
+        assert_eq!(pr.action, PullRequestAction::Unknown);
     }
 }
