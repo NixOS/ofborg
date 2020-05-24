@@ -1,7 +1,4 @@
 { pkgs ? import ./nix {
-    config.permittedInsecurePackages = [
-      "openssl-1.0.2u"
-    ];
     overlays = [ (import ./nix/overlay.nix) ];
   }
 , ofborgCrates ? import ./Cargo.nix {
