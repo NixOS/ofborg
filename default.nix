@@ -57,14 +57,13 @@ in
 
 
     Build failed because you bumped the Cargo
-    version without regenerating the carnix
-    file.
+    version without regenerating the Cargo.nix.
 
     Run:
 
 
 
-        nix-shell --run ./nix/update-carnix.sh
+        nix-shell --run ./nix/update-crates.sh
 
 
     and commit those changes.
