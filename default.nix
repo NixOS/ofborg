@@ -1,20 +1,18 @@
 { pkgs ? import ./nix {
-  config.permittedInsecurePackages = [
-    "openssl-1.0.2u"
-  ];
-  overlays = [ (import ./nix/overlay.nix) ];
-}
+    config.permittedInsecurePackages = [
+      "openssl-1.0.2u"
+    ];
+    overlays = [ (import ./nix/overlay.nix) ];
+  }
+, ofborgCrates ? import ./Cargo.nix {
+    inherit pkgs;
+    release = pkgs.stdenv.isDarwin;
+  }
 }:
 
+with ofborgCrates.workspaceMembers;
+
 let
-  ofborgCrates = pkgs.callPackage ./Cargo.nix {
-    cratesIO = pkgs.callPackage ./crates-io.nix {};
-  };
-
-  drv = ofborgCrates.ofborg {};
-
-  src = stripDeps (drv.override { release = pkgs.stdenv.isDarwin; });
-
   stripDeps = pkg: pkgs.runCommand "${pkg.name}-deps-stripped" {}
   ''
     cp -r ${pkg} $out
@@ -23,10 +21,14 @@ let
     find $out/bin -name '*.d' -delete
     chmod -R a-w $out
   '';
+
+  src = stripDeps ofborg.build;
 in
 
 {
-  ofborg.simple-build = ofborgCrates.ofborg_simple_build {};
+  inherit ofborgCrates;
+
+  ofborg.simple-build = ofborg-simple-build.build;
 
   ofborg.rs = pkgs.runCommand "ofborg-rs-symlink-compat" { inherit src; } ''
     mkdir -p $out/bin
@@ -49,7 +51,7 @@ in
 
     # Verify that the outpath contains the version number matching the
     # Cargo.toml
-    if ! grep -q 'version = "${drv.crateVersion}"' ${./ofborg/Cargo.toml}; then
+    if ! grep -q 'version = "${ofborg.build.crateVersion}"' ${./ofborg/Cargo.toml}; then
       cat <<EOF
 
 
@@ -57,14 +59,13 @@ in
 
 
     Build failed because you bumped the Cargo
-    version without regenerating the carnix
-    file.
+    version without regenerating the Cargo.nix.
 
     Run:
 
 
 
-        nix-shell --run ./nix/update-carnix.sh
+        nix-shell --run ./nix/update-crates.sh
 
 
     and commit those changes.
