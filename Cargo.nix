@@ -95,25 +95,7 @@ rec {
           "std-object" = [ "std" "object" "object/std" "object/compression" "gimli/endian-reader" ];
         };
       };
-      "aho-corasick 0.5.3" = rec {
-        crateName = "aho-corasick";
-        version = "0.5.3";
-        edition = "2015";
-        crateBin = [];
-        sha256 = "0rnvdmlajikq0i4zdy1p3pv699q6apvsxfc7av7byhppllp2r5ya";
-        libName = "aho_corasick";
-        authors = [
-          "Andrew Gallant <jamslam@gmail.com>"
-        ];
-        dependencies = [
-          {
-            name = "memchr";
-            packageId = "memchr 0.1.11";
-          }
-        ];
-        
-      };
-      "aho-corasick 0.7.10" = rec {
+      "aho-corasick" = rec {
         crateName = "aho-corasick";
         version = "0.7.10";
         edition = "2015";
@@ -125,7 +107,7 @@ rec {
         dependencies = [
           {
             name = "memchr";
-            packageId = "memchr 2.3.3";
+            packageId = "memchr";
             usesDefaultFeatures = false;
           }
         ];
@@ -134,42 +116,6 @@ rec {
           "std" = [ "memchr/use_std" ];
         };
         resolvedDefaultFeatures = [ "default" "std" ];
-      };
-      "amq-proto" = rec {
-        crateName = "amq-proto";
-        version = "0.1.0";
-        edition = "2015";
-        sha256 = "1lslvj0d1k4qfzx8h5kl3ajia5i2zz13qs0jdh0cfx0znwwrdmv6";
-        authors = [
-          "Andrii Dmytrenko <refresh.xss@gmail.com>"
-        ];
-        dependencies = [
-          {
-            name = "bit-vec";
-            packageId = "bit-vec";
-          }
-          {
-            name = "byteorder";
-            packageId = "byteorder 0.5.3";
-          }
-          {
-            name = "enum_primitive";
-            packageId = "enum_primitive";
-          }
-          {
-            name = "env_logger";
-            packageId = "env_logger";
-          }
-          {
-            name = "error-chain";
-            packageId = "error-chain";
-          }
-          {
-            name = "log";
-            packageId = "log 0.3.9";
-          }
-        ];
-        
       };
       "amq-protocol" = rec {
         crateName = "amq-protocol";
@@ -343,52 +289,6 @@ rec {
         ];
         
       };
-      "amqp" = rec {
-        crateName = "amqp";
-        version = "0.1.0";
-        edition = "2015";
-        workspace_member = null;
-        src = pkgs.fetchgit {
-          url = "https://github.com/grahamc/rust-amqp.git";
-          rev = "b58edf8822072688d882966f7427f0a9e67aee78";
-          sha256 = "0a0n8h71lnsl2rbi6v1zmy015f7hl91y5mgx3qzxlfrn3pjz8sy1";
-        };
-        authors = [
-          "Andrii Dmytrenko <andrey@reevoo.com>"
-        ];
-        dependencies = [
-          {
-            name = "amq-proto";
-            packageId = "amq-proto";
-          }
-          {
-            name = "env_logger";
-            packageId = "env_logger";
-          }
-          {
-            name = "log";
-            packageId = "log 0.3.9";
-          }
-          {
-            name = "openssl";
-            packageId = "openssl 0.9.24";
-            optional = true;
-          }
-          {
-            name = "time";
-            packageId = "time";
-          }
-          {
-            name = "url";
-            packageId = "url 1.7.2";
-          }
-        ];
-        features = {
-          "default" = [ "tls" ];
-          "tls" = [ "openssl" ];
-        };
-        resolvedDefaultFeatures = [ "default" "openssl" "tls" ];
-      };
       "ansi_term" = rec {
         crateName = "ansi_term";
         version = "0.11.0";
@@ -491,7 +391,7 @@ rec {
           }
           {
             name = "memchr";
-            packageId = "memchr 2.3.3";
+            packageId = "memchr";
             optional = true;
           }
           {
@@ -624,7 +524,7 @@ rec {
         dependencies = [
           {
             name = "byteorder";
-            packageId = "byteorder 1.3.4";
+            packageId = "byteorder";
           }
         ];
         
@@ -655,7 +555,7 @@ rec {
         dependencies = [
           {
             name = "byteorder";
-            packageId = "byteorder 1.3.4";
+            packageId = "byteorder";
           }
           {
             name = "safemem";
@@ -664,31 +564,7 @@ rec {
         ];
         
       };
-      "bit-vec" = rec {
-        crateName = "bit-vec";
-        version = "0.4.4";
-        edition = "2015";
-        sha256 = "0pw902a8ail0k64a7092a8vngfzsq7xkj2r22hz6q1z62s5zzd02";
-        authors = [
-          "Alexis Beingessner <a.beingessner@gmail.com>"
-        ];
-        features = {
-        };
-      };
-      "bitflags 0.9.1" = rec {
-        crateName = "bitflags";
-        version = "0.9.1";
-        edition = "2015";
-        sha256 = "19dk39gfwmhi3iy1x0wgml1fv1bkb525ywy25zwihbm063i05zaf";
-        authors = [
-          "The Rust Project Developers"
-        ];
-        features = {
-          "default" = [ "example_generated" ];
-        };
-        resolvedDefaultFeatures = [ "default" "example_generated" ];
-      };
-      "bitflags 1.2.1" = rec {
+      "bitflags" = rec {
         crateName = "bitflags";
         version = "1.2.1";
         edition = "2015";
@@ -719,7 +595,7 @@ rec {
           }
           {
             name = "byteorder";
-            packageId = "byteorder 1.3.4";
+            packageId = "byteorder";
             usesDefaultFeatures = false;
           }
           {
@@ -767,20 +643,7 @@ rec {
         ];
         
       };
-      "byteorder 0.5.3" = rec {
-        crateName = "byteorder";
-        version = "0.5.3";
-        edition = "2015";
-        sha256 = "0ma8pkyz1jbglr29m1yzlc9ghmv6672nvsrn7zd0yn5jqs60xh8g";
-        authors = [
-          "Andrew Gallant <jamslam@gmail.com>"
-        ];
-        features = {
-          "default" = [ "std" ];
-        };
-        resolvedDefaultFeatures = [ "default" "std" ];
-      };
-      "byteorder 1.3.4" = rec {
+      "byteorder" = rec {
         crateName = "byteorder";
         version = "1.3.4";
         edition = "2015";
@@ -835,7 +698,7 @@ rec {
           }
           {
             name = "num-traits";
-            packageId = "num-traits 0.2.11";
+            packageId = "num-traits";
             usesDefaultFeatures = false;
           }
           {
@@ -863,7 +726,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 1.2.1";
+            packageId = "bitflags";
             optional = true;
           }
         ];
@@ -886,27 +749,7 @@ rec {
         };
         resolvedDefaultFeatures = [ "default" "std" ];
       };
-      "core-foundation 0.2.3" = rec {
-        crateName = "core-foundation";
-        version = "0.2.3";
-        edition = "2015";
-        sha256 = "0rvcn7ab5r69wvn7gby745jlpy8pirfywcdxbiypy083s93dggr5";
-        authors = [
-          "The Servo Project Developers"
-        ];
-        dependencies = [
-          {
-            name = "core-foundation-sys";
-            packageId = "core-foundation-sys 0.2.3";
-          }
-          {
-            name = "libc";
-            packageId = "libc";
-          }
-        ];
-        
-      };
-      "core-foundation 0.7.0" = rec {
+      "core-foundation" = rec {
         crateName = "core-foundation";
         version = "0.7.0";
         edition = "2015";
@@ -917,7 +760,7 @@ rec {
         dependencies = [
           {
             name = "core-foundation-sys";
-            packageId = "core-foundation-sys 0.7.0";
+            packageId = "core-foundation-sys";
           }
           {
             name = "libc";
@@ -931,23 +774,7 @@ rec {
           "with-uuid" = [ "uuid" ];
         };
       };
-      "core-foundation-sys 0.2.3" = rec {
-        crateName = "core-foundation-sys";
-        version = "0.2.3";
-        edition = "2015";
-        sha256 = "13f7f3kblyj6yxcxm74yg84vj9ahaprlc1vgblagmj6bzmzmsnh6";
-        authors = [
-          "The Servo Project Developers"
-        ];
-        dependencies = [
-          {
-            name = "libc";
-            packageId = "libc";
-          }
-        ];
-        
-      };
-      "core-foundation-sys 0.7.0" = rec {
+      "core-foundation-sys" = rec {
         crateName = "core-foundation-sys";
         version = "0.7.0";
         edition = "2015";
@@ -1069,7 +896,7 @@ rec {
           }
           {
             name = "lazy_static";
-            packageId = "lazy_static 1.4.0";
+            packageId = "lazy_static";
             optional = true;
           }
           {
@@ -1141,7 +968,7 @@ rec {
           }
           {
             name = "lazy_static";
-            packageId = "lazy_static 1.4.0";
+            packageId = "lazy_static";
             optional = true;
           }
         ];
@@ -1199,47 +1026,6 @@ rec {
           "default" = [ "use_std" ];
         };
         resolvedDefaultFeatures = [ "default" "use_std" ];
-      };
-      "enum_primitive" = rec {
-        crateName = "enum_primitive";
-        version = "0.1.1";
-        edition = "2015";
-        sha256 = "100ip2p3w1rq0clca2ai5shhvpxfipnsjncj0f9ralad5w4m2idy";
-        authors = [
-          "Anders Kaseorg <andersk@mit.edu>"
-        ];
-        dependencies = [
-          {
-            name = "num-traits";
-            packageId = "num-traits 0.1.43";
-            usesDefaultFeatures = false;
-          }
-        ];
-        
-      };
-      "env_logger" = rec {
-        crateName = "env_logger";
-        version = "0.3.5";
-        edition = "2015";
-        sha256 = "0bvcjgkw4s3k1rd7glpflgc8s9a393zjd6jfdgvs8gjvwj0dgaqm";
-        authors = [
-          "The Rust Project Developers"
-        ];
-        dependencies = [
-          {
-            name = "log";
-            packageId = "log 0.3.9";
-          }
-          {
-            name = "regex";
-            packageId = "regex 0.1.80";
-            optional = true;
-          }
-        ];
-        features = {
-          "default" = [ "regex" ];
-        };
-        resolvedDefaultFeatures = [ "default" "regex" ];
       };
       "error-chain" = rec {
         crateName = "error-chain";
@@ -1315,7 +1101,7 @@ rec {
           }
           {
             name = "openssl";
-            packageId = "openssl 0.10.29";
+            packageId = "openssl";
           }
           {
             name = "serde";
@@ -1504,7 +1290,7 @@ rec {
           }
           {
             name = "memchr";
-            packageId = "memchr 2.3.3";
+            packageId = "memchr";
             optional = true;
           }
           {
@@ -1823,9 +1609,9 @@ rec {
       };
       "hyper-native-tls" = rec {
         crateName = "hyper-native-tls";
-        version = "0.2.4";
+        version = "0.3.0";
         edition = "2015";
-        sha256 = "1s2nm9apj5i8yjrzq8amdjwzhy0v967fjl1vca1ra1fk6m52wcvj";
+        sha256 = "0s30y20qy0akzss91yxsq1x1q7rr04jy33i0cq72nx22yjc5advd";
         authors = [
           "Steven Fackler <sfackler@gmail.com>"
         ];
@@ -1840,7 +1626,7 @@ rec {
           }
           {
             name = "native-tls";
-            packageId = "native-tls 0.1.5";
+            packageId = "native-tls";
           }
         ];
         
@@ -2039,20 +1825,7 @@ rec {
         };
         resolvedDefaultFeatures = [ "default" "native-tls" ];
       };
-      "lazy_static 0.2.11" = rec {
-        crateName = "lazy_static";
-        version = "0.2.11";
-        edition = "2015";
-        sha256 = "0wxy8vak7jsx6r8gx475pjqpx11p2bfq4wvw6idmqi31mp3k7w3n";
-        authors = [
-          "Marvin Löbel <loebel.marvin@gmail.com>"
-        ];
-        features = {
-          "compiletest" = [ "compiletest_rs" ];
-          "spin_no_std" = [ "nightly" "spin" ];
-        };
-      };
-      "lazy_static 1.4.0" = rec {
+      "lazy_static" = rec {
         crateName = "lazy_static";
         version = "1.4.0";
         edition = "2015";
@@ -2081,7 +1854,7 @@ rec {
           }
           {
             name = "bitflags";
-            packageId = "bitflags 1.2.1";
+            packageId = "bitflags";
           }
           {
             name = "cfg-if";
@@ -2286,24 +2059,7 @@ rec {
         ];
         
       };
-      "memchr 0.1.11" = rec {
-        crateName = "memchr";
-        version = "0.1.11";
-        edition = "2015";
-        sha256 = "084d85hjfa3xf5kwdms2mhbkh78m1gl2254cp5swcxj3a7xjkdnq";
-        authors = [
-          "Andrew Gallant <jamslam@gmail.com>"
-          "bluss"
-        ];
-        dependencies = [
-          {
-            name = "libc";
-            packageId = "libc";
-          }
-        ];
-        
-      };
-      "memchr 2.3.3" = rec {
+      "memchr" = rec {
         crateName = "memchr";
         version = "2.3.3";
         edition = "2015";
@@ -2365,7 +2121,7 @@ rec {
         dependencies = [
           {
             name = "lazy_static";
-            packageId = "lazy_static 1.4.0";
+            packageId = "lazy_static";
             target = { target, features }: target."windows";
           }
           {
@@ -2419,54 +2175,7 @@ rec {
         ];
         
       };
-      "native-tls 0.1.5" = rec {
-        crateName = "native-tls";
-        version = "0.1.5";
-        edition = "2015";
-        sha256 = "1h7v80nlskyr7b1gsg4ivlpm6pilj6ybgvcwadj7ips3igfblkgp";
-        authors = [
-          "Steven Fackler <sfackler@gmail.com>"
-        ];
-        dependencies = [
-          {
-            name = "lazy_static";
-            packageId = "lazy_static 0.2.11";
-          }
-          {
-            name = "libc";
-            packageId = "libc";
-            target = { target, features }: ((target."os" == "macos") || (target."os" == "ios"));
-          }
-          {
-            name = "openssl";
-            packageId = "openssl 0.9.24";
-            target = { target, features }: (!((target."os" == "windows") || (target."os" == "macos") || (target."os" == "ios")));
-          }
-          {
-            name = "schannel";
-            packageId = "schannel";
-            target = { target, features }: (target."os" == "windows");
-          }
-          {
-            name = "security-framework";
-            packageId = "security-framework 0.1.16";
-            target = { target, features }: ((target."os" == "macos") || (target."os" == "ios"));
-            features = [ "OSX_10_8" ];
-          }
-          {
-            name = "security-framework-sys";
-            packageId = "security-framework-sys 0.1.16";
-            target = { target, features }: ((target."os" == "macos") || (target."os" == "ios"));
-          }
-          {
-            name = "tempdir";
-            packageId = "tempdir";
-            target = { target, features }: ((target."os" == "macos") || (target."os" == "ios"));
-          }
-        ];
-        
-      };
-      "native-tls 0.2.4" = rec {
+      "native-tls" = rec {
         crateName = "native-tls";
         version = "0.2.4";
         edition = "2015";
@@ -2477,7 +2186,7 @@ rec {
         dependencies = [
           {
             name = "lazy_static";
-            packageId = "lazy_static 1.4.0";
+            packageId = "lazy_static";
             target = { target, features }: ((target."os" == "macos") || (target."os" == "ios"));
           }
           {
@@ -2492,7 +2201,7 @@ rec {
           }
           {
             name = "openssl";
-            packageId = "openssl 0.10.29";
+            packageId = "openssl";
             target = { target, features }: (!((target."os" == "windows") || (target."os" == "macos") || (target."os" == "ios")));
           }
           {
@@ -2512,12 +2221,12 @@ rec {
           }
           {
             name = "security-framework";
-            packageId = "security-framework 0.4.4";
+            packageId = "security-framework";
             target = { target, features }: ((target."os" == "macos") || (target."os" == "ios"));
           }
           {
             name = "security-framework-sys";
-            packageId = "security-framework-sys 0.4.3";
+            packageId = "security-framework-sys";
             target = { target, features }: ((target."os" == "macos") || (target."os" == "ios"));
           }
           {
@@ -2541,7 +2250,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 1.2.1";
+            packageId = "bitflags";
           }
           {
             name = "cfg-if";
@@ -2577,7 +2286,7 @@ rec {
         dependencies = [
           {
             name = "memchr";
-            packageId = "memchr 2.3.3";
+            packageId = "memchr";
             usesDefaultFeatures = false;
           }
         ];
@@ -2612,7 +2321,7 @@ rec {
           }
           {
             name = "memchr";
-            packageId = "memchr 2.3.3";
+            packageId = "memchr";
             usesDefaultFeatures = false;
           }
         ];
@@ -2662,7 +2371,7 @@ rec {
         dependencies = [
           {
             name = "num-traits";
-            packageId = "num-traits 0.2.11";
+            packageId = "num-traits";
             usesDefaultFeatures = false;
           }
         ];
@@ -2678,23 +2387,7 @@ rec {
           "std" = [ "num-traits/std" ];
         };
       };
-      "num-traits 0.1.43" = rec {
-        crateName = "num-traits";
-        version = "0.1.43";
-        edition = "2015";
-        sha256 = "0c9whknf2dm74a3cqirafy6gj83a76gl56g4v3g19k6lkwz13rcj";
-        authors = [
-          "The Rust Project Developers"
-        ];
-        dependencies = [
-          {
-            name = "num-traits";
-            packageId = "num-traits 0.2.11";
-          }
-        ];
-        
-      };
-      "num-traits 0.2.11" = rec {
+      "num-traits" = rec {
         crateName = "num-traits";
         version = "0.2.11";
         edition = "2015";
@@ -2711,7 +2404,6 @@ rec {
         features = {
           "default" = [ "std" ];
         };
-        resolvedDefaultFeatures = [ "default" "std" ];
       };
       "num_cpus" = rec {
         crateName = "num_cpus";
@@ -2774,10 +2466,6 @@ rec {
           "Graham Christensen <graham@grahamc.com>"
         ];
         dependencies = [
-          {
-            name = "amqp";
-            packageId = "amqp";
-          }
           {
             name = "async-std";
             packageId = "async-std";
@@ -2909,7 +2597,7 @@ rec {
         ];
         
       };
-      "openssl 0.10.29" = rec {
+      "openssl" = rec {
         crateName = "openssl";
         version = "0.10.29";
         edition = "2015";
@@ -2920,7 +2608,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 1.2.1";
+            packageId = "bitflags";
           }
           {
             name = "cfg-if";
@@ -2932,7 +2620,7 @@ rec {
           }
           {
             name = "lazy_static";
-            packageId = "lazy_static 1.4.0";
+            packageId = "lazy_static";
           }
           {
             name = "libc";
@@ -2945,39 +2633,6 @@ rec {
         ];
         features = {
           "vendored" = [ "openssl-sys/vendored" ];
-        };
-      };
-      "openssl 0.9.24" = rec {
-        crateName = "openssl";
-        version = "0.9.24";
-        edition = "2015";
-        sha256 = "11br5b8x1kc5klsn50ihiml82ajyzcwi3lljvrlsm8vlhhlmqq53";
-        authors = [
-          "Steven Fackler <sfackler@gmail.com>"
-        ];
-        dependencies = [
-          {
-            name = "bitflags";
-            packageId = "bitflags 0.9.1";
-          }
-          {
-            name = "foreign-types";
-            packageId = "foreign-types";
-          }
-          {
-            name = "lazy_static";
-            packageId = "lazy_static 1.4.0";
-          }
-          {
-            name = "libc";
-            packageId = "libc";
-          }
-          {
-            name = "openssl-sys";
-            packageId = "openssl-sys";
-          }
-        ];
-        features = {
         };
       };
       "openssl-probe" = rec {
@@ -3113,11 +2768,11 @@ rec {
           }
           {
             name = "lazy_static";
-            packageId = "lazy_static 1.4.0";
+            packageId = "lazy_static";
           }
           {
             name = "regex";
-            packageId = "regex 1.3.7";
+            packageId = "regex";
           }
         ];
         
@@ -3696,41 +3351,7 @@ rec {
         ];
         
       };
-      "regex 0.1.80" = rec {
-        crateName = "regex";
-        version = "0.1.80";
-        edition = "2015";
-        sha256 = "0bs036h3vzc6pj5jj4vc909s9rppq7b808ic99qn0y6gm3karm2g";
-        authors = [
-          "The Rust Project Developers"
-        ];
-        dependencies = [
-          {
-            name = "aho-corasick";
-            packageId = "aho-corasick 0.5.3";
-          }
-          {
-            name = "memchr";
-            packageId = "memchr 0.1.11";
-          }
-          {
-            name = "regex-syntax";
-            packageId = "regex-syntax 0.3.9";
-          }
-          {
-            name = "thread_local";
-            packageId = "thread_local 0.2.7";
-          }
-          {
-            name = "utf8-ranges";
-            packageId = "utf8-ranges";
-          }
-        ];
-        features = {
-          "simd-accel" = [ "simd" ];
-        };
-      };
-      "regex 1.3.7" = rec {
+      "regex" = rec {
         crateName = "regex";
         version = "1.3.7";
         edition = "2015";
@@ -3741,22 +3362,22 @@ rec {
         dependencies = [
           {
             name = "aho-corasick";
-            packageId = "aho-corasick 0.7.10";
+            packageId = "aho-corasick";
             optional = true;
           }
           {
             name = "memchr";
-            packageId = "memchr 2.3.3";
+            packageId = "memchr";
             optional = true;
           }
           {
             name = "regex-syntax";
-            packageId = "regex-syntax 0.6.17";
+            packageId = "regex-syntax";
             usesDefaultFeatures = false;
           }
           {
             name = "thread_local";
-            packageId = "thread_local 1.0.1";
+            packageId = "thread_local";
             optional = true;
           }
         ];
@@ -3789,12 +3410,12 @@ rec {
         dependencies = [
           {
             name = "byteorder";
-            packageId = "byteorder 1.3.4";
+            packageId = "byteorder";
             usesDefaultFeatures = false;
           }
           {
             name = "regex-syntax";
-            packageId = "regex-syntax 0.6.17";
+            packageId = "regex-syntax";
             optional = true;
           }
         ];
@@ -3805,17 +3426,7 @@ rec {
         };
         resolvedDefaultFeatures = [ "default" "regex-syntax" "std" ];
       };
-      "regex-syntax 0.3.9" = rec {
-        crateName = "regex-syntax";
-        version = "0.3.9";
-        edition = "2015";
-        sha256 = "0ms9hgdhhsxw9w920i7gipydvagf100bb56jbs192rz86ln01v7r";
-        authors = [
-          "The Rust Project Developers"
-        ];
-        
-      };
-      "regex-syntax 0.6.17" = rec {
+      "regex-syntax" = rec {
         crateName = "regex-syntax";
         version = "0.6.17";
         edition = "2015";
@@ -3895,7 +3506,7 @@ rec {
         dependencies = [
           {
             name = "lazy_static";
-            packageId = "lazy_static 1.4.0";
+            packageId = "lazy_static";
           }
           {
             name = "winapi";
@@ -3927,42 +3538,7 @@ rec {
           "default" = [ "use_std" ];
         };
       };
-      "security-framework 0.1.16" = rec {
-        crateName = "security-framework";
-        version = "0.1.16";
-        edition = "2015";
-        sha256 = "0ci39ax08h2ngrl1yf1ra9smivhjs6xarmg7kp6fxracqpllx96z";
-        authors = [
-          "Steven Fackler <sfackler@gmail.com>"
-        ];
-        dependencies = [
-          {
-            name = "core-foundation";
-            packageId = "core-foundation 0.2.3";
-          }
-          {
-            name = "core-foundation-sys";
-            packageId = "core-foundation-sys 0.2.3";
-          }
-          {
-            name = "libc";
-            packageId = "libc";
-          }
-          {
-            name = "security-framework-sys";
-            packageId = "security-framework-sys 0.1.16";
-          }
-        ];
-        features = {
-          "OSX_10_10" = [ "OSX_10_9" "security-framework-sys/OSX_10_10" ];
-          "OSX_10_11" = [ "OSX_10_10" "security-framework-sys/OSX_10_11" ];
-          "OSX_10_12" = [ "OSX_10_11" "security-framework-sys/OSX_10_11" ];
-          "OSX_10_8" = [ "security-framework-sys/OSX_10_8" ];
-          "OSX_10_9" = [ "OSX_10_8" "security-framework-sys/OSX_10_9" ];
-        };
-        resolvedDefaultFeatures = [ "OSX_10_8" ];
-      };
-      "security-framework 0.4.4" = rec {
+      "security-framework" = rec {
         crateName = "security-framework";
         version = "0.4.4";
         edition = "2015";
@@ -3974,15 +3550,15 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 1.2.1";
+            packageId = "bitflags";
           }
           {
             name = "core-foundation";
-            packageId = "core-foundation 0.7.0";
+            packageId = "core-foundation";
           }
           {
             name = "core-foundation-sys";
-            packageId = "core-foundation-sys 0.7.0";
+            packageId = "core-foundation-sys";
           }
           {
             name = "libc";
@@ -3990,7 +3566,7 @@ rec {
           }
           {
             name = "security-framework-sys";
-            packageId = "security-framework-sys 0.4.3";
+            packageId = "security-framework-sys";
           }
         ];
         features = {
@@ -4001,33 +3577,7 @@ rec {
           "OSX_10_9" = [ "security-framework-sys/OSX_10_9" ];
         };
       };
-      "security-framework-sys 0.1.16" = rec {
-        crateName = "security-framework-sys";
-        version = "0.1.16";
-        edition = "2015";
-        sha256 = "1bdy87gvmahiiyfzghsdg2dkhznww3p3d3r676qs0y32hcg648al";
-        authors = [
-          "Steven Fackler <sfackler@gmail.com>"
-        ];
-        dependencies = [
-          {
-            name = "core-foundation-sys";
-            packageId = "core-foundation-sys 0.2.3";
-          }
-          {
-            name = "libc";
-            packageId = "libc";
-          }
-        ];
-        features = {
-          "OSX_10_10" = [ "OSX_10_9" ];
-          "OSX_10_11" = [ "OSX_10_10" ];
-          "OSX_10_12" = [ "OSX_10_11" ];
-          "OSX_10_9" = [ "OSX_10_8" ];
-        };
-        resolvedDefaultFeatures = [ "OSX_10_8" ];
-      };
-      "security-framework-sys 0.4.3" = rec {
+      "security-framework-sys" = rec {
         crateName = "security-framework-sys";
         version = "0.4.3";
         edition = "2015";
@@ -4039,7 +3589,7 @@ rec {
         dependencies = [
           {
             name = "core-foundation-sys";
-            packageId = "core-foundation-sys 0.7.0";
+            packageId = "core-foundation-sys";
           }
           {
             name = "libc";
@@ -4215,7 +3765,7 @@ rec {
         dependencies = [
           {
             name = "lazy_static";
-            packageId = "lazy_static 1.4.0";
+            packageId = "lazy_static";
           }
         ];
         
@@ -4432,7 +3982,7 @@ rec {
           }
           {
             name = "native-tls";
-            packageId = "native-tls 0.2.4";
+            packageId = "native-tls";
             rename = "native-tls-crate";
             optional = true;
           }
@@ -4454,26 +4004,6 @@ rec {
           "vendored-openssl" = [ "openssl/vendored" ];
         };
         resolvedDefaultFeatures = [ "native-tls" "native-tls-crate" "pem" ];
-      };
-      "tempdir" = rec {
-        crateName = "tempdir";
-        version = "0.3.7";
-        edition = "2015";
-        sha256 = "1n5n86zxpgd85y0mswrp5cfdisizq2rv3la906g6ipyc03xvbwhm";
-        authors = [
-          "The Rust Project Developers"
-        ];
-        dependencies = [
-          {
-            name = "rand";
-            packageId = "rand 0.4.6";
-          }
-          {
-            name = "remove_dir_all";
-            packageId = "remove_dir_all";
-          }
-        ];
-        
       };
       "tempfile 2.2.0" = rec {
         crateName = "tempfile";
@@ -4554,43 +4084,7 @@ rec {
         ];
         
       };
-      "thread-id" = rec {
-        crateName = "thread-id";
-        version = "2.0.0";
-        edition = "2015";
-        sha256 = "00zzs2bx1xw8aqm5plqqgr7bc2zz6zkqrdxq8vpiqb8hc2srslx9";
-        authors = [
-          "Ruud van Asseldonk <dev@veniogames.com>"
-        ];
-        dependencies = [
-          {
-            name = "kernel32-sys";
-            packageId = "kernel32-sys";
-          }
-          {
-            name = "libc";
-            packageId = "libc";
-          }
-        ];
-        
-      };
-      "thread_local 0.2.7" = rec {
-        crateName = "thread_local";
-        version = "0.2.7";
-        edition = "2015";
-        sha256 = "1mgxikqvhpsic6xk7pan95lvgsky1sdxzw2w5m2l35pgrazxnxl5";
-        authors = [
-          "Amanieu d'Antras <amanieu@gmail.com>"
-        ];
-        dependencies = [
-          {
-            name = "thread-id";
-            packageId = "thread-id";
-          }
-        ];
-        
-      };
-      "thread_local 1.0.1" = rec {
+      "thread_local" = rec {
         crateName = "thread_local";
         version = "1.0.1";
         edition = "2015";
@@ -4601,7 +4095,7 @@ rec {
         dependencies = [
           {
             name = "lazy_static";
-            packageId = "lazy_static 1.4.0";
+            packageId = "lazy_static";
           }
         ];
         
@@ -4708,7 +4202,7 @@ rec {
         dependencies = [
           {
             name = "lazy_static";
-            packageId = "lazy_static 1.4.0";
+            packageId = "lazy_static";
             optional = true;
           }
         ];
@@ -4729,7 +4223,7 @@ rec {
         dependencies = [
           {
             name = "lazy_static";
-            packageId = "lazy_static 1.4.0";
+            packageId = "lazy_static";
           }
           {
             name = "log";
@@ -4789,7 +4283,7 @@ rec {
           }
           {
             name = "lazy_static";
-            packageId = "lazy_static 1.4.0";
+            packageId = "lazy_static";
             optional = true;
           }
           {
@@ -4799,7 +4293,7 @@ rec {
           }
           {
             name = "regex";
-            packageId = "regex 1.3.7";
+            packageId = "regex";
             optional = true;
           }
           {
@@ -5020,16 +4514,6 @@ rec {
         ];
         
       };
-      "utf8-ranges" = rec {
-        crateName = "utf8-ranges";
-        version = "0.1.3";
-        edition = "2015";
-        sha256 = "03xf604b2v51ag3jgzw92l97xnb10kw9zv948bhc7ja1ik017jm1";
-        authors = [
-          "Andrew Gallant <jamslam@gmail.com>"
-        ];
-        
-      };
       "uuid" = rec {
         crateName = "uuid";
         version = "0.4.0";
@@ -5151,7 +4635,7 @@ rec {
           }
           {
             name = "lazy_static";
-            packageId = "lazy_static 1.4.0";
+            packageId = "lazy_static";
           }
           {
             name = "log";
@@ -5724,7 +5208,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags 1.2.1";
+            packageId = "bitflags";
           }
           {
             name = "wepoll-sys";
