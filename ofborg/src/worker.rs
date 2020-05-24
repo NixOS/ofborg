@@ -1,13 +1,6 @@
 use std::marker::Send;
 
-use amqp::protocol::basic::{BasicProperties, Deliver};
-use amqp::Basic;
 use serde::Serialize;
-use tracing::error;
-
-pub struct Worker<T: SimpleWorker> {
-    internal: T,
-}
 
 pub struct Response {}
 
@@ -60,59 +53,4 @@ pub trait SimpleWorker: Send {
         headers: &Option<String>,
         body: &[u8],
     ) -> Result<Self::J, String>;
-}
-
-pub fn new<T: SimpleWorker>(worker: T) -> Worker<T> {
-    Worker { internal: worker }
-}
-
-impl<T: SimpleWorker + Send> amqp::Consumer for Worker<T> {
-    fn handle_delivery(
-        &mut self,
-        channel: &mut amqp::Channel,
-        method: Deliver,
-        headers: BasicProperties,
-        body: Vec<u8>,
-    ) {
-        let job = self
-            .internal
-            .msg_to_job(&method.routing_key, &headers.content_type, &body);
-
-        if let Err(e) = job {
-            error!("Error decoding job: {:?}", e);
-            channel.basic_ack(method.delivery_tag, false).unwrap();
-            return;
-        }
-
-        for action in self.internal.consumer(&job.unwrap()) {
-            match action {
-                Action::Ack => {
-                    channel.basic_ack(method.delivery_tag, false).unwrap();
-                }
-                Action::NackRequeue => {
-                    channel
-                        .basic_nack(method.delivery_tag, false, true)
-                        .unwrap();
-                }
-                Action::NackDump => {
-                    channel
-                        .basic_nack(method.delivery_tag, false, false)
-                        .unwrap();
-                }
-                Action::Publish(mut msg) => {
-                    let exch = msg.exchange.take().unwrap_or_else(|| "".to_owned());
-                    let key = msg.routing_key.take().unwrap_or_else(|| "".to_owned());
-
-                    let props = BasicProperties {
-                        content_type: msg.content_type,
-                        delivery_mode: Some(2), // persistent
-                        ..Default::default()
-                    };
-                    channel
-                        .basic_publish(exch, key, msg.mandatory, msg.immediate, props, msg.content)
-                        .unwrap();
-                }
-            }
-        }
-    }
 }
