@@ -119,9 +119,9 @@ rec {
       };
       "amq-protocol" = rec {
         crateName = "amq-protocol";
-        version = "6.0.0-rc3";
+        version = "6.0.0-rc7";
         edition = "2018";
-        sha256 = "0v9x190dzgjviw9nj86grsxws7v5isws75ni6hiiff2pn6qg6apw";
+        sha256 = "06ys8l0qd031z26nprhsqmq6skwals2ylpav3kgkvbk0d5gwy1zi";
         libName = "amq_protocol";
         authors = [
           "Marc-Antoine Perennou <%arc-Antoine@Perennou.com>"
@@ -171,9 +171,9 @@ rec {
       };
       "amq-protocol-codegen" = rec {
         crateName = "amq-protocol-codegen";
-        version = "6.0.0-rc3";
+        version = "6.0.0-rc7";
         edition = "2018";
-        sha256 = "1whm4cazcyhsc6zzaqwsbkr0ra3cwwfp9jsn2vn5rs1ql5qc7wn3";
+        sha256 = "0di623y8pcpw15zhkckbca480qg99ih2lsqqjnlgm1b13n4sfl8z";
         libName = "amq_protocol_codegen";
         authors = [
           "Marc-Antoine Perennou <%arc-Antoine@Perennou.com>"
@@ -201,9 +201,9 @@ rec {
       };
       "amq-protocol-tcp" = rec {
         crateName = "amq-protocol-tcp";
-        version = "6.0.0-rc3";
+        version = "6.0.0-rc7";
         edition = "2018";
-        sha256 = "1xrp17gljcdxqak7n51w95c419jldacq9gqss1rwpfgrfmwl0y5w";
+        sha256 = "11yq8589vi0kcr1rivc97r9sm75g7jhrb58j7dppgd1875v6225n";
         libName = "amq_protocol_tcp";
         authors = [
           "Marc-Antoine Perennou <%arc-Antoine@Perennou.com>"
@@ -237,9 +237,9 @@ rec {
       };
       "amq-protocol-types" = rec {
         crateName = "amq-protocol-types";
-        version = "6.0.0-rc3";
+        version = "6.0.0-rc7";
         edition = "2018";
-        sha256 = "0pqk3xqaggwd400l0nyjbc7vqn9dvnah7bmb688vz6h6lqmyh9a4";
+        sha256 = "15dsxydv32g3j9sf0mfpqi8sa85ma3m5vwv2yi1hq80nd61w1qh0";
         libName = "amq_protocol_types";
         authors = [
           "Marc-Antoine Perennou <%arc-Antoine@Perennou.com>"
@@ -270,9 +270,9 @@ rec {
       };
       "amq-protocol-uri" = rec {
         crateName = "amq-protocol-uri";
-        version = "6.0.0-rc3";
+        version = "6.0.0-rc7";
         edition = "2018";
-        sha256 = "1r57v1i9wy5wr22bc6kfyz22lbhifarlbss415gq40lcwidvjlcm";
+        sha256 = "05fj5an4ixfgl7kh4vf55xaa2v6grj6bpxcf4wqx4klff11172bv";
         libName = "amq_protocol_uri";
         authors = [
           "Marc-Antoine Perennou <%arc-Antoine@Perennou.com>"
@@ -548,6 +548,20 @@ rec {
           }
         ];
         
+      };
+      "base64 0.11.0" = rec {
+        crateName = "base64";
+        version = "0.11.0";
+        edition = "2018";
+        sha256 = "1iqmims6yvr6vwzyy54qd672zw29ipjj17p8klcr578c9ajpw6xl";
+        authors = [
+          "Alice Maz <alice@alicemaz.com>"
+          "Marshall Pierce <marshall@mpierce.org>"
+        ];
+        features = {
+          "default" = [ "std" ];
+        };
+        resolvedDefaultFeatures = [ "default" "std" ];
       };
       "base64 0.9.3" = rec {
         crateName = "base64";
@@ -1535,9 +1549,9 @@ rec {
       };
       "lapin" = rec {
         crateName = "lapin";
-        version = "1.0.0-beta4";
+        version = "1.0.0-rc6";
         edition = "2018";
-        sha256 = "1hw2wh4fpzrdynhb6xyc7yiyhc2msqz0z1mqhvwq6mli0bxyvkns";
+        sha256 = "1qq5225w13ybivv2rdwzfa02ghdh19ckmjays9zxxjd5n2h1kk3g";
         authors = [
           "Geoffroy Couprie <geo.couprie@gmail.com>"
           "Marc-Antoine Perennou <Marc-Antoine@Perennou.com>"
@@ -2642,6 +2656,30 @@ rec {
           "deadlock_detection" = [ "petgraph" "thread-id" "backtrace" ];
         };
       };
+      "pem" = rec {
+        crateName = "pem";
+        version = "0.7.0";
+        edition = "2018";
+        sha256 = "14wpql0znpxrg6bq6lmp9kvbs9v24l0zzqqf3yj5d9spqxh1fn51";
+        authors = [
+          "Jonathan Creekmore <jonathan@thecreekmores.org>"
+        ];
+        dependencies = [
+          {
+            name = "base64";
+            packageId = "base64 0.11.0";
+          }
+          {
+            name = "lazy_static";
+            packageId = "lazy_static";
+          }
+          {
+            name = "regex";
+            packageId = "regex";
+          }
+        ];
+        
+      };
       "percent-encoding 1.0.1" = rec {
         crateName = "percent-encoding";
         version = "1.0.1";
@@ -3664,9 +3702,9 @@ rec {
       };
       "tcp-stream" = rec {
         crateName = "tcp-stream";
-        version = "0.15.4";
+        version = "0.19.1";
         edition = "2018";
-        sha256 = "1pfrlryb4fydq4rdvmljnd01k7i3kqadlydsz5ifgsm7yrvs5yng";
+        sha256 = "0gihcjbkl1bfakq9cphbf54i2z30rb1jsjvm1bjm6fy8dyk3dy9v";
         libName = "tcp_stream";
         authors = [
           "Marc-Antoine Perennou <Marc-Antoine@Perennou.com>"
@@ -3685,19 +3723,27 @@ rec {
           {
             name = "native-tls";
             packageId = "native-tls";
+            rename = "native-tls-crate";
+            optional = true;
+          }
+          {
+            name = "pem";
+            packageId = "pem";
             optional = true;
           }
         ];
         features = {
           "dangerous-configuration" = [ "rustls-connector/dangerous-configuration" ];
           "default" = [ "native-tls" ];
+          "native-tls" = [ "native-tls-crate" "pem" ];
           "quic" = [ "rustls-connector/quic" ];
           "rustls" = [ "rustls-native-certs" ];
-          "rustls-native-certs" = [ "rustls-connector" "rustls-connector/native-certs" ];
-          "rustls-webpki-roots-certs" = [ "rustls-connector" "rustls-connector/webpki-roots-certs" ];
+          "rustls-common" = [ "rustls-connector" "p12" ];
+          "rustls-native-certs" = [ "rustls-common" "rustls-connector/native-certs" ];
+          "rustls-webpki-roots-certs" = [ "rustls-common" "rustls-connector/webpki-roots-certs" ];
           "vendored-openssl" = [ "openssl/vendored" ];
         };
-        resolvedDefaultFeatures = [ "native-tls" ];
+        resolvedDefaultFeatures = [ "native-tls" "native-tls-crate" "pem" ];
       };
       "tempfile 2.2.0" = rec {
         crateName = "tempfile";
