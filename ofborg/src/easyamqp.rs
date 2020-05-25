@@ -1,9 +1,3 @@
-use crate::config::RabbitMQConfig;
-use crate::ofborg;
-
-use amqp::Basic;
-use tracing::info;
-
 pub struct ConsumeConfig {
     /// Specifies the name of the queue to consume from.
     pub queue: String,
@@ -264,39 +258,6 @@ pub struct QueueConfig {
     pub no_wait: bool,
 }
 
-pub fn session_from_config(config: &RabbitMQConfig) -> Result<amqp::Session, amqp::AMQPError> {
-    let scheme = if config.ssl {
-        amqp::AMQPScheme::AMQPS
-    } else {
-        amqp::AMQPScheme::AMQP
-    };
-
-    let mut properties = amqp::Table::new();
-    properties.insert(
-        "ofborg_version".to_owned(),
-        amqp::TableEntry::LongString(ofborg::VERSION.to_owned()),
-    );
-
-    let options = amqp::Options {
-        host: config.host.clone(),
-        port: match scheme {
-            amqp::AMQPScheme::AMQPS => 5671,
-            amqp::AMQPScheme::AMQP => 5672,
-        },
-        vhost: config.virtualhost.clone().unwrap_or_else(|| "/".to_owned()),
-        login: config.username.clone(),
-        password: config.password.clone(),
-        scheme,
-        properties,
-        ..amqp::Options::default()
-    };
-
-    let session = amqp::Session::new(options)?;
-
-    info!("Connected to {}", &config.host);
-    Ok(session)
-}
-
 pub trait ChannelExt {
     type Error;
     fn declare_exchange(&mut self, config: ExchangeConfig) -> Result<(), Self::Error>;
@@ -308,65 +269,4 @@ pub trait ConsumerExt<'a, C> {
     type Error;
     type Handle;
     fn consume(self, callback: C, config: ConsumeConfig) -> Result<Self::Handle, Self::Error>;
-}
-
-impl ChannelExt for amqp::Channel {
-    type Error = amqp::AMQPError;
-
-    fn declare_exchange(&mut self, config: ExchangeConfig) -> Result<(), Self::Error> {
-        self.exchange_declare(
-            config.exchange,
-            config.exchange_type.into(),
-            config.passive,
-            config.durable,
-            config.auto_delete,
-            config.internal,
-            config.no_wait,
-            amqp::Table::new(),
-        )?;
-        Ok(())
-    }
-
-    fn declare_queue(&mut self, config: QueueConfig) -> Result<(), Self::Error> {
-        self.queue_declare(
-            config.queue,
-            config.passive,
-            config.durable,
-            config.exclusive,
-            config.auto_delete,
-            config.no_wait,
-            amqp::Table::new(),
-        )?;
-        Ok(())
-    }
-
-    fn bind_queue(&mut self, config: BindQueueConfig) -> Result<(), Self::Error> {
-        self.queue_bind(
-            config.queue,
-            config.exchange,
-            config.routing_key.unwrap_or_else(|| "".to_owned()),
-            config.no_wait,
-            amqp::Table::new(),
-        )?;
-        Ok(())
-    }
-}
-
-impl<C: amqp::Consumer + 'static> ConsumerExt<'_, C> for amqp::Channel {
-    type Error = amqp::AMQPError;
-    type Handle = Self;
-
-    fn consume(mut self, callback: C, config: ConsumeConfig) -> Result<Self::Handle, Self::Error> {
-        self.basic_consume(
-            callback,
-            config.queue,
-            config.consumer_tag,
-            config.no_local,
-            config.no_ack,
-            config.exclusive,
-            config.no_wait,
-            amqp::Table::new(),
-        )?;
-        Ok(self)
-    }
 }

@@ -7,8 +7,6 @@ edition = "2018"
 
 [dependencies]
 either = "1.4.0"
-# amqp = { path = "./rust-amqp/" } # for testing patches
-amqp = { git = "https://github.com/grahamc/rust-amqp.git" }
 md5 = "0.3.5"
 uuid = { version = "0.4", features = ["v4"] }
 fs2 = "0.4.2"
@@ -21,7 +19,7 @@ tracing-subscriber = { version = "0.2.5", features = ["json"] }
 hubcaps = { git = "https://github.com/grahamc/hubcaps.git" }
 #hubcaps = { path = "../../../grahamc/hubcaps/" } # for testing patches
 hyper = "0.10.*"
-hyper-native-tls = "0.2.4"
+hyper-native-tls = "0.3.0"
 lru-cache = "0.1.1"
 nom = "4.0.0-beta3"
 sys-info = "0.5.6"

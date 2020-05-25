@@ -1,5 +1,3 @@
-use amqp::protocol::basic;
-use amqp::Basic;
 use async_std::task;
 use lapin::options::BasicPublishOptions;
 
@@ -24,38 +22,6 @@ pub struct EventMessage {
 pub struct RabbitMQ<C> {
     identity: String,
     channel: C,
-}
-
-impl RabbitMQ<amqp::Channel> {
-    pub fn from_amqp(identity: &str, channel: amqp::Channel) -> Self {
-        RabbitMQ {
-            identity: identity.to_owned(),
-            channel,
-        }
-    }
-}
-
-impl SysEvents for RabbitMQ<amqp::Channel> {
-    fn notify(&mut self, event: Event) {
-        let props = basic::BasicProperties {
-            ..Default::default()
-        };
-        self.channel
-            .basic_publish(
-                String::from("stats"),
-                "".to_owned(),
-                false,
-                false,
-                props,
-                serde_json::to_string(&EventMessage {
-                    sender: self.identity.clone(),
-                    events: vec![event],
-                })
-                .unwrap()
-                .into_bytes(),
-            )
-            .unwrap();
-    }
 }
 
 impl RabbitMQ<lapin::Channel> {
