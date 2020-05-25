@@ -1,6 +1,5 @@
 use async_std::task;
 use lapin::options::BasicPublishOptions;
-use lapin::CloseOnDrop;
 
 include!(concat!(env!("OUT_DIR"), "/events.rs"));
 
@@ -25,8 +24,8 @@ pub struct RabbitMQ<C> {
     channel: C,
 }
 
-impl RabbitMQ<CloseOnDrop<lapin::Channel>> {
-    pub fn from_lapin(identity: &str, channel: CloseOnDrop<lapin::Channel>) -> Self {
+impl RabbitMQ<lapin::Channel> {
+    pub fn from_lapin(identity: &str, channel: lapin::Channel) -> Self {
         RabbitMQ {
             identity: identity.to_owned(),
             channel,
@@ -34,7 +33,7 @@ impl RabbitMQ<CloseOnDrop<lapin::Channel>> {
     }
 }
 
-impl SysEvents for RabbitMQ<CloseOnDrop<lapin::Channel>> {
+impl SysEvents for RabbitMQ<lapin::Channel> {
     fn notify(&mut self, event: Event) {
         let props = lapin::BasicProperties::default().with_content_type("application/json".into());
         task::block_on(async {
