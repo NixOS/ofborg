@@ -19,7 +19,7 @@ tracing-subscriber = { version = "0.2.5", features = ["json"] }
 hubcaps = { git = "https://github.com/grahamc/hubcaps.git" }
 #hubcaps = { path = "../../../grahamc/hubcaps/" } # for testing patches
 hyper = "0.10.*"
-hyper-native-tls = "0.3.0"
+hyper-native-tls = "0.2.4"
 lru-cache = "0.1.1"
 nom = "4.0.0-beta3"
 sys-info = "0.5.6"

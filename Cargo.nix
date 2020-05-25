@@ -550,7 +550,20 @@ rec {
         ];
         
       };
-      "bitflags" = rec {
+      "bitflags 0.9.1" = rec {
+        crateName = "bitflags";
+        version = "0.9.1";
+        edition = "2015";
+        sha256 = "19dk39gfwmhi3iy1x0wgml1fv1bkb525ywy25zwihbm063i05zaf";
+        authors = [
+          "The Rust Project Developers"
+        ];
+        features = {
+          "default" = [ "example_generated" ];
+        };
+        resolvedDefaultFeatures = [ "default" "example_generated" ];
+      };
+      "bitflags 1.2.1" = rec {
         crateName = "bitflags";
         version = "1.2.1";
         edition = "2015";
@@ -712,7 +725,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags";
+            packageId = "bitflags 1.2.1";
             optional = true;
           }
         ];
@@ -735,7 +748,27 @@ rec {
         };
         resolvedDefaultFeatures = [ "default" "std" ];
       };
-      "core-foundation" = rec {
+      "core-foundation 0.2.3" = rec {
+        crateName = "core-foundation";
+        version = "0.2.3";
+        edition = "2015";
+        sha256 = "0rvcn7ab5r69wvn7gby745jlpy8pirfywcdxbiypy083s93dggr5";
+        authors = [
+          "The Servo Project Developers"
+        ];
+        dependencies = [
+          {
+            name = "core-foundation-sys";
+            packageId = "core-foundation-sys 0.2.3";
+          }
+          {
+            name = "libc";
+            packageId = "libc";
+          }
+        ];
+        
+      };
+      "core-foundation 0.7.0" = rec {
         crateName = "core-foundation";
         version = "0.7.0";
         edition = "2015";
@@ -746,7 +779,7 @@ rec {
         dependencies = [
           {
             name = "core-foundation-sys";
-            packageId = "core-foundation-sys";
+            packageId = "core-foundation-sys 0.7.0";
           }
           {
             name = "libc";
@@ -760,7 +793,23 @@ rec {
           "with-uuid" = [ "uuid" ];
         };
       };
-      "core-foundation-sys" = rec {
+      "core-foundation-sys 0.2.3" = rec {
+        crateName = "core-foundation-sys";
+        version = "0.2.3";
+        edition = "2015";
+        sha256 = "13f7f3kblyj6yxcxm74yg84vj9ahaprlc1vgblagmj6bzmzmsnh6";
+        authors = [
+          "The Servo Project Developers"
+        ];
+        dependencies = [
+          {
+            name = "libc";
+            packageId = "libc";
+          }
+        ];
+        
+      };
+      "core-foundation-sys 0.7.0" = rec {
         crateName = "core-foundation-sys";
         version = "0.7.0";
         edition = "2015";
@@ -882,7 +931,7 @@ rec {
           }
           {
             name = "lazy_static";
-            packageId = "lazy_static";
+            packageId = "lazy_static 1.4.0";
             optional = true;
           }
           {
@@ -954,7 +1003,7 @@ rec {
           }
           {
             name = "lazy_static";
-            packageId = "lazy_static";
+            packageId = "lazy_static 1.4.0";
             optional = true;
           }
         ];
@@ -1087,7 +1136,7 @@ rec {
           }
           {
             name = "openssl";
-            packageId = "openssl";
+            packageId = "openssl 0.10.29";
           }
           {
             name = "serde";
@@ -1595,9 +1644,9 @@ rec {
       };
       "hyper-native-tls" = rec {
         crateName = "hyper-native-tls";
-        version = "0.3.0";
+        version = "0.2.4";
         edition = "2015";
-        sha256 = "0s30y20qy0akzss91yxsq1x1q7rr04jy33i0cq72nx22yjc5advd";
+        sha256 = "1s2nm9apj5i8yjrzq8amdjwzhy0v967fjl1vca1ra1fk6m52wcvj";
         authors = [
           "Steven Fackler <sfackler@gmail.com>"
         ];
@@ -1612,7 +1661,7 @@ rec {
           }
           {
             name = "native-tls";
-            packageId = "native-tls";
+            packageId = "native-tls 0.1.5";
           }
         ];
         
@@ -1811,7 +1860,20 @@ rec {
         };
         resolvedDefaultFeatures = [ "default" "native-tls" ];
       };
-      "lazy_static" = rec {
+      "lazy_static 0.2.11" = rec {
+        crateName = "lazy_static";
+        version = "0.2.11";
+        edition = "2015";
+        sha256 = "0wxy8vak7jsx6r8gx475pjqpx11p2bfq4wvw6idmqi31mp3k7w3n";
+        authors = [
+          "Marvin Löbel <loebel.marvin@gmail.com>"
+        ];
+        features = {
+          "compiletest" = [ "compiletest_rs" ];
+          "spin_no_std" = [ "nightly" "spin" ];
+        };
+      };
+      "lazy_static 1.4.0" = rec {
         crateName = "lazy_static";
         version = "1.4.0";
         edition = "2015";
@@ -1840,7 +1902,7 @@ rec {
           }
           {
             name = "bitflags";
-            packageId = "bitflags";
+            packageId = "bitflags 1.2.1";
           }
           {
             name = "cfg-if";
@@ -2107,7 +2169,7 @@ rec {
         dependencies = [
           {
             name = "lazy_static";
-            packageId = "lazy_static";
+            packageId = "lazy_static 1.4.0";
             target = { target, features }: target."windows";
           }
           {
@@ -2161,7 +2223,54 @@ rec {
         ];
         
       };
-      "native-tls" = rec {
+      "native-tls 0.1.5" = rec {
+        crateName = "native-tls";
+        version = "0.1.5";
+        edition = "2015";
+        sha256 = "1h7v80nlskyr7b1gsg4ivlpm6pilj6ybgvcwadj7ips3igfblkgp";
+        authors = [
+          "Steven Fackler <sfackler@gmail.com>"
+        ];
+        dependencies = [
+          {
+            name = "lazy_static";
+            packageId = "lazy_static 0.2.11";
+          }
+          {
+            name = "libc";
+            packageId = "libc";
+            target = { target, features }: ((target."os" == "macos") || (target."os" == "ios"));
+          }
+          {
+            name = "openssl";
+            packageId = "openssl 0.9.24";
+            target = { target, features }: (!((target."os" == "windows") || (target."os" == "macos") || (target."os" == "ios")));
+          }
+          {
+            name = "schannel";
+            packageId = "schannel";
+            target = { target, features }: (target."os" == "windows");
+          }
+          {
+            name = "security-framework";
+            packageId = "security-framework 0.1.16";
+            target = { target, features }: ((target."os" == "macos") || (target."os" == "ios"));
+            features = [ "OSX_10_8" ];
+          }
+          {
+            name = "security-framework-sys";
+            packageId = "security-framework-sys 0.1.16";
+            target = { target, features }: ((target."os" == "macos") || (target."os" == "ios"));
+          }
+          {
+            name = "tempdir";
+            packageId = "tempdir";
+            target = { target, features }: ((target."os" == "macos") || (target."os" == "ios"));
+          }
+        ];
+        
+      };
+      "native-tls 0.2.4" = rec {
         crateName = "native-tls";
         version = "0.2.4";
         edition = "2015";
@@ -2172,7 +2281,7 @@ rec {
         dependencies = [
           {
             name = "lazy_static";
-            packageId = "lazy_static";
+            packageId = "lazy_static 1.4.0";
             target = { target, features }: ((target."os" == "macos") || (target."os" == "ios"));
           }
           {
@@ -2187,7 +2296,7 @@ rec {
           }
           {
             name = "openssl";
-            packageId = "openssl";
+            packageId = "openssl 0.10.29";
             target = { target, features }: (!((target."os" == "windows") || (target."os" == "macos") || (target."os" == "ios")));
           }
           {
@@ -2207,12 +2316,12 @@ rec {
           }
           {
             name = "security-framework";
-            packageId = "security-framework";
+            packageId = "security-framework 0.4.4";
             target = { target, features }: ((target."os" == "macos") || (target."os" == "ios"));
           }
           {
             name = "security-framework-sys";
-            packageId = "security-framework-sys";
+            packageId = "security-framework-sys 0.4.3";
             target = { target, features }: ((target."os" == "macos") || (target."os" == "ios"));
           }
           {
@@ -2236,7 +2345,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags";
+            packageId = "bitflags 1.2.1";
           }
           {
             name = "cfg-if";
@@ -2583,7 +2692,7 @@ rec {
         ];
         
       };
-      "openssl" = rec {
+      "openssl 0.10.29" = rec {
         crateName = "openssl";
         version = "0.10.29";
         edition = "2015";
@@ -2594,7 +2703,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags";
+            packageId = "bitflags 1.2.1";
           }
           {
             name = "cfg-if";
@@ -2606,7 +2715,7 @@ rec {
           }
           {
             name = "lazy_static";
-            packageId = "lazy_static";
+            packageId = "lazy_static 1.4.0";
           }
           {
             name = "libc";
@@ -2619,6 +2728,39 @@ rec {
         ];
         features = {
           "vendored" = [ "openssl-sys/vendored" ];
+        };
+      };
+      "openssl 0.9.24" = rec {
+        crateName = "openssl";
+        version = "0.9.24";
+        edition = "2015";
+        sha256 = "11br5b8x1kc5klsn50ihiml82ajyzcwi3lljvrlsm8vlhhlmqq53";
+        authors = [
+          "Steven Fackler <sfackler@gmail.com>"
+        ];
+        dependencies = [
+          {
+            name = "bitflags";
+            packageId = "bitflags 0.9.1";
+          }
+          {
+            name = "foreign-types";
+            packageId = "foreign-types";
+          }
+          {
+            name = "lazy_static";
+            packageId = "lazy_static 1.4.0";
+          }
+          {
+            name = "libc";
+            packageId = "libc";
+          }
+          {
+            name = "openssl-sys";
+            packageId = "openssl-sys";
+          }
+        ];
+        features = {
         };
       };
       "openssl-probe" = rec {
@@ -3468,7 +3610,7 @@ rec {
         dependencies = [
           {
             name = "lazy_static";
-            packageId = "lazy_static";
+            packageId = "lazy_static 1.4.0";
           }
           {
             name = "winapi";
@@ -3500,7 +3642,42 @@ rec {
           "default" = [ "use_std" ];
         };
       };
-      "security-framework" = rec {
+      "security-framework 0.1.16" = rec {
+        crateName = "security-framework";
+        version = "0.1.16";
+        edition = "2015";
+        sha256 = "0ci39ax08h2ngrl1yf1ra9smivhjs6xarmg7kp6fxracqpllx96z";
+        authors = [
+          "Steven Fackler <sfackler@gmail.com>"
+        ];
+        dependencies = [
+          {
+            name = "core-foundation";
+            packageId = "core-foundation 0.2.3";
+          }
+          {
+            name = "core-foundation-sys";
+            packageId = "core-foundation-sys 0.2.3";
+          }
+          {
+            name = "libc";
+            packageId = "libc";
+          }
+          {
+            name = "security-framework-sys";
+            packageId = "security-framework-sys 0.1.16";
+          }
+        ];
+        features = {
+          "OSX_10_10" = [ "OSX_10_9" "security-framework-sys/OSX_10_10" ];
+          "OSX_10_11" = [ "OSX_10_10" "security-framework-sys/OSX_10_11" ];
+          "OSX_10_12" = [ "OSX_10_11" "security-framework-sys/OSX_10_11" ];
+          "OSX_10_8" = [ "security-framework-sys/OSX_10_8" ];
+          "OSX_10_9" = [ "OSX_10_8" "security-framework-sys/OSX_10_9" ];
+        };
+        resolvedDefaultFeatures = [ "OSX_10_8" ];
+      };
+      "security-framework 0.4.4" = rec {
         crateName = "security-framework";
         version = "0.4.4";
         edition = "2015";
@@ -3512,15 +3689,15 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags";
+            packageId = "bitflags 1.2.1";
           }
           {
             name = "core-foundation";
-            packageId = "core-foundation";
+            packageId = "core-foundation 0.7.0";
           }
           {
             name = "core-foundation-sys";
-            packageId = "core-foundation-sys";
+            packageId = "core-foundation-sys 0.7.0";
           }
           {
             name = "libc";
@@ -3528,7 +3705,7 @@ rec {
           }
           {
             name = "security-framework-sys";
-            packageId = "security-framework-sys";
+            packageId = "security-framework-sys 0.4.3";
           }
         ];
         features = {
@@ -3539,7 +3716,33 @@ rec {
           "OSX_10_9" = [ "security-framework-sys/OSX_10_9" ];
         };
       };
-      "security-framework-sys" = rec {
+      "security-framework-sys 0.1.16" = rec {
+        crateName = "security-framework-sys";
+        version = "0.1.16";
+        edition = "2015";
+        sha256 = "1bdy87gvmahiiyfzghsdg2dkhznww3p3d3r676qs0y32hcg648al";
+        authors = [
+          "Steven Fackler <sfackler@gmail.com>"
+        ];
+        dependencies = [
+          {
+            name = "core-foundation-sys";
+            packageId = "core-foundation-sys 0.2.3";
+          }
+          {
+            name = "libc";
+            packageId = "libc";
+          }
+        ];
+        features = {
+          "OSX_10_10" = [ "OSX_10_9" ];
+          "OSX_10_11" = [ "OSX_10_10" ];
+          "OSX_10_12" = [ "OSX_10_11" ];
+          "OSX_10_9" = [ "OSX_10_8" ];
+        };
+        resolvedDefaultFeatures = [ "OSX_10_8" ];
+      };
+      "security-framework-sys 0.4.3" = rec {
         crateName = "security-framework-sys";
         version = "0.4.3";
         edition = "2015";
@@ -3551,7 +3754,7 @@ rec {
         dependencies = [
           {
             name = "core-foundation-sys";
-            packageId = "core-foundation-sys";
+            packageId = "core-foundation-sys 0.7.0";
           }
           {
             name = "libc";
@@ -3727,7 +3930,7 @@ rec {
         dependencies = [
           {
             name = "lazy_static";
-            packageId = "lazy_static";
+            packageId = "lazy_static 1.4.0";
           }
         ];
         
@@ -3944,7 +4147,7 @@ rec {
           }
           {
             name = "native-tls";
-            packageId = "native-tls";
+            packageId = "native-tls 0.2.4";
             optional = true;
           }
         ];
@@ -3958,6 +4161,26 @@ rec {
           "vendored-openssl" = [ "openssl/vendored" ];
         };
         resolvedDefaultFeatures = [ "native-tls" ];
+      };
+      "tempdir" = rec {
+        crateName = "tempdir";
+        version = "0.3.7";
+        edition = "2015";
+        sha256 = "1n5n86zxpgd85y0mswrp5cfdisizq2rv3la906g6ipyc03xvbwhm";
+        authors = [
+          "The Rust Project Developers"
+        ];
+        dependencies = [
+          {
+            name = "rand";
+            packageId = "rand 0.4.6";
+          }
+          {
+            name = "remove_dir_all";
+            packageId = "remove_dir_all";
+          }
+        ];
+        
       };
       "tempfile 2.2.0" = rec {
         crateName = "tempfile";
@@ -4049,7 +4272,7 @@ rec {
         dependencies = [
           {
             name = "lazy_static";
-            packageId = "lazy_static";
+            packageId = "lazy_static 1.4.0";
           }
         ];
         
@@ -4156,7 +4379,7 @@ rec {
         dependencies = [
           {
             name = "lazy_static";
-            packageId = "lazy_static";
+            packageId = "lazy_static 1.4.0";
             optional = true;
           }
         ];
@@ -4177,7 +4400,7 @@ rec {
         dependencies = [
           {
             name = "lazy_static";
-            packageId = "lazy_static";
+            packageId = "lazy_static 1.4.0";
           }
           {
             name = "log";
@@ -4237,7 +4460,7 @@ rec {
           }
           {
             name = "lazy_static";
-            packageId = "lazy_static";
+            packageId = "lazy_static 1.4.0";
             optional = true;
           }
           {
@@ -4589,7 +4812,7 @@ rec {
           }
           {
             name = "lazy_static";
-            packageId = "lazy_static";
+            packageId = "lazy_static 1.4.0";
           }
           {
             name = "log";
@@ -5162,7 +5385,7 @@ rec {
         dependencies = [
           {
             name = "bitflags";
-            packageId = "bitflags";
+            packageId = "bitflags 1.2.1";
           }
           {
             name = "wepoll-sys";
