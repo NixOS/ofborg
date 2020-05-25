@@ -3,6 +3,9 @@
 }:
 let
   pkgs = import nixpkgs {
+    config.permittedInsecurePackages = [
+      "openssl-1.0.2u"
+    ];
     overlays = [ (import ./nix/overlay.nix) ];
   };
   inherit (pkgs) lib;
@@ -18,6 +21,9 @@ let
       collector // {
         "${system}" = import ./. {
           pkgs = import nixpkgs {
+            config.permittedInsecurePackages = [
+              "openssl-1.0.2u"
+            ];
             inherit system;
             overlays = [
               (import ./nix/overlay.nix)

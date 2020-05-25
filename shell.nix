@@ -1,4 +1,8 @@
 { pkgs ? import ./nix {
+  config.permittedInsecurePackages = [
+    "openssl-1.0.2u"
+  ];
+
   overlays = [
     (import ./nix/overlay.nix)
     (import (builtins.fetchTarball https://github.com/mozilla/nixpkgs-mozilla/archive/master.tar.gz))
@@ -41,7 +45,7 @@ let
       latest.rustChannels.stable.rust
       git
       pkgconfig
-      openssl
+      openssl_1_0_2.dev
     ]
       ++ stdenv.lib.optional stdenv.isDarwin pkgs.darwin.Security;
 
@@ -79,7 +83,7 @@ let
       nix-prefetch-git
       latest.rustChannels.stable.rust
       #rustfmt
-      openssl
+      openssl_1_0_2.dev
       pkgconfig
       git
     ]
