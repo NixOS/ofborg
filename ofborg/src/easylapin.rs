@@ -18,10 +18,12 @@ use lapin::options::{
     ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions,
 };
 use lapin::types::{AMQPValue, FieldTable};
-use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind};
+use lapin::{
+    BasicProperties, Channel, CloseOnDrop, Connection, ConnectionProperties, ExchangeKind,
+};
 use tracing::{debug, trace};
 
-pub fn from_config(cfg: &RabbitMQConfig) -> Result<Connection, lapin::Error> {
+pub fn from_config(cfg: &RabbitMQConfig) -> Result<CloseOnDrop<Connection>, lapin::Error> {
     let mut props = FieldTable::default();
     props.insert(
         "ofborg_version".into(),
@@ -32,7 +34,7 @@ pub fn from_config(cfg: &RabbitMQConfig) -> Result<Connection, lapin::Error> {
     task::block_on(Connection::connect(&cfg.as_uri(), opts))
 }
 
-impl ChannelExt for Channel {
+impl ChannelExt for CloseOnDrop<Channel> {
     type Error = lapin::Error;
 
     fn declare_exchange(&mut self, config: ExchangeConfig) -> Result<(), Self::Error> {
@@ -79,7 +81,7 @@ impl ChannelExt for Channel {
     }
 }
 
-impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for Channel {
+impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for CloseOnDrop<Channel> {
     type Error = lapin::Error;
     type Handle = Pin<Box<dyn Future<Output = ()> + 'a>>;
 
@@ -115,7 +117,7 @@ impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for Channel {
 
 /// Same as a regular channel, but without prefetching,
 /// used for services with multiple instances.
-pub struct WorkerChannel(pub Channel);
+pub struct WorkerChannel(pub CloseOnDrop<Channel>);
 
 impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for WorkerChannel {
     type Error = lapin::Error;
@@ -128,12 +130,12 @@ impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for WorkerChannel {
 }
 
 pub struct ChannelNotificationReceiver<'a> {
-    channel: &'a mut lapin::Channel,
+    channel: &'a mut CloseOnDrop<lapin::Channel>,
     deliver: &'a Delivery,
 }
 
 impl<'a> ChannelNotificationReceiver<'a> {
-    pub fn new(channel: &'a mut lapin::Channel, deliver: &'a Delivery) -> Self {
+    pub fn new(channel: &'a mut CloseOnDrop<lapin::Channel>, deliver: &'a Delivery) -> Self {
         ChannelNotificationReceiver { channel, deliver }
     }
 }
@@ -147,7 +149,7 @@ impl<'a> NotificationReceiver for ChannelNotificationReceiver<'a> {
 
 // FIXME the consumer trait for SimpleWorker and SimpleNotifyWorker conflict,
 // but one could probably be implemented in terms of the other instead.
-pub struct NotifyChannel(pub Channel);
+pub struct NotifyChannel(pub CloseOnDrop<Channel>);
 
 impl<'a, W: SimpleNotifyWorker + 'a> ConsumerExt<'a, W> for NotifyChannel {
     type Error = lapin::Error;
@@ -188,7 +190,7 @@ impl<'a, W: SimpleNotifyWorker + 'a> ConsumerExt<'a, W> for NotifyChannel {
 }
 
 async fn action_deliver(
-    chan: &Channel,
+    chan: &CloseOnDrop<Channel>,
     deliver: &Delivery,
     action: Action,
 ) -> Result<(), lapin::Error> {
