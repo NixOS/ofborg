@@ -72,5 +72,7 @@ in
     fi
   '';
 
+  packet-exporter = packet-exporter.build;
+
   ofborg.php = import ./php { inherit pkgs; };
 }

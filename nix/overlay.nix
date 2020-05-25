@@ -9,6 +9,10 @@
       buildInputs = with self.darwin.apple_sdk.frameworks;
         super.lib.optional super.stdenv.isDarwin Security;
     };
+    packet-exporter = attrs: {
+      buildInputs = with self.darwin.apple_sdk.frameworks;
+        super.lib.optional super.stdenv.isDarwin Security;
+    };
   };
 })
 
