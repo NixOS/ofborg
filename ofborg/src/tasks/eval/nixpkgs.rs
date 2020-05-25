@@ -101,6 +101,21 @@ impl<'a> NixpkgsStrategy<'a> {
         }
     }
 
+    /// Takes a list of commit messages and checks if any of them contains the
+    /// standard version bump indicator, `->`; if any do, the `8.has: package
+    /// (update)` label is added.
+    fn tag_from_commits(&self, msgs: &[String]) {
+        for msg in msgs {
+            if msg.contains("->") {
+                update_labels(
+                    &self.issue_ref,
+                    &[String::from("8.has: package (update)")],
+                    &[],
+                );
+            }
+        }
+    }
+
     fn check_stdenvs_before(&mut self, dir: &Path) {
         let mut stdenvs = Stdenvs::new(self.nix.clone(), dir.to_path_buf());
         stdenvs.identify_before();
@@ -379,13 +394,15 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
         let changed_paths = co
             .files_changed_from_head(&self.job.pr.head_sha)
             .unwrap_or_else(|_| vec![]);
-        self.changed_paths = Some(changed_paths);
-        self.tag_from_paths();
+        let commit_messages = co
+            .commit_messages_from_head(&self.job.pr.head_sha)
+            .unwrap_or_else(|_| vec!["".to_owned()]);
 
-        self.touched_packages = Some(parse_commit_messages(
-            &co.commit_messages_from_head(&self.job.pr.head_sha)
-                .unwrap_or_else(|_| vec!["".to_owned()]),
-        ));
+        self.tag_from_paths();
+        self.tag_from_commits(&commit_messages);
+
+        self.changed_paths = Some(changed_paths);
+        self.touched_packages = Some(parse_commit_messages(&commit_messages));
 
         Ok(())
     }
