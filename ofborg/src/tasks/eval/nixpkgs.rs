@@ -102,11 +102,20 @@ impl<'a> NixpkgsStrategy<'a> {
     }
 
     /// Takes a list of commit messages and checks if any of them contains the
-    /// standard version bump indicator, `->`; if any do, the `8.has: package
-    /// (update)` label is added.
-    fn tag_from_commits(&self, msgs: &[String]) {
-        for msg in msgs {
-            if msg.contains("->") {
+    /// standard version bump indicator, `->`, at the second index after
+    /// splitting on whitespace; if any do, the `8.has: package (update)` label
+    /// is added.
+    ///
+    /// * `attr: 1.0.0 -> 1.1.0` will get the label
+    /// * `attr: move from fetchTarball -> fetchFromGitHub` will not get the
+    /// label
+    fn tag_from_commits(&self, messages: &[String]) {
+        for message in messages {
+            let msg: Vec<&str> = message.split(char::is_whitespace).collect();
+
+            // attr: 1.0.0 -> 1.1.0
+            //   0     1   2    3
+            if msg.get(2) == Some(&"->") {
                 update_labels(
                     &self.issue_ref,
                     &[String::from("8.has: package (update)")],
