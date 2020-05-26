@@ -101,21 +101,32 @@ impl<'a> NixpkgsStrategy<'a> {
         }
     }
 
-    /// Takes a list of commit messages and checks if any of them contains the
-    /// standard version bump indicator, `->`, at the second index after
-    /// splitting on whitespace; if any do, the `8.has: package (update)` label
-    /// is added.
+    /// Takes a list of commit messages and a list of attributes in order to
+    /// check:
+    ///
+    /// 1) if any of the commits contain the version bump indicator, `->`, at
+    /// the second index after splitting on whitespace; and
+    /// 2) if the mentioned attribute will be rebuilt.
+    ///
+    /// If both of these checks return true, the `8.has: package (update)` label
+    /// will be added.
     ///
     /// * `attr: 1.0.0 -> 1.1.0` will get the label
     /// * `attr: move from fetchTarball -> fetchFromGitHub` will not get the
     /// label
-    fn tag_from_commits(&self, messages: &[String]) {
+    fn tag_from_commits(&self, messages: &[String], attrs: &[PackageArch]) {
         for message in messages {
+            let message = message.replacen(':', "", 1);
             let msg: Vec<&str> = message.split(char::is_whitespace).collect();
 
             // attr: 1.0.0 -> 1.1.0
             //   0     1   2    3
-            if msg.get(2) == Some(&"->") {
+            if msg.get(2) == Some(&"->")
+                && attrs
+                    .iter()
+                    .map(|attr| &attr.package)
+                    .any(|pkg| msg.get(0) == Some(&pkg.as_ref()))
+            {
                 update_labels(
                     &self.issue_ref,
                     &[String::from("8.has: package (update)")],
@@ -407,8 +418,15 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
             .commit_messages_from_head(&self.job.pr.head_sha)
             .unwrap_or_else(|_| vec!["".to_owned()]);
 
+        if let Some(ref rebuildsniff) = self.outpath_diff {
+            if let Some(attrs) = rebuildsniff.calculate_rebuild() {
+                if !attrs.is_empty() {
+                    self.tag_from_commits(&commit_messages, &attrs);
+                }
+            }
+        }
+
         self.tag_from_paths();
-        self.tag_from_commits(&commit_messages);
 
         self.changed_paths = Some(changed_paths);
         self.touched_packages = Some(parse_commit_messages(&commit_messages));
