@@ -28,3 +28,6 @@ separator = "0.4.1"
 
 async-std = "=1.5.0"
 lapin = "1.0.0-rc6"
+lazy_static = "1.4.0"
+prometheus = "0.8"
+tide = "0.8.0"

@@ -31,6 +31,7 @@ pub mod ghevent;
 pub mod locks;
 pub mod maintainers;
 pub mod message;
+pub mod metrics;
 pub mod nix;
 pub mod nixenv;
 pub mod nixstats;
