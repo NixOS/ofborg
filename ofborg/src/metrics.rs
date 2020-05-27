@@ -13,6 +13,38 @@ use tracing::info;
 use crate::ofborg;
 
 lazy_static! {
+    pub static ref JOBS_RECEIVED: IntCounter = register_int_counter!(
+        "ofborg_jobs_received_total",
+        "Total number of jobs received."
+    )
+    .unwrap();
+    pub static ref BUILDS_RECEIVED: CounterVec = register_counter_vec!(
+        "ofborg_builds_received_total",
+        "Total number of builds received.",
+        &["system"]
+    )
+    .unwrap();
+    pub static ref BUILDS_FINISHED: CounterVec = register_counter_vec!(
+        "ofborg_builds_finished_total",
+        "Total number of builds finished.",
+        &["system", "status"]
+    )
+    .unwrap();
+    pub static ref BUILDS_ATTRIBUTES_ATTEMPTED: CounterVec = register_counter_vec!(
+        "ofborg_builds_attributes_attempted_total",
+        "Total number of attributes attempted to build.",
+        &["system"]
+    )
+    .unwrap();
+    pub static ref BUILDS_ATTRIBUTES_NOT_ATTEMPTED: CounterVec = register_counter_vec!(
+        "ofborg_builds_attributes_not_attempted_total",
+        "Total number of attributes not attempted to build.",
+        &["system"]
+    )
+    .unwrap();
+}
+
+lazy_static! {
     static ref VERSION: GaugeVec = register_gauge_vec!(
         "ofborg_version",
         "Labeled OfBorg version information.",

@@ -2,6 +2,7 @@ use crate::checkout;
 use crate::commentparser;
 use crate::message::buildresult::{BuildResult, BuildStatus, V1Tag};
 use crate::message::{buildjob, buildlogmsg};
+use crate::metrics;
 use crate::nix;
 use crate::notifyworker;
 use crate::worker;
@@ -280,6 +281,9 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
     ) {
         let span = debug_span!("job", pr = ?job.pr.number);
         let _enter = span.enter();
+        metrics::BUILDS_RECEIVED
+            .with_label_values(&[&self.system])
+            .inc();
 
         let mut actions = self.actions(&job, notifier);
 
@@ -347,6 +351,14 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             cannot_build_attrs.join(", ")
         );
 
+        metrics::BUILDS_ATTRIBUTES_ATTEMPTED
+            .with_label_values(&[&self.system])
+            .inc_by(can_build.len() as f64);
+
+        metrics::BUILDS_ATTRIBUTES_NOT_ATTEMPTED
+            .with_label_values(&[&self.system])
+            .inc_by(cannot_build_attrs.len() as f64);
+
         actions.log_started(can_build.clone(), cannot_build_attrs.clone());
         actions.log_instantiation_errors(cannot_build);
 
@@ -375,7 +387,13 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             .last();
         info!("----->8-----");
 
+        let status_label = status.as_label();
         actions.build_finished(status, can_build, cannot_build_attrs);
+
+        metrics::BUILDS_FINISHED
+            .with_label_values(&[&self.system, status_label])
+            .inc();
+
         info!("Build done!");
     }
 }

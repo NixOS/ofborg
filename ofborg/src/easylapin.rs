@@ -1,14 +1,5 @@
 use std::pin::Pin;
 
-use crate::config::RabbitMQConfig;
-use crate::easyamqp::{
-    BindQueueConfig, ChannelExt, ConsumeConfig, ConsumerExt, ExchangeConfig, ExchangeType,
-    QueueConfig,
-};
-use crate::notifyworker::{NotificationReceiver, SimpleNotifyWorker};
-use crate::ofborg;
-use crate::worker::{Action, SimpleWorker};
-
 use async_std::future::Future;
 use async_std::stream::StreamExt;
 use async_std::task;
@@ -20,6 +11,16 @@ use lapin::options::{
 use lapin::types::{AMQPValue, FieldTable};
 use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind};
 use tracing::{debug, trace};
+
+use crate::config::RabbitMQConfig;
+use crate::easyamqp::{
+    BindQueueConfig, ChannelExt, ConsumeConfig, ConsumerExt, ExchangeConfig, ExchangeType,
+    QueueConfig,
+};
+use crate::metrics;
+use crate::notifyworker::{NotificationReceiver, SimpleNotifyWorker};
+use crate::ofborg;
+use crate::worker::{Action, SimpleWorker};
 
 pub fn from_config(cfg: &RabbitMQConfig) -> Result<Connection, lapin::Error> {
     let mut props = FieldTable::default();
@@ -166,6 +167,8 @@ impl<'a, W: SimpleNotifyWorker + 'a> ConsumerExt<'a, W> for NotifyChannel {
         Ok(Box::pin(async move {
             while let Some(Ok(deliver)) = consumer.next().await {
                 debug!(?deliver.delivery_tag, "consumed delivery");
+                metrics::JOBS_RECEIVED.inc();
+
                 let mut receiver = ChannelNotificationReceiver {
                     channel: &mut chan,
                     deliver: &deliver,
