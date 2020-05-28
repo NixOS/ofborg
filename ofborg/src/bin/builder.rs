@@ -6,8 +6,7 @@ use async_std::task;
 use tracing::{info, warn};
 
 use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
-use ofborg::easylapin;
-use ofborg::{checkout, config, tasks};
+use ofborg::{checkout, config, easylapin, metrics, tasks};
 
 // FIXME: remove with rust/cargo update
 #[allow(clippy::cognitive_complexity)]
@@ -92,6 +91,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             exclusive: false,
         },
     )?;
+
+    metrics::spawn_server();
 
     info!("Fetching jobs from {}", &queue_name);
     task::block_on(handle);

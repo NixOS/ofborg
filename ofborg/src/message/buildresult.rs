@@ -11,6 +11,18 @@ pub enum BuildStatus {
     UnexpectedError { err: String },
 }
 
+impl BuildStatus {
+    pub fn as_label(&self) -> &'static str {
+        match self {
+            BuildStatus::Skipped => "skipped",
+            BuildStatus::Success => "success",
+            BuildStatus::Failure => "failure",
+            BuildStatus::TimedOut => "timeout",
+            BuildStatus::UnexpectedError { err: _ } => "unexpected",
+        }
+    }
+}
+
 impl From<BuildStatus> for String {
     fn from(status: BuildStatus) -> String {
         match status {
