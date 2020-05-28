@@ -321,23 +321,34 @@ impl<'a> NixpkgsStrategy<'a> {
                     status.set_url(None);
                     status.set(hubcaps::statuses::State::Success)?;
 
+                    let request_id = format!("{}", Uuid::new_v4());
+                    let mut builds = vec![BuildJob::new(
+                        self.job.repo.clone(),
+                        self.job.pr.clone(),
+                        Subset::LibTests,
+                        vec![],
+                        None,
+                        None,
+                        request_id.clone(),
+                    )];
+
                     if !try_build.is_empty() && try_build.len() <= 20 {
                         // In the case of trying to merge master in to
                         // a stable branch, we don't want to do this.
                         // Therefore, only schedule builds if there
                         // less than or exactly 20
-                        Ok(vec![BuildJob::new(
+                        builds.push(BuildJob::new(
                             self.job.repo.clone(),
                             self.job.pr.clone(),
                             Subset::Nixpkgs,
                             try_build,
                             None,
                             None,
-                            format!("{}", Uuid::new_v4()),
-                        )])
-                    } else {
-                        Ok(vec![])
+                            request_id,
+                        ));
                     }
+
+                    Ok(builds)
                 }
                 Err(out) => {
                     status.set_url(make_gist(&self.gists, "Meta Check", None, out.display()));
@@ -437,17 +448,6 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
                     String::from("--arg"),
                     String::from("config"),
                     String::from("{ allowAliases = false; }"),
-                ],
-                self.nix.clone(),
-            ),
-            EvalChecker::new(
-                "lib-tests",
-                nix::Operation::Build,
-                vec![
-                    String::from("--arg"),
-                    String::from("pkgs"),
-                    String::from("import ./. {}"),
-                    String::from("./lib/tests/release.nix"),
                 ],
                 self.nix.clone(),
             ),

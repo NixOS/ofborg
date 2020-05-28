@@ -1,11 +1,12 @@
+use tracing::{debug_span, error, info};
+use uuid::Uuid;
+
 use crate::acl;
 use crate::commentparser;
 use crate::ghevent;
 use crate::message::{buildjob, evaluationjob, Pr, Repo};
+use crate::systems::System;
 use crate::worker;
-
-use tracing::{debug_span, error, info};
-use uuid::Uuid;
 
 pub struct GitHubCommentWorker {
     acl: acl::ACL,
@@ -104,6 +105,11 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                 match instruction {
                     commentparser::Instruction::Build(subset, attrs) => {
                         let build_destinations = match subset {
+                            commentparser::Subset::LibTests => build_destinations
+                                .clone()
+                                .into_iter()
+                                .filter(|x| x == &System::X8664Linux)
+                                .collect(),
                             commentparser::Subset::NixOS => build_destinations
                                 .clone()
                                 .into_iter()

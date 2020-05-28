@@ -72,6 +72,7 @@ pub enum Instruction {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum Subset {
+    LibTests,
     Nixpkgs,
     NixOS,
 }
