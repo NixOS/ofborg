@@ -119,9 +119,9 @@ rec {
       };
       "amq-protocol" = rec {
         crateName = "amq-protocol";
-        version = "6.0.0-rc7";
+        version = "6.0.0-rc9";
         edition = "2018";
-        sha256 = "06ys8l0qd031z26nprhsqmq6skwals2ylpav3kgkvbk0d5gwy1zi";
+        sha256 = "06w1vrkdnh654sp5nndjfc9yfac4wdsy7jggkyppj15ypr2jgqaw";
         libName = "amq_protocol";
         authors = [
           "Marc-Antoine Perennou <%arc-Antoine@Perennou.com>"
@@ -171,9 +171,9 @@ rec {
       };
       "amq-protocol-codegen" = rec {
         crateName = "amq-protocol-codegen";
-        version = "6.0.0-rc7";
+        version = "6.0.0-rc9";
         edition = "2018";
-        sha256 = "0di623y8pcpw15zhkckbca480qg99ih2lsqqjnlgm1b13n4sfl8z";
+        sha256 = "0h9h08k97hix72n3azpw4xdivdn66ca4vpailhq9wwkqkdzydx7i";
         libName = "amq_protocol_codegen";
         authors = [
           "Marc-Antoine Perennou <%arc-Antoine@Perennou.com>"
@@ -201,9 +201,9 @@ rec {
       };
       "amq-protocol-tcp" = rec {
         crateName = "amq-protocol-tcp";
-        version = "6.0.0-rc7";
+        version = "6.0.0-rc9";
         edition = "2018";
-        sha256 = "11yq8589vi0kcr1rivc97r9sm75g7jhrb58j7dppgd1875v6225n";
+        sha256 = "01n2iqs2fgbp8ln9759wcdkpwqzaa861dn734igfrwimv839n52k";
         libName = "amq_protocol_tcp";
         authors = [
           "Marc-Antoine Perennou <%arc-Antoine@Perennou.com>"
@@ -237,9 +237,9 @@ rec {
       };
       "amq-protocol-types" = rec {
         crateName = "amq-protocol-types";
-        version = "6.0.0-rc7";
+        version = "6.0.0-rc9";
         edition = "2018";
-        sha256 = "15dsxydv32g3j9sf0mfpqi8sa85ma3m5vwv2yi1hq80nd61w1qh0";
+        sha256 = "0s64hgvp737pkv5j03zy63yfbxb8rlr3p8byxagds78wj5bm0s43";
         libName = "amq_protocol_types";
         authors = [
           "Marc-Antoine Perennou <%arc-Antoine@Perennou.com>"
@@ -270,9 +270,9 @@ rec {
       };
       "amq-protocol-uri" = rec {
         crateName = "amq-protocol-uri";
-        version = "6.0.0-rc7";
+        version = "6.0.0-rc9";
         edition = "2018";
-        sha256 = "05fj5an4ixfgl7kh4vf55xaa2v6grj6bpxcf4wqx4klff11172bv";
+        sha256 = "0xn54qdw7iil323gjk84s7lyilc3rn5vd520ic4f6i0yay50q54q";
         libName = "amq_protocol_uri";
         authors = [
           "Marc-Antoine Perennou <%arc-Antoine@Perennou.com>"
@@ -1549,9 +1549,9 @@ rec {
       };
       "lapin" = rec {
         crateName = "lapin";
-        version = "1.0.0-rc6";
+        version = "1.0.0";
         edition = "2018";
-        sha256 = "1qq5225w13ybivv2rdwzfa02ghdh19ckmjays9zxxjd5n2h1kk3g";
+        sha256 = "0j1nk3ybq8svccws5hzkfql30livrk1a88xh3fhrv1132zhyii57";
         authors = [
           "Geoffroy Couprie <geo.couprie@gmail.com>"
           "Marc-Antoine Perennou <Marc-Antoine@Perennou.com>"
