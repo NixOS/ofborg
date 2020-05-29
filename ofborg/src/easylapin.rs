@@ -91,7 +91,8 @@ impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for Channel {
             FieldTable::default(),
         ))?;
         Ok(Box::pin(async move {
-            while let Some(Ok(deliver)) = consumer.next().await {
+            while let Some(Ok(item)) = consumer.next().await {
+                let (_channel, deliver) = item;
                 debug!(?deliver.delivery_tag, "consumed delivery");
                 let content_type = deliver.properties.content_type();
                 let job = worker
@@ -164,7 +165,8 @@ impl<'a, W: SimpleNotifyWorker + 'a> ConsumerExt<'a, W> for NotifyChannel {
         ))?;
         let mut chan = self.0;
         Ok(Box::pin(async move {
-            while let Some(Ok(deliver)) = consumer.next().await {
+            while let Some(Ok(item)) = consumer.next().await {
+                let (_channel, deliver) = item;
                 debug!(?deliver.delivery_tag, "consumed delivery");
                 let mut receiver = ChannelNotificationReceiver {
                     channel: &mut chan,
