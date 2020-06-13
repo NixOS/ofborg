@@ -171,7 +171,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         };
 
         let mut builder = hubcaps::statuses::StatusOptions::builder(state);
-        builder.context("grahamcofborg-eval");
+        builder.context("ofborg-eval");
         builder.description(description.clone());
 
         if let Some(url) = url {
@@ -308,7 +308,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         let mut overall_status = CommitStatus::new(
             repo.statuses(),
             job.pr.head_sha.clone(),
-            "grahamcofborg-eval".to_owned(),
+            "ofborg-eval".to_owned(),
             "Starting".to_owned(),
             None,
         );

@@ -280,7 +280,7 @@ impl<'a> NixpkgsStrategy<'a> {
                 let status = CommitStatus::new(
                     self.repo.statuses(),
                     self.job.pr.head_sha.clone(),
-                    String::from("grahamcofborg-eval-check-maintainers"),
+                    String::from("ofborg-eval-check-maintainers"),
                     String::from("large change, skipping automatic review requests"),
                     gist_url,
                 );
@@ -291,7 +291,7 @@ impl<'a> NixpkgsStrategy<'a> {
             let status = CommitStatus::new(
                 self.repo.statuses(),
                 self.job.pr.head_sha.clone(),
-                String::from("grahamcofborg-eval-check-maintainers"),
+                String::from("ofborg-eval-check-maintainers"),
                 String::from("matching changed paths to changed attrs..."),
                 gist_url,
             );
@@ -318,7 +318,7 @@ impl<'a> NixpkgsStrategy<'a> {
             let mut status = CommitStatus::new(
                 self.repo.statuses(),
                 self.job.pr.head_sha.clone(),
-                String::from("grahamcofborg-eval-check-meta"),
+                String::from("ofborg-eval-check-meta"),
                 String::from("config.nix: checkMeta = true"),
                 None,
             );
