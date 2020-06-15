@@ -239,7 +239,7 @@
             "doc/manual/release-notes/"
         ],
         "8.has: documentation": [
-            "doc",
+            "doc/",
             "nixos/doc"
         ],
         "8.has: module (update)": [
