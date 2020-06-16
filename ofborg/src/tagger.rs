@@ -255,7 +255,7 @@ impl PathsTagger {
             .possible
             .iter()
             .filter(|&(ref tag, ref _paths)| !self.selected.contains(&tag))
-            .filter(|&(ref _tag, ref paths)| paths.iter().any(|tp| path.contains(tp)))
+            .filter(|&(ref _tag, ref paths)| paths.iter().any(|tp| path.starts_with(tp)))
             .map(|(tag, _paths)| tag.clone())
             .collect();
         self.selected.append(&mut tags_to_add);
