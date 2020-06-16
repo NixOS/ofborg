@@ -242,9 +242,10 @@ impl<'a> NixpkgsStrategy<'a> {
             Some("".to_owned()),
             attrs
                 .iter()
-                .map(|attr| format!("{}\t{}", &attr.architecture, &attr.package))
+                .map(|attr| format!("{}\t{}", &attr.package, &attr.architecture))
                 .collect::<Vec<String>>()
-                .join("\n"),
+                .join("\n")
+                .sort(),
         )
     }
 
