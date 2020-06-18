@@ -168,7 +168,7 @@ impl Metric {
         MetricType::Ticker(Metric {
             variant: parts.iter().cloned().collect(),
             fields: fields
-                .unwrap_or_else(|| vec![])
+                .unwrap_or_default()
                 .iter()
                 .map(|(fieldname, fieldtype)| ((*fieldname).to_string(), (*fieldtype).to_string()))
                 .collect(),
@@ -183,7 +183,7 @@ impl Metric {
         MetricType::Counter(Metric {
             variant: parts.iter().cloned().collect(),
             fields: fields
-                .unwrap_or_else(|| vec![])
+                .unwrap_or_default()
                 .iter()
                 .map(|(fieldname, fieldtype)| ((*fieldname).to_string(), (*fieldtype).to_string()))
                 .collect(),

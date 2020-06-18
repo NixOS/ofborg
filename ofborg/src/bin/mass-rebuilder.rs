@@ -39,7 +39,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let nix = cfg.nix();
 
     let events = stats::RabbitMQ::from_lapin(
-        &format!("{}-{}", cfg.runner.identity.clone(), cfg.nix.system.clone()),
+        &format!("{}-{}", cfg.runner.identity, cfg.nix.system),
         task::block_on(conn.create_channel())?,
     );
 
