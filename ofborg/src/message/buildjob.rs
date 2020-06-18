@@ -32,7 +32,7 @@ impl BuildJob {
         statusreport: Option<ExchangeQueue>,
         request_id: String,
     ) -> BuildJob {
-        let logbackrk = format!("{}.{}", repo.full_name.clone(), pr.number,).to_lowercase();
+        let logbackrk = format!("{}.{}", repo.full_name, pr.number).to_lowercase();
 
         BuildJob {
             repo,
