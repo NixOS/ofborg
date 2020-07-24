@@ -137,7 +137,7 @@
         "6.topic: fetch": [
             "pkgs/build-support/fetch"
         ],
-        "6.topic: gnome3": [
+        "6.topic: GNOME": [
             "pkgs/desktops/gnome-3",
             "nixos/modules/services/x11/desktop-managers/gnome3.nix",
             "nixos/tests/gnome3.nix",
