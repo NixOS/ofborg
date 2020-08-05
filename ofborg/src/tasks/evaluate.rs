@@ -32,6 +32,23 @@ pub struct EvaluationWorker<E> {
     tag_paths: HashMap<String, Vec<String>>,
 }
 
+/// Creates a finished github check, indicating that the ofborg eval started.
+/// This is a workaround github REST api, that only exposes finished external checks.
+/// We use the check status in our "Waiting for github action"
+fn post_eval_started_status(
+    api: hubcaps::statuses::Statuses,
+    commit: String,
+) -> Result<(), EvalWorkerError> {
+    Ok(CommitStatus::new(
+        api,
+        commit,
+        "ofborg-eval-started".to_owned(),
+        "Evaluation started".to_owned(),
+        None,
+    )
+    .set(hubcaps::statuses::State::Success)?)
+}
+
 impl<E: stats::SysEvents> EvaluationWorker<E> {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -314,6 +331,8 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         );
 
         overall_status.set_with_description("Starting", hubcaps::statuses::State::Pending)?;
+
+        post_eval_started_status(repo.statuses(), job.pr.head_sha.clone())?;
 
         evaluation_strategy.pre_clone()?;
 
