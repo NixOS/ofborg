@@ -5,20 +5,30 @@ let
     "php-amqplib/php-amqplib" = {
       targetDir = "";
       src = composerEnv.buildZipPackage {
-        name = "php-amqplib-php-amqplib-dfd3694a86f1a7394d3693485259d4074a6ec79b";
+        name = "php-amqplib-php-amqplib-0eaaa9d5d45335f4342f69603288883388c2fe21";
         src = fetchurl {
-          url = https://api.github.com/repos/php-amqplib/php-amqplib/zipball/dfd3694a86f1a7394d3693485259d4074a6ec79b;
-          sha256 = "1dlxgdnhy8xyx8xbp1glc7igksvsqyc3yaq76irhy09djij013ip";
+          url = https://api.github.com/repos/php-amqplib/php-amqplib/zipball/0eaaa9d5d45335f4342f69603288883388c2fe21;
+          sha256 = "0dpjy33rspmpdflhwjqb9iass8kxzbl3nj8nc3vgn9hczgaxqlfs";
+        };
+      };
+    };
+    "phpseclib/phpseclib" = {
+      targetDir = "";
+      src = composerEnv.buildZipPackage {
+        name = "phpseclib-phpseclib-497856a8d997f640b4a516062f84228a772a48a8";
+        src = fetchurl {
+          url = https://api.github.com/repos/phpseclib/phpseclib/zipball/497856a8d997f640b4a516062f84228a772a48a8;
+          sha256 = "061kgl49f1zc5vdfrlmq6m1qgvqrh7jvlldfhfxya44y2vwriz1p";
         };
       };
     };
     "svanderburg/composer2nix" = {
       targetDir = "";
       src = composerEnv.buildZipPackage {
-        name = "svanderburg-composer2nix-2fb157acaf0ecbe34436195c694637396f7258a6";
+        name = "svanderburg-composer2nix-57cecaf5d9d667b47415bb7c1d1f5154be7c759e";
         src = fetchurl {
-          url = https://api.github.com/repos/svanderburg/composer2nix/zipball/2fb157acaf0ecbe34436195c694637396f7258a6;
-          sha256 = "01i3kxgx7pcmxafclp8ib08nib1xh6nvr5sbl6y38rw19xhnwa0m";
+          url = https://api.github.com/repos/svanderburg/composer2nix/zipball/57cecaf5d9d667b47415bb7c1d1f5154be7c759e;
+          sha256 = "0s6fjwaf2dwzf9h83dms5wg8s3a1kcy5nmdnn7wy1ykqi3mhp61m";
         };
       };
     };
