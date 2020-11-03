@@ -1,9 +1,10 @@
 /// This is what evaluates every pull-request
 use crate::acl::ACL;
 use crate::checkout;
-use crate::commitstatus::{CommitStatus, CommitStatusError};
+use crate::commitstatus::CommitStatusError;
 use crate::config::GithubAppVendingMachine;
 use crate::files::file_to_str;
+use crate::ghrepo;
 use crate::message::{buildjob, evaluationjob};
 use crate::nix;
 use crate::stats::{self, Event};
@@ -108,8 +109,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
 }
 
 struct OneEval<'a, E> {
-    client_app: &'a hubcaps::Github,
-    repo: hubcaps::repositories::Repository<'a>,
+    repo_client: ghrepo::Client<'a>,
     gists: Gists<'a>,
     nix: &'a nix::Nix,
     acl: &'a ACL,
@@ -135,10 +135,9 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
     ) -> OneEval<'a, E> {
         let gists = client_legacy.gists();
 
-        let repo = client_app.repo(job.repo.owner.clone(), job.repo.name.clone());
+        let repo_client = ghrepo::Client::new(client_app, &job.repo);
         OneEval {
-            client_app,
-            repo,
+            repo_client,
             gists,
             nix,
             acl,
@@ -183,11 +182,10 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             &self.job.pr.number, &self.job.pr.head_sha, &description
         );
 
-        self.repo
-            .statuses()
-            .create(&self.job.pr.head_sha, &builder.build())
-            .map(|_| ())
-            .map_err(|e| CommitStatusError::from(e))
+        self.repo_client
+            .create_status(&self.job.pr.head_sha, &builder.build())
+            .map_err(|e| CommitStatusError::from(e))?;
+        Ok(())
     }
 
     fn make_gist(
@@ -241,7 +239,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                     "Internal error writing commit status: {:?}, marking internal error",
                     cswerr
                 );
-                let issue_ref = self.repo.issue(self.job.pr.number);
+                let issue_ref = self.repo_client.get_issue_ref(self.job.pr.number);
                 update_labels(&issue_ref, &[String::from("ofborg-internal-error")], &[]);
 
                 self.actions().skip(&self.job)
@@ -253,15 +251,10 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
     #[allow(clippy::cognitive_complexity)]
     fn evaluate_job(&mut self) -> Result<worker::Actions, EvalWorkerError> {
         let job = self.job;
-        let repo = self
-            .client_app
-            .repo(self.job.repo.owner.clone(), self.job.repo.name.clone());
-        let pulls = repo.pulls();
-        let pull = pulls.get(job.pr.number);
-        let issue_ref = repo.issue(job.pr.number);
         let issue: Issue;
         let auto_schedule_build_archs: Vec<systems::System>;
 
+        let issue_ref = self.repo_client.get_issue_ref(job.pr.number);
         match issue_ref.get() {
             Ok(iss) => {
                 if iss.state == "closed" {
@@ -290,6 +283,11 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             }
         };
 
+        // TODO don't pass hubcaps types directly
+        let repo = self.repo_client.get_repo();
+        let pulls = repo.pulls();
+        let pull = pulls.get(job.pr.number);
+
         let mut evaluation_strategy: Box<dyn eval::EvaluationStrategy> = if job.is_nixpkgs() {
             Box::new(eval::NixpkgsStrategy::new(
                 &job,
@@ -305,12 +303,10 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             Box::new(eval::GenericStrategy::new())
         };
 
-        let mut overall_status = CommitStatus::new(
-            repo.statuses(),
-            job.pr.head_sha.clone(),
-            "grahamcofborg-eval".to_owned(),
-            "Starting".to_owned(),
-            None,
+        let mut overall_status = self.repo_client.create_commitstatus(
+            &job.pr,
+            "grahamcofborg-eval".to_string(),
+            "Starting".to_string(),
         );
 
         overall_status.set_with_description("Starting", hubcaps::statuses::State::Pending)?;
@@ -389,13 +385,9 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             .evaluation_checks()
             .into_iter()
             .map(|check| {
-                let mut status = CommitStatus::new(
-                    repo.statuses(),
-                    job.pr.head_sha.clone(),
-                    check.name(),
-                    check.cli_cmd(),
-                    None,
-                );
+                let mut status =
+                    self.repo_client
+                        .create_commitstatus(&job.pr, check.name(), check.cli_cmd());
 
                 status
                     .set(hubcaps::statuses::State::Pending)
@@ -438,7 +430,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             let complete = evaluation_strategy
                 .all_evaluations_passed(&Path::new(&refpath), &mut overall_status)?;
 
-            send_check_statuses(complete.checks, &repo);
+            self.send_check_statuses(complete.checks);
             response.extend(schedule_builds(complete.builds, auto_schedule_build_archs));
 
             overall_status.set_with_description("^.^!", hubcaps::statuses::State::Success)?;
@@ -452,13 +444,13 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         info!("Evaluations done!");
         Ok(self.actions().done(&job, response))
     }
-}
 
-fn send_check_statuses(checks: Vec<CheckRunOptions>, repo: &hubcaps::repositories::Repository) {
-    for check in checks {
-        match repo.checkruns().create(&check) {
-            Ok(_) => debug!("Sent check update"),
-            Err(e) => warn!("Failed to send check update: {:?}", e),
+    fn send_check_statuses(&self, checks: Vec<CheckRunOptions>) {
+        for check in checks {
+            match self.repo_client.create_checkrun(&check) {
+                Ok(_) => debug!("Sent check update"),
+                Err(e) => warn!("Failed to send check update: {:?}", e),
+            }
         }
     }
 }
