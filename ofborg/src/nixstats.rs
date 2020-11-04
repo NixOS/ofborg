@@ -311,7 +311,7 @@ impl<'a> EvaluationStatsDiff<'a> {
         );
 
         let mut keys = data.keys().cloned().collect::<Vec<&str>>();
-        keys.sort();
+        keys.sort_unstable();
 
         let rows = keys
             .into_iter()
