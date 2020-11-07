@@ -1,6 +1,5 @@
 { ... }:
 {
   lib = import ./lib;
-  foo.bar.packageA = {
-  };
+  foo.bar.packageA = { };
 }
