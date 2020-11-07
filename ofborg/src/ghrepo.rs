@@ -2,7 +2,8 @@ use crate::commitstatus;
 use crate::message;
 
 use hubcaps::checks::{CheckRun, CheckRunOptions};
-use hubcaps::issues::IssueRef;
+use hubcaps::issues::Issue;
+use hubcaps::labels::Label;
 use hubcaps::pulls::Pull;
 use hubcaps::repositories::Repository;
 use hubcaps::review_requests::ReviewRequestOptions;
@@ -19,13 +20,21 @@ impl<'a> Client<'a> {
         Client { repo }
     }
 
-    pub fn get_issue_ref(&self, number: u64) -> IssueRef {
-        self.repo.issue(number)
+    pub fn get_issue(&self, number: u64) -> hubcaps::Result<Issue> {
+        self.repo.issue(number).get()
     }
 
     pub fn get_pull(&self, number: u64) -> hubcaps::Result<Pull> {
         let pulls = self.repo.pulls();
         pulls.get(number).get()
+    }
+
+    pub fn add_labels(&self, number: u64, labels: Vec<&str>) -> hubcaps::Result<Vec<Label>> {
+        self.repo.issue(number).labels().add(labels)
+    }
+
+    pub fn remove_label(&self, number: u64, label: &str) -> hubcaps::Result<()> {
+        self.repo.issue(number).labels().remove(label)
     }
 
     pub fn create_review_request(

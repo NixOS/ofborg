@@ -24,7 +24,6 @@ use std::path::Path;
 use chrono::Utc;
 use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
 use hubcaps::gists::Gists;
-use hubcaps::issues::IssueRef;
 use tracing::{info, warn};
 use uuid::Uuid;
 
@@ -33,7 +32,6 @@ static MAINTAINER_REVIEW_MAX_CHANGED_PATHS: usize = 64;
 pub struct NixpkgsStrategy<'a> {
     repo_client: &'a ghrepo::Client<'a>,
     job: &'a EvaluationJob,
-    issue_ref: &'a IssueRef<'a>,
     gists: &'a Gists<'a>,
     nix: Nix,
     tag_paths: &'a HashMap<String, Vec<String>>,
@@ -48,7 +46,6 @@ impl<'a> NixpkgsStrategy<'a> {
     pub fn new(
         repo_client: &'a ghrepo::Client<'a>,
         job: &'a EvaluationJob,
-        issue_ref: &'a IssueRef,
         gists: &'a Gists,
         nix: Nix,
         tag_paths: &'a HashMap<String, Vec<String>>,
@@ -56,7 +53,6 @@ impl<'a> NixpkgsStrategy<'a> {
         Self {
             repo_client,
             job,
-            issue_ref,
             gists,
             nix,
             tag_paths,
@@ -69,16 +65,21 @@ impl<'a> NixpkgsStrategy<'a> {
 
     fn tag_from_title(&self) {
         let darwin = self
-            .issue_ref
-            .get()
-            .map(|iss| {
-                iss.title.to_lowercase().contains("darwin")
-                    || iss.title.to_lowercase().contains("macos")
+            .repo_client
+            .get_issue(self.job.pr.number)
+            .map(|issue| {
+                issue.title.to_lowercase().contains("darwin")
+                    || issue.title.to_lowercase().contains("macos")
             })
             .unwrap_or(false);
 
         if darwin {
-            update_labels(&self.issue_ref, &[String::from("6.topic: darwin")], &[]);
+            update_labels(
+                &self.repo_client,
+                &self.job.pr,
+                &[String::from("6.topic: darwin")],
+                &[],
+            );
         }
     }
 
@@ -91,7 +92,8 @@ impl<'a> NixpkgsStrategy<'a> {
             }
 
             update_labels(
-                &self.issue_ref,
+                &self.repo_client,
+                &self.job.pr,
                 &tagger.tags_to_add(),
                 &tagger.tags_to_remove(),
             );
@@ -117,7 +119,8 @@ impl<'a> NixpkgsStrategy<'a> {
                 stdenvtagger.changed(stdenvs.changed());
             }
             update_labels(
-                &self.issue_ref,
+                &self.repo_client,
+                &self.job.pr,
                 &stdenvtagger.tags_to_add(),
                 &stdenvtagger.tags_to_remove(),
             );
@@ -196,7 +199,8 @@ impl<'a> NixpkgsStrategy<'a> {
                 let mut addremovetagger = PkgsAddedRemovedTagger::new();
                 addremovetagger.changed(&removed, &added);
                 update_labels(
-                    &self.issue_ref,
+                    &self.repo_client,
+                    &self.job.pr,
                     &addremovetagger.tags_to_add(),
                     &addremovetagger.tags_to_remove(),
                 );
@@ -222,7 +226,8 @@ impl<'a> NixpkgsStrategy<'a> {
             }
 
             update_labels(
-                &self.issue_ref,
+                &self.repo_client,
+                &self.job.pr,
                 &rebuild_tags.tags_to_add(),
                 &rebuild_tags.tags_to_remove(),
             );
@@ -295,12 +300,12 @@ impl<'a> NixpkgsStrategy<'a> {
                 let mut maint_tagger = MaintainerPRTagger::new();
                 let issue = self
                     .repo_client
-                    .get_issue_ref(self.job.pr.number)
-                    .get()
+                    .get_issue(self.job.pr.number)
                     .map_err(|_e| Error::Fail(String::from("Failed to retrieve issue")))?;
                 maint_tagger.record_maintainer(&issue.user.login, &maint.maintainers_by_package());
                 update_labels(
-                    &self.issue_ref,
+                    &self.repo_client,
+                    &self.job.pr,
                     &maint_tagger.tags_to_add(),
                     &maint_tagger.tags_to_remove(),
                 );
@@ -406,7 +411,8 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
 
     fn merge_conflict(&mut self) {
         update_labels(
-            &self.issue_ref,
+            &self.repo_client,
+            &self.job.pr,
             &["2.status: merge conflict".to_owned()],
             &[],
         );
@@ -414,7 +420,8 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
 
     fn after_merge(&mut self, status: &mut CommitStatus) -> StepResult<()> {
         update_labels(
-            &self.issue_ref,
+            &self.repo_client,
+            &self.job.pr,
             &[],
             &["2.status: merge conflict".to_owned()],
         );

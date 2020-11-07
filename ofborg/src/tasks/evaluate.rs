@@ -5,7 +5,7 @@ use crate::commitstatus::CommitStatusError;
 use crate::config::GithubAppVendingMachine;
 use crate::files::file_to_str;
 use crate::ghrepo;
-use crate::message::{buildjob, evaluationjob};
+use crate::message::{buildjob, evaluationjob, Pr};
 use crate::nix;
 use crate::stats::{self, Event};
 use crate::systems;
@@ -238,8 +238,12 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                     "Internal error writing commit status: {:?}, marking internal error",
                     cswerr
                 );
-                let issue_ref = self.repo_client.get_issue_ref(self.job.pr.number);
-                update_labels(&issue_ref, &[String::from("ofborg-internal-error")], &[]);
+                update_labels(
+                    &self.repo_client,
+                    &self.job.pr,
+                    &[String::from("ofborg-internal-error")],
+                    &[],
+                );
 
                 self.actions().skip(&self.job)
             }
@@ -252,20 +256,19 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         let job = self.job;
         let auto_schedule_build_archs: Vec<systems::System>;
 
-        let issue_ref = self.repo_client.get_issue_ref(job.pr.number);
-        match issue_ref.get() {
-            Ok(iss) => {
-                if iss.state == "closed" {
+        match self.repo_client.get_issue(job.pr.number) {
+            Ok(issue) => {
+                if issue.state == "closed" {
                     self.events.notify(Event::IssueAlreadyClosed);
                     info!("Skipping {} because it is closed", job.pr.number);
                     return Ok(self.actions().skip(&job));
                 }
 
-                if issue_is_wip(&iss) {
+                if issue_is_wip(&issue) {
                     auto_schedule_build_archs = vec![];
                 } else {
                     auto_schedule_build_archs = self.acl.build_job_architectures_for_user_repo(
-                        &iss.user.login,
+                        &issue.user.login,
                         &job.repo.full_name,
                     );
                 }
@@ -283,7 +286,6 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             Box::new(eval::NixpkgsStrategy::new(
                 &self.repo_client,
                 &job,
-                &issue_ref,
                 &self.gists,
                 self.nix.clone(),
                 &self.tag_paths,
@@ -507,9 +509,10 @@ pub fn make_gist<'a>(
     )
 }
 
-pub fn update_labels(issueref: &hubcaps::issues::IssueRef, add: &[String], remove: &[String]) {
-    let l = issueref.labels();
-    let issue = issueref.get().expect("Failed to get issue");
+pub fn update_labels(repo_client: &ghrepo::Client, pr: &Pr, add: &[String], remove: &[String]) {
+    let issue = repo_client
+        .get_issue(pr.number)
+        .expect("Failed to get issue");
 
     let existing: Vec<String> = issue.labels.iter().map(|l| l.name.clone()).collect();
 
@@ -530,20 +533,24 @@ pub fn update_labels(issueref: &hubcaps::issues::IssueRef, add: &[String], remov
         issue.number, to_add, to_remove, existing
     );
 
-    l.add(to_add.clone()).unwrap_or_else(|e| {
-        panic!(
-            "Failed to add labels {:?} to issue #{}: {:?}",
-            to_add, issue.number, e
-        )
-    });
-
-    for label in to_remove {
-        l.remove(&label).unwrap_or_else(|e| {
+    repo_client
+        .add_labels(pr.number, to_add.clone())
+        .unwrap_or_else(|e| {
             panic!(
-                "Failed to remove label {:?} from issue #{}: {:?}",
-                label, issue.number, e
+                "Failed to add labels {:?} to issue #{}: {:?}",
+                to_add, issue.number, e
             )
         });
+
+    for label in to_remove {
+        repo_client
+            .remove_label(pr.number, &label)
+            .unwrap_or_else(|e| {
+                panic!(
+                    "Failed to remove label {:?} from issue #{}: {:?}",
+                    label, issue.number, e
+                )
+            });
     }
 }
 
