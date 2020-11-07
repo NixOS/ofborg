@@ -2,9 +2,11 @@ use crate::checkout::CachedProjectCo;
 use crate::commentparser::Subset;
 use crate::commitstatus::CommitStatus;
 use crate::evalchecker::EvalChecker;
+use crate::ghrepo;
 use crate::maintainers::{self, ImpactedMaintainers};
 use crate::message::buildjob::BuildJob;
 use crate::message::evaluationjob::EvaluationJob;
+use crate::message::Pr;
 use crate::nix::{self, Nix};
 use crate::nixenv::HydraNixEnv;
 use crate::outpathdiff::{OutPathDiff, PackageArch};
@@ -22,7 +24,7 @@ use std::path::Path;
 use chrono::Utc;
 use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
 use hubcaps::gists::Gists;
-use hubcaps::issues::{Issue, IssueRef};
+use hubcaps::issues::IssueRef;
 use hubcaps::repositories::Repository;
 use tracing::{info, warn};
 use uuid::Uuid;
@@ -30,9 +32,8 @@ use uuid::Uuid;
 static MAINTAINER_REVIEW_MAX_CHANGED_PATHS: usize = 64;
 
 pub struct NixpkgsStrategy<'a> {
+    repo_client: &'a ghrepo::Client<'a>,
     job: &'a EvaluationJob,
-    pull: &'a hubcaps::pulls::PullRequest<'a>,
-    issue: &'a Issue,
     issue_ref: &'a IssueRef<'a>,
     repo: &'a Repository<'a>,
     gists: &'a Gists<'a>,
@@ -47,9 +48,8 @@ pub struct NixpkgsStrategy<'a> {
 impl<'a> NixpkgsStrategy<'a> {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
+        repo_client: &'a ghrepo::Client<'a>,
         job: &'a EvaluationJob,
-        pull: &'a hubcaps::pulls::PullRequest,
-        issue: &'a Issue,
         issue_ref: &'a IssueRef,
         repo: &'a Repository,
         gists: &'a Gists,
@@ -57,9 +57,8 @@ impl<'a> NixpkgsStrategy<'a> {
         tag_paths: &'a HashMap<String, Vec<String>>,
     ) -> NixpkgsStrategy<'a> {
         Self {
+            repo_client,
             job,
-            pull,
-            issue,
             issue_ref,
             repo,
             gists,
@@ -298,10 +297,14 @@ impl<'a> NixpkgsStrategy<'a> {
             status.set(hubcaps::statuses::State::Success)?;
 
             if let Ok(ref maint) = m {
-                request_reviews(&maint, &self.pull);
+                request_reviews(&self.repo_client, &self.job.pr, &maint);
                 let mut maint_tagger = MaintainerPRTagger::new();
-                maint_tagger
-                    .record_maintainer(&self.issue.user.login, &maint.maintainers_by_package());
+                let issue = self
+                    .repo_client
+                    .get_issue_ref(self.job.pr.number)
+                    .get()
+                    .map_err(|_e| Error::Fail(String::from("Failed to retrieve issue")))?;
+                maint_tagger.record_maintainer(&issue.user.login, &maint.maintainers_by_package());
                 update_labels(
                     &self.issue_ref,
                     &maint_tagger.tags_to_add(),
@@ -584,26 +587,28 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
     }
 }
 
-fn request_reviews(maint: &maintainers::ImpactedMaintainers, pull: &hubcaps::pulls::PullRequest) {
-    let pull_meta = pull.get();
-
-    if maint.maintainers().len() < 10 {
-        for maintainer in maint.maintainers() {
-            if let Ok(meta) = &pull_meta {
+fn request_reviews(
+    repo_client: &ghrepo::Client<'_>,
+    pr: &Pr,
+    impacted_maintainers: &maintainers::ImpactedMaintainers,
+) {
+    if impacted_maintainers.maintainers().len() < 10 {
+        for maintainer in impacted_maintainers.maintainers() {
+            if let Ok(pull) = repo_client.get_pull(pr.number) {
                 // GitHub doesn't let us request a review from the PR author, so
                 // we silently skip them.
-                if meta.user.login.to_ascii_lowercase() == maintainer.to_ascii_lowercase() {
+                if pull.user.login.to_ascii_lowercase() == maintainer.to_ascii_lowercase() {
                     continue;
                 }
             }
 
-            if let Err(e) =
-                pull.review_requests()
-                    .create(&hubcaps::review_requests::ReviewRequestOptions {
-                        reviewers: vec![maintainer.clone()],
-                        team_reviewers: vec![],
-                    })
-            {
+            if let Err(e) = repo_client.create_review_request(
+                pr.number,
+                &hubcaps::review_requests::ReviewRequestOptions {
+                    reviewers: vec![maintainer.clone()],
+                    team_reviewers: vec![],
+                },
+            ) {
                 warn!("Failure requesting a review from {}: {:?}", maintainer, e,);
             }
         }

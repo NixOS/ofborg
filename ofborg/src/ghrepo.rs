@@ -3,7 +3,9 @@ use crate::message;
 
 use hubcaps::checks::{CheckRun, CheckRunOptions};
 use hubcaps::issues::IssueRef;
+use hubcaps::pulls::Pull;
 use hubcaps::repositories::Repository;
+use hubcaps::review_requests::ReviewRequestOptions;
 use hubcaps::statuses::{Status, StatusOptions};
 use hubcaps::Github;
 
@@ -23,6 +25,20 @@ impl<'a> Client<'a> {
 
     pub fn get_issue_ref(&self, number: u64) -> IssueRef {
         self.repo.issue(number)
+    }
+
+    pub fn get_pull(&self, number: u64) -> hubcaps::Result<Pull> {
+        let pulls = self.repo.pulls();
+        pulls.get(number).get()
+    }
+
+    pub fn create_review_request(
+        &self,
+        number: u64,
+        review_request: &ReviewRequestOptions,
+    ) -> hubcaps::Result<Pull> {
+        let pulls = self.repo.pulls();
+        pulls.get(number).review_requests().create(review_request)
     }
 
     pub fn create_status(&self, sha: &str, status: &StatusOptions) -> hubcaps::Result<Status> {

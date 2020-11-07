@@ -19,7 +19,6 @@ use std::time::Instant;
 
 use hubcaps::checks::CheckRunOptions;
 use hubcaps::gists::Gists;
-use hubcaps::issues::Issue;
 use tracing::{debug, debug_span, error, info, warn};
 
 pub struct EvaluationWorker<E> {
@@ -251,7 +250,6 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
     #[allow(clippy::cognitive_complexity)]
     fn evaluate_job(&mut self) -> Result<worker::Actions, EvalWorkerError> {
         let job = self.job;
-        let issue: Issue;
         let auto_schedule_build_archs: Vec<systems::System>;
 
         let issue_ref = self.repo_client.get_issue_ref(job.pr.number);
@@ -271,8 +269,6 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                         &job.repo.full_name,
                     );
                 }
-
-                issue = iss;
             }
 
             Err(e) => {
@@ -285,14 +281,11 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         // TODO don't pass hubcaps types directly
         let repo = self.repo_client.get_repo();
-        let pulls = repo.pulls();
-        let pull = pulls.get(job.pr.number);
 
         let mut evaluation_strategy: Box<dyn eval::EvaluationStrategy> = if job.is_nixpkgs() {
             Box::new(eval::NixpkgsStrategy::new(
+                &self.repo_client,
                 &job,
-                &pull,
-                &issue,
                 &issue_ref,
                 &repo,
                 &self.gists,
