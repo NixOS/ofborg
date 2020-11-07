@@ -551,7 +551,10 @@ mod tests {
             &mut actions,
             "\"line_number\":1,\"output\":\"Cannot nix-instantiate `not-real\' because:\"",
         );
-        assert_contains_job(&mut actions, "\"line_number\":2,\"output\":\"error: attribute 'not-real' in selection path 'not-real' not found\"}");
+        assert_contains_job(
+            &mut actions,
+            "attribute 'not-real' in selection path 'not-real' not found\"}",
+        );
         assert_contains_job(&mut actions, "skipped_attrs\":[\"not-real"); // First one to the github poster
         assert_contains_job(&mut actions, "skipped_attrs\":[\"not-real"); // This one to the logs
         assert_eq!(actions.next(), Some(worker::Action::Ack));

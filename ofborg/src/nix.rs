@@ -757,10 +757,12 @@ mod tests {
             "trace: You just can't frooble the frozz on this particular system."
         );
 
+        eprintln!("{:?}", ret.1[1].1);
         assert_eq!(ret.1[1].0, "missing-attr");
+        let s = strip_ansi(&ret.1[1].1.last().unwrap());
         assert_eq!(
-            strip_ansi(&ret.1[1].1[0]),
-            "error: attribute 'missing-attr' in selection path 'missing-attr' not found"
+            s.trim_start_matches("error: "),
+            "attribute 'missing-attr' in selection path 'missing-attr' not found"
         );
     }
 
@@ -823,7 +825,6 @@ mod tests {
             ret,
             Expect::Fail,
             vec![
-                "error: while evaluating the attribute",
                 "access to path",
                 "is forbidden in restricted mode",
             ],
