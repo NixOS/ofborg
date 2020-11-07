@@ -279,15 +279,11 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             }
         };
 
-        // TODO don't pass hubcaps types directly
-        let repo = self.repo_client.get_repo();
-
         let mut evaluation_strategy: Box<dyn eval::EvaluationStrategy> = if job.is_nixpkgs() {
             Box::new(eval::NixpkgsStrategy::new(
                 &self.repo_client,
                 &job,
                 &issue_ref,
-                &repo,
                 &self.gists,
                 self.nix.clone(),
                 &self.tag_paths,
@@ -300,6 +296,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             &job.pr,
             "grahamcofborg-eval".to_string(),
             "Starting".to_string(),
+            None,
         );
 
         overall_status.set_with_description("Starting", hubcaps::statuses::State::Pending)?;
@@ -378,9 +375,12 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             .evaluation_checks()
             .into_iter()
             .map(|check| {
-                let mut status =
-                    self.repo_client
-                        .create_commitstatus(&job.pr, check.name(), check.cli_cmd());
+                let mut status = self.repo_client.create_commitstatus(
+                    &job.pr,
+                    check.name(),
+                    check.cli_cmd(),
+                    None,
+                );
 
                 status
                     .set(hubcaps::statuses::State::Pending)

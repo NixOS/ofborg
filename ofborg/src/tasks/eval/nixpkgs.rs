@@ -25,7 +25,6 @@ use chrono::Utc;
 use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
 use hubcaps::gists::Gists;
 use hubcaps::issues::IssueRef;
-use hubcaps::repositories::Repository;
 use tracing::{info, warn};
 use uuid::Uuid;
 
@@ -35,7 +34,6 @@ pub struct NixpkgsStrategy<'a> {
     repo_client: &'a ghrepo::Client<'a>,
     job: &'a EvaluationJob,
     issue_ref: &'a IssueRef<'a>,
-    repo: &'a Repository<'a>,
     gists: &'a Gists<'a>,
     nix: Nix,
     tag_paths: &'a HashMap<String, Vec<String>>,
@@ -51,7 +49,6 @@ impl<'a> NixpkgsStrategy<'a> {
         repo_client: &'a ghrepo::Client<'a>,
         job: &'a EvaluationJob,
         issue_ref: &'a IssueRef,
-        repo: &'a Repository,
         gists: &'a Gists,
         nix: Nix,
         tag_paths: &'a HashMap<String, Vec<String>>,
@@ -60,7 +57,6 @@ impl<'a> NixpkgsStrategy<'a> {
             repo_client,
             job,
             issue_ref,
-            repo,
             gists,
             nix,
             tag_paths,
@@ -276,9 +272,8 @@ impl<'a> NixpkgsStrategy<'a> {
                     "pull request has {} changed paths, skipping review requests",
                     changed_paths.len()
                 );
-                let status = CommitStatus::new(
-                    self.repo.statuses(),
-                    self.job.pr.head_sha.clone(),
+                let status = self.repo_client.create_commitstatus(
+                    &self.job.pr,
                     String::from("grahamcofborg-eval-check-maintainers"),
                     String::from("large change, skipping automatic review requests"),
                     gist_url,
@@ -287,9 +282,8 @@ impl<'a> NixpkgsStrategy<'a> {
                 return Ok(());
             }
 
-            let status = CommitStatus::new(
-                self.repo.statuses(),
-                self.job.pr.head_sha.clone(),
+            let status = self.repo_client.create_commitstatus(
+                &self.job.pr,
                 String::from("grahamcofborg-eval-check-maintainers"),
                 String::from("matching changed paths to changed attrs..."),
                 gist_url,
@@ -318,9 +312,8 @@ impl<'a> NixpkgsStrategy<'a> {
 
     fn check_meta_queue_builds(&self, dir: &Path) -> StepResult<Vec<BuildJob>> {
         if let Some(ref possibly_touched_packages) = self.touched_packages {
-            let mut status = CommitStatus::new(
-                self.repo.statuses(),
-                self.job.pr.head_sha.clone(),
+            let mut status = self.repo_client.create_commitstatus(
+                &self.job.pr,
                 String::from("grahamcofborg-eval-check-meta"),
                 String::from("config.nix: checkMeta = true"),
                 None,

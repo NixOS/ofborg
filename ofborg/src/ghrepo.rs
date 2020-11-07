@@ -19,10 +19,6 @@ impl<'a> Client<'a> {
         Client { repo }
     }
 
-    pub fn get_repo(&self) -> &Repository<'a> {
-        &self.repo
-    }
-
     pub fn get_issue_ref(&self, number: u64) -> IssueRef {
         self.repo.issue(number)
     }
@@ -54,13 +50,14 @@ impl<'a> Client<'a> {
         pr: &message::Pr,
         context: String,
         description: String,
+        gist_url: Option<String>,
     ) -> commitstatus::CommitStatus {
         commitstatus::CommitStatus::new(
             self.repo.statuses(),
             pr.head_sha.clone(),
             context,
             description,
-            None,
+            gist_url,
         )
     }
 }
