@@ -268,8 +268,9 @@ mod tests {
     }
 
     fn make_pr_repo(bare: &Path, co: &Path) -> String {
-        let output = Command::new("./make-pr.sh")
+        let output = Command::new("bash")
             .current_dir(tpath("./test-srcs"))
+            .arg("./make-pr.sh")
             .arg(bare)
             .arg(co)
             .stdout(Stdio::piped())

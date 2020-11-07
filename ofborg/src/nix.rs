@@ -380,9 +380,18 @@ pub fn wait_for_build_status(spawned: SpawnedAsyncCmd) -> BuildStatus {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use std::env;
+    use std::path::PathBuf;
+
+    #[cfg(target_os = "linux")]
+    const SYSTEM: &str = "x86_64-linux";
+    #[cfg(target_os = "macos")]
+    const SYSTEM: &str = "x86_64-darwin";
+
     fn nix() -> Nix {
         let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
-        Nix::new("x86_64-linux".to_owned(), remote, 1800, None)
+        Nix::new(SYSTEM.to_owned(), remote, 1800, None)
     }
 
     fn noop(operation: Operation) -> Operation {
@@ -508,10 +517,6 @@ mod tests {
         }
     }
 
-    use super::*;
-    use std::env;
-    use std::path::PathBuf;
-
     #[test]
     fn test_build_operations() {
         let nix = nix();
@@ -608,7 +613,7 @@ mod tests {
     fn safe_command_custom_gc() {
         let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
         let nix = Nix::new(
-            "x86_64-linux".to_owned(),
+            SYSTEM.to_owned(),
             remote,
             1800,
             Some("4g".to_owned()),
