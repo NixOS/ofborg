@@ -28,6 +28,7 @@ pub mod easylapin;
 pub mod evalchecker;
 pub mod files;
 pub mod ghevent;
+pub mod ghgist;
 pub mod ghrepo;
 pub mod locks;
 pub mod maintainers;

@@ -2,6 +2,7 @@ use crate::checkout::CachedProjectCo;
 use crate::commentparser::Subset;
 use crate::commitstatus::CommitStatus;
 use crate::evalchecker::EvalChecker;
+use crate::ghgist;
 use crate::ghrepo;
 use crate::maintainers::{self, ImpactedMaintainers};
 use crate::message::buildjob::BuildJob;
@@ -23,7 +24,6 @@ use std::path::Path;
 
 use chrono::Utc;
 use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
-use hubcaps::gists::Gists;
 use tracing::{info, warn};
 use uuid::Uuid;
 
@@ -31,8 +31,8 @@ static MAINTAINER_REVIEW_MAX_CHANGED_PATHS: usize = 64;
 
 pub struct NixpkgsStrategy<'a> {
     repo_client: &'a ghrepo::Client<'a>,
+    gist_client: &'a ghgist::Client<'a>,
     job: &'a EvaluationJob,
-    gists: &'a Gists<'a>,
     nix: Nix,
     tag_paths: &'a HashMap<String, Vec<String>>,
     stdenv_diff: Option<Stdenvs>,
@@ -45,15 +45,15 @@ impl<'a> NixpkgsStrategy<'a> {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         repo_client: &'a ghrepo::Client<'a>,
+        gist_client: &'a ghgist::Client<'a>,
         job: &'a EvaluationJob,
-        gists: &'a Gists,
         nix: Nix,
         tag_paths: &'a HashMap<String, Vec<String>>,
     ) -> NixpkgsStrategy<'a> {
         Self {
             repo_client,
+            gist_client,
             job,
-            gists,
             nix,
             tag_paths,
             stdenv_diff: None,
@@ -237,7 +237,7 @@ impl<'a> NixpkgsStrategy<'a> {
 
     fn gist_changed_paths(&self, attrs: &[PackageArch]) -> Option<String> {
         make_gist(
-            &self.gists,
+            self.gist_client,
             "Changed Paths",
             Some("".to_owned()),
             attrs
@@ -263,7 +263,7 @@ impl<'a> NixpkgsStrategy<'a> {
             );
 
             let gist_url = make_gist(
-                &self.gists,
+                self.gist_client,
                 "Potential Maintainers",
                 Some("".to_owned()),
                 match m {
@@ -359,7 +359,12 @@ impl<'a> NixpkgsStrategy<'a> {
                     }
                 }
                 Err(out) => {
-                    status.set_url(make_gist(&self.gists, "Meta Check", None, out.display()));
+                    status.set_url(make_gist(
+                        self.gist_client,
+                        "Meta Check",
+                        None,
+                        out.display(),
+                    ));
                     status.set(hubcaps::statuses::State::Failure)?;
                     Err(Error::Fail(String::from(
                         "Failed to validate package metadata.",

@@ -4,6 +4,7 @@ use crate::checkout;
 use crate::commitstatus::CommitStatusError;
 use crate::config::GithubAppVendingMachine;
 use crate::files::file_to_str;
+use crate::ghgist;
 use crate::ghrepo;
 use crate::message::{buildjob, evaluationjob, Pr};
 use crate::nix;
@@ -18,7 +19,6 @@ use std::sync::RwLock;
 use std::time::Instant;
 
 use hubcaps::checks::CheckRunOptions;
-use hubcaps::gists::Gists;
 use tracing::{debug, debug_span, error, info, warn};
 
 pub struct EvaluationWorker<E> {
@@ -109,7 +109,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
 
 struct OneEval<'a, E> {
     repo_client: ghrepo::Client<'a>,
-    gists: Gists<'a>,
+    gist_client: ghgist::Client<'a>,
     nix: &'a nix::Nix,
     acl: &'a ACL,
     events: &'a mut E,
@@ -132,12 +132,11 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         cloner: &'a checkout::CachedCloner,
         job: &'a evaluationjob::EvaluationJob,
     ) -> OneEval<'a, E> {
-        let gists = client_legacy.gists();
-
+        let gist_client = ghgist::Client::new(client_legacy);
         let repo_client = ghrepo::Client::new(client_app, &job.repo);
         OneEval {
             repo_client,
-            gists,
+            gist_client,
             nix,
             acl,
             events,
@@ -187,15 +186,6 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         Ok(())
     }
 
-    fn make_gist(
-        &self,
-        filename: &str,
-        description: Option<String>,
-        content: String,
-    ) -> Option<String> {
-        make_gist(&self.gists, filename, description, content)
-    }
-
     fn worker_actions(&mut self) -> worker::Actions {
         let eval_result = self.evaluate_job().map_err(|eval_error| match eval_error {
             // Handle error cases which expect us to post statuses
@@ -206,7 +196,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             EvalWorkerError::EvalError(eval::Error::FailWithGist(msg, filename, content)) => self
                 .update_status(
                     msg,
-                    self.make_gist(&filename, Some("".to_owned()), content),
+                    make_gist(&self.gist_client, &filename, Some("".to_owned()), content),
                     hubcaps::statuses::State::Failure,
                 ),
             EvalWorkerError::EvalError(eval::Error::CommitStatusWrite(e)) => Err(e),
@@ -285,8 +275,8 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         let mut evaluation_strategy: Box<dyn eval::EvaluationStrategy> = if job.is_nixpkgs() {
             Box::new(eval::NixpkgsStrategy::new(
                 &self.repo_client,
+                &self.gist_client,
                 &job,
-                &self.gists,
                 self.nix.clone(),
                 &self.tag_paths,
             ))
@@ -397,7 +387,8 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                     }
                     Err(mut out) => {
                         state = hubcaps::statuses::State::Failure;
-                        gist_url = self.make_gist(
+                        gist_url = make_gist(
+                            &self.gist_client,
                             &check.name(),
                             Some(format!("{:?}", state)),
                             file_to_str(&mut out),
@@ -482,8 +473,8 @@ fn schedule_builds(
     response
 }
 
-pub fn make_gist<'a>(
-    gists: &hubcaps::gists::Gists<'a>,
+pub fn make_gist(
+    gist_client: &ghgist::Client,
     name: &str,
     description: Option<String>,
     contents: String,
@@ -498,8 +489,8 @@ pub fn make_gist<'a>(
     );
 
     Some(
-        gists
-            .create(&hubcaps::gists::GistOptions {
+        gist_client
+            .create_gist(&hubcaps::gists::GistOptions {
                 description,
                 public: Some(true),
                 files,
