@@ -1,21 +1,19 @@
 let
-  nix = import <nix/config.nix>;
-in rec {
+  builder = builtins.storePath <ofborg-test-bash>;
+in
+
+rec {
   success = derivation {
     name = "success";
     system = builtins.currentSystem;
-    builder = builtins.storePath nix.shell;
-    args = [
-      "-c"
-      "echo hi; echo ${toString builtins.currentTime} > $out" ];
+    inherit builder;
+    args = ["-c" "echo hi; echo ${toString builtins.currentTime} > $out" ];
   };
 
   failed = derivation {
     name = "failed";
     system = builtins.currentSystem;
-    builder = builtins.storePath nix.shell;
-    args = [
-      "-c"
-      "echo hi; echo ${toString builtins.currentTime}; echo ${success}" ];
+    inherit builder;
+    args = ["-c" "echo hi; echo ${toString builtins.currentTime}; echo ${success}" ];
   };
 }

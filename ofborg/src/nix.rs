@@ -390,6 +390,9 @@ mod tests {
     const SYSTEM: &str = "x86_64-darwin";
 
     fn nix() -> Nix {
+        let path = env::var("PATH").unwrap();
+        let test_path = format!("{}/test-nix/bin:{}", env!("CARGO_MANIFEST_DIR"), path);
+        env::set_var("PATH", test_path);
         let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
         Nix::new(SYSTEM.to_owned(), remote, 1800, None)
     }
@@ -612,12 +615,7 @@ mod tests {
     #[test]
     fn safe_command_custom_gc() {
         let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
-        let nix = Nix::new(
-            SYSTEM.to_owned(),
-            remote,
-            1800,
-            Some("4g".to_owned()),
-        );
+        let nix = Nix::new(SYSTEM.to_owned(), remote, 1800, Some("4g".to_owned()));
 
         let ret: Result<fs::File, fs::File> = nix.run(
             nix.safe_command::<&OsStr>(&env_noop(), build_path().as_path(), &[], &[]),
@@ -824,10 +822,7 @@ mod tests {
         assert_run(
             ret,
             Expect::Fail,
-            vec![
-                "access to path",
-                "is forbidden in restricted mode",
-            ],
+            vec!["access to path", "is forbidden in restricted mode"],
         );
     }
 
