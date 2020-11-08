@@ -277,8 +277,9 @@ impl<'a> NixpkgsStrategy<'a> {
                     "pull request has {} changed paths, skipping review requests",
                     changed_paths.len()
                 );
-                let status = self.repo_client.create_commitstatus(
-                    &self.job.pr,
+                let status = CommitStatus::new(
+                    self.repo_client.clone(),
+                    self.job.pr.head_sha.clone(),
                     String::from("grahamcofborg-eval-check-maintainers"),
                     String::from("large change, skipping automatic review requests"),
                     gist_url,
@@ -287,8 +288,9 @@ impl<'a> NixpkgsStrategy<'a> {
                 return Ok(());
             }
 
-            let status = self.repo_client.create_commitstatus(
-                &self.job.pr,
+            let status = CommitStatus::new(
+                self.repo_client.clone(),
+                self.job.pr.head_sha.clone(),
                 String::from("grahamcofborg-eval-check-maintainers"),
                 String::from("matching changed paths to changed attrs..."),
                 gist_url,
@@ -317,8 +319,9 @@ impl<'a> NixpkgsStrategy<'a> {
 
     fn check_meta_queue_builds(&self, dir: &Path) -> StepResult<Vec<BuildJob>> {
         if let Some(ref possibly_touched_packages) = self.touched_packages {
-            let mut status = self.repo_client.create_commitstatus(
-                &self.job.pr,
+            let mut status = CommitStatus::new(
+                self.repo_client.clone(),
+                self.job.pr.head_sha.clone(),
                 String::from("grahamcofborg-eval-check-meta"),
                 String::from("config.nix: checkMeta = true"),
                 None,

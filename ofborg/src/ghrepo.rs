@@ -1,4 +1,3 @@
-use crate::commitstatus;
 use crate::message;
 
 use hubcaps::checks::{CheckRun, CheckRunOptions};
@@ -22,13 +21,6 @@ pub trait Client {
     ) -> hubcaps::Result<Pull>;
     fn create_status(&self, sha: &str, status: &StatusOptions) -> hubcaps::Result<Status>;
     fn create_checkrun(&self, check: &CheckRunOptions) -> hubcaps::Result<CheckRun>;
-    fn create_commitstatus(
-        &self,
-        pr: &message::Pr,
-        context: String,
-        description: String,
-        gist_url: Option<String>,
-    ) -> commitstatus::CommitStatus;
 }
 
 pub struct Hubcaps<'a> {
@@ -75,21 +67,5 @@ impl Client for Hubcaps<'_> {
 
     fn create_checkrun(&self, check: &CheckRunOptions) -> hubcaps::Result<CheckRun> {
         self.repo.checkruns().create(&check)
-    }
-
-    fn create_commitstatus(
-        &self,
-        pr: &message::Pr,
-        context: String,
-        description: String,
-        gist_url: Option<String>,
-    ) -> commitstatus::CommitStatus {
-        commitstatus::CommitStatus::new(
-            self.repo.statuses(),
-            pr.head_sha.clone(),
-            context,
-            description,
-            gist_url,
-        )
     }
 }

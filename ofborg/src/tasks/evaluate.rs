@@ -1,7 +1,7 @@
 /// This is what evaluates every pull-request
 use crate::acl::ACL;
 use crate::checkout;
-use crate::commitstatus::CommitStatusError;
+use crate::commitstatus::{CommitStatus, CommitStatusError};
 use crate::config::GithubAppVendingMachine;
 use crate::files::file_to_str;
 use crate::ghgist;
@@ -290,8 +290,9 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             Box::new(eval::GenericStrategy::new())
         };
 
-        let mut overall_status = self.repo_client.create_commitstatus(
-            &job.pr,
+        let mut overall_status = CommitStatus::new(
+            self.repo_client.clone(),
+            job.pr.head_sha.clone(),
             "grahamcofborg-eval".to_string(),
             "Starting".to_string(),
             None,
@@ -373,8 +374,9 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             .evaluation_checks()
             .into_iter()
             .map(|check| {
-                let mut status = self.repo_client.create_commitstatus(
-                    &job.pr,
+                let mut status = CommitStatus::new(
+                    self.repo_client.clone(),
+                    job.pr.head_sha.clone(),
                     check.name(),
                     check.cli_cmd(),
                     None,
