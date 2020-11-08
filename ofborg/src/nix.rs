@@ -380,9 +380,21 @@ pub fn wait_for_build_status(spawned: SpawnedAsyncCmd) -> BuildStatus {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use std::env;
+    use std::path::PathBuf;
+
+    #[cfg(target_os = "linux")]
+    const SYSTEM: &str = "x86_64-linux";
+    #[cfg(target_os = "macos")]
+    const SYSTEM: &str = "x86_64-darwin";
+
     fn nix() -> Nix {
+        let path = env::var("PATH").unwrap();
+        let test_path = format!("{}/test-nix/bin:{}", env!("CARGO_MANIFEST_DIR"), path);
+        env::set_var("PATH", test_path);
         let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
-        Nix::new("x86_64-linux".to_owned(), remote, 1800, None)
+        Nix::new(SYSTEM.to_owned(), remote, 1800, None)
     }
 
     fn noop(operation: Operation) -> Operation {
@@ -508,10 +520,6 @@ mod tests {
         }
     }
 
-    use super::*;
-    use std::env;
-    use std::path::PathBuf;
-
     #[test]
     fn test_build_operations() {
         let nix = nix();
@@ -607,12 +615,7 @@ mod tests {
     #[test]
     fn safe_command_custom_gc() {
         let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
-        let nix = Nix::new(
-            "x86_64-linux".to_owned(),
-            remote,
-            1800,
-            Some("4g".to_owned()),
-        );
+        let nix = Nix::new(SYSTEM.to_owned(), remote, 1800, Some("4g".to_owned()));
 
         let ret: Result<fs::File, fs::File> = nix.run(
             nix.safe_command::<&OsStr>(&env_noop(), build_path().as_path(), &[], &[]),
@@ -752,10 +755,12 @@ mod tests {
             "trace: You just can't frooble the frozz on this particular system."
         );
 
+        eprintln!("{:?}", ret.1[1].1);
         assert_eq!(ret.1[1].0, "missing-attr");
+        let s = strip_ansi(&ret.1[1].1.last().unwrap());
         assert_eq!(
-            strip_ansi(&ret.1[1].1[0]),
-            "error: attribute 'missing-attr' in selection path 'missing-attr' not found"
+            s.trim_start_matches("error: "),
+            "attribute 'missing-attr' in selection path 'missing-attr' not found"
         );
     }
 
@@ -817,11 +822,7 @@ mod tests {
         assert_run(
             ret,
             Expect::Fail,
-            vec![
-                "error: while evaluating the attribute",
-                "access to path",
-                "is forbidden in restricted mode",
-            ],
+            vec!["access to path", "is forbidden in restricted mode"],
         );
     }
 

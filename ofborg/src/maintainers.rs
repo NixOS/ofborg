@@ -136,13 +136,19 @@ mod tests {
     use std::process::Command;
     use std::process::Stdio;
 
+    #[cfg(target_os = "linux")]
+    const SYSTEM: &str = "x86_64-linux";
+    #[cfg(target_os = "macos")]
+    const SYSTEM: &str = "x86_64-darwin";
+
     fn tpath(component: &str) -> PathBuf {
         return Path::new(env!("CARGO_MANIFEST_DIR")).join(component);
     }
 
     fn make_pr_repo(bare: &Path, co: &Path) -> String {
-        let output = Command::new("./make-maintainer-pr.sh")
+        let output = Command::new("bash")
             .current_dir(tpath("./test-srcs"))
+            .arg("./make-maintainer-pr.sh")
             .arg(bare)
             .arg(co)
             .stdout(Stdio::piped())
@@ -183,7 +189,7 @@ mod tests {
         working_co.checkout_ref(&OsStr::new(&hash)).unwrap();
 
         let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
-        let nix = Nix::new("x86_64-linux".to_owned(), remote, 1800, None);
+        let nix = Nix::new(SYSTEM.to_owned(), remote, 1800, None);
 
         let parsed =
             ImpactedMaintainers::calculate(&nix, &working_co.clone_to(), &paths, &attributes);

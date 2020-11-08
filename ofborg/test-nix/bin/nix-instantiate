@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+export PATH=${PATH#*:}
+exec nix-instantiate "$@" -I "ofborg-test-bash=$(command -v bash)"

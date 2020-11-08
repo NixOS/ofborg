@@ -391,6 +391,11 @@ mod tests {
     use std::process::{Command, Stdio};
     use std::vec::IntoIter;
 
+    #[cfg(target_os = "linux")]
+    const SYSTEM: &str = "x86_64-linux";
+    #[cfg(target_os = "macos")]
+    const SYSTEM: &str = "x86_64-darwin";
+
     fn nix() -> nix::Nix {
         let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
         nix::Nix::new("x86_64-linux".to_owned(), remote, 1800, None)
@@ -406,7 +411,7 @@ mod tests {
         let worker = BuildWorker::new(
             cloner,
             nix,
-            "x86_64-linux".to_owned(),
+            SYSTEM.to_owned(),
             "cargo-test-build".to_owned(),
         );
 
@@ -414,8 +419,9 @@ mod tests {
     }
 
     fn make_pr_repo(bare: &Path, co: &Path) -> String {
-        let output = Command::new("./make-pr.sh")
+        let output = Command::new("bash")
             .current_dir(tpath("./test-srcs"))
+            .arg("make-pr.sh")
             .arg(bare)
             .arg(co)
             .stderr(Stdio::null())
@@ -442,11 +448,12 @@ mod tests {
                 worker::Action::Publish(ref body) => {
                     let content = String::from_utf8(body.content.clone()).unwrap();
                     let text = strip_escaped_ansi(&content);
+                    eprintln!("{}", text);
                     if text.contains(text_to_match) {
                         println!(" ok");
                         return true;
                     } else {
-                        println!(" notContains: {:?}", text);
+                        println!(" notContains: {}", text);
                         return false;
                     }
                 }
@@ -456,8 +463,8 @@ mod tests {
                 }
             })
             .expect(&format!(
-                "Actions should contain a job matching {:?}, after the previous check",
-                text_to_match
+                "Actions should contain a job matching {}, after the previous check",
+                text_to_match,
             ));
     }
 
@@ -544,7 +551,10 @@ mod tests {
             &mut actions,
             "\"line_number\":1,\"output\":\"Cannot nix-instantiate `not-real\' because:\"",
         );
-        assert_contains_job(&mut actions, "\"line_number\":2,\"output\":\"error: attribute 'not-real' in selection path 'not-real' not found\"}");
+        assert_contains_job(
+            &mut actions,
+            "attribute 'not-real' in selection path 'not-real' not found\"}",
+        );
         assert_contains_job(&mut actions, "skipped_attrs\":[\"not-real"); // First one to the github poster
         assert_contains_job(&mut actions, "skipped_attrs\":[\"not-real"); // This one to the logs
         assert_eq!(actions.next(), Some(worker::Action::Ack));
