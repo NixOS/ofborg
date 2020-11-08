@@ -1,15 +1,21 @@
 use hubcaps::gists::{Gist, GistOptions};
 
-pub struct Client<'a> {
+pub trait Client {
+    fn create_gist(&self, gist: &GistOptions) -> hubcaps::Result<Gist>;
+}
+
+pub struct Hubcaps<'a> {
     github: &'a hubcaps::Github,
 }
 
-impl<'a> Client<'a> {
+impl<'a> Hubcaps<'a> {
     pub fn new(github: &'a hubcaps::Github) -> Self {
-        Client { github }
+        Hubcaps { github }
     }
+}
 
-    pub fn create_gist(&self, gist: &GistOptions) -> hubcaps::Result<Gist> {
+impl Client for Hubcaps<'_> {
+    fn create_gist(&self, gist: &GistOptions) -> hubcaps::Result<Gist> {
         self.github.gists().create(gist)
     }
 }

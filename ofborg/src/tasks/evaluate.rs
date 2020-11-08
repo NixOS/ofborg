@@ -15,6 +15,7 @@ use crate::worker;
 
 use std::collections::HashMap;
 use std::path::Path;
+use std::rc::Rc;
 use std::sync::RwLock;
 use std::time::Instant;
 
@@ -92,7 +93,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             .for_repo(&job.repo.owner, &job.repo.name)
             .expect("Failed to get a github client token");
 
-        OneEval::new(
+        let mut eval = OneEval::new(
             github_client,
             &self.github,
             &self.nix,
@@ -102,14 +103,14 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             &self.tag_paths,
             &self.cloner,
             job,
-        )
-        .worker_actions()
+        );
+        eval.worker_actions()
     }
 }
 
 struct OneEval<'a, E> {
-    repo_client: ghrepo::Client<'a>,
-    gist_client: ghgist::Client<'a>,
+    repo_client: Rc<dyn ghrepo::Client + 'a>,
+    gist_client: Rc<dyn ghgist::Client + 'a>,
     nix: &'a nix::Nix,
     acl: &'a ACL,
     events: &'a mut E,
@@ -132,11 +133,11 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         cloner: &'a checkout::CachedCloner,
         job: &'a evaluationjob::EvaluationJob,
     ) -> OneEval<'a, E> {
-        let gist_client = ghgist::Client::new(client_legacy);
-        let repo_client = ghrepo::Client::new(client_app, &job.repo);
+        let gist_client = ghgist::Hubcaps::new(client_legacy);
+        let repo_client = ghrepo::Hubcaps::new(client_app, &job.repo);
         OneEval {
-            repo_client,
-            gist_client,
+            repo_client: Rc::new(repo_client),
+            gist_client: Rc::new(gist_client),
             nix,
             acl,
             events,
@@ -196,7 +197,12 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             EvalWorkerError::EvalError(eval::Error::FailWithGist(msg, filename, content)) => self
                 .update_status(
                     msg,
-                    make_gist(&self.gist_client, &filename, Some("".to_owned()), content),
+                    make_gist(
+                        self.gist_client.as_ref(),
+                        &filename,
+                        Some("".to_owned()),
+                        content,
+                    ),
                     hubcaps::statuses::State::Failure,
                 ),
             EvalWorkerError::EvalError(eval::Error::CommitStatusWrite(e)) => Err(e),
@@ -229,7 +235,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                     cswerr
                 );
                 update_labels(
-                    &self.repo_client,
+                    self.repo_client.as_ref(),
                     &self.job.pr,
                     &[String::from("ofborg-internal-error")],
                     &[],
@@ -274,8 +280,8 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         let mut evaluation_strategy: Box<dyn eval::EvaluationStrategy> = if job.is_nixpkgs() {
             Box::new(eval::NixpkgsStrategy::new(
-                &self.repo_client,
-                &self.gist_client,
+                self.repo_client.clone(),
+                self.gist_client.clone(),
                 &job,
                 self.nix.clone(),
                 &self.tag_paths,
@@ -388,7 +394,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                     Err(mut out) => {
                         state = hubcaps::statuses::State::Failure;
                         gist_url = make_gist(
-                            &self.gist_client,
+                            self.gist_client.as_ref(),
                             &check.name(),
                             Some(format!("{:?}", state)),
                             file_to_str(&mut out),
@@ -474,7 +480,7 @@ fn schedule_builds(
 }
 
 pub fn make_gist(
-    gist_client: &ghgist::Client,
+    gist_client: &dyn ghgist::Client,
     name: &str,
     description: Option<String>,
     contents: String,
@@ -500,7 +506,7 @@ pub fn make_gist(
     )
 }
 
-pub fn update_labels(repo_client: &ghrepo::Client, pr: &Pr, add: &[String], remove: &[String]) {
+pub fn update_labels(repo_client: &dyn ghrepo::Client, pr: &Pr, add: &[String], remove: &[String]) {
     let issue = repo_client
         .get_issue(pr.number)
         .expect("Failed to get issue");

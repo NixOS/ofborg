@@ -21,6 +21,7 @@ use crate::tasks::evaluate::{make_gist, update_labels};
 
 use std::collections::HashMap;
 use std::path::Path;
+use std::rc::Rc;
 
 use chrono::Utc;
 use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
@@ -30,8 +31,8 @@ use uuid::Uuid;
 static MAINTAINER_REVIEW_MAX_CHANGED_PATHS: usize = 64;
 
 pub struct NixpkgsStrategy<'a> {
-    repo_client: &'a ghrepo::Client<'a>,
-    gist_client: &'a ghgist::Client<'a>,
+    repo_client: Rc<dyn ghrepo::Client + 'a>,
+    gist_client: Rc<dyn ghgist::Client + 'a>,
     job: &'a EvaluationJob,
     nix: Nix,
     tag_paths: &'a HashMap<String, Vec<String>>,
@@ -42,10 +43,9 @@ pub struct NixpkgsStrategy<'a> {
 }
 
 impl<'a> NixpkgsStrategy<'a> {
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
-        repo_client: &'a ghrepo::Client<'a>,
-        gist_client: &'a ghgist::Client<'a>,
+        repo_client: Rc<dyn ghrepo::Client + 'a>,
+        gist_client: Rc<dyn ghgist::Client + 'a>,
         job: &'a EvaluationJob,
         nix: Nix,
         tag_paths: &'a HashMap<String, Vec<String>>,
@@ -75,7 +75,7 @@ impl<'a> NixpkgsStrategy<'a> {
 
         if darwin {
             update_labels(
-                &self.repo_client,
+                self.repo_client.as_ref(),
                 &self.job.pr,
                 &[String::from("6.topic: darwin")],
                 &[],
@@ -92,7 +92,7 @@ impl<'a> NixpkgsStrategy<'a> {
             }
 
             update_labels(
-                &self.repo_client,
+                self.repo_client.as_ref(),
                 &self.job.pr,
                 &tagger.tags_to_add(),
                 &tagger.tags_to_remove(),
@@ -119,7 +119,7 @@ impl<'a> NixpkgsStrategy<'a> {
                 stdenvtagger.changed(stdenvs.changed());
             }
             update_labels(
-                &self.repo_client,
+                self.repo_client.as_ref(),
                 &self.job.pr,
                 &stdenvtagger.tags_to_add(),
                 &stdenvtagger.tags_to_remove(),
@@ -199,7 +199,7 @@ impl<'a> NixpkgsStrategy<'a> {
                 let mut addremovetagger = PkgsAddedRemovedTagger::new();
                 addremovetagger.changed(&removed, &added);
                 update_labels(
-                    &self.repo_client,
+                    self.repo_client.as_ref(),
                     &self.job.pr,
                     &addremovetagger.tags_to_add(),
                     &addremovetagger.tags_to_remove(),
@@ -226,7 +226,7 @@ impl<'a> NixpkgsStrategy<'a> {
             }
 
             update_labels(
-                &self.repo_client,
+                self.repo_client.as_ref(),
                 &self.job.pr,
                 &rebuild_tags.tags_to_add(),
                 &rebuild_tags.tags_to_remove(),
@@ -237,7 +237,7 @@ impl<'a> NixpkgsStrategy<'a> {
 
     fn gist_changed_paths(&self, attrs: &[PackageArch]) -> Option<String> {
         make_gist(
-            self.gist_client,
+            self.gist_client.as_ref(),
             "Changed Paths",
             Some("".to_owned()),
             attrs
@@ -263,7 +263,7 @@ impl<'a> NixpkgsStrategy<'a> {
             );
 
             let gist_url = make_gist(
-                self.gist_client,
+                self.gist_client.as_ref(),
                 "Potential Maintainers",
                 Some("".to_owned()),
                 match m {
@@ -296,7 +296,7 @@ impl<'a> NixpkgsStrategy<'a> {
             status.set(hubcaps::statuses::State::Success)?;
 
             if let Ok(ref maint) = m {
-                request_reviews(&self.repo_client, &self.job.pr, &maint);
+                request_reviews(self.repo_client.as_ref(), &self.job.pr, &maint);
                 let mut maint_tagger = MaintainerPRTagger::new();
                 let issue = self
                     .repo_client
@@ -304,7 +304,7 @@ impl<'a> NixpkgsStrategy<'a> {
                     .map_err(|_e| Error::Fail(String::from("Failed to retrieve issue")))?;
                 maint_tagger.record_maintainer(&issue.user.login, &maint.maintainers_by_package());
                 update_labels(
-                    &self.repo_client,
+                    self.repo_client.as_ref(),
                     &self.job.pr,
                     &maint_tagger.tags_to_add(),
                     &maint_tagger.tags_to_remove(),
@@ -360,7 +360,7 @@ impl<'a> NixpkgsStrategy<'a> {
                 }
                 Err(out) => {
                     status.set_url(make_gist(
-                        self.gist_client,
+                        self.gist_client.as_ref(),
                         "Meta Check",
                         None,
                         out.display(),
@@ -416,7 +416,7 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
 
     fn merge_conflict(&mut self) {
         update_labels(
-            &self.repo_client,
+            self.repo_client.as_ref(),
             &self.job.pr,
             &["2.status: merge conflict".to_owned()],
             &[],
@@ -425,7 +425,7 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
 
     fn after_merge(&mut self, status: &mut CommitStatus) -> StepResult<()> {
         update_labels(
-            &self.repo_client,
+            self.repo_client.as_ref(),
             &self.job.pr,
             &[],
             &["2.status: merge conflict".to_owned()],
@@ -593,7 +593,7 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
 }
 
 fn request_reviews(
-    repo_client: &ghrepo::Client<'_>,
+    repo_client: &dyn ghrepo::Client,
     pr: &Pr,
     impacted_maintainers: &maintainers::ImpactedMaintainers,
 ) {
