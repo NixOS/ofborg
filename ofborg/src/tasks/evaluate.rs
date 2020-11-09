@@ -102,9 +102,9 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             &self.identity,
             &self.tag_paths,
             &self.cloner,
-            job,
+            &job,
         );
-        eval.worker_actions()
+        eval.worker_actions(&job)
     }
 }
 
@@ -117,7 +117,6 @@ struct OneEval<'a, E> {
     identity: &'a str,
     tag_paths: &'a HashMap<String, Vec<String>>,
     cloner: &'a checkout::CachedCloner,
-    job: &'a evaluationjob::EvaluationJob,
 }
 
 impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
@@ -144,7 +143,6 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             identity,
             tag_paths,
             cloner,
-            job,
         }
     }
 
@@ -154,6 +152,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
     fn update_status(
         &self,
+        pr: &Pr,
         description: String,
         url: Option<String>,
         state: hubcaps::statuses::State,
@@ -178,36 +177,40 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         info!(
             "Updating status on {}:{} -> {}",
-            &self.job.pr.number, &self.job.pr.head_sha, &description
+            &pr.number, &pr.head_sha, &description
         );
 
         self.repo_client
-            .create_status(&self.job.pr.head_sha, &builder.build())
+            .create_status(&pr.head_sha, &builder.build())
             .map_err(|e| CommitStatusError::from(e))?;
         Ok(())
     }
 
-    fn worker_actions(&mut self) -> worker::Actions {
-        let eval_result = self.evaluate_job().map_err(|eval_error| match eval_error {
-            // Handle error cases which expect us to post statuses
-            // to github. Convert Eval Errors in to Result<_, CommitStatusWrite>
-            EvalWorkerError::EvalError(eval::Error::Fail(msg)) => {
-                self.update_status(msg, None, hubcaps::statuses::State::Failure)
-            }
-            EvalWorkerError::EvalError(eval::Error::FailWithGist(msg, filename, content)) => self
-                .update_status(
-                    msg,
-                    make_gist(
-                        self.gist_client.as_ref(),
-                        &filename,
-                        Some("".to_owned()),
-                        content,
-                    ),
-                    hubcaps::statuses::State::Failure,
-                ),
-            EvalWorkerError::EvalError(eval::Error::CommitStatusWrite(e)) => Err(e),
-            EvalWorkerError::CommitStatusWrite(e) => Err(e),
-        });
+    fn worker_actions(&mut self, job: &evaluationjob::EvaluationJob) -> worker::Actions {
+        let eval_result = self
+            .evaluate_job(job)
+            .map_err(|eval_error| match eval_error {
+                // Handle error cases which expect us to post statuses
+                // to github. Convert Eval Errors in to Result<_, CommitStatusWrite>
+                EvalWorkerError::EvalError(eval::Error::Fail(msg)) => {
+                    self.update_status(&job.pr, msg, None, hubcaps::statuses::State::Failure)
+                }
+                EvalWorkerError::EvalError(eval::Error::FailWithGist(msg, filename, content)) => {
+                    self.update_status(
+                        &job.pr,
+                        msg,
+                        make_gist(
+                            self.gist_client.as_ref(),
+                            &filename,
+                            Some("".to_owned()),
+                            content,
+                        ),
+                        hubcaps::statuses::State::Failure,
+                    )
+                }
+                EvalWorkerError::EvalError(eval::Error::CommitStatusWrite(e)) => Err(e),
+                EvalWorkerError::CommitStatusWrite(e) => Err(e),
+            });
 
         match eval_result {
             Ok(eval_actions) => eval_actions,
@@ -215,18 +218,18 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 // There was an error during eval, but we successfully
                 // updated the PR.
 
-                self.actions().skip(&self.job)
+                self.actions().skip(&job)
             }
             Err(Err(CommitStatusError::ExpiredCreds(e))) => {
                 error!("Failed writing commit status: creds expired: {:?}", e);
-                self.actions().retry_later(&self.job)
+                self.actions().retry_later(&job)
             }
             Err(Err(CommitStatusError::MissingSHA(e))) => {
                 error!(
                     "Failed writing commit status: commit sha was force-pushed away: {:?}",
                     e
                 );
-                self.actions().skip(&self.job)
+                self.actions().skip(&job)
             }
 
             Err(Err(CommitStatusError::Error(cswerr))) => {
@@ -236,20 +239,22 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 );
                 update_labels(
                     self.repo_client.as_ref(),
-                    &self.job.pr,
+                    &job.pr,
                     &[String::from("ofborg-internal-error")],
                     &[],
                 );
 
-                self.actions().skip(&self.job)
+                self.actions().skip(&job)
             }
         }
     }
 
     // FIXME: remove with rust/cargo update
     #[allow(clippy::cognitive_complexity)]
-    fn evaluate_job(&mut self) -> Result<worker::Actions, EvalWorkerError> {
-        let job = self.job;
+    fn evaluate_job(
+        &mut self,
+        job: &evaluationjob::EvaluationJob,
+    ) -> Result<worker::Actions, EvalWorkerError> {
         let auto_schedule_build_archs: Vec<systems::System>;
 
         match self.repo_client.get_issue(job.pr.number) {
