@@ -2,6 +2,7 @@
 # When using as a callable script, passing `--argstr path some/path` overrides $PWD.
 #!nix-shell -p nix -i "nix-env -qaP --no-name --out-path --arg checkMeta true --argstr path $PWD -f"
 { checkMeta
+, allowAliases ? true
 , path ? ./.
 }:
 let
@@ -18,6 +19,7 @@ let
 
       nixpkgsArgs = {
         config = {
+          allowAliases = allowAliases;
           allowBroken = true;
           allowUnfree = true;
           allowInsecurePredicate = x: true;
