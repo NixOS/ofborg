@@ -600,3 +600,75 @@ impl From<CommitStatusError> for EvalWorkerError {
         EvalWorkerError::CommitStatusWrite(e)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hubcaps::issues::Issue;
+    use hubcaps::labels::Label;
+    use hubcaps::users::User;
+
+    fn make_issue(number: u64, status: &str, title: &str, labels: Vec<Label>) -> Issue {
+        Issue {
+            id: number,
+            url: String::new(),
+            labels_url: String::new(),
+            comments_url: String::new(),
+            events_url: String::new(),
+            html_url: String::new(),
+            number,
+            state: status.to_string(),
+            title: title.to_string(),
+            body: None,
+            user: User {
+                login: String::from("johndoe"),
+                id: 1,
+                avatar_url: String::new(),
+                gravatar_id: String::new(),
+                url: String::new(),
+                html_url: String::new(),
+                followers_url: String::new(),
+                following_url: String::new(),
+                gists_url: String::new(),
+                starred_url: String::new(),
+                subscriptions_url: String::new(),
+                organizations_url: String::new(),
+                repos_url: String::new(),
+                events_url: String::new(),
+                received_events_url: String::new(),
+                site_admin: false,
+            },
+            labels,
+            assignee: None,
+            locked: false,
+            comments: 0,
+            closed_at: None,
+            created_at: String::new(),
+            updated_at: String::new(),
+        }
+    }
+
+    #[test]
+    fn test_issue_wip() {
+        let issue = make_issue(42, "open", "hello: 2.10 -> 2.11", vec![]);
+        assert!(!issue_is_wip(&issue));
+
+        let issue = make_issue(42, "open", "hello: 2.10 -> 2.11 [WIP]", vec![]);
+        assert!(issue_is_wip(&issue));
+
+        let issue = make_issue(42, "open", "WIP: hello: 2.10 -> 2.11", vec![]);
+        assert!(issue_is_wip(&issue));
+
+        let issue = make_issue(
+            42,
+            "open",
+            "hello: fix build",
+            vec![Label {
+                url: String::new(),
+                name: String::from("work-in-progress"),
+                color: String::new(),
+            }],
+        );
+        assert!(issue_is_wip(&issue));
+    }
+}
