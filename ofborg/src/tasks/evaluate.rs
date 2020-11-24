@@ -257,28 +257,17 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
     ) -> Result<worker::Actions, EvalWorkerError> {
         let auto_schedule_build_archs: Vec<systems::System>;
 
-        match self.repo_client.get_issue(job.pr.number) {
-            Ok(issue) => {
-                if issue.state == "closed" {
-                    self.events.notify(Event::IssueAlreadyClosed);
-                    info!("Skipping {} because it is closed", job.pr.number);
-                    return Ok(self.actions().skip(&job));
-                }
-
-                if issue_is_wip(&issue) {
-                    auto_schedule_build_archs = vec![];
-                } else {
-                    auto_schedule_build_archs = self.acl.build_job_architectures_for_user_repo(
-                        &issue.user.login,
-                        &job.repo.full_name,
-                    );
-                }
+        match determine_issue_status(self.repo_client.get_issue(job.pr.number), job.pr.number) {
+            Ok(Some(issue_user)) => {
+                auto_schedule_build_archs = self
+                    .acl
+                    .build_job_architectures_for_user_repo(&issue_user, &job.repo.full_name);
             }
-
-            Err(e) => {
-                self.events.notify(Event::IssueFetchFailed);
-                info!("Error fetching {}!", job.pr.number);
-                info!("E: {:?}", e);
+            Ok(None) => {
+                auto_schedule_build_archs = vec![];
+            }
+            Err(event) => {
+                self.events.notify(event);
                 return Ok(self.actions().skip(&job));
             }
         };
@@ -454,6 +443,30 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
     }
 }
 
+fn determine_issue_status(
+    result: hubcaps::Result<hubcaps::issues::Issue>,
+    number: u64,
+) -> Result<Option<String>, Event> {
+    match result {
+        Ok(issue) => {
+            if issue.state == "closed" {
+                info!("Skipping {} because it is closed", number);
+                return Err(Event::IssueAlreadyClosed);
+            }
+            if issue_is_wip(&issue) {
+                info!("Skipping {}, still work in progress", number);
+                Ok(None)
+            } else {
+                Ok(Some(issue.user.login))
+            }
+        }
+        Err(e) => {
+            error!("Failed to fetch issue for {}, Err: {:?}", number, e);
+            Err(Event::IssueFetchFailed)
+        }
+    }
+}
+
 fn schedule_builds(
     builds: Vec<buildjob::BuildJob>,
     auto_schedule_build_archs: Vec<systems::System>,
@@ -607,6 +620,7 @@ mod tests {
     use hubcaps::issues::Issue;
     use hubcaps::labels::Label;
     use hubcaps::users::User;
+    use std::io;
 
     fn make_issue(number: u64, status: &str, title: &str, labels: Vec<Label>) -> Issue {
         Issue {
@@ -646,6 +660,35 @@ mod tests {
             created_at: String::new(),
             updated_at: String::new(),
         }
+    }
+
+    #[test]
+    fn test_issue_status() {
+        let issue = make_issue(42, "open", "hello: 2.10 -> 2.11", vec![]);
+        assert_eq!(
+            determine_issue_status(Ok(issue), 42),
+            Ok(Some(String::from("johndoe")))
+        );
+
+        let issue = make_issue(42, "open", "hello: 2.10 -> 2.11 [WIP]", vec![]);
+        assert_eq!(determine_issue_status(Ok(issue), 42), Ok(None));
+
+        let issue = make_issue(42, "closed", "hello: 2.10 -> 2.11", vec![]);
+        assert_eq!(
+            determine_issue_status(Ok(issue), 42),
+            Err(Event::IssueAlreadyClosed)
+        );
+
+        assert_eq!(
+            determine_issue_status(
+                Err(hubcaps::Error::from(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Not found"
+                ))),
+                42
+            ),
+            Err(Event::IssueFetchFailed)
+        );
     }
 
     #[test]
