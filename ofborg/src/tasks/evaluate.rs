@@ -199,11 +199,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                     self.update_status(
                         &job.pr,
                         msg,
-                        make_gist(
-                            self.gist_client.as_ref(),
-                            &filename,
-                            content,
-                        ),
+                        make_gist(self.gist_client.as_ref(), &filename, content),
                         hubcaps::statuses::State::Failure,
                     )
                 }
@@ -497,60 +493,18 @@ fn schedule_builds(
     response
 }
 
-pub fn make_gist(
-    gist_client: &dyn ghgist::Client,
-    name: &str,
-    contents: String,
-) -> Option<String> {
-    let gist = gist_client.create_gist_with_content(name, contents)
+pub fn make_gist(gist_client: &dyn ghgist::Client, name: &str, contents: String) -> Option<String> {
+    let gist = gist_client
+        .create_gist_with_content(name, contents)
         .expect("Failed to create gist!");
 
     Some(gist.html_url)
 }
 
 pub fn update_labels(repo_client: &dyn ghrepo::Client, pr: &Pr, add: &[String], remove: &[String]) {
-    let issue = repo_client
-        .get_issue(pr.number)
-        .expect("Failed to get issue");
-
-    let existing: Vec<String> = issue.labels.iter().map(|l| l.name.clone()).collect();
-
-    let to_add: Vec<&str> = add
-        .iter()
-        .filter(|l| !existing.contains(l)) // Remove labels already on the issue
-        .map(|l| l.as_ref())
-        .collect();
-
-    let to_remove: Vec<String> = remove
-        .iter()
-        .filter(|l| existing.contains(l)) // Remove labels already on the issue
-        .cloned()
-        .collect();
-
-    info!(
-        "Labeling issue #{}: + {:?} , - {:?}, = {:?}",
-        issue.number, to_add, to_remove, existing
-    );
-
     repo_client
-        .add_labels(pr.number, to_add.clone())
-        .unwrap_or_else(|e| {
-            panic!(
-                "Failed to add labels {:?} to issue #{}: {:?}",
-                to_add, issue.number, e
-            )
-        });
-
-    for label in to_remove {
-        repo_client
-            .remove_label(pr.number, &label)
-            .unwrap_or_else(|e| {
-                panic!(
-                    "Failed to remove label {:?} from issue #{}: {:?}",
-                    label, issue.number, e
-                )
-            });
-    }
+        .update_issue_labels(pr.number, add, remove)
+        .expect("Failed to update issue labels");
 }
 
 fn issue_is_wip(issue: &hubcaps::issues::Issue) -> bool {
