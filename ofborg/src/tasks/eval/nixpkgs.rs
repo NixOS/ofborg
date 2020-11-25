@@ -239,7 +239,6 @@ impl<'a> NixpkgsStrategy<'a> {
         make_gist(
             self.gist_client.as_ref(),
             "Changed Paths",
-            Some("".to_owned()),
             attrs
                 .iter()
                 .map(|attr| format!("{}\t{}", &attr.architecture, &attr.package))
@@ -265,7 +264,6 @@ impl<'a> NixpkgsStrategy<'a> {
             let gist_url = make_gist(
                 self.gist_client.as_ref(),
                 "Potential Maintainers",
-                Some("".to_owned()),
                 match m {
                     Ok(ref maintainers) => format!("Maintainers:\n{}", maintainers),
                     Err(ref e) => format!("Ignorable calculation error:\n{:?}", e),
@@ -365,7 +363,6 @@ impl<'a> NixpkgsStrategy<'a> {
                     status.set_url(make_gist(
                         self.gist_client.as_ref(),
                         "Meta Check",
-                        None,
                         out.display(),
                     ));
                     status.set(hubcaps::statuses::State::Failure)?;

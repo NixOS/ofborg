@@ -202,7 +202,6 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                         make_gist(
                             self.gist_client.as_ref(),
                             &filename,
-                            Some("".to_owned()),
                             content,
                         ),
                         hubcaps::statuses::State::Failure,
@@ -391,8 +390,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                         state = hubcaps::statuses::State::Failure;
                         gist_url = make_gist(
                             self.gist_client.as_ref(),
-                            &check.name(),
-                            Some(format!("{:?}", state)),
+                            &format!("{} {:?}", &check.name(), state),
                             file_to_str(&mut out),
                         );
                     }
@@ -502,28 +500,12 @@ fn schedule_builds(
 pub fn make_gist(
     gist_client: &dyn ghgist::Client,
     name: &str,
-    description: Option<String>,
     contents: String,
 ) -> Option<String> {
-    let mut files: HashMap<String, hubcaps::gists::Content> = HashMap::new();
-    files.insert(
-        name.to_string(),
-        hubcaps::gists::Content {
-            filename: Some(name.to_string()),
-            content: contents,
-        },
-    );
+    let gist = gist_client.create_gist_with_content(name, contents)
+        .expect("Failed to create gist!");
 
-    Some(
-        gist_client
-            .create_gist(&hubcaps::gists::GistOptions {
-                description,
-                public: Some(true),
-                files,
-            })
-            .expect("Failed to create gist!")
-            .html_url,
-    )
+    Some(gist.html_url)
 }
 
 pub fn update_labels(repo_client: &dyn ghrepo::Client, pr: &Pr, add: &[String], remove: &[String]) {
