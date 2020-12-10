@@ -557,7 +557,7 @@ impl MetricCollector {
         }})
         .collect();
       output.push_str(&values.join(\"\n\"));
-      output.push_str(\"\n\");
+      output.push('\\n');
  ",
                 &mtype.metric_name(),
                 &mtype.description(),
