@@ -452,6 +452,21 @@ mod tests {
         hash.trim().to_owned()
     }
 
+    fn make_stdenv_pr_repo(bare: &Path, co: &Path) -> String {
+        let output = Command::new("bash")
+            .current_dir(tpath("./test-srcs"))
+            .arg("make-stdenv-pr.sh")
+            .arg(bare)
+            .arg(co)
+            .stderr(Stdio::null())
+            .stdout(Stdio::piped())
+            .output()
+            .expect("building the test PR failed");
+        let hash = String::from_utf8(output.stdout).expect("Should just be a hash");
+
+        hash.trim().to_owned()
+    }
+
     fn strip_escaped_ansi(string: &str) -> String {
         string
             .replace("‘", "'")
@@ -529,6 +544,45 @@ mod tests {
         assert_contains_job(&mut actions, "output\":\"4");
         assert_contains_job(&mut actions, "status\":\"Success\""); // First one to the github poster
         assert_contains_job(&mut actions, "status\":\"Success\""); // This one to the logs
+        assert_eq!(actions.next(), Some(worker::Action::Ack));
+    }
+
+    #[test]
+    pub fn test_stdenv_rebuild() {
+        let p = TestScratch::new_dir("build-stdenv-build-working");
+        let bare_repo = TestScratch::new_dir("build-stdenv-build-bare");
+        let co_repo = TestScratch::new_dir("build-stdenv-build-co");
+
+        let head_sha = make_stdenv_pr_repo(&bare_repo.path(), &co_repo.path());
+        let worker = make_worker(&p.path());
+
+        let job = buildjob::BuildJob {
+            attrs: vec!["success".to_owned()],
+            pr: Pr {
+                head_sha,
+                number: 1,
+                target_branch: Some("staging".to_owned()),
+            },
+            repo: Repo {
+                clone_url: bare_repo.path().to_str().unwrap().to_owned(),
+                full_name: "test-git".to_owned(),
+                name: "nixos".to_owned(),
+                owner: "ofborg-test".to_owned(),
+            },
+            subset: None,
+            logs: Some((Some(String::from("logs")), Some(String::from("build.log")))),
+            statusreport: Some((Some(String::from("build-results")), None)),
+            request_id: "bogus-request-id".to_owned(),
+        };
+
+        let mut dummyreceiver = notifyworker::DummyNotificationReceiver::new();
+
+        worker.consumer(&job, &mut dummyreceiver);
+
+        println!("Total actions: {:?}", dummyreceiver.actions.len());
+        let mut actions = dummyreceiver.actions.into_iter();
+        assert_contains_job(&mut actions, "skipped_attrs\":[\"success"); // First one to the github poster
+        assert_contains_job(&mut actions, "skipped_attrs\":[\"success"); // This one to the logs
         assert_eq!(actions.next(), Some(worker::Action::Ack));
     }
 
