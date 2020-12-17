@@ -413,7 +413,10 @@ mod tests {
     const SYSTEM: &str = "x86_64-darwin";
 
     fn nix() -> nix::Nix {
+        let path = env::var("PATH").unwrap();
+        let test_path = format!("{}/test-nix/bin:{}", env!("CARGO_MANIFEST_DIR"), path);
         let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
+        env::set_var("PATH", test_path);
         nix::Nix::new("x86_64-linux".to_owned(), remote, 1800, None)
     }
 
