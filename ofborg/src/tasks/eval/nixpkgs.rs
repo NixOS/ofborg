@@ -385,7 +385,7 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
         self.check_stdenvs_before(dir);
 
         status.set_with_description(
-            "Checking original out paths",
+            "Checking out original paths",
             hubcaps::statuses::State::Pending,
         )?;
         self.check_outpaths_before(dir)?;
