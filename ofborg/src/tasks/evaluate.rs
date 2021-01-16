@@ -334,6 +334,17 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             None => String::from("master"),
         };
 
+        if target_branch.starts_with("nixos-") || target_branch.starts_with("nixpkgs-") {
+            overall_status.set_with_description(
+                "The branch you have targeted is a read-only mirror for channels. \
+                    Please target release-* or master.",
+                hubcaps::statuses::State::Error,
+            )?;
+
+            info!("PR targets a nixos-* or nixpkgs-* branch");
+            return Ok(self.actions().skip(&job));
+        };
+
         overall_status.set_with_description(
             format!("Checking out {}", &target_branch).as_ref(),
             hubcaps::statuses::State::Pending,
