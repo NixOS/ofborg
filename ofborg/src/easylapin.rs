@@ -27,8 +27,10 @@ pub fn from_config(cfg: &RabbitMQConfig) -> Result<Connection, lapin::Error> {
         "ofborg_version".into(),
         AMQPValue::LongString(ofborg::VERSION.into()),
     );
-    let mut opts = ConnectionProperties::default();
-    opts.client_properties = props;
+    let opts = ConnectionProperties {
+        client_properties: props,
+        ..Default::default()
+    };
     task::block_on(Connection::connect(&cfg.as_uri(), opts))
 }
 
@@ -36,12 +38,13 @@ impl ChannelExt for Channel {
     type Error = lapin::Error;
 
     fn declare_exchange(&mut self, config: ExchangeConfig) -> Result<(), Self::Error> {
-        let mut opts = ExchangeDeclareOptions::default();
-        opts.passive = config.passive;
-        opts.durable = config.durable;
-        opts.auto_delete = config.auto_delete;
-        opts.internal = config.internal;
-        opts.nowait = config.no_wait;
+        let opts = ExchangeDeclareOptions {
+            passive: config.passive,
+            durable: config.durable,
+            auto_delete: config.auto_delete,
+            internal: config.internal,
+            nowait: config.no_wait,
+        };
 
         let kind = match config.exchange_type {
             ExchangeType::Topic => ExchangeKind::Topic,
@@ -53,20 +56,22 @@ impl ChannelExt for Channel {
     }
 
     fn declare_queue(&mut self, config: QueueConfig) -> Result<(), Self::Error> {
-        let mut opts = QueueDeclareOptions::default();
-        opts.passive = config.passive;
-        opts.durable = config.durable;
-        opts.exclusive = config.exclusive;
-        opts.auto_delete = config.auto_delete;
-        opts.nowait = config.no_wait;
+        let opts = QueueDeclareOptions {
+            passive: config.passive,
+            durable: config.durable,
+            exclusive: config.exclusive,
+            auto_delete: config.auto_delete,
+            nowait: config.no_wait,
+        };
 
         task::block_on(self.queue_declare(&config.queue, opts, FieldTable::default()))?;
         Ok(())
     }
 
     fn bind_queue(&mut self, config: BindQueueConfig) -> Result<(), Self::Error> {
-        let mut opts = QueueBindOptions::default();
-        opts.nowait = config.no_wait;
+        let opts = QueueBindOptions {
+            nowait: config.no_wait,
+        };
 
         task::block_on(self.queue_bind(
             &config.queue,
@@ -202,8 +207,10 @@ async fn action_deliver(
         }
         Action::NackRequeue => {
             debug!(?deliver.delivery_tag, "action nack requeue");
-            let mut opts = BasicNackOptions::default();
-            opts.requeue = true;
+            let opts = BasicNackOptions {
+                requeue: true,
+                ..Default::default()
+            };
             chan.basic_nack(deliver.delivery_tag, opts).await
         }
         Action::NackDump => {
