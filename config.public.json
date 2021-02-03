@@ -115,6 +115,13 @@
         ]
     },
     "tag_paths": {
+        "6.topic: agda": [
+            "doc/languages-frameworks/agda.section.md",
+            "nixos/tests/agda.nix",
+            "pkgs/build-support/agda",
+            "pkgs/development/libraries/agda",
+            "pkgs/top-level/agda-packages.nix"
+        ],
         "6.topic: emacs": [
             "nixos/modules/services/editors/emacs.nix",
             "nixos/modules/services/editors/emacs.xml",
