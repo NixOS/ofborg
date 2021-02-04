@@ -14,7 +14,7 @@ use crate::tagger::{
 use crate::tasks::eval::{
     stdenvs::Stdenvs, Error, EvaluationComplete, EvaluationStrategy, StepResult,
 };
-use crate::tasks::evaluate::{make_gist, update_labels};
+use crate::tasks::evaluate::{get_prefix, make_gist, update_labels};
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -272,6 +272,8 @@ impl<'a> NixpkgsStrategy<'a> {
                 },
             );
 
+            let prefix = get_prefix(self.repo.statuses(), &self.job.pr.head_sha)?;
+
             if changed_paths.len() > MAINTAINER_REVIEW_MAX_CHANGED_PATHS {
                 info!(
                     "pull request has {} changed paths, skipping review requests",
@@ -280,7 +282,7 @@ impl<'a> NixpkgsStrategy<'a> {
                 let status = CommitStatus::new(
                     self.repo.statuses(),
                     self.job.pr.head_sha.clone(),
-                    String::from("grahamcofborg-eval-check-maintainers"),
+                    format!("{}-eval-check-maintainers", prefix),
                     String::from("large change, skipping automatic review requests"),
                     gist_url,
                 );
@@ -291,7 +293,7 @@ impl<'a> NixpkgsStrategy<'a> {
             let status = CommitStatus::new(
                 self.repo.statuses(),
                 self.job.pr.head_sha.clone(),
-                String::from("grahamcofborg-eval-check-maintainers"),
+                format!("{}-eval-check-maintainers", prefix),
                 String::from("matching changed paths to changed attrs..."),
                 gist_url,
             );
@@ -315,10 +317,12 @@ impl<'a> NixpkgsStrategy<'a> {
 
     fn check_meta_queue_builds(&self, dir: &Path) -> StepResult<Vec<BuildJob>> {
         if let Some(ref possibly_touched_packages) = self.touched_packages {
+            let prefix = get_prefix(self.repo.statuses(), &self.job.pr.head_sha)?;
+
             let mut status = CommitStatus::new(
                 self.repo.statuses(),
                 self.job.pr.head_sha.clone(),
-                String::from("grahamcofborg-eval-check-meta"),
+                format!("{}-eval-check-meta", prefix),
                 String::from("config.nix: checkMeta = true"),
                 None,
             );

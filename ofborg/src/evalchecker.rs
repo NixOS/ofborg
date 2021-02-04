@@ -20,8 +20,8 @@ impl EvalChecker {
         }
     }
 
-    pub fn name(&self) -> String {
-        format!("grahamcofborg-eval-{}", self.name)
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     pub fn execute(&self, path: &Path) -> Result<File, File> {

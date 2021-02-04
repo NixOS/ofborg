@@ -186,9 +186,13 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         } else {
             description
         };
+        let repo = self
+            .client_app
+            .repo(self.job.repo.owner.clone(), self.job.repo.name.clone());
+        let prefix = get_prefix(repo.statuses(), &self.job.pr.head_sha)?;
 
         let mut builder = hubcaps::statuses::StatusOptions::builder(state);
-        builder.context("grahamcofborg-eval");
+        builder.context(format!("{}-eval", prefix));
         builder.description(description.clone());
 
         if let Some(url) = url {
@@ -322,10 +326,12 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             Box::new(eval::GenericStrategy::new())
         };
 
+        let prefix = get_prefix(repo.statuses(), &job.pr.head_sha)?;
+
         let mut overall_status = CommitStatus::new(
             repo.statuses(),
             job.pr.head_sha.clone(),
-            "grahamcofborg-eval".to_owned(),
+            format!("{}-eval", &prefix),
             "Starting".to_owned(),
             None,
         );
@@ -422,7 +428,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 let mut status = CommitStatus::new(
                     repo.statuses(),
                     job.pr.head_sha.clone(),
-                    check.name(),
+                    format!("{}-eval-{}", prefix, check.name()),
                     check.cli_cmd(),
                     None,
                 );
@@ -441,7 +447,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                     Err(mut out) => {
                         state = hubcaps::statuses::State::Failure;
                         gist_url = self.make_gist(
-                            &check.name(),
+                            &format!("{}-eval-{}", prefix, check.name()),
                             Some(format!("{:?}", state)),
                             file_to_str(&mut out),
                         );
@@ -616,6 +622,28 @@ fn indicates_wip(text: &str) -> bool {
     }
 
     false
+}
+
+/// Determine whether or not to use the "old" status prefix, `grahamcofborg`, or
+/// the new one, `ofborg`.
+///
+/// If the PR already has any `grahamcofborg`-prefixed statuses, continue to use
+/// that (e.g. if someone used `@ofborg eval`, `@ofborg build`, `@ofborg test`).
+/// Otherwise, if it's a new PR or was recently force-pushed (and therefore
+/// doesn't have any old `grahamcofborg`-prefixed statuses), use the new prefix.
+pub fn get_prefix<'a>(
+    statuses: hubcaps::statuses::Statuses,
+    sha: &'a str,
+) -> Result<&'a str, CommitStatusError> {
+    if statuses
+        .list(&sha)?
+        .iter()
+        .any(|s| s.context.starts_with("grahamcofborg-"))
+    {
+        Ok("grahamcofborg")
+    } else {
+        Ok("ofborg")
+    }
 }
 
 enum EvalWorkerError {
