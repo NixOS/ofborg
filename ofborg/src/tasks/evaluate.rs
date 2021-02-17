@@ -4,7 +4,9 @@ use crate::checkout;
 use crate::commitstatus::{CommitStatus, CommitStatusError};
 use crate::config::GithubAppVendingMachine;
 use crate::files::file_to_str;
-use crate::message::{buildjob, evaluationjob};
+use crate::ghgist;
+use crate::ghrepo;
+use crate::message::{buildjob, evaluationjob, Pr};
 use crate::nix;
 use crate::stats::{self, Event};
 use crate::systems;
@@ -13,12 +15,11 @@ use crate::worker;
 
 use std::collections::HashMap;
 use std::path::Path;
+use std::rc::Rc;
 use std::sync::RwLock;
 use std::time::Instant;
 
 use hubcaps::checks::CheckRunOptions;
-use hubcaps::gists::Gists;
-use hubcaps::issues::Issue;
 use tracing::{debug, debug_span, error, info, warn};
 
 pub struct EvaluationWorker<E> {
@@ -109,7 +110,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             .for_repo(&job.repo.owner, &job.repo.name)
             .expect("Failed to get a github client token");
 
-        OneEval::new(
+        let mut eval = OneEval::new(
             github_client,
             &self.github,
             &self.nix,
@@ -118,23 +119,21 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             &self.identity,
             &self.tag_paths,
             &self.cloner,
-            job,
-        )
-        .worker_actions()
+            &job,
+        );
+        eval.worker_actions(&job)
     }
 }
 
 struct OneEval<'a, E> {
-    client_app: &'a hubcaps::Github,
-    repo: hubcaps::repositories::Repository<'a>,
-    gists: Gists<'a>,
+    repo_client: Rc<dyn ghrepo::Client + 'a>,
+    gist_client: Rc<dyn ghgist::Client + 'a>,
     nix: &'a nix::Nix,
     acl: &'a ACL,
     events: &'a mut E,
     identity: &'a str,
     tag_paths: &'a HashMap<String, Vec<String>>,
     cloner: &'a checkout::CachedCloner,
-    job: &'a evaluationjob::EvaluationJob,
 }
 
 impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
@@ -150,20 +149,17 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         cloner: &'a checkout::CachedCloner,
         job: &'a evaluationjob::EvaluationJob,
     ) -> OneEval<'a, E> {
-        let gists = client_legacy.gists();
-
-        let repo = client_app.repo(job.repo.owner.clone(), job.repo.name.clone());
+        let gist_client = ghgist::Hubcaps::new(client_legacy);
+        let repo_client = ghrepo::Hubcaps::new(client_app, &job.repo);
         OneEval {
-            client_app,
-            repo,
-            gists,
+            repo_client: Rc::new(repo_client),
+            gist_client: Rc::new(gist_client),
             nix,
             acl,
             events,
             identity,
             tag_paths,
             cloner,
-            job,
         }
     }
 
@@ -173,6 +169,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
     fn update_status(
         &self,
+        pr: &Pr,
         description: String,
         url: Option<String>,
         state: hubcaps::statuses::State,
@@ -197,41 +194,35 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         info!(
             "Updating status on {}:{} -> {}",
-            &self.job.pr.number, &self.job.pr.head_sha, &description
+            &pr.number, &pr.head_sha, &description
         );
 
-        self.repo
-            .statuses()
-            .create(&self.job.pr.head_sha, &builder.build())
-            .map(|_| ())
-            .map_err(|e| CommitStatusError::from(e))
+        self.repo_client
+            .create_status(&pr.head_sha, &builder.build())
+            .map_err(|e| CommitStatusError::from(e))?;
+        Ok(())
     }
 
-    fn make_gist(
-        &self,
-        filename: &str,
-        description: Option<String>,
-        content: String,
-    ) -> Option<String> {
-        make_gist(&self.gists, filename, description, content)
-    }
-
-    fn worker_actions(&mut self) -> worker::Actions {
-        let eval_result = self.evaluate_job().map_err(|eval_error| match eval_error {
-            // Handle error cases which expect us to post statuses
-            // to github. Convert Eval Errors in to Result<_, CommitStatusWrite>
-            EvalWorkerError::EvalError(eval::Error::Fail(msg)) => {
-                self.update_status(msg, None, hubcaps::statuses::State::Failure)
-            }
-            EvalWorkerError::EvalError(eval::Error::FailWithGist(msg, filename, content)) => self
-                .update_status(
-                    msg,
-                    self.make_gist(&filename, Some("".to_owned()), content),
-                    hubcaps::statuses::State::Failure,
-                ),
-            EvalWorkerError::EvalError(eval::Error::CommitStatusWrite(e)) => Err(e),
-            EvalWorkerError::CommitStatusWrite(e) => Err(e),
-        });
+    fn worker_actions(&mut self, job: &evaluationjob::EvaluationJob) -> worker::Actions {
+        let eval_result = self
+            .evaluate_job(job)
+            .map_err(|eval_error| match eval_error {
+                // Handle error cases which expect us to post statuses
+                // to github. Convert Eval Errors in to Result<_, CommitStatusWrite>
+                EvalWorkerError::EvalError(eval::Error::Fail(msg)) => {
+                    self.update_status(&job.pr, msg, None, hubcaps::statuses::State::Failure)
+                }
+                EvalWorkerError::EvalError(eval::Error::FailWithGist(msg, filename, content)) => {
+                    self.update_status(
+                        &job.pr,
+                        msg,
+                        make_gist(self.gist_client.as_ref(), &filename, content),
+                        hubcaps::statuses::State::Failure,
+                    )
+                }
+                EvalWorkerError::EvalError(eval::Error::CommitStatusWrite(e)) => Err(e),
+                EvalWorkerError::CommitStatusWrite(e) => Err(e),
+            });
 
         match eval_result {
             Ok(eval_actions) => eval_actions,
@@ -239,18 +230,18 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 // There was an error during eval, but we successfully
                 // updated the PR.
 
-                self.actions().skip(&self.job)
+                self.actions().skip(&job)
             }
             Err(Err(CommitStatusError::ExpiredCreds(e))) => {
                 error!("Failed writing commit status: creds expired: {:?}", e);
-                self.actions().retry_later(&self.job)
+                self.actions().retry_later(&job)
             }
             Err(Err(CommitStatusError::MissingSHA(e))) => {
                 error!(
                     "Failed writing commit status: commit sha was force-pushed away: {:?}",
                     e
                 );
-                self.actions().skip(&self.job)
+                self.actions().skip(&job)
             }
 
             Err(Err(CommitStatusError::Error(cswerr))) => {
@@ -258,63 +249,46 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                     "Internal error writing commit status: {:?}, marking internal error",
                     cswerr
                 );
-                let issue_ref = self.repo.issue(self.job.pr.number);
-                update_labels(&issue_ref, &[String::from("ofborg-internal-error")], &[]);
+                update_labels(
+                    self.repo_client.as_ref(),
+                    &job.pr,
+                    &[String::from("ofborg-internal-error")],
+                    &[],
+                );
 
-                self.actions().skip(&self.job)
+                self.actions().skip(&job)
             }
         }
     }
 
     // FIXME: remove with rust/cargo update
     #[allow(clippy::cognitive_complexity)]
-    fn evaluate_job(&mut self) -> Result<worker::Actions, EvalWorkerError> {
-        let job = self.job;
-        let repo = self
-            .client_app
-            .repo(self.job.repo.owner.clone(), self.job.repo.name.clone());
-        let pulls = repo.pulls();
-        let pull = pulls.get(job.pr.number);
-        let issue_ref = repo.issue(job.pr.number);
-        let issue: Issue;
+    fn evaluate_job(
+        &mut self,
+        job: &evaluationjob::EvaluationJob,
+    ) -> Result<worker::Actions, EvalWorkerError> {
         let auto_schedule_build_archs: Vec<systems::System>;
 
-        match issue_ref.get() {
-            Ok(iss) => {
-                if iss.state == "closed" {
-                    self.events.notify(Event::IssueAlreadyClosed);
-                    info!("Skipping {} because it is closed", job.pr.number);
-                    return Ok(self.actions().skip(&job));
-                }
-
-                if issue_is_wip(&iss) {
-                    auto_schedule_build_archs = vec![];
-                } else {
-                    auto_schedule_build_archs = self.acl.build_job_architectures_for_user_repo(
-                        &iss.user.login,
-                        &job.repo.full_name,
-                    );
-                }
-
-                issue = iss;
+        match determine_issue_status(self.repo_client.get_issue(job.pr.number), job.pr.number) {
+            Ok(Some(issue_user)) => {
+                auto_schedule_build_archs = self
+                    .acl
+                    .build_job_architectures_for_user_repo(&issue_user, &job.repo.full_name);
             }
-
-            Err(e) => {
-                self.events.notify(Event::IssueFetchFailed);
-                info!("Error fetching {}!", job.pr.number);
-                info!("E: {:?}", e);
+            Ok(None) => {
+                auto_schedule_build_archs = vec![];
+            }
+            Err(event) => {
+                self.events.notify(event);
                 return Ok(self.actions().skip(&job));
             }
         };
 
         let mut evaluation_strategy: Box<dyn eval::EvaluationStrategy> = if job.is_nixpkgs() {
             Box::new(eval::NixpkgsStrategy::new(
+                self.repo_client.clone(),
+                self.gist_client.clone(),
                 &job,
-                &pull,
-                &issue,
-                &issue_ref,
-                &repo,
-                &self.gists,
                 self.nix.clone(),
                 &self.tag_paths,
             ))
@@ -323,10 +297,10 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         };
 
         let mut overall_status = CommitStatus::new(
-            repo.statuses(),
+            self.repo_client.clone(),
             job.pr.head_sha.clone(),
-            "grahamcofborg-eval".to_owned(),
-            "Starting".to_owned(),
+            "grahamcofborg-eval".to_string(),
+            "Starting".to_string(),
             None,
         );
 
@@ -420,7 +394,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             .into_iter()
             .map(|check| {
                 let mut status = CommitStatus::new(
-                    repo.statuses(),
+                    self.repo_client.clone(),
                     job.pr.head_sha.clone(),
                     check.name(),
                     check.cli_cmd(),
@@ -440,9 +414,9 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                     }
                     Err(mut out) => {
                         state = hubcaps::statuses::State::Failure;
-                        gist_url = self.make_gist(
-                            &check.name(),
-                            Some(format!("{:?}", state)),
+                        gist_url = make_gist(
+                            self.gist_client.as_ref(),
+                            &format!("{} {:?}", &check.name(), state),
                             file_to_str(&mut out),
                         );
                     }
@@ -468,7 +442,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             let complete = evaluation_strategy
                 .all_evaluations_passed(&Path::new(&refpath), &mut overall_status)?;
 
-            send_check_statuses(complete.checks, &repo);
+            self.send_check_statuses(complete.checks);
             response.extend(schedule_builds(complete.builds, auto_schedule_build_archs));
 
             overall_status.set_with_description("^.^!", hubcaps::statuses::State::Success)?;
@@ -482,13 +456,37 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         info!("Evaluations done!");
         Ok(self.actions().done(&job, response))
     }
+
+    fn send_check_statuses(&self, checks: Vec<CheckRunOptions>) {
+        for check in checks {
+            match self.repo_client.create_checkrun(&check) {
+                Ok(_) => debug!("Sent check update"),
+                Err(e) => warn!("Failed to send check update: {:?}", e),
+            }
+        }
+    }
 }
 
-fn send_check_statuses(checks: Vec<CheckRunOptions>, repo: &hubcaps::repositories::Repository) {
-    for check in checks {
-        match repo.checkruns().create(&check) {
-            Ok(_) => debug!("Sent check update"),
-            Err(e) => warn!("Failed to send check update: {:?}", e),
+fn determine_issue_status(
+    result: hubcaps::Result<hubcaps::issues::Issue>,
+    number: u64,
+) -> Result<Option<String>, Event> {
+    match result {
+        Ok(issue) => {
+            if issue.state == "closed" {
+                info!("Skipping {} because it is closed", number);
+                return Err(Event::IssueAlreadyClosed);
+            }
+            if issue_is_wip(&issue) {
+                info!("Skipping {}, still work in progress", number);
+                Ok(None)
+            } else {
+                Ok(Some(issue.user.login))
+            }
+        }
+        Err(e) => {
+            error!("Failed to fetch issue for {}, Err: {:?}", number, e);
+            Err(Event::IssueFetchFailed)
         }
     }
 }
@@ -525,71 +523,18 @@ fn schedule_builds(
     response
 }
 
-pub fn make_gist<'a>(
-    gists: &hubcaps::gists::Gists<'a>,
-    name: &str,
-    description: Option<String>,
-    contents: String,
-) -> Option<String> {
-    let mut files: HashMap<String, hubcaps::gists::Content> = HashMap::new();
-    files.insert(
-        name.to_string(),
-        hubcaps::gists::Content {
-            filename: Some(name.to_string()),
-            content: contents,
-        },
-    );
+pub fn make_gist(gist_client: &dyn ghgist::Client, name: &str, contents: String) -> Option<String> {
+    let gist = gist_client
+        .create_gist_with_content(name, contents)
+        .expect("Failed to create gist!");
 
-    Some(
-        gists
-            .create(&hubcaps::gists::GistOptions {
-                description,
-                public: Some(true),
-                files,
-            })
-            .expect("Failed to create gist!")
-            .html_url,
-    )
+    Some(gist.html_url)
 }
 
-pub fn update_labels(issueref: &hubcaps::issues::IssueRef, add: &[String], remove: &[String]) {
-    let l = issueref.labels();
-    let issue = issueref.get().expect("Failed to get issue");
-
-    let existing: Vec<String> = issue.labels.iter().map(|l| l.name.clone()).collect();
-
-    let to_add: Vec<&str> = add
-        .iter()
-        .filter(|l| !existing.contains(l)) // Remove labels already on the issue
-        .map(|l| l.as_ref())
-        .collect();
-
-    let to_remove: Vec<String> = remove
-        .iter()
-        .filter(|l| existing.contains(l)) // Remove labels already on the issue
-        .cloned()
-        .collect();
-
-    info!(
-        "Labeling issue #{}: + {:?} , - {:?}, = {:?}",
-        issue.number, to_add, to_remove, existing
-    );
-
-    l.add(to_add.clone()).unwrap_or_else(|e| {
-        panic!(
-            "Failed to add labels {:?} to issue #{}: {:?}",
-            to_add, issue.number, e
-        )
-    });
-
-    for label in to_remove {
-        l.remove(&label).unwrap_or_else(|e| {
-            panic!(
-                "Failed to remove label {:?} from issue #{}: {:?}",
-                label, issue.number, e
-            )
-        });
-    }
+pub fn update_labels(repo_client: &dyn ghrepo::Client, pr: &Pr, add: &[String], remove: &[String]) {
+    repo_client
+        .update_issue_labels(pr.number, add, remove)
+        .expect("Failed to update issue labels");
 }
 
 fn issue_is_wip(issue: &hubcaps::issues::Issue) -> bool {
@@ -632,5 +577,107 @@ impl From<eval::Error> for EvalWorkerError {
 impl From<CommitStatusError> for EvalWorkerError {
     fn from(e: CommitStatusError) -> EvalWorkerError {
         EvalWorkerError::CommitStatusWrite(e)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hubcaps::issues::Issue;
+    use hubcaps::labels::Label;
+    use hubcaps::users::User;
+    use std::io;
+
+    fn make_issue(number: u64, status: &str, title: &str, labels: Vec<Label>) -> Issue {
+        Issue {
+            id: number,
+            url: String::new(),
+            labels_url: String::new(),
+            comments_url: String::new(),
+            events_url: String::new(),
+            html_url: String::new(),
+            number,
+            state: status.to_string(),
+            title: title.to_string(),
+            body: None,
+            user: User {
+                login: String::from("johndoe"),
+                id: 1,
+                avatar_url: String::new(),
+                gravatar_id: String::new(),
+                url: String::new(),
+                html_url: String::new(),
+                followers_url: String::new(),
+                following_url: String::new(),
+                gists_url: String::new(),
+                starred_url: String::new(),
+                subscriptions_url: String::new(),
+                organizations_url: String::new(),
+                repos_url: String::new(),
+                events_url: String::new(),
+                received_events_url: String::new(),
+                site_admin: false,
+            },
+            labels,
+            assignee: None,
+            locked: false,
+            comments: 0,
+            closed_at: None,
+            created_at: String::new(),
+            updated_at: String::new(),
+        }
+    }
+
+    #[test]
+    fn test_issue_status() {
+        let issue = make_issue(42, "open", "hello: 2.10 -> 2.11", vec![]);
+        assert_eq!(
+            determine_issue_status(Ok(issue), 42),
+            Ok(Some(String::from("johndoe")))
+        );
+
+        let issue = make_issue(42, "open", "hello: 2.10 -> 2.11 [WIP]", vec![]);
+        assert_eq!(determine_issue_status(Ok(issue), 42), Ok(None));
+
+        let issue = make_issue(42, "closed", "hello: 2.10 -> 2.11", vec![]);
+        assert_eq!(
+            determine_issue_status(Ok(issue), 42),
+            Err(Event::IssueAlreadyClosed)
+        );
+
+        assert_eq!(
+            determine_issue_status(
+                Err(hubcaps::Error::from(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Not found"
+                ))),
+                42
+            ),
+            Err(Event::IssueFetchFailed)
+        );
+    }
+
+    #[test]
+    fn test_issue_wip() {
+        let issue = make_issue(42, "open", "hello: 2.10 -> 2.11", vec![]);
+        assert!(!issue_is_wip(&issue));
+
+        let issue = make_issue(42, "open", "hello: 2.10 -> 2.11 [WIP]", vec![]);
+        assert!(issue_is_wip(&issue));
+
+        let issue = make_issue(42, "open", "WIP: hello: 2.10 -> 2.11", vec![]);
+        assert!(issue_is_wip(&issue));
+
+        let issue = make_issue(
+            42,
+            "open",
+            "hello: fix build",
+            vec![Label {
+                url: String::new(),
+                name: String::from("work-in-progress"),
+                color: String::new(),
+            }],
+        );
+        assert!(issue_is_wip(&issue));
     }
 }

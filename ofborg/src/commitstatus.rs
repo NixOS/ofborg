@@ -1,7 +1,10 @@
+use crate::ghrepo;
+
+use std::rc::Rc;
 use tracing::warn;
 
 pub struct CommitStatus<'a> {
-    api: hubcaps::statuses::Statuses<'a>,
+    repo_client: Rc<dyn ghrepo::Client + 'a>,
     sha: String,
     context: String,
     description: String,
@@ -10,14 +13,14 @@ pub struct CommitStatus<'a> {
 
 impl<'a> CommitStatus<'a> {
     pub fn new(
-        api: hubcaps::statuses::Statuses<'a>,
+        repo_client: Rc<dyn ghrepo::Client + 'a>,
         sha: String,
         context: String,
         description: String,
         url: Option<String>,
     ) -> CommitStatus<'a> {
         let mut stat = CommitStatus {
-            api,
+            repo_client,
             sha,
             context,
             description,
@@ -57,8 +60,8 @@ impl<'a> CommitStatus<'a> {
             self.description.clone()
         };
 
-        self.api
-            .create(
+        self.repo_client
+            .create_status(
                 self.sha.as_ref(),
                 &hubcaps::statuses::StatusOptions::builder(state)
                     .context(self.context.clone())
