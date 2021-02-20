@@ -177,6 +177,14 @@
         "6.topic: nixos": [
             "nixos"
         ],
+        "6.topic: ocaml": [
+            "doc/languages-frameworks/ocaml.section.md",
+            "pkgs/top-level/ocaml-packages.nix",
+            "pkgs/development/ocaml-modules",
+            "pkgs/development/compilers/ocaml",
+            "pkgs/development/tools/ocaml",
+            "pkgs/development/compilers/reason"
+        ],
         "6.topic: pantheon": [
             "pkgs/desktops/pantheon",
             "nixos/tests/pantheon.nix",
