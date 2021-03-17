@@ -40,7 +40,7 @@ let
     buildInputs = with pkgs; [
       latest.rustChannels.stable.rust
       git
-      pkgconfig
+      pkg-config
       openssl
     ]
       ++ stdenv.lib.optional stdenv.isDarwin pkgs.darwin.Security;
@@ -80,7 +80,7 @@ let
       latest.rustChannels.stable.rust
       #rustfmt
       openssl
-      pkgconfig
+      pkg-config
       git
     ]
       ++ stdenv.lib.optional stdenv.isDarwin pkgs.darwin.Security;
