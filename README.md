@@ -1,5 +1,7 @@
 # ofborg
 
+test
+
 ## Guidelines
 
 1. Review the code of all PRs before triggering the bot on them.
