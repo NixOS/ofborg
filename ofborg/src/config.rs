@@ -22,7 +22,6 @@ pub struct Config {
     pub github: Option<GithubConfig>,
     pub github_app: Option<GithubAppConfig>,
     pub log_storage: Option<LogStorage>,
-    pub tag_paths: Option<HashMap<String, Vec<String>>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

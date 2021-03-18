@@ -62,7 +62,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             cfg.acl(),
             cfg.runner.identity.clone(),
             events,
-            cfg.tag_paths.clone().unwrap(),
         ),
         easyamqp::ConsumeConfig {
             queue: queue_name.clone(),

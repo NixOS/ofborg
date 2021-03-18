@@ -8,15 +8,12 @@ use crate::message::evaluationjob::EvaluationJob;
 use crate::nix::{self, Nix};
 use crate::nixenv::HydraNixEnv;
 use crate::outpathdiff::{OutPathDiff, PackageArch};
-use crate::tagger::{
-    MaintainerPRTagger, PathsTagger, PkgsAddedRemovedTagger, RebuildTagger, StdenvTagger,
-};
+use crate::tagger::{MaintainerPRTagger, PkgsAddedRemovedTagger, RebuildTagger, StdenvTagger};
 use crate::tasks::eval::{
     stdenvs::Stdenvs, Error, EvaluationComplete, EvaluationStrategy, StepResult,
 };
 use crate::tasks::evaluate::{get_prefix, make_gist, update_labels};
 
-use std::collections::HashMap;
 use std::path::Path;
 
 use chrono::Utc;
@@ -37,7 +34,6 @@ pub struct NixpkgsStrategy<'a> {
     repo: &'a Repository<'a>,
     gists: &'a Gists<'a>,
     nix: Nix,
-    tag_paths: &'a HashMap<String, Vec<String>>,
     stdenv_diff: Option<Stdenvs>,
     outpath_diff: Option<OutPathDiff>,
     changed_paths: Option<Vec<String>>,
@@ -54,7 +50,6 @@ impl<'a> NixpkgsStrategy<'a> {
         repo: &'a Repository,
         gists: &'a Gists,
         nix: Nix,
-        tag_paths: &'a HashMap<String, Vec<String>>,
     ) -> NixpkgsStrategy<'a> {
         Self {
             job,
@@ -64,7 +59,6 @@ impl<'a> NixpkgsStrategy<'a> {
             repo,
             gists,
             nix,
-            tag_paths,
             stdenv_diff: None,
             outpath_diff: None,
             changed_paths: None,
@@ -84,22 +78,6 @@ impl<'a> NixpkgsStrategy<'a> {
 
         if darwin {
             update_labels(&self.issue_ref, &[String::from("6.topic: darwin")], &[]);
-        }
-    }
-
-    fn tag_from_paths(&self) {
-        if let Some(ref changed_paths) = self.changed_paths {
-            let mut tagger = PathsTagger::new(self.tag_paths.clone());
-
-            for path in changed_paths {
-                tagger.path_changed(&path);
-            }
-
-            update_labels(
-                &self.issue_ref,
-                &tagger.tags_to_add(),
-                &tagger.tags_to_remove(),
-            );
         }
     }
 
@@ -402,7 +380,6 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
             .files_changed_from_head(&self.job.pr.head_sha)
             .unwrap_or_else(|_| vec![]);
         self.changed_paths = Some(changed_paths);
-        self.tag_from_paths();
 
         self.touched_packages = Some(parse_commit_messages(
             &co.commit_messages_from_head(&self.job.pr.head_sha)
