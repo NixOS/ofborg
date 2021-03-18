@@ -29,7 +29,6 @@ pub struct EvaluationWorker<E> {
     acl: ACL,
     identity: String,
     events: E,
-    tag_paths: HashMap<String, Vec<String>>,
 }
 
 /// Creates a finished github check, indicating that the ofborg eval started.
@@ -59,7 +58,6 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
         acl: ACL,
         identity: String,
         events: E,
-        tag_paths: HashMap<String, Vec<String>>,
     ) -> EvaluationWorker<E> {
         EvaluationWorker {
             cloner,
@@ -69,7 +67,6 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
             acl,
             identity,
             events,
-            tag_paths,
         }
     }
 }
@@ -116,7 +113,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             &self.acl,
             &mut self.events,
             &self.identity,
-            &self.tag_paths,
             &self.cloner,
             job,
         )
@@ -132,7 +128,6 @@ struct OneEval<'a, E> {
     acl: &'a ACL,
     events: &'a mut E,
     identity: &'a str,
-    tag_paths: &'a HashMap<String, Vec<String>>,
     cloner: &'a checkout::CachedCloner,
     job: &'a evaluationjob::EvaluationJob,
 }
@@ -146,7 +141,6 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         acl: &'a ACL,
         events: &'a mut E,
         identity: &'a str,
-        tag_paths: &'a HashMap<String, Vec<String>>,
         cloner: &'a checkout::CachedCloner,
         job: &'a evaluationjob::EvaluationJob,
     ) -> OneEval<'a, E> {
@@ -161,7 +155,6 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             acl,
             events,
             identity,
-            tag_paths,
             cloner,
             job,
         }
@@ -320,7 +313,6 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 &repo,
                 &self.gists,
                 self.nix.clone(),
-                &self.tag_paths,
             ))
         } else {
             Box::new(eval::GenericStrategy::new())
