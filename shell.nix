@@ -17,7 +17,7 @@ let
 
   oldpkgs = import oldpkgsSrc {};
 
-  inherit (pkgs) stdenv;
+  inherit (pkgs) stdenv lib;
 
   phpEnv = stdenv.mkDerivation rec {
     name = "gh-event-forwarder";
@@ -43,7 +43,7 @@ let
       pkg-config
       openssl
     ]
-      ++ stdenv.lib.optional stdenv.isDarwin pkgs.darwin.Security;
+      ++ lib.optional stdenv.isDarwin pkgs.darwin.Security;
 
     postHook = ''
       checkPhase() (
@@ -67,7 +67,7 @@ let
     RUST_BACKTRACE = "1";
     NIX_PATH = "nixpkgs=${pkgs.path}";
   }
-  // stdenv.lib.optionalAttrs stdenv.isLinux {
+  // lib.optionalAttrs stdenv.isLinux {
     LOCALE_ARCHIVE_2_21 = "${oldpkgs.glibcLocales}/lib/locale/locale-archive";
     LOCALE_ARCHIVE_2_27 = "${pkgs.glibcLocales}/lib/locale/locale-archive";
   });
@@ -83,7 +83,7 @@ let
       pkg-config
       git
     ]
-      ++ stdenv.lib.optional stdenv.isDarwin pkgs.darwin.Security;
+      ++ lib.optional stdenv.isDarwin pkgs.darwin.Security;
 
     postHook = ''
       checkPhase() {
@@ -99,7 +99,7 @@ let
     passthru.phpEnv = phpEnv;
     passthru.mozilla-rust-overlay = mozilla-rust-overlay;
   }
-  // stdenv.lib.optionalAttrs stdenv.isLinux {
+  // lib.optionalAttrs stdenv.isLinux {
     LOCALE_ARCHIVE_2_21 = "${oldpkgs.glibcLocales}/lib/locale/locale-archive";
     LOCALE_ARCHIVE_2_27 = "${pkgs.glibcLocales}/lib/locale/locale-archive";
   });
