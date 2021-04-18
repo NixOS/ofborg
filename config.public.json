@@ -115,6 +115,10 @@
         ]
     },
     "tag_paths": {
+        "6.topic: bsd": [
+            "pkgs/os-specific/bsd",
+            "pkgs/stdenv/freebsd"
+        ]
         "6.topic: emacs": [
             "nixos/modules/services/editors/emacs.nix",
             "nixos/modules/services/editors/emacs.xml",
