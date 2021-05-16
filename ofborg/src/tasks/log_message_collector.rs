@@ -5,7 +5,7 @@ use crate::writetoline::LineWriter;
 
 use std::fs::{self, File, OpenOptions};
 use std::io::Write;
-use std::path::{Component, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 use lru_cache::LruCache;
 use tracing::warn;
@@ -34,7 +34,7 @@ pub struct LogMessage {
     message: MsgType,
 }
 
-fn validate_path_segment(segment: &PathBuf) -> Result<(), String> {
+fn validate_path_segment(segment: &Path) -> Result<(), String> {
     let components = segment.components();
 
     if components.count() == 0 {
@@ -148,7 +148,7 @@ impl LogMessageCollector {
         }
     }
 
-    fn open_file(&self, path: &PathBuf) -> Result<File, String> {
+    fn open_file(&self, path: &Path) -> Result<File, String> {
         let dir = path.parent().unwrap();
         fs::create_dir_all(dir).unwrap();
 
