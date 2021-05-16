@@ -8,6 +8,7 @@ pub enum BuildStatus {
     Success,
     Failure,
     TimedOut,
+    HashMismatch,
     UnexpectedError { err: String },
 }
 
@@ -17,6 +18,7 @@ impl From<BuildStatus> for String {
             BuildStatus::Skipped => "No attempt".into(),
             BuildStatus::Success => "Success".into(),
             BuildStatus::Failure => "Failure".into(),
+            BuildStatus::HashMismatch => "A fixed output derivation's hash was incorrect".into(),
             BuildStatus::TimedOut => "Timed out, unknown build status".into(),
             BuildStatus::UnexpectedError { ref err } => format!("Unexpected error: {}", err),
         }
@@ -29,6 +31,7 @@ impl From<BuildStatus> for Conclusion {
             BuildStatus::Skipped => Conclusion::Neutral,
             BuildStatus::Success => Conclusion::Success,
             BuildStatus::Failure => Conclusion::Neutral,
+            BuildStatus::HashMismatch => Conclusion::Failure,
             BuildStatus::TimedOut => Conclusion::Neutral,
             BuildStatus::UnexpectedError { .. } => Conclusion::Neutral,
         }

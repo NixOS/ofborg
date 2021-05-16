@@ -365,6 +365,7 @@ pub fn wait_for_build_status(spawned: SpawnedAsyncCmd) -> BuildStatus {
             Some(0) => BuildStatus::Success,
             Some(100) => BuildStatus::Failure, // nix permanent failure
             Some(101) => BuildStatus::TimedOut, // nix build timedout
+            Some(102) => BuildStatus::HashMismatch, // Fixed Output Derivation's hash was wrong
             Some(i) => BuildStatus::UnexpectedError {
                 err: format!("command failed with exit code {}", i),
             },
