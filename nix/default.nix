@@ -10,7 +10,7 @@ in import (hostpkgs.stdenv.mkDerivation {
 
   src = fetchFromGitHub {
     owner = "NixOS";
-    repo = "nixpkgs-channels";
+    repo = "nixpkgs";
     inherit (srcDef) rev sha256;
   };
 
