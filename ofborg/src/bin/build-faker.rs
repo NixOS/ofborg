@@ -54,6 +54,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             redelivered: false,
             properties: BasicProperties::default(),
             data: vec![],
+            acker: Default::default(),
         };
         let mut recv = easylapin::ChannelNotificationReceiver::new(&mut chan, &deliver);
 
