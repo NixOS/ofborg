@@ -31,6 +31,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         redelivered: false,
         properties: BasicProperties::default(),
         data: vec![],
+        acker: Default::default(),
     };
     let mut receiver = easylapin::ChannelNotificationReceiver::new(&mut chan, &deliver);
     let job = buildjob::BuildJob {

@@ -7,19 +7,8 @@
   }
 }:
 
-with ofborgCrates.workspaceMembers;
-
 let
-  stripDeps = pkg: pkgs.runCommand "${pkg.name}-deps-stripped" {}
-  ''
-    cp -r ${pkg} $out
-    chmod -R a+w $out
-    rm -rf $out/lib
-    find $out/bin -name '*.d' -delete
-    chmod -R a-w $out
-  '';
-
-  src = stripDeps ofborg.build;
+  inherit (ofborgCrates.workspaceMembers) ofborg-simple-build ofborg;
 in
 
 {
@@ -27,7 +16,7 @@ in
 
   ofborg.simple-build = ofborg-simple-build.build;
 
-  ofborg.rs = pkgs.runCommand "ofborg-rs-symlink-compat" { inherit src; } ''
+  ofborg.rs = pkgs.runCommand "ofborg-rs-symlink-compat" { src = ofborg.build; } ''
     mkdir -p $out/bin
     for f in $(find $src -type f); do
       bn=$(basename "$f")
