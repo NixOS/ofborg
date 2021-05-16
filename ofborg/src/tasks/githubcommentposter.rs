@@ -157,6 +157,8 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
         ));
     }
 
+    // Allow the clippy violation for improved readability
+    #[allow(clippy::vec_init_then_push)]
     let text: String = if !result.output.is_empty() {
         let mut reply: Vec<String> = vec![];
 
