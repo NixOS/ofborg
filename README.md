@@ -209,8 +209,7 @@ To test whether or not Continuous Integration will pass with your changes, you
 can run the following commands from the root of your checkout:
 
 ```shell
-$ nix-shell --run checkPhase -A mozilla-rust-overlay # checks rustfmt and clippy
-$ nix-shell --run checkPhase # runs the test suite
+$ nix-shell --pure --run checkPhase # checks rustfmt, clippy & runs the test suite
 $ nix-build -A ofborg.rs # build ofborg
 ```
 
