@@ -1,41 +1,9 @@
 # This file originates from composer2nix
 
-{ stdenv, lib, writeTextFile, fetchurl, php, unzip }:
+{ stdenv, lib, writeTextFile, fetchurl, php, unzip, phpPackages }:
 
 let
-  composer = stdenv.mkDerivation {
-    name = "composer-1.6.5";
-    src = fetchurl {
-      url = https://github.com/composer/composer/releases/download/1.6.5/composer.phar;
-      sha256 = "07xkpg9y1dd4s33y3cbf7r5fphpgc39mpm066a8m9y4ffsf539f0";
-    };
-    buildInputs = [ php ];
-
-    # We must wrap the composer.phar because of the impure shebang.
-    # We cannot use patchShebangs because the executable verifies its own integrity and will detect that somebody has tampered with it.
-
-    buildCommand = ''
-      # Copy phar file
-      mkdir -p $out/share/php
-      cp $src $out/share/php/composer.phar
-      chmod 755 $out/share/php/composer.phar
-
-      # Create wrapper executable
-      mkdir -p $out/bin
-      cat > $out/bin/composer <<EOF
-      #! ${stdenv.shell} -e
-      exec ${php}/bin/php $out/share/php/composer.phar "\$@"
-      EOF
-      chmod +x $out/bin/composer
-    '';
-    meta = {
-      description = "Dependency Manager for PHP";
-      #license = stdenv.licenses.mit;
-      maintainers = [ lib.maintainers.sander ];
-      platforms = lib.platforms.unix;
-    };
-  };
-
+  inherit (phpPackages) composer;
   buildZipPackage = { name, src }:
     stdenv.mkDerivation {
       inherit name src;
@@ -60,6 +28,7 @@ let
     , removeComposerArtifacts ? false
     , postInstall ? ""
     , noDev ? false
+    , composerExtraArgs ? ""
     , unpackPhase ? "true"
     , buildPhase ? "true"
     , ...}@args:
@@ -206,7 +175,7 @@ let
 
         # Reconstruct the installed.json file from the lock file
         mkdir -p vendor/composer
-        ${reconstructInstalled} composer.lock > vendor/composer/installed.json
+        ${php}/bin/php ${reconstructInstalled} composer.lock > vendor/composer/installed.json
 
         # Copy or symlink the provided dependencies
         cd vendor
@@ -217,14 +186,14 @@ let
         # Reconstruct autoload scripts
         # We use the optimize feature because Nix packages cannot change after they have been built
         # Using the dynamic loader for a Nix package is useless since there is nothing to dynamically reload.
-        composer dump-autoload --optimize ${lib.optionalString noDev "--no-dev"}
+        composer dump-autoload --optimize ${lib.optionalString noDev "--no-dev"} ${composerExtraArgs}
 
         # Run the install step as a validation to confirm that everything works out as expected
-        composer install --optimize-autoloader ${lib.optionalString noDev "--no-dev"}
+        composer install --optimize-autoloader ${lib.optionalString noDev "--no-dev"} ${composerExtraArgs}
 
         ${lib.optionalString executable ''
           # Reconstruct the bin/ folder if we deploy an executable project
-          ${constructBin} composer.json
+          ${php}/bin/php ${constructBin} composer.json
           ln -s $(pwd)/vendor/bin $out/bin
         ''}
 
