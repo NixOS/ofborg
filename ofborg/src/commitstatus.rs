@@ -74,7 +74,7 @@ impl<'a> CommitStatus<'a> {
 #[derive(Debug)]
 pub enum CommitStatusError {
     ExpiredCreds(hubcaps::Error),
-    MissingSHA(hubcaps::Error),
+    MissingSha(hubcaps::Error),
     Error(hubcaps::Error),
 }
 
@@ -91,7 +91,7 @@ impl From<hubcaps::Error> for CommitStatusError {
                 if code == &StatusCode::UnprocessableEntity
                     && error.message.starts_with("No commit found for SHA:") =>
             {
-                CommitStatusError::MissingSHA(e)
+                CommitStatusError::MissingSha(e)
             }
             _otherwise => CommitStatusError::Error(e),
         }

@@ -8,7 +8,7 @@ use crate::message::evaluationjob::EvaluationJob;
 use crate::nix::{self, Nix};
 use crate::nixenv::HydraNixEnv;
 use crate::outpathdiff::{OutPathDiff, PackageArch};
-use crate::tagger::{MaintainerPRTagger, PkgsAddedRemovedTagger, RebuildTagger, StdenvTagger};
+use crate::tagger::{MaintainerPrTagger, PkgsAddedRemovedTagger, RebuildTagger, StdenvTagger};
 use crate::tasks::eval::{
     stdenvs::Stdenvs, Error, EvaluationComplete, EvaluationStrategy, StepResult,
 };
@@ -279,7 +279,7 @@ impl<'a> NixpkgsStrategy<'a> {
 
             if let Ok(ref maint) = m {
                 request_reviews(&maint, &self.pull);
-                let mut maint_tagger = MaintainerPRTagger::new();
+                let mut maint_tagger = MaintainerPrTagger::new();
                 maint_tagger
                     .record_maintainer(&self.issue.user.login, &maint.maintainers_by_package());
                 update_labels(
@@ -423,13 +423,13 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
         vec![
             EvalChecker::new(
                 "package-list",
-                nix::Operation::QueryPackagesJSON,
+                nix::Operation::QueryPackagesJson,
                 vec![String::from("--file"), String::from(".")],
                 self.nix.clone(),
             ),
             EvalChecker::new(
                 "package-list-no-aliases",
-                nix::Operation::QueryPackagesJSON,
+                nix::Operation::QueryPackagesJson,
                 vec![
                     String::from("--file"),
                     String::from("."),

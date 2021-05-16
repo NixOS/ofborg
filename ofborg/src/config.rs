@@ -18,7 +18,7 @@ pub struct Config {
     pub feedback: FeedbackConfig,
     pub checkout: CheckoutConfig,
     pub nix: NixConfig,
-    pub rabbitmq: RabbitMQConfig,
+    pub rabbitmq: RabbitMqConfig,
     pub github: Option<GithubConfig>,
     pub github_app: Option<GithubAppConfig>,
     pub log_storage: Option<LogStorage>,
@@ -30,7 +30,7 @@ pub struct FeedbackConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct RabbitMQConfig {
+pub struct RabbitMqConfig {
     pub ssl: bool,
     pub host: String,
     pub virtualhost: Option<String>,
@@ -89,7 +89,7 @@ impl Config {
         format!("{}-{}", self.runner.identity, self.nix.system)
     }
 
-    pub fn acl(&self) -> acl::ACL {
+    pub fn acl(&self) -> acl::Acl {
         let repos = self
             .runner
             .repos
@@ -107,7 +107,7 @@ impl Config {
             )
         };
 
-        acl::ACL::new(repos, trusted_users)
+        acl::Acl::new(repos, trusted_users)
     }
 
     pub fn github(&self) -> Github {
@@ -142,7 +142,7 @@ impl Config {
     }
 }
 
-impl RabbitMQConfig {
+impl RabbitMqConfig {
     pub fn as_uri(&self) -> String {
         format!(
             "{}://{}:{}@{}/{}",

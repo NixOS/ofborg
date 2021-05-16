@@ -1,17 +1,17 @@
 use crate::systems::System;
 
-pub struct ACL {
+pub struct Acl {
     trusted_users: Option<Vec<String>>,
     repos: Vec<String>,
 }
 
-impl ACL {
-    pub fn new(repos: Vec<String>, mut trusted_users: Option<Vec<String>>) -> ACL {
+impl Acl {
+    pub fn new(repos: Vec<String>, mut trusted_users: Option<Vec<String>>) -> Acl {
         if let Some(ref mut users) = trusted_users {
             users.iter_mut().map(|x| *x = x.to_lowercase()).last();
         }
 
-        ACL {
+        Acl {
             trusted_users,
             repos,
         }

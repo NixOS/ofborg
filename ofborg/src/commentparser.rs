@@ -70,6 +70,7 @@ pub enum Instruction {
     Eval,
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum Subset {
     Nixpkgs,

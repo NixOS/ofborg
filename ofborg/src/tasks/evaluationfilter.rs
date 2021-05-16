@@ -6,11 +6,11 @@ use crate::worker;
 use tracing::{debug_span, info};
 
 pub struct EvaluationFilterWorker {
-    acl: acl::ACL,
+    acl: acl::Acl,
 }
 
 impl EvaluationFilterWorker {
-    pub fn new(acl: acl::ACL) -> EvaluationFilterWorker {
+    pub fn new(acl: acl::Acl) -> EvaluationFilterWorker {
         EvaluationFilterWorker { acl }
     }
 }
@@ -110,7 +110,7 @@ mod tests {
         let job: ghevent::PullRequestEvent =
             serde_json::from_str(&data.to_string()).expect("Should properly deserialize");
 
-        let mut worker = EvaluationFilterWorker::new(acl::ACL::new(
+        let mut worker = EvaluationFilterWorker::new(acl::Acl::new(
             vec!["nixos/nixpkgs".to_owned()],
             Some(vec![]),
         ));

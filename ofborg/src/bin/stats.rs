@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let conn = easylapin::from_config(&cfg.rabbitmq)?;
     let mut chan = task::block_on(conn.create_channel())?;
 
-    let events = stats::RabbitMQ::from_lapin(
+    let events = stats::RabbitMq::from_lapin(
         &format!("{}-{}", cfg.runner.identity, cfg.nix.system),
         task::block_on(conn.create_channel())?,
     );

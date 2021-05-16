@@ -235,14 +235,14 @@ impl RebuildTagger {
     }
 }
 
-pub struct MaintainerPRTagger {
+pub struct MaintainerPrTagger {
     possible: Vec<String>,
     selected: Vec<String>,
 }
 
-impl Default for MaintainerPRTagger {
-    fn default() -> MaintainerPRTagger {
-        let mut t = MaintainerPRTagger {
+impl Default for MaintainerPrTagger {
+    fn default() -> MaintainerPrTagger {
+        let mut t = MaintainerPrTagger {
             possible: vec![String::from("11.by: package-maintainer")],
             selected: vec![],
         };
@@ -252,8 +252,8 @@ impl Default for MaintainerPRTagger {
     }
 }
 
-impl MaintainerPRTagger {
-    pub fn new() -> MaintainerPRTagger {
+impl MaintainerPrTagger {
+    pub fn new() -> MaintainerPrTagger {
         Default::default()
     }
 

@@ -19,21 +19,21 @@ pub struct EventMessage {
     pub events: Vec<Event>,
 }
 
-pub struct RabbitMQ<C> {
+pub struct RabbitMq<C> {
     identity: String,
     channel: C,
 }
 
-impl RabbitMQ<lapin::Channel> {
+impl RabbitMq<lapin::Channel> {
     pub fn from_lapin(identity: &str, channel: lapin::Channel) -> Self {
-        RabbitMQ {
+        RabbitMq {
             identity: identity.to_owned(),
             channel,
         }
     }
 }
 
-impl SysEvents for RabbitMQ<lapin::Channel> {
+impl SysEvents for RabbitMq<lapin::Channel> {
     fn notify(&mut self, event: Event) {
         let props = lapin::BasicProperties::default().with_content_type("application/json".into());
         task::block_on(async {

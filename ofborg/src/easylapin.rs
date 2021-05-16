@@ -1,6 +1,6 @@
 use std::pin::Pin;
 
-use crate::config::RabbitMQConfig;
+use crate::config::RabbitMqConfig;
 use crate::easyamqp::{
     BindQueueConfig, ChannelExt, ConsumeConfig, ConsumerExt, ExchangeConfig, ExchangeType,
     QueueConfig,
@@ -21,7 +21,7 @@ use lapin::types::{AMQPValue, FieldTable};
 use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind};
 use tracing::{debug, trace};
 
-pub fn from_config(cfg: &RabbitMQConfig) -> Result<Connection, lapin::Error> {
+pub fn from_config(cfg: &RabbitMqConfig) -> Result<Connection, lapin::Error> {
     let mut props = FieldTable::default();
     props.insert(
         "ofborg_version".into(),
