@@ -6,17 +6,6 @@
 } }:
 
 let
-  # A random Nixpkgs revision *before* the default glibc
-  # was switched to version 2.27.x.
-  oldpkgsSrc = pkgs.fetchFromGitHub {
-    owner = "nixos";
-    repo = "nixpkgs";
-    rev = "0252e6ca31c98182e841df494e6c9c4fb022c676";
-    sha256 = "1sr5a11sb26rgs1hmlwv5bxynw2pl5w4h5ic0qv3p2ppcpmxwykz";
-  };
-
-  oldpkgs = import oldpkgsSrc {};
-
   inherit (pkgs) stdenv lib;
 
   phpEnv = stdenv.mkDerivation rec {
@@ -35,7 +24,7 @@ let
     # HISTFILE = "${src}/.bash_hist";
   };
 
-  mozilla-rust-overlay = stdenv.mkDerivation (rec {
+  mozilla-rust-overlay = stdenv.mkDerivation {
     name = "mozilla-rust-overlay";
     buildInputs = with pkgs; [
       latest.rustChannels.stable.rust
@@ -66,13 +55,9 @@ let
     RUSTFLAGS = "-D warnings";
     RUST_BACKTRACE = "1";
     NIX_PATH = "nixpkgs=${pkgs.path}";
-  }
-  // lib.optionalAttrs stdenv.isLinux {
-    LOCALE_ARCHIVE_2_21 = "${oldpkgs.glibcLocales}/lib/locale/locale-archive";
-    LOCALE_ARCHIVE_2_27 = "${pkgs.glibcLocales}/lib/locale/locale-archive";
-  });
+  };
 
-  rustEnv = stdenv.mkDerivation (rec {
+  rustEnv = stdenv.mkDerivation {
     name = "gh-event-forwarder";
     buildInputs = with pkgs; [
       bash
@@ -98,10 +83,6 @@ let
     NIX_PATH = "nixpkgs=${pkgs.path}";
     passthru.phpEnv = phpEnv;
     passthru.mozilla-rust-overlay = mozilla-rust-overlay;
-  }
-  // lib.optionalAttrs stdenv.isLinux {
-    LOCALE_ARCHIVE_2_21 = "${oldpkgs.glibcLocales}/lib/locale/locale-archive";
-    LOCALE_ARCHIVE_2_27 = "${pkgs.glibcLocales}/lib/locale/locale-archive";
-  });
+  };
 
 in rustEnv
