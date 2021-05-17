@@ -19,8 +19,8 @@ pub struct HydraNixEnv {
 impl HydraNixEnv {
     pub fn new(nix: nix::Nix, path: PathBuf, check_meta: bool) -> HydraNixEnv {
         HydraNixEnv {
-            nix,
             path,
+            nix,
             check_meta,
         }
     }
