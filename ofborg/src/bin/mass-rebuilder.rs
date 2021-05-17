@@ -38,7 +38,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
     let nix = cfg.nix();
 
-    let events = stats::RabbitMQ::from_lapin(
+    let events = stats::RabbitMq::from_lapin(
         &format!("{}-{}", cfg.runner.identity, cfg.nix.system),
         task::block_on(conn.create_channel())?,
     );

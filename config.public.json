@@ -12,6 +12,7 @@
             "grahamc/ofborg",
             "grahamc/nixpkgs"
         ],
+        "disable_trusted_users": true,
         "trusted_users": [
             "1000101",
             "7c6f434c",

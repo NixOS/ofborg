@@ -1,18 +1,17 @@
 use crate::systems::System;
 
-pub struct ACL {
-    trusted_users: Vec<String>,
+pub struct Acl {
+    trusted_users: Option<Vec<String>>,
     repos: Vec<String>,
 }
 
-impl ACL {
-    pub fn new(repos: Vec<String>, mut trusted_users: Vec<String>) -> ACL {
-        trusted_users
-            .iter_mut()
-            .map(|x| *x = x.to_lowercase())
-            .last();
+impl Acl {
+    pub fn new(repos: Vec<String>, mut trusted_users: Option<Vec<String>>) -> Acl {
+        if let Some(ref mut users) = trusted_users {
+            users.iter_mut().map(|x| *x = x.to_lowercase()).last();
+        }
 
-        ACL {
+        Acl {
             trusted_users,
             repos,
         }
@@ -47,10 +46,16 @@ impl ACL {
     }
 
     pub fn can_build_unrestricted(&self, user: &str, repo: &str) -> bool {
-        if repo.to_lowercase() == "nixos/nixpkgs" {
-            self.trusted_users.contains(&user.to_lowercase())
+        if let Some(ref users) = self.trusted_users {
+            if repo.to_lowercase() == "nixos/nixpkgs" {
+                users.contains(&user.to_lowercase())
+            } else {
+                user == "grahamc"
+            }
         } else {
-            user == "grahamc"
+            // If trusted_users is disabled (and thus None), everybody can build
+            // unrestricted
+            true
         }
     }
 }

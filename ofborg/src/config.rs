@@ -18,7 +18,7 @@ pub struct Config {
     pub feedback: FeedbackConfig,
     pub checkout: CheckoutConfig,
     pub nix: NixConfig,
-    pub rabbitmq: RabbitMQConfig,
+    pub rabbitmq: RabbitMqConfig,
     pub github: Option<GithubConfig>,
     pub github_app: Option<GithubAppConfig>,
     pub log_storage: Option<LogStorage>,
@@ -30,7 +30,7 @@ pub struct FeedbackConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct RabbitMQConfig {
+pub struct RabbitMqConfig {
     pub ssl: bool,
     pub host: String,
     pub virtualhost: Option<String>,
@@ -67,6 +67,7 @@ pub struct LogStorage {
 pub struct RunnerConfig {
     pub identity: String,
     pub repos: Option<Vec<String>>,
+    pub disable_trusted_users: bool,
     pub trusted_users: Option<Vec<String>>,
 
     /// If true, will create its own queue attached to the build job
@@ -88,17 +89,25 @@ impl Config {
         format!("{}-{}", self.runner.identity, self.nix.system)
     }
 
-    pub fn acl(&self) -> acl::ACL {
-        acl::ACL::new(
-            self.runner
-                .repos
-                .clone()
-                .expect("fetching config's runner.repos"),
-            self.runner
-                .trusted_users
-                .clone()
-                .expect("fetching config's runner.trusted_users"),
-        )
+    pub fn acl(&self) -> acl::Acl {
+        let repos = self
+            .runner
+            .repos
+            .clone()
+            .expect("fetching config's runner.repos");
+
+        let trusted_users = if self.runner.disable_trusted_users {
+            None
+        } else {
+            Some(
+                self.runner
+                    .trusted_users
+                    .clone()
+                    .expect("fetching config's runner.trusted_users"),
+            )
+        };
+
+        acl::Acl::new(repos, trusted_users)
     }
 
     pub fn github(&self) -> Github {
@@ -133,7 +142,7 @@ impl Config {
     }
 }
 
-impl RabbitMQConfig {
+impl RabbitMqConfig {
     pub fn as_uri(&self) -> String {
         format!(
             "{}://{}:{}@{}/{}",

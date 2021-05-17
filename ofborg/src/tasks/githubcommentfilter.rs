@@ -8,12 +8,12 @@ use tracing::{debug_span, error, info};
 use uuid::Uuid;
 
 pub struct GitHubCommentWorker {
-    acl: acl::ACL,
+    acl: acl::Acl,
     github: hubcaps::Github,
 }
 
 impl GitHubCommentWorker {
-    pub fn new(acl: acl::ACL, github: hubcaps::Github) -> GitHubCommentWorker {
+    pub fn new(acl: acl::Acl, github: hubcaps::Github) -> GitHubCommentWorker {
         GitHubCommentWorker { acl, github }
     }
 }

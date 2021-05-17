@@ -1,5 +1,5 @@
 /// This is what evaluates every pull-request
-use crate::acl::ACL;
+use crate::acl::Acl;
 use crate::checkout;
 use crate::commitstatus::{CommitStatus, CommitStatusError};
 use crate::config::GithubAppVendingMachine;
@@ -26,7 +26,7 @@ pub struct EvaluationWorker<E> {
     nix: nix::Nix,
     github: hubcaps::Github,
     github_vend: RwLock<GithubAppVendingMachine>,
-    acl: ACL,
+    acl: Acl,
     identity: String,
     events: E,
 }
@@ -55,7 +55,7 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
         nix: &nix::Nix,
         github: hubcaps::Github,
         github_vend: GithubAppVendingMachine,
-        acl: ACL,
+        acl: Acl,
         identity: String,
         events: E,
     ) -> EvaluationWorker<E> {
@@ -125,7 +125,7 @@ struct OneEval<'a, E> {
     repo: hubcaps::repositories::Repository<'a>,
     gists: Gists<'a>,
     nix: &'a nix::Nix,
-    acl: &'a ACL,
+    acl: &'a Acl,
     events: &'a mut E,
     identity: &'a str,
     cloner: &'a checkout::CachedCloner,
@@ -138,7 +138,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         client_app: &'a hubcaps::Github,
         client_legacy: &'a hubcaps::Github,
         nix: &'a nix::Nix,
-        acl: &'a ACL,
+        acl: &'a Acl,
         events: &'a mut E,
         identity: &'a str,
         cloner: &'a checkout::CachedCloner,
@@ -242,7 +242,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 error!("Failed writing commit status: creds expired: {:?}", e);
                 self.actions().retry_later(&self.job)
             }
-            Err(Err(CommitStatusError::MissingSHA(e))) => {
+            Err(Err(CommitStatusError::MissingSha(e))) => {
                 error!(
                     "Failed writing commit status: commit sha was force-pushed away: {:?}",
                     e

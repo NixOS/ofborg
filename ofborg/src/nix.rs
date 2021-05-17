@@ -13,6 +13,7 @@ use std::process::{Command, Stdio};
 
 use tempfile::tempfile;
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum File {
     DefaultNixpkgs,
@@ -33,7 +34,7 @@ pub enum Operation {
     Evaluate,
     Instantiate,
     Build,
-    QueryPackagesJSON,
+    QueryPackagesJson,
     QueryPackagesOutputs,
     NoOp { operation: Box<Operation> },
     Unknown { program: String },
@@ -45,7 +46,7 @@ impl Operation {
             Operation::Evaluate => Command::new("nix-instantiate"),
             Operation::Instantiate => Command::new("nix-instantiate"),
             Operation::Build => Command::new("nix-build"),
-            Operation::QueryPackagesJSON => Command::new("nix-env"),
+            Operation::QueryPackagesJson => Command::new("nix-env"),
             Operation::QueryPackagesOutputs => Command::new("nix-env"),
             Operation::NoOp { .. } => Command::new("echo"),
             Operation::Unknown { ref program } => Command::new(program),
@@ -57,7 +58,7 @@ impl Operation {
             Operation::Build => {
                 command.args(&["--no-out-link", "--keep-going"]);
             }
-            Operation::QueryPackagesJSON => {
+            Operation::QueryPackagesJson => {
                 command.args(&["--query", "--available", "--json"]);
             }
             Operation::QueryPackagesOutputs => {
@@ -85,7 +86,7 @@ impl fmt::Display for Operation {
         match *self {
             Operation::Build => write!(f, "nix-build"),
             Operation::Instantiate => write!(f, "nix-instantiate"),
-            Operation::QueryPackagesJSON => write!(f, "nix-env -qa --json"),
+            Operation::QueryPackagesJson => write!(f, "nix-env -qa --json"),
             Operation::QueryPackagesOutputs => write!(f, "nix-env -qaP --no-name --out-path"),
             Operation::NoOp { ref operation } => operation.fmt(f),
             Operation::Unknown { ref program } => write!(f, "{}", program),
@@ -517,7 +518,7 @@ mod tests {
 
         if expectation_held && missed_requirements == 0 {
         } else {
-            panic!(output);
+            panic!("{}", output);
         }
     }
 
@@ -556,7 +557,7 @@ mod tests {
     #[test]
     fn test_query_packages_json() {
         let nix = nix();
-        let op = noop(Operation::QueryPackagesJSON);
+        let op = noop(Operation::QueryPackagesJson);
         assert_eq!(op.to_string(), "nix-env -qa --json");
 
         let ret: Result<fs::File, fs::File> = nix.run(

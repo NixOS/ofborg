@@ -48,7 +48,7 @@ named!(
                 value!(None, many_till!(take!(1), tag_no_case!("@grahamcofborg")))
                 )
             )))) >> eof!()
-                >> (Some(res.into_iter().filter_map(|x| x).collect()))
+                >> (Some(res.into_iter().flatten().collect()))
         ) | value!(None)
     )
 );
@@ -70,6 +70,7 @@ pub enum Instruction {
     Eval,
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum Subset {
     Nixpkgs,

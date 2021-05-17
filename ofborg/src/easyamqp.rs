@@ -89,9 +89,9 @@ pub enum ExchangeType {
     Custom(String),
 }
 
-impl Into<String> for ExchangeType {
-    fn into(self) -> String {
-        match self {
+impl From<ExchangeType> for String {
+    fn from(exchange_type: ExchangeType) -> String {
+        match exchange_type {
             ExchangeType::Topic => "topic".to_owned(),
             ExchangeType::Headers => "headers".to_owned(),
             ExchangeType::Fanout => "fanout".to_owned(),
