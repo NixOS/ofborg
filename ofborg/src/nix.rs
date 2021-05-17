@@ -517,7 +517,7 @@ mod tests {
 
         if expectation_held && missed_requirements == 0 {
         } else {
-            panic!(output);
+            panic!("{}", output);
         }
     }
 
