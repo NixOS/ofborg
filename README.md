@@ -122,7 +122,11 @@ combinations:
     @ofborg build list of attrs looks good to me!
     ```
 
-## Trusted Users
+## Trusted Users (Currently Disabled)
+
+> **NOTE:** The Trusted Users functionality is currently disabled, as the
+> current darwin builder is reset very frequently. This means that _all_ users
+> will have their PRs build on the darwin machine.
 
 Trusted users have their builds and tests executed on _all_ available platforms,
 including those without good sandboxing. Because this exposes the host to a

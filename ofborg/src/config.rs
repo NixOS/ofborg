@@ -67,6 +67,7 @@ pub struct LogStorage {
 pub struct RunnerConfig {
     pub identity: String,
     pub repos: Option<Vec<String>>,
+    pub disable_trusted_users: bool,
     pub trusted_users: Option<Vec<String>>,
 
     /// If true, will create its own queue attached to the build job
@@ -89,16 +90,24 @@ impl Config {
     }
 
     pub fn acl(&self) -> acl::ACL {
-        acl::ACL::new(
-            self.runner
-                .repos
-                .clone()
-                .expect("fetching config's runner.repos"),
-            self.runner
-                .trusted_users
-                .clone()
-                .expect("fetching config's runner.trusted_users"),
-        )
+        let repos = self
+            .runner
+            .repos
+            .clone()
+            .expect("fetching config's runner.repos");
+
+        let trusted_users = if self.runner.disable_trusted_users {
+            None
+        } else {
+            Some(
+                self.runner
+                    .trusted_users
+                    .clone()
+                    .expect("fetching config's runner.trusted_users"),
+            )
+        };
+
+        acl::ACL::new(repos, trusted_users)
     }
 
     pub fn github(&self) -> Github {
