@@ -67,6 +67,7 @@ pub struct LogStorage {
 pub struct RunnerConfig {
     pub identity: String,
     pub repos: Option<Vec<String>>,
+    #[serde(default = "Default::default")]
     pub disable_trusted_users: bool,
     pub trusted_users: Option<Vec<String>>,
 
