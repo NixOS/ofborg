@@ -302,7 +302,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
 
         let target_branch = match job.pr.target_branch.clone() {
             Some(x) => x,
-            None => String::from("origin/master"),
+            None => String::from("master"),
         };
 
         let buildfile = match job.subset {
