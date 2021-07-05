@@ -1,22 +1,44 @@
 { pkgs ? import ./nix {
     overlays = [ (import ./nix/overlay.nix) ];
   }
-, ofborgCrates ? import ./Cargo.nix {
-    inherit pkgs;
-    release = pkgs.stdenv.isDarwin;
-  }
 }:
 
 let
-  inherit (ofborgCrates.workspaceMembers) ofborg-simple-build ofborg;
+  pkg = pkgs.rustPlatform.buildRustPackage {
+    name = "ofborg";
+    src = pkgs.nix-gitignore.gitignoreSource [] ./.;
+
+    nativeBuildInputs = with pkgs; [
+      pkgconfig
+      pkgs.rustPackages.clippy
+    ];
+
+    buildInputs = with pkgs; [
+      openssl
+    ];
+
+    preBuild = ''
+      cargo clippy
+    '';
+
+    doCheck = false; # Tests require access to a /nix/ and a nix daemon
+    checkInputs = with pkgs; [
+      nix
+    ];
+
+    cargoLock = {
+      lockFile = ./Cargo.lock;
+      outputHashes = {
+        "hubcaps-0.3.16" = "1p7rn8y71fjwfag65437gz7a56pysz9n69smaknvblyxpjdzmh4d";
+      };
+    };
+  };
 in
 
 {
-  inherit ofborgCrates;
+  inherit pkg;
 
-  ofborg.simple-build = ofborg-simple-build.build;
-
-  ofborg.rs = pkgs.runCommand "ofborg-rs-symlink-compat" { src = ofborg.build; } ''
+  ofborg.rs = pkgs.runCommand "ofborg-rs-symlink-compat" { src = pkg; } ''
     mkdir -p $out/bin
     for f in $(find $src -type f); do
       bn=$(basename "$f")
@@ -34,31 +56,6 @@ in
     test -e $out/bin/github_comment_poster
     test -e $out/bin/log_message_collector
     test -e $out/bin/evaluation_filter
-
-    # Verify that the outpath contains the version number matching the
-    # Cargo.toml
-    if ! grep -q 'version = "${ofborg.build.crateVersion}"' ${./ofborg/Cargo.toml}; then
-      cat <<EOF
-
-
-
-
-
-    Build failed because you bumped the Cargo
-    version without regenerating the Cargo.nix.
-
-    Run:
-
-
-
-        nix-shell --run ./nix/update-crates.sh
-
-
-    and commit those changes.
-
-
-    EOF
-    fi
   '';
 
   ofborg.php = import ./php { inherit pkgs; };

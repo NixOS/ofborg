@@ -19,7 +19,7 @@ jobs:
           git config --global user.email "ofborg@example.com"
           git config --global user.name "ofborg"
       - name: checkPhase
-        run: nix-shell --pure --run checkPhase
+        run: nix-shell --pure --run "cargo test"
 
   nix-build:
     runs-on: ubuntu-latest
