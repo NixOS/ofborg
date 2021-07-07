@@ -4,6 +4,8 @@
 }:
 
 let
+  inherit (pkgs) lib;
+
   pkg = pkgs.rustPlatform.buildRustPackage {
     name = "ofborg";
     src = pkgs.nix-gitignore.gitignoreSource [] ./.;
@@ -15,7 +17,10 @@ let
 
     buildInputs = with pkgs; [
       openssl
-    ];
+    ] ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [
+      darwin.apple_sdk.frameworks.Security
+      darwin.apple_sdk.frameworks.CoreFoundation
+    ]);
 
     preBuild = ''
       cargo clippy
