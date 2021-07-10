@@ -7,6 +7,8 @@ co=$2
 makepr() {
     git init --bare "$bare"
     git clone "$bare" "$co"
+    git -C "$co" config user.email "ofborg-test@example.com"
+    git -C "$co" config user.name "ofborg tests"
 
     cp build/* "$co/"
     git -C "$co" add .

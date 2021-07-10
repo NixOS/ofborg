@@ -28,6 +28,7 @@ let
     nativeBuildInputs = with pkgs; [
       nix # so in --pure mode we actually find the "correct" nix
       bash
+      nix
       nix-prefetch-git
       rustPackages.cargo
       rustPackages.clippy
