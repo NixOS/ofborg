@@ -435,7 +435,7 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
                     String::from("."),
                     String::from("--arg"),
                     String::from("config"),
-                    String::from("{ allowAliases = false; }"),
+                    String::from("{ allowAliases = false; allowUnfree = true; }"),
                 ],
                 self.nix.clone(),
             ),
