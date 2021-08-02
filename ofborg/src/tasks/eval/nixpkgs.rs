@@ -26,6 +26,11 @@ use uuid::Uuid;
 
 static MAINTAINER_REVIEW_MAX_CHANGED_PATHS: usize = 64;
 
+const TITLE_LABELS: [(&str, &str); 2] = [
+    ("darwin", "6.topic: darwin"),
+    ("macos", "6.topic: darwin"),
+];
+
 pub struct NixpkgsStrategy<'a> {
     job: &'a EvaluationJob,
     pull: &'a hubcaps::pulls::PullRequest<'a>,
@@ -67,18 +72,22 @@ impl<'a> NixpkgsStrategy<'a> {
     }
 
     fn tag_from_title(&self) {
-        let darwin = self
-            .issue_ref
-            .get()
-            .map(|iss| {
-                iss.title.to_lowercase().contains("darwin")
-                    || iss.title.to_lowercase().contains("macos")
-            })
-            .unwrap_or(false);
+        let title = match self.issue_ref.get() {
+            Ok(issue) => issue.title.to_lowercase(),
+            Err(_) => return,
+        };
 
-        if darwin {
-            update_labels(&self.issue_ref, &[String::from("6.topic: darwin")], &[]);
+        let labels: Vec<_> = TITLE_LABELS
+            .iter()
+            .filter(|(word, _label)| title.contains(word))
+            .map(|(_word, label)| (*label).into())
+            .collect();
+
+        if labels.is_empty() {
+            return;
         }
+
+        update_labels(&self.issue_ref, &labels, &[]);
     }
 
     fn check_stdenvs_before(&mut self, dir: &Path) {
