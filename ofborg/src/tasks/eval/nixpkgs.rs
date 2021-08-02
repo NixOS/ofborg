@@ -26,7 +26,8 @@ use uuid::Uuid;
 
 static MAINTAINER_REVIEW_MAX_CHANGED_PATHS: usize = 64;
 
-const TITLE_LABELS: [(&str, &str); 2] = [
+const TITLE_LABELS: [(&str, &str); 3] = [
+    ("bsd", "6.topic: bsd"),
     ("darwin", "6.topic: darwin"),
     ("macos", "6.topic: darwin"),
 ];
