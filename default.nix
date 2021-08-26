@@ -3,8 +3,8 @@
   }
 }:
 
-let
-  inherit (pkgs) lib;
+
+         (pkgs) lib;
 
   pkg = pkgs.rustPlatform.buildRustPackage {
     name = "ofborg";
