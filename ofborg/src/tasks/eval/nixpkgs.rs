@@ -252,6 +252,24 @@ impl<'a> NixpkgsStrategy<'a> {
 
             let prefix = get_prefix(self.repo.statuses(), &self.job.pr.head_sha)?;
 
+            let staging_branch = self.pull
+                .get()
+                .map(|p| is_staging_branch(&p.head))
+                .unwrap_or(false);
+
+            if staging_branch {
+                info!("pull request is from a staging branch, skipping review requests");
+                let status = CommitStatus::new(
+                    self.repo.statuses(),
+                    self.job.pr.head_sha.clone(),
+                    format!("{}-eval-check-maintainers", prefix),
+                    String::from("staging branch, skipping automatic review requests"),
+                    gist_url,
+                );
+                status.set(hubcaps::statuses::State::Success)?;
+                return Ok(());
+            }
+
             if changed_paths.len() > MAINTAINER_REVIEW_MAX_CHANGED_PATHS {
                 info!(
                     "pull request has {} changed paths, skipping review requests",
@@ -611,6 +629,33 @@ fn parse_commit_messages(messages: &[String]) -> Vec<String> {
         .collect()
 }
 
+fn is_staging_branch(head: &hubcaps::pulls::Commit) -> bool {
+    // all staging branches are branches of the proper nixpkgs repo
+    if head.user.login == "NixOS" {
+        // matches staging-next, but also staging-next-XX.YY
+        // staging itself is no concern, since it is never the head of a PR
+        if head.commit_ref.starts_with("staging-next") {
+            return true;
+        }
+
+        // We use staging branch in a wider sense here: Any branch counts
+        // which bundles changes from other PRs to then be stabilized and merged
+        const OTHER_STAGING_BRANCHES: [&str; 1] = [
+            "haskell-updates"
+            // python-unstable?
+            // r-updates?
+        ];
+
+        for known in &OTHER_STAGING_BRANCHES {
+            if known == &head.commit_ref {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -651,5 +696,65 @@ mod tests {
             ),
             expect
         );
+    }
+
+    #[test]
+    fn test_is_staging_branch() {
+        const USERS: [(&str, bool); 2] = [
+            ("NixOS", true),
+            ("ofborg", false),
+        ];
+
+        const BRANCHES: [(&str, bool); 7] = [
+            ("staging-next", true),
+            ("staging-next-21.05", true),
+            ("staging-next-21.11", true),
+            ("haskell-updates", true),
+            ("backport-108824-to-staging-21.05", false),
+            ("random-branch", false),
+            ("not-staging-next", false),
+        ];
+
+        for (username, good_user) in &USERS {
+            for (branch, good_branch) in &BRANCHES {
+                let user = hubcaps::users::User {
+                    login: String::from(*username),
+                    // stuff not relevant for this test
+                    id: 0,
+                    avatar_url: String::from(""),
+                    gravatar_id: String::from(""),
+                    url: String::from(""),
+                    html_url: String::from(""),
+                    followers_url: String::from(""),
+                    following_url: String::from(""),
+                    gists_url: String::from(""),
+                    starred_url: String::from(""),
+                    subscriptions_url: String::from(""),
+                    organizations_url: String::from(""),
+                    repos_url: String::from(""),
+                    events_url: String::from(""),
+                    received_events_url: String::from(""),
+                    site_admin: false,
+                };
+
+                // not necessary, but might as well…
+                let mut label = String::from(*username);
+                label.push_str(":");
+                label.push_str(branch);
+
+                let commit = hubcaps::pulls::Commit {
+                    user: user,
+                    commit_ref: String::from(*branch),
+                    // irrelevant for test
+                    label: label,
+                    sha: String::from(""),
+                };
+
+                assert_eq!(
+                    is_staging_branch(&commit),
+                    *good_user && *good_branch
+                );
+            }
+        }
     }
 }
