@@ -11,6 +11,7 @@ let
     {
       supportedSystems = [
         "aarch64-linux"
+        # "aarch64-darwin" # !!!
         "i686-linux"
         "x86_64-linux"
         "x86_64-darwin"
@@ -26,11 +27,13 @@ let
           handleEvalIssue = reason: errormsg:
             let
               fatalErrors = [
-                "unknown-meta" "broken-outputs"
+                "unknown-meta"
+                "broken-outputs"
               ];
-            in if builtins.elem reason fatalErrors
-              then abort errormsg
-              else true;
+            in
+            if builtins.elem reason fatalErrors
+            then abort errormsg
+            else true;
 
           inHydra = true;
         };
@@ -44,17 +47,22 @@ let
     (name: val:
       if name == "recurseForDerivations" then true
       else if lib.isAttrs val && val.type or null != "derivation"
-              then recurseIntoAttrs (tweak val)
+      then recurseIntoAttrs (tweak val)
       else val
     );
 
   # Some of these contain explicit references to platform(s) we want to avoid;
   # some even (transitively) depend on ~/.nixpkgs/config.nix (!)
   blacklist = [
-    "tarball" "metrics" "manual"
-    "darwin-tested" "unstable" "stdenvBootstrapTools"
-    "moduleSystem" "lib-tests" # these just confuse the output
+    "tarball"
+    "metrics"
+    "manual"
+    "darwin-tested"
+    "unstable"
+    "stdenvBootstrapTools"
+    "moduleSystem"
+    "lib-tests" # these just confuse the output
   ];
 
 in
-  tweak (builtins.removeAttrs hydraJobs blacklist)
+tweak (builtins.removeAttrs hydraJobs blacklist)

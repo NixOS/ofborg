@@ -1,5 +1,5 @@
 { nixpkgs ? ./nix
-, supportedSystems ? [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" ]
+, supportedSystems ? [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ]
 }:
 let
   pkgs = import nixpkgs {
@@ -26,19 +26,23 @@ let
         };
       }
     )
-    {} supportedSystems;
+    { }
+    supportedSystems;
 
   attrForSystem = system: attrpath:
     if borgpkgs-per-arch ? "${system}"
-    then (
-      let
-        borgpkgs = borgpkgs-per-arch."${system}";
-      in if lib.hasAttrByPath attrpath borgpkgs
-        then lib.setAttrByPath
-          (attrpath ++ [system])
-          (lib.attrByPath attrpath "bogus" borgpkgs)
+    then
+      (
+        let
+          borgpkgs = borgpkgs-per-arch."${system}";
+        in
+        if lib.hasAttrByPath attrpath borgpkgs
+        then
+          lib.setAttrByPath
+            (attrpath ++ [ system ])
+            (lib.attrByPath attrpath "bogus" borgpkgs)
         else throw "Failed to find ${toString attrpath} for ${system} in borgpkgs"
-    )
+      )
     else throw "No such system ${system}";
 
   attrsForAllSystems = path:
@@ -46,31 +50,33 @@ let
       (collector: system:
         lib.recursiveUpdate collector (attrForSystem system path)
       )
-      {}
+      { }
       supportedSystems;
 
   merge = attrsets:
     builtins.foldl'
       (collector: set: lib.recursiveUpdate set collector)
-      {}
+      { }
       attrsets;
 
   x8664LinuxOnly = path:
-     (attrForSystem "x86_64-linux" path);
+    (attrForSystem "x86_64-linux" path);
 
   jobs = merge [
     (attrsForAllSystems [ "ofborg" "rs" ])
 
     (x8664LinuxOnly [ "ofborg" "php" ])
   ];
-in jobs // {
+in
+jobs // {
   release = pkgs.releaseTools.aggregate {
     name = "release";
     meta.description = "Release-critical builds for OfBorg infrastructure";
     constituents = [
       jobs.ofborg.rs.x86_64-linux
       jobs.ofborg.rs.x86_64-darwin
-      # jobs.ofborg.rs.aarch64-linux
+      jobs.ofborg.rs.aarch64-darwin
+      jobs.ofborg.rs.aarch64-linux
       jobs.ofborg.php.x86_64-linux
     ];
   };

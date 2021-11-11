@@ -139,6 +139,7 @@ platforms:
  - `x86_64-linux`
  - `aarch64-linux`
  - `x86_64-darwin`
+ - `aarch64-darwin`
 
 See [`config.public.json`](./config.public.json) for a list of all trusted users.
 
