@@ -8,6 +8,8 @@ export GIT_CONFIG_GLOBAL=/dev/null
 export GIT_CONFIG_NOSYSTEM=1
 export GIT_AUTHOR_NAME="GrahamCOfBorg"
 export GIT_AUTHOR_EMAIL="graham+cofborg@example.com"
+export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
 
 makepr() {
     git init --bare "$bare"
