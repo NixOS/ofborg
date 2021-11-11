@@ -26,6 +26,7 @@ impl Acl {
             vec![
                 System::X8664Darwin,
                 System::X8664Linux,
+                System::Aarch64Darwin,
                 System::Aarch64Linux,
             ]
         } else {
