@@ -2,4 +2,4 @@
 #!nix-shell -i bash -p nix-prefetch-git
 
 nix-prefetch-git https://github.com/nixos/nixpkgs.git \
-                 --rev refs/heads/nixos-unstable > ./nix/nixpkgs.json
+                 --rev refs/heads/nixos-unstable-small > ./nix/nixpkgs.json
