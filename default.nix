@@ -8,7 +8,7 @@ let
 
   pkg = pkgs.rustPlatform.buildRustPackage {
     name = "ofborg";
-    src = pkgs.nix-gitignore.gitignoreSource [] ./.;
+    src = pkgs.nix-gitignore.gitignoreSource [ ] ./.;
 
     nativeBuildInputs = with pkgs; [
       pkgconfig
@@ -34,7 +34,7 @@ let
     cargoLock = {
       lockFile = ./Cargo.lock;
       outputHashes = {
-        "hubcaps-0.3.16" = "1p7rn8y71fjwfag65437gz7a56pysz9n69smaknvblyxpjdzmh4d";
+        "hubcaps-0.3.16" = "sha256-WHceECaFu+X2nJfnW5Agr42MepGkLsipglJVW38QIp8=";
       };
     };
   };
