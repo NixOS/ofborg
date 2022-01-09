@@ -29,16 +29,16 @@ let
       nix # so in --pure mode we actually find the "correct" nix
       bash
       nix-prefetch-git
-      rustPackages.cargo
-      rustPackages.clippy
-      rustPackages.rustfmt
+      rustc
+      cargo
+      clippy
+      rustfmt
       pkg-config
       git
     ];
     buildInputs = with pkgs; [
       openssl
-    ]
-      ++ lib.optional stdenv.isDarwin pkgs.darwin.Security;
+    ] ++ lib.optionals stdenv.isDarwin [ darwin.Security libiconv ];
 
     postHook = ''
       checkPhase() (
