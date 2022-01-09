@@ -349,7 +349,7 @@ mod tests {
     use super::EvaluationStatsDiff;
     use serde_json;
 
-    const EXAMPLE: &'static str = r#"
+    const EXAMPLE: &str = r#"
 {
   "cpuTime": 135.2,
   "envs": {
@@ -395,7 +395,7 @@ mod tests {
 }
 "#;
 
-    const EXAMPLE2: &'static str = r#"
+    const EXAMPLE2: &str = r#"
 {
   "cpuTime": 132.897,
   "envs": {
@@ -442,6 +442,7 @@ mod tests {
 "#;
 
     #[test]
+    #[allow(clippy::float_cmp)]
     fn verify_load() {
         let load: EvaluationStats = serde_json::from_str(EXAMPLE).unwrap();
 
@@ -485,7 +486,7 @@ mod tests {
         println!("left:\n{}", left);
         println!("right:\n{}", right);
 
-        let lines = left.split("\n").zip(right.split("\n"));
+        let lines = left.split('\n').zip(right.split('\n'));
 
         for (idx, (linea, lineb)) in lines.enumerate() {
             assert_eq!(linea, lineb, "Line {}", idx);

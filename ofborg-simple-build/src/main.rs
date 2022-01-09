@@ -18,7 +18,7 @@ fn main() {
 
     log::info!("Running build...");
     match nix.safely_build_attrs(
-        &Path::new("./"),
+        Path::new("./"),
         nix::File::DefaultNixpkgs,
         vec![String::from("hello")],
     ) {

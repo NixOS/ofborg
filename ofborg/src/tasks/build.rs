@@ -281,7 +281,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         let span = debug_span!("job", pr = ?job.pr.number);
         let _enter = span.enter();
 
-        let mut actions = self.actions(&job, notifier);
+        let mut actions = self.actions(job, notifier);
 
         if job.attrs.is_empty() {
             debug!("No attrs to build");
@@ -397,7 +397,7 @@ mod tests {
     const SYSTEM: &str = "x86_64-darwin";
 
     fn nix() -> nix::Nix {
-        let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
+        let remote = env::var("NIX_REMOTE").unwrap_or_else(|_| "".to_owned());
         nix::Nix::new("x86_64-linux".to_owned(), remote, 1800, None)
     }
 
@@ -408,14 +408,13 @@ mod tests {
     fn make_worker(path: &Path) -> BuildWorker {
         let cloner = checkout::cached_cloner(path);
         let nix = nix();
-        let worker = BuildWorker::new(
+
+        BuildWorker::new(
             cloner,
             nix,
             SYSTEM.to_owned(),
             "cargo-test-build".to_owned(),
-        );
-
-        worker
+        )
     }
 
     fn make_pr_repo(bare: &Path, co: &Path) -> String {
@@ -451,21 +450,23 @@ mod tests {
                     eprintln!("{}", text);
                     if text.contains(text_to_match) {
                         println!(" ok");
-                        return true;
+                        true
                     } else {
                         println!(" notContains: {}", text);
-                        return false;
+                        false
                     }
                 }
                 e => {
                     println!(" notPublish: {:?}", e);
-                    return false;
+                    false
                 }
             })
-            .expect(&format!(
-                "Actions should contain a job matching {}, after the previous check",
-                text_to_match,
-            ));
+            .unwrap_or_else(|| {
+                panic!(
+                    "Actions should contain a job matching {}, after the previous check",
+                    text_to_match
+                )
+            });
     }
 
     #[test]

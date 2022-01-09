@@ -184,7 +184,7 @@ impl Nix {
             attrargs.push(argstr.to_owned());
         }
 
-        self.safe_command(&Operation::Evaluate, nixpkgs, &attrargs, &extra_paths)
+        self.safe_command(&Operation::Evaluate, nixpkgs, &attrargs, extra_paths)
     }
 
     pub fn safely_build_attrs(
@@ -233,7 +233,7 @@ impl Nix {
         args: Vec<String>,
         keep_stdout: bool,
     ) -> Result<fs::File, fs::File> {
-        self.run(self.safe_command(&op, nixpkgs, &args, &[]), keep_stdout)
+        self.run(self.safe_command(op, nixpkgs, &args, &[]), keep_stdout)
     }
 
     pub fn run(&self, mut cmd: Command, keep_stdout: bool) -> Result<fs::File, fs::File> {
@@ -395,7 +395,7 @@ mod tests {
         let path = env::var("PATH").unwrap();
         let test_path = format!("{}/test-nix/bin:{}", env!("CARGO_MANIFEST_DIR"), path);
         env::set_var("PATH", test_path);
-        let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
+        let remote = env::var("NIX_REMOTE").unwrap_or_else(|_| "".to_owned());
         Nix::new(SYSTEM.to_owned(), remote, 1800, None)
     }
 
@@ -485,11 +485,11 @@ mod tests {
                 "The run was expected to {:?}, but did not.",
                 expected
             ));
-            prefixes.push("".to_owned());
         } else {
             prefixes.push(format!("The run was expected to {:?}, and did.", expected));
-            prefixes.push("".to_owned());
         }
+
+        prefixes.push("".to_owned());
 
         let mut suffixes = vec![
             "".to_owned(),
@@ -616,7 +616,7 @@ mod tests {
 
     #[test]
     fn safe_command_custom_gc() {
-        let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
+        let remote = env::var("NIX_REMOTE").unwrap_or_else(|_| "".to_owned());
         let nix = Nix::new(SYSTEM.to_owned(), remote, 1800, Some("4g".to_owned()));
 
         let ret: Result<fs::File, fs::File> = nix.run(
@@ -759,7 +759,7 @@ mod tests {
 
         eprintln!("{:?}", ret.1[1].1);
         assert_eq!(ret.1[1].0, "missing-attr");
-        let s = strip_ansi(&ret.1[1].1.last().unwrap());
+        let s = strip_ansi(ret.1[1].1.last().unwrap());
         assert_eq!(
             s.trim_start_matches("error: "),
             "attribute 'missing-attr' in selection path 'missing-attr' not found"

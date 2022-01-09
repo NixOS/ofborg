@@ -54,7 +54,7 @@ impl worker::SimpleWorker for GitHubCommentPoster {
             PostableEvent::BuildQueued(queued_job) => {
                 repo = queued_job.job.repo.clone();
                 for architecture in queued_job.architectures.iter() {
-                    checks.push(job_to_check(&queued_job.job, &architecture, Utc::now()));
+                    checks.push(job_to_check(&queued_job.job, architecture, Utc::now()));
                 }
                 queued_job.job.pr.to_owned()
             }
@@ -140,7 +140,7 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
 
     let mut summary: Vec<String> = vec![];
     if let Some(ref attempted) = result.attempted_attrs {
-        summary.extend(list_segment("Attempted", &attempted));
+        summary.extend(list_segment("Attempted", attempted));
     }
 
     if result.status == BuildStatus::TimedOut {
@@ -153,7 +153,7 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
                 "The following builds were skipped because they don't evaluate on {}",
                 result.system
             ),
-            &skipped,
+            skipped,
         ));
     }
 

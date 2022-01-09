@@ -63,12 +63,12 @@ impl LogMessageCollector {
     }
 
     pub fn write_metadata(&mut self, from: &LogFrom, data: &BuildLogStart) -> Result<(), String> {
-        let metapath = self.path_for_metadata(&from)?;
+        let metapath = self.path_for_metadata(from)?;
         let mut fp = self.open_file(&metapath)?;
 
         match serde_json::to_string(data) {
             Ok(data) => {
-                if let Err(e) = fp.write(&data.as_bytes()) {
+                if let Err(e) = fp.write(data.as_bytes()) {
                     Err(format!("Failed to write metadata: {:?}", e))
                 } else {
                     Ok(())
@@ -79,12 +79,12 @@ impl LogMessageCollector {
     }
 
     pub fn write_result(&mut self, from: &LogFrom, data: &BuildResult) -> Result<(), String> {
-        let path = self.path_for_result(&from)?;
+        let path = self.path_for_result(from)?;
         let mut fp = self.open_file(&path)?;
 
         match serde_json::to_string(data) {
             Ok(data) => {
-                if let Err(e) = fp.write(&data.as_bytes()) {
+                if let Err(e) = fp.write(data.as_bytes()) {
                     Err(format!("Failed to write result: {:?}", e))
                 } else {
                     Ok(())
@@ -95,17 +95,17 @@ impl LogMessageCollector {
     }
 
     pub fn handle_for(&mut self, from: &LogFrom) -> Result<&mut LineWriter, String> {
-        if self.handles.contains_key(&from) {
+        if self.handles.contains_key(from) {
             Ok(self
                 .handles
-                .get_mut(&from)
+                .get_mut(from)
                 .expect("handles just contained the key"))
         } else {
-            let logpath = self.path_for_log(&from)?;
+            let logpath = self.path_for_log(from)?;
             let fp = self.open_file(&logpath)?;
             let writer = LineWriter::new(fp);
             self.handles.insert(from.clone(), writer);
-            if let Some(handle) = self.handles.get_mut(&from) {
+            if let Some(handle) = self.handles.get_mut(from) {
                 Ok(handle)
             } else {
                 Err(String::from(
@@ -213,7 +213,7 @@ impl worker::SimpleWorker for LogMessageCollector {
     fn consumer(&mut self, job: &LogMessage) -> worker::Actions {
         match job.message {
             MsgType::Start(ref start) => {
-                self.write_metadata(&job.from, &start)
+                self.write_metadata(&job.from, start)
                     .expect("failed to write metadata");
             }
             MsgType::Msg(ref message) => {
@@ -222,7 +222,7 @@ impl worker::SimpleWorker for LogMessageCollector {
                 handle.write_to_line((message.line_number - 1) as usize, &message.output);
             }
             MsgType::Finish(ref finish) => {
-                self.write_result(&job.from, &finish)
+                self.write_result(&job.from, finish)
                     .expect("failed to write result");
             }
         }
@@ -253,6 +253,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::many_single_char_names)]
     fn test_handle_for() {
         let p = TestScratch::new_dir("log-message-collector-handle_for");
 
@@ -409,7 +410,7 @@ mod tests {
             logmsg.attempt_id = String::from("my-other-attempt");
             logmsg.line_number = 3;
             logmsg.output = String::from("line-3");
-            job.message = MsgType::Msg(logmsg.clone());
+            job.message = MsgType::Msg(logmsg);
             assert_eq!(vec![worker::Action::Ack], worker.consumer(&job));
 
             assert_eq!(

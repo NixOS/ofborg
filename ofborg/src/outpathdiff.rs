@@ -58,11 +58,11 @@ impl OutPathDiff {
 
                 let removed: Vec<PackageArch> = orig_set
                     .difference(&cur_set)
-                    .map(|ref p| (**p).clone())
+                    .map(|p| (**p).clone())
                     .collect();
                 let added: Vec<PackageArch> = cur_set
                     .difference(&orig_set)
-                    .map(|ref p| (**p).clone())
+                    .map(|p| (**p).clone())
                     .collect();
                 Some((removed, added))
             } else {
@@ -149,7 +149,7 @@ mod tests {
     use super::*;
     use std::io::Cursor;
 
-    const TEST_LINES: &'static str = "
+    const TEST_LINES: &str = "
 kindlegen.x86_64-darwin                                                    /nix/store/sgabv7byhan6b0rjspd3p1bd7yw91f30-kindlegen-2.9
 python27Packages.pyinotify.i686-linux                                      /nix/store/rba0hbq6i4camvhpj9723dvs4b511ryn-python2.7-pyinotify-0.9.6
 pan.i686-linux                                                             /nix/store/6djnw9s2z5iy0c741qa8yk0k2v6bxrra-pan-0.139

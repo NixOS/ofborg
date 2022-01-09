@@ -215,7 +215,7 @@ mod tests {
         let lines: Vec<String> = spawned.lines().collect();
         assert_eq!(lines, vec!["hi"]);
         let ret = spawned.wait().unwrap().success();
-        assert_eq!(true, ret);
+        assert!(ret);
     }
 
     #[test]
@@ -235,7 +235,7 @@ mod tests {
         let lines: Vec<String> = spawned.lines().collect();
         assert_eq!(lines, vec!["stdout", "stderr", "stdout2", "stderr2"]);
         let ret = spawned.wait().unwrap().success();
-        assert_eq!(true, ret);
+        assert!(ret);
     }
 
     #[test]
@@ -246,11 +246,10 @@ mod tests {
         let acmd = AsyncCmd::new(cmd);
 
         let mut spawned = acmd.spawn();
-        let lines: Vec<String> = spawned.lines().collect();
-        assert_eq!(lines.len(), 20000);
+        assert_eq!(spawned.lines().count(), 20000);
         let thread_result = spawned.wait();
         let exit_status = thread_result.expect("Thread should exit correctly");
-        assert_eq!(true, exit_status.success());
+        assert!(exit_status.success());
     }
 
     #[test]
@@ -261,11 +260,10 @@ mod tests {
         let acmd = AsyncCmd::new(cmd);
 
         let mut spawned = acmd.spawn();
-        let lines: Vec<String> = spawned.lines().collect();
-        assert_eq!(lines.len(), 200000);
+        assert_eq!(spawned.lines().count(), 200000);
         let thread_result = spawned.wait();
         let exit_status = thread_result.expect("Thread should exit correctly");
-        assert_eq!(true, exit_status.success());
+        assert!(exit_status.success());
     }
 
     #[test]
@@ -286,6 +284,6 @@ mod tests {
             vec!["hi", "Non-UTF8 data omitted from the log.", "there"]
         );
         let ret = spawned.wait().unwrap().success();
-        assert_eq!(true, ret);
+        assert!(ret);
     }
 }
