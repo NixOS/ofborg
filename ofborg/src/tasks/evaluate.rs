@@ -298,8 +298,8 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
             Err(e) => {
                 self.events.notify(Event::IssueFetchFailed);
-                info!("Error fetching {}!", job.pr.number);
-                info!("E: {:?}", e);
+                error!("Error fetching {}!", job.pr.number);
+                error!("E: {:?}", e);
                 return Ok(self.actions().skip(&job));
             }
         };
