@@ -6,10 +6,11 @@ build = "build.rs"
 edition = "2018"
 
 [dependencies]
-async-std = "=1.5.0"
+async-std = { version = "=1.6.0", features = ["unstable"] }
 chrono = "0.4.6"
 either = "1.4.0"
 fs2 = "0.4.2"
+futures-util = "0.3.21"
 hubcaps = { git = "https://github.com/grahamc/hubcaps.git" }
 #hubcaps = { path = "../../../grahamc/hubcaps/" } # for testing patches
 hyper = "0.10.*"

@@ -41,6 +41,7 @@ pub struct RabbitMqConfig {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct NixConfig {
     pub system: String,
+    pub additional_build_systems: Option<Vec<String>>,
     pub remote: String,
     pub build_timeout_seconds: u16,
     pub initial_heap_size: Option<String>,

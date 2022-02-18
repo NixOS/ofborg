@@ -155,9 +155,9 @@ impl<'a> NotificationReceiver for ChannelNotificationReceiver<'a> {
 // but one could probably be implemented in terms of the other instead.
 pub struct NotifyChannel(pub Channel);
 
-impl<'a, W: SimpleNotifyWorker + 'a> ConsumerExt<'a, W> for NotifyChannel {
+impl<'a, W: SimpleNotifyWorker + 'a + Send> ConsumerExt<'a, W> for NotifyChannel {
     type Error = lapin::Error;
-    type Handle = Pin<Box<dyn Future<Output = ()> + 'a>>;
+    type Handle = Pin<Box<dyn Future<Output = ()> + 'a + Send>>;
 
     fn consume(self, worker: W, config: ConsumeConfig) -> Result<Self::Handle, Self::Error> {
         task::block_on(self.0.basic_qos(1, BasicQosOptions::default()))?;

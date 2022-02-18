@@ -97,7 +97,7 @@ impl fmt::Display for Operation {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Nix {
-    system: String,
+    pub system: String,
     remote: String,
     build_timeout: u16,
     limit_supported_systems: bool,

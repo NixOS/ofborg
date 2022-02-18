@@ -2,7 +2,8 @@ use std::env;
 use std::error::Error;
 use std::path::Path;
 
-use async_std::task;
+use async_std::task::{self, JoinHandle};
+use futures_util::future;
 use tracing::{info, warn};
 
 use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
@@ -17,9 +18,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let arg = env::args().nth(1).expect("usage: builder <config>");
     let cfg = config::load(arg.as_ref());
 
-    let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
-    let nix = cfg.nix();
-
     if !cfg.feedback.full_logs {
         warn!("Please define feedback.full_logs in your configuration to true!");
         warn!("feedback.full_logs when true will cause the full build log to be sent back");
@@ -31,7 +29,40 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     let conn = easylapin::from_config(&cfg.rabbitmq)?;
+    let handle = self::create_handle(&conn, &cfg, None)?;
+
+    if let Some(ref additional_build_systems) = cfg.nix.additional_build_systems {
+        let mut handles = vec![handle];
+
+        for system in additional_build_systems {
+            let handle_ext = self::create_handle(&conn, &cfg, Some(system.to_string()))?;
+            handles.push(handle_ext);
+        }
+
+        task::block_on(future::join_all(handles));
+    } else {
+        task::block_on(handle);
+    }
+
+    drop(conn); // Close connection.
+    info!("Closed the session... EOF");
+    Ok(())
+}
+
+fn create_handle(
+    conn: &lapin::Connection,
+    cfg: &config::Config,
+    system_override: Option<String>,
+) -> Result<JoinHandle<()>, Box<dyn Error>> {
     let mut chan = task::block_on(conn.create_channel())?;
+
+    let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
+    let nix = if let Some(system) = system_override {
+        cfg.nix().with_system(String::from(system))
+    } else {
+        cfg.nix()
+    };
+    let system = nix.system.clone();
 
     chan.declare_exchange(easyamqp::ExchangeConfig {
         exchange: "build-jobs".to_owned(),
@@ -44,7 +75,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     })?;
 
     let queue_name = if cfg.runner.build_all_jobs != Some(true) {
-        let queue_name = format!("build-inputs-{}", cfg.nix.system);
+        let queue_name = format!("build-inputs-{}", system);
         chan.declare_queue(easyamqp::QueueConfig {
             queue: queue_name.clone(),
             passive: false,
@@ -77,12 +108,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     })?;
 
     let handle = easylapin::NotifyChannel(chan).consume(
-        tasks::build::BuildWorker::new(
-            cloner,
-            nix,
-            cfg.nix.system.clone(),
-            cfg.runner.identity.clone(),
-        ),
+        tasks::build::BuildWorker::new(cloner, nix, system, cfg.runner.identity.clone()),
         easyamqp::ConsumeConfig {
             queue: queue_name.clone(),
             consumer_tag: format!("{}-builder", cfg.whoami()),
@@ -94,9 +120,5 @@ fn main() -> Result<(), Box<dyn Error>> {
     )?;
 
     info!("Fetching jobs from {}", &queue_name);
-    task::block_on(handle);
-
-    drop(conn); // Close connection.
-    info!("Closed the session... EOF");
-    Ok(())
+    Ok(task::spawn(handle))
 }
