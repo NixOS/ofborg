@@ -29,20 +29,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     let conn = easylapin::from_config(&cfg.rabbitmq)?;
-    let handle = self::create_handle(&conn, &cfg, None)?;
+    let mut handles = Vec::new();
 
-    if let Some(ref additional_build_systems) = cfg.nix.additional_build_systems {
-        let mut handles = vec![handle];
-
-        for system in additional_build_systems {
-            let handle_ext = self::create_handle(&conn, &cfg, Some(system.to_string()))?;
-            handles.push(handle_ext);
-        }
-
-        task::block_on(future::join_all(handles));
-    } else {
-        task::block_on(handle);
+    for system in &cfg.nix.system {
+        let handle_ext = self::create_handle(&conn, &cfg, system.to_string())?;
+        handles.push(handle_ext);
     }
+
+    task::block_on(future::join_all(handles));
 
     drop(conn); // Close connection.
     info!("Closed the session... EOF");
@@ -52,17 +46,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn create_handle(
     conn: &lapin::Connection,
     cfg: &config::Config,
-    system_override: Option<String>,
+    system: String,
 ) -> Result<JoinHandle<()>, Box<dyn Error>> {
     let mut chan = task::block_on(conn.create_channel())?;
 
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
-    let nix = if let Some(system) = system_override {
-        cfg.nix().with_system(String::from(system))
-    } else {
-        cfg.nix()
-    };
-    let system = nix.system.clone();
+    let nix = cfg.nix().with_system(system.clone());
 
     chan.declare_exchange(easyamqp::ExchangeConfig {
         exchange: "build-jobs".to_owned(),
