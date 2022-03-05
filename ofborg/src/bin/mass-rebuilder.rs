@@ -38,10 +38,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
     let nix = cfg.nix();
 
-    let events = stats::RabbitMq::from_lapin(
-        &format!("{}-{}", cfg.runner.identity, cfg.nix.system),
-        task::block_on(conn.create_channel())?,
-    );
+    let events = stats::RabbitMq::from_lapin(&cfg.whoami(), task::block_on(conn.create_channel())?);
 
     let queue_name = String::from("mass-rebuild-check-jobs");
     chan.declare_queue(easyamqp::QueueConfig {
