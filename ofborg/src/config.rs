@@ -2,14 +2,17 @@ use crate::acl;
 use crate::nix::Nix;
 
 use std::collections::HashMap;
+use std::fmt;
 use std::fs::File;
 use std::io::Read;
+use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 
 use hubcaps::{Credentials, Github, InstallationTokenGenerator, JWTCredentials};
 use hyper::net::HttpsConnector;
 use hyper::Client;
 use hyper_native_tls::NativeTlsClient;
+use serde::de::{self, Deserialize, Deserializer};
 use tracing::{debug, error, info, warn};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -40,7 +43,8 @@ pub struct RabbitMqConfig {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct NixConfig {
-    pub system: String,
+    #[serde(deserialize_with = "deserialize_one_or_many")]
+    pub system: Vec<String>,
     pub remote: String,
     pub build_timeout_seconds: u16,
     pub initial_heap_size: Option<String>,
@@ -87,7 +91,7 @@ pub struct CheckoutConfig {
 
 impl Config {
     pub fn whoami(&self) -> String {
-        format!("{}-{}", self.runner.identity, self.nix.system)
+        format!("{}-{}", self.runner.identity, self.nix.system.join(","))
     }
 
     pub fn acl(&self) -> acl::Acl {
@@ -135,7 +139,11 @@ impl Config {
         }
 
         Nix::new(
-            self.nix.system.clone(),
+            self.nix
+                .system
+                .first()
+                .expect("expected at least one system")
+                .clone(),
             self.nix.remote.clone(),
             self.nix.build_timeout_seconds,
             self.nix.initial_heap_size.clone(),
@@ -222,4 +230,36 @@ impl GithubAppVendingMachine {
             )
         }))
     }
+}
+
+// Copied from https://stackoverflow.com/a/43627388
+fn deserialize_one_or_many<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    struct StringOrVec(PhantomData<Vec<String>>);
+
+    impl<'de> de::Visitor<'de> for StringOrVec {
+        type Value = Vec<String>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("string or list of strings")
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(vec![value.to_owned()])
+        }
+
+        fn visit_seq<S>(self, visitor: S) -> Result<Self::Value, S::Error>
+        where
+            S: de::SeqAccess<'de>,
+        {
+            Deserialize::deserialize(de::value::SeqAccessDeserializer::new(visitor))
+        }
+    }
+
+    deserializer.deserialize_any(StringOrVec(PhantomData))
 }

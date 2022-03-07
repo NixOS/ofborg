@@ -18,10 +18,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let conn = easylapin::from_config(&cfg.rabbitmq)?;
     let mut chan = task::block_on(conn.create_channel())?;
 
-    let events = stats::RabbitMq::from_lapin(
-        &format!("{}-{}", cfg.runner.identity, cfg.nix.system),
-        task::block_on(conn.create_channel())?,
-    );
+    let events = stats::RabbitMq::from_lapin(&cfg.whoami(), task::block_on(conn.create_channel())?);
 
     let metrics = stats::MetricCollector::new();
     let collector = tasks::statscollector::StatCollectorWorker::new(events, metrics.clone());
