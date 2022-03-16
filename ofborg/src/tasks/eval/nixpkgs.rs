@@ -21,6 +21,7 @@ use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
 use hubcaps::gists::Gists;
 use hubcaps::issues::{Issue, IssueRef};
 use hubcaps::repositories::Repository;
+use regex::Regex;
 use tracing::{info, warn};
 use uuid::Uuid;
 
@@ -31,6 +32,19 @@ const TITLE_LABELS: [(&str, &str); 3] = [
     ("darwin", "6.topic: darwin"),
     ("macos", "6.topic: darwin"),
 ];
+
+fn label_from_title(title: &str) -> Vec<String> {
+    let labels: Vec<_> = TITLE_LABELS
+        .iter()
+        .filter(|(word, _label)| {
+            let re = Regex::new(&format!("\\b{}\\b", word)).unwrap();
+            re.is_match(&title)
+        })
+        .map(|(_word, label)| (*label).into())
+        .collect();
+
+    labels
+}
 
 pub struct NixpkgsStrategy<'a> {
     job: &'a EvaluationJob,
@@ -78,11 +92,7 @@ impl<'a> NixpkgsStrategy<'a> {
             Err(_) => return,
         };
 
-        let labels: Vec<_> = TITLE_LABELS
-            .iter()
-            .filter(|(word, _label)| title.contains(word))
-            .map(|(_word, label)| (*label).into())
-            .collect();
+        let labels = label_from_title(&title);
 
         if labels.is_empty() {
             return;
@@ -660,6 +670,34 @@ mod tests {
                 .collect::<Vec<String>>(),
             ),
             expect
+        );
+    }
+
+    #[test]
+    fn test_label_platform_from_title() {
+        assert_eq!(
+            label_from_title("libsdl: 1.0.0 -> 1.1.0"),
+            Vec::<String>::new()
+        );
+        assert_eq!(
+            label_from_title("fix build on bsd"),
+            vec![String::from("6.topic: bsd")]
+        );
+        assert_eq!(
+            label_from_title("fix build on darwin"),
+            vec![String::from("6.topic: darwin")]
+        );
+        assert_eq!(
+            label_from_title("fix build on macos"),
+            vec![String::from("6.topic: darwin")]
+        );
+        assert_eq!(
+            label_from_title("fix build on bsd and darwin").sort(),
+            vec![
+                String::from("6.topic: darwin"),
+                String::from("6.topic: bsd")
+            ]
+            .sort()
         );
     }
 }
