@@ -680,6 +680,14 @@ mod tests {
             Vec::<String>::new()
         );
         assert_eq!(
+            label_from_title("darwini: init at 1.0.0"),
+            Vec::<String>::new()
+        );
+        assert_eq!(
+            label_from_title("sigmacosine: init at 1.0.0"),
+            Vec::<String>::new()
+        );
+        assert_eq!(
             label_from_title("fix build on bsd"),
             vec![String::from("6.topic: bsd")]
         );
