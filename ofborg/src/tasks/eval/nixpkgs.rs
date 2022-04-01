@@ -448,18 +448,6 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
                 self.nix.clone(),
             ),
             EvalChecker::new(
-                "package-list-no-aliases",
-                nix::Operation::QueryPackagesJson,
-                vec![
-                    String::from("--file"),
-                    String::from("."),
-                    String::from("--arg"),
-                    String::from("config"),
-                    String::from("{ allowAliases = false; }"),
-                ],
-                self.nix.clone(),
-            ),
-            EvalChecker::new(
                 "lib-tests",
                 nix::Operation::Build,
                 vec![
