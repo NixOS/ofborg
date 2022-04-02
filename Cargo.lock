@@ -566,7 +566,7 @@ checksum = "f3a87b616e37e93c22fb19bcd386f02f3af5ea98a25670ad0fce773de23c5e68"
 [[package]]
 name = "hubcaps"
 version = "0.3.16"
-source = "git+https://github.com/grahamc/hubcaps.git#22ab34e2dc8804deebb5dd7ad9b796268f405780"
+source = "git+https://github.com/grahamc/hubcaps.git#de1e1521ee78b5df5e1435619c8e1b90c932d36b"
 dependencies = [
  "error-chain",
  "frank_jwt",
