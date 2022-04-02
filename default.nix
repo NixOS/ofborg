@@ -34,7 +34,7 @@ let
     cargoLock = {
       lockFile = ./Cargo.lock;
       outputHashes = {
-        "hubcaps-0.3.16" = "sha256-fM0i8XTMyCuGtuHrhy1KNk+sJQ/clPnz4bjQkXkfslw=";
+        "hubcaps-0.3.16" = "sha256-/BFXGccu27K8heK4IL7JnS/U7zatTk9wRybhtxppADM=";
       };
     };
   };
