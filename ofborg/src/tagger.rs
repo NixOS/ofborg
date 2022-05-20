@@ -160,6 +160,7 @@ impl RebuildTagger {
                 "x86_64-darwin" => {
                     counter_darwin += 1;
                 }
+                "aarch64-darwin" => {}
                 "x86_64-linux" => {
                     counter_linux += 1;
                 }
