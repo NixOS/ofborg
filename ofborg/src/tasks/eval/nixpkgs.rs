@@ -588,13 +588,19 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
 fn request_reviews(maint: &maintainers::ImpactedMaintainers, pull: &hubcaps::pulls::PullRequest) {
     let pull_meta = pull.get();
 
+    info!("Impacted maintainers: {:?}", maint.maintainers());
     if maint.maintainers().len() < 10 {
         for maintainer in maint.maintainers() {
-            if let Ok(meta) = &pull_meta {
-                // GitHub doesn't let us request a review from the PR author, so
-                // we silently skip them.
-                if meta.user.login.to_ascii_lowercase() == maintainer.to_ascii_lowercase() {
-                    continue;
+            match &pull_meta {
+                Ok(meta) => {
+                    // GitHub doesn't let us request a review from the PR author, so
+                    // we silently skip them.
+                    if meta.user.login.to_ascii_lowercase() == maintainer.to_ascii_lowercase() {
+                        continue;
+                    }
+                }
+                Err(e) => {
+                    warn!("PR meta was invalid? {:?}", e);
                 }
             }
 
@@ -608,6 +614,11 @@ fn request_reviews(maint: &maintainers::ImpactedMaintainers, pull: &hubcaps::pul
                 warn!("Failure requesting a review from {}: {:?}", maintainer, e,);
             }
         }
+    } else {
+        warn!(
+            "Too many reviewers ({}), skipping review requests",
+            maint.maintainers().len()
+        );
     }
 }
 
