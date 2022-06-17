@@ -13,7 +13,7 @@ fs2 = "0.4.2"
 futures-util = "0.3.21"
 hubcaps = { git = "https://github.com/grahamc/hubcaps.git" }
 #hubcaps = { path = "../../../grahamc/hubcaps/" } # for testing patches
-hyper = "0.10.*"
+hyper = "0.14.*"
 hyper-native-tls = "0.3.0"
 lapin = "1.0.0"
 lru-cache = "0.1.1"
