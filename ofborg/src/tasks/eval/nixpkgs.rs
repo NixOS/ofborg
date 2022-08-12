@@ -485,7 +485,7 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
             ),
             EvalChecker::new(
                 "nixos-options",
-                nix::Operation::Instantiate,
+                nix::Operation::Build,
                 vec![
                     String::from("--arg"),
                     String::from("nixpkgs"),
@@ -498,7 +498,7 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
             ),
             EvalChecker::new(
                 "nixos-manual",
-                nix::Operation::Instantiate,
+                nix::Operation::Build,
                 vec![
                     String::from("--arg"),
                     String::from("nixpkgs"),
