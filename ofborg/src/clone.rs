@@ -144,21 +144,46 @@ pub trait GitClonable {
 
     fn checkout(&self, git_ref: &OsStr) -> Result<(), Error> {
         let mut lock = self.lock()?;
+        let current_dir = self.clone_to();
 
         debug!("git checkout {:?}", git_ref);
-        let result = Command::new("git")
-            .arg("checkout")
-            .arg(git_ref)
-            .current_dir(self.clone_to())
-            .stdout(Stdio::null())
-            .status()?;
-
-        lock.unlock();
+        let git_checkout = || {
+            Command::new("git")
+                .arg("checkout")
+                .arg(git_ref)
+                .current_dir(&current_dir)
+                .stdout(Stdio::null())
+                .status()
+        };
+        let result = git_checkout()?;
 
         if result.success() {
+            lock.unlock();
             Ok(())
         } else {
-            Err(Error::new(ErrorKind::Other, "Failed to checkout"))
+            warn!(
+                "failed to checkout {:?}, attempting to clean up checkout",
+                git_ref
+            );
+
+            // see if cleaning up the checkout will fix the issue
+            debug!("git clean -dfx in {:?}", &current_dir);
+            Command::new("git")
+                .args(&["clean", "-dfx"])
+                .current_dir(&current_dir)
+                .stdout(Stdio::null())
+                .status()?;
+
+            // try again, in case it was just an unclean checkout causing issues
+            debug!("git checkout attempt two {:?}", git_ref);
+            let result = git_checkout()?;
+
+            if result.success() {
+                lock.unlock();
+                Ok(())
+            } else {
+                Err(Error::new(ErrorKind::Other, "Failed to checkout"))
+            }
         }
     }
 }
