@@ -1,0 +1,158 @@
+{
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-22.05";
+  };
+
+  outputs =
+    { self
+    , nixpkgs
+    , ...
+    }@inputs:
+    let
+      supportedSystems = [ "aarch64-darwin" "x86_64-darwin" "x86_64-linux" "aarch64-linux" ];
+      forAllSystems = f: nixpkgs.lib.genAttrs supportedSystems (system: f system);
+    in
+    {
+      # TODO(cole-h): see if we still need these overlays
+      # overlays.default = import ./nix/overlay.nix;
+      overlays.default = _: _: { };
+
+      devShells = forAllSystems
+        (system:
+          let
+            pkgs = import nixpkgs {
+              inherit system;
+              overlays = [ self.overlays.default ];
+            };
+
+            phpEnv = pkgs.mkShell {
+              name = "gh-event-forwarder";
+              buildInputs = with pkgs; [
+                nix-prefetch-git
+                php
+                phpPackages.composer
+                git
+                php
+                curl
+                bash
+              ];
+            };
+          in
+          {
+            default = pkgs.mkShell {
+              name = "gh-event-forwarder";
+              nativeBuildInputs = with pkgs; [
+                nix # so in --pure mode we actually find the "correct" nix
+                bash
+                nix-prefetch-git
+                rustc
+                cargo
+                clippy
+                rustfmt
+                pkg-config
+                git
+              ];
+              buildInputs = with pkgs; [
+                openssl
+              ] ++ lib.optionals stdenv.isDarwin [ darwin.Security libiconv ];
+
+              postHook = ''
+                checkPhase() (
+                    cd "${builtins.toString ./.}/ofborg"
+                    set -x
+                    cargo fmt
+                    git diff --exit-code
+                    cargofmtexit=$?
+
+                    cargo clippy
+                    cargoclippyexit=$?
+
+                    cargo build && cargo test
+                    cargotestexit=$?
+
+                    sum=$((cargofmtexit + cargoclippyexit + cargotestexit))
+                    exit $sum
+                )
+              '';
+
+              RUSTFLAGS = "-D warnings";
+              RUST_BACKTRACE = "1";
+              RUST_LOG = "ofborg=debug";
+              NIX_PATH = "nixpkgs=${pkgs.path}";
+              passthru.phpEnv = phpEnv;
+            };
+          });
+
+      packages = forAllSystems (system:
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            overlays = [ self.overlays.default ];
+          };
+
+          pkg = pkgs.rustPlatform.buildRustPackage {
+            name = "ofborg";
+            src = pkgs.nix-gitignore.gitignoreSource [ ] ./.;
+
+            nativeBuildInputs = with pkgs; [
+              pkgconfig
+              pkgs.rustPackages.clippy
+            ];
+
+            buildInputs = with pkgs; [
+              openssl
+            ] ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [
+              darwin.apple_sdk.frameworks.Security
+              darwin.apple_sdk.frameworks.CoreFoundation
+            ]);
+
+            preBuild = ''
+              cargo clippy
+            '';
+
+            doCheck = false; # Tests require access to a /nix/ and a nix daemon
+            checkInputs = with pkgs; [
+              nix
+            ];
+
+            cargoLock = {
+              lockFile = ./Cargo.lock;
+              outputHashes = {
+                "hubcaps-0.3.16" = "sha256-/BFXGccu27K8heK4IL7JnS/U7zatTk9wRybhtxppADM=";
+              };
+            };
+          };
+
+        in
+        rec {
+          inherit pkg;
+
+          ofborg.rs = pkgs.runCommand "ofborg-rs-symlink-compat" { src = pkg; } ''
+            mkdir -p $out/bin
+            for f in $(find $src -type f); do
+              bn=$(basename "$f")
+              ln -s "$f" "$out/bin/$bn"
+
+              # Rust 1.n? or Cargo  starting outputting bins with dashes
+              # instead of underscores ... breaking all the callers.
+              if echo "$bn" | grep -q "-"; then
+                ln -s "$f" "$out/bin/$(echo "$bn" | tr '-' '_')"
+              fi
+            done
+
+            test -e $out/bin/builder
+            test -e $out/bin/github_comment_filter
+            test -e $out/bin/github_comment_poster
+            test -e $out/bin/log_message_collector
+            test -e $out/bin/evaluation_filter
+          '';
+
+          ofborg.php = import ./php { inherit pkgs; };
+        });
+
+      hydraJobs = {
+        buildRs = forAllSystems (system: self.packages.${system}.ofborg.rs);
+        buildPhp = self.packages.x86_64-linux.ofborg.php;
+      };
+    };
+}
