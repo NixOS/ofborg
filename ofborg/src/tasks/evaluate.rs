@@ -236,18 +236,18 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 // There was an error during eval, but we successfully
                 // updated the PR.
 
-                self.actions().skip(&self.job)
+                self.actions().skip(self.job)
             }
             Err(Err(CommitStatusError::ExpiredCreds(e))) => {
                 error!("Failed writing commit status: creds expired: {:?}", e);
-                self.actions().retry_later(&self.job)
+                self.actions().retry_later(self.job)
             }
             Err(Err(CommitStatusError::MissingSha(e))) => {
                 error!(
                     "Failed writing commit status: commit sha was force-pushed away: {:?}",
                     e
                 );
-                self.actions().skip(&self.job)
+                self.actions().skip(self.job)
             }
 
             Err(Err(CommitStatusError::Error(cswerr))) => {
@@ -258,7 +258,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 let issue_ref = self.repo.issue(self.job.pr.number);
                 update_labels(&issue_ref, &[String::from("ofborg-internal-error")], &[]);
 
-                self.actions().skip(&self.job)
+                self.actions().skip(self.job)
             }
         }
     }
@@ -281,7 +281,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 if iss.state == "closed" {
                     self.events.notify(Event::IssueAlreadyClosed);
                     info!("Skipping {} because it is closed", job.pr.number);
-                    return Ok(self.actions().skip(&job));
+                    return Ok(self.actions().skip(job));
                 }
 
                 if issue_is_wip(&iss) {
@@ -300,13 +300,13 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 self.events.notify(Event::IssueFetchFailed);
                 error!("Error fetching {}!", job.pr.number);
                 error!("E: {:?}", e);
-                return Ok(self.actions().skip(&job));
+                return Ok(self.actions().skip(job));
             }
         };
 
         let mut evaluation_strategy: Box<dyn eval::EvaluationStrategy> = if job.is_nixpkgs() {
             Box::new(eval::NixpkgsStrategy::new(
-                &job,
+                job,
                 &pull,
                 &issue,
                 &issue_ref,
@@ -359,7 +359,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             )?;
 
             info!("PR targets a nixos-* or nixpkgs-* branch");
-            return Ok(self.actions().skip(&job));
+            return Ok(self.actions().skip(job));
         };
 
         overall_status.set_with_description(
@@ -369,7 +369,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         info!("Checking out target branch {}", &target_branch);
         let refpath = co.checkout_origin_ref(target_branch.as_ref()).unwrap();
 
-        evaluation_strategy.on_target_branch(&Path::new(&refpath), &mut overall_status)?;
+        evaluation_strategy.on_target_branch(Path::new(&refpath), &mut overall_status)?;
 
         let target_branch_rebuild_sniff_start = Instant::now();
 
@@ -389,7 +389,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 .set_with_description("Commit not found", hubcaps::statuses::State::Error)?;
 
             info!("Commit {} doesn't exist", job.pr.head_sha);
-            return Ok(self.actions().skip(&job));
+            return Ok(self.actions().skip(job));
         }
 
         evaluation_strategy.after_fetch(&co)?;
@@ -404,7 +404,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
             evaluation_strategy.merge_conflict();
 
-            return Ok(self.actions().skip(&job));
+            return Ok(self.actions().skip(job));
         }
 
         evaluation_strategy.after_merge(&mut overall_status)?;
@@ -464,7 +464,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         if eval_results {
             let complete = evaluation_strategy
-                .all_evaluations_passed(&Path::new(&refpath), &mut overall_status)?;
+                .all_evaluations_passed(Path::new(&refpath), &mut overall_status)?;
 
             send_check_statuses(complete.checks, &repo);
             response.extend(schedule_builds(complete.builds, auto_schedule_build_archs));
@@ -478,7 +478,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         self.events.notify(Event::TaskEvaluationCheckComplete);
 
         info!("Evaluations done!");
-        Ok(self.actions().done(&job, response))
+        Ok(self.actions().done(job, response))
     }
 }
 
@@ -628,7 +628,7 @@ pub fn get_prefix<'a>(
     sha: &'a str,
 ) -> Result<&'a str, CommitStatusError> {
     if statuses
-        .list(&sha)?
+        .list(sha)?
         .iter()
         .any(|s| s.context.starts_with("grahamcofborg-"))
     {

@@ -68,7 +68,7 @@ mod tests {
         let data = include_str!("../../test-srcs/events/pr-changed-base.json");
 
         let pr: PullRequestEvent =
-            serde_json::from_str(&data.to_string()).expect("Should properly deserialize");
+            serde_json::from_str(data).expect("Should properly deserialize");
         assert_eq!(pr.action, PullRequestAction::Edited);
     }
 
@@ -77,7 +77,7 @@ mod tests {
         let data = include_str!("../../test-srcs/events/pr-converted-to-draft.json");
 
         let pr: PullRequestEvent =
-            serde_json::from_str(&data.to_string()).expect("Should properly deserialize");
+            serde_json::from_str(data).expect("Should properly deserialize");
         assert_eq!(pr.action, PullRequestAction::Unknown);
     }
 }

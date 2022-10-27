@@ -55,16 +55,10 @@ impl MetricType {
     }
 
     fn enum_index_types(&self) -> Vec<String> {
-        let event: &Metric;
-
-        match self {
-            MetricType::Ticker(ref i_event) => {
-                event = i_event;
-            }
-            MetricType::Counter(ref i_event) => {
-                event = i_event;
-            }
-        }
+        let event: &Metric = match self {
+            MetricType::Ticker(ref i_event) => i_event,
+            MetricType::Counter(ref i_event) => i_event,
+        };
 
         let fields: Vec<String> = event
             .fields
@@ -92,16 +86,10 @@ impl MetricType {
     }
 
     fn enum_index_names(&self) -> Vec<String> {
-        let event: &Metric;
-
-        match self {
-            MetricType::Ticker(ref i_event) => {
-                event = i_event;
-            }
-            MetricType::Counter(ref i_event) => {
-                event = i_event;
-            }
-        }
+        let event: &Metric = match self {
+            MetricType::Ticker(ref i_event) => i_event,
+            MetricType::Counter(ref i_event) => i_event,
+        };
 
         let fields: Vec<String> = event
             .fields

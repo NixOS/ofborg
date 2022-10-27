@@ -2,7 +2,7 @@ use crate::message::{Pr, Repo};
 use crate::worker;
 
 pub fn from(data: &[u8]) -> Result<EvaluationJob, serde_json::error::Error> {
-    serde_json::from_slice(&data)
+    serde_json::from_slice(data)
 }
 
 #[derive(Serialize, Deserialize, Debug)]

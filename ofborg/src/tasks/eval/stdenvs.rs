@@ -132,7 +132,7 @@ mod tests {
 
         let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
         let nix = nix::Nix::new(String::from("x86_64-linux"), remote, 1200, None);
-        let mut stdenv = Stdenvs::new(nix.clone(), PathBuf::from(nixpkgs.trim_end()));
+        let mut stdenv = Stdenvs::new(nix, PathBuf::from(nixpkgs.trim_end()));
         stdenv.identify(System::X8664Linux, StdenvFrom::Before);
         stdenv.identify(System::X8664Darwin, StdenvFrom::Before);
 

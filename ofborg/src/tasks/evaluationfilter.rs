@@ -108,7 +108,7 @@ mod tests {
         let data = include_str!("../../test-srcs/events/pr-changed-base.json");
 
         let job: ghevent::PullRequestEvent =
-            serde_json::from_str(&data.to_string()).expect("Should properly deserialize");
+            serde_json::from_str(data).expect("Should properly deserialize");
 
         let mut worker = EvaluationFilterWorker::new(acl::Acl::new(
             vec!["nixos/nixpkgs".to_owned()],

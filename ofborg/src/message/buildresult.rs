@@ -149,7 +149,7 @@ impl BuildResult {
                 ref status,
                 ref success,
                 ..
-            } => status.to_owned().unwrap_or_else(|| {
+            } => status.to_owned().unwrap_or({
                 // Fallback for old format.
                 match *success {
                     None => BuildStatus::Skipped,

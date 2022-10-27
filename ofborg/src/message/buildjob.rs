@@ -47,7 +47,7 @@ impl BuildJob {
 }
 
 pub fn from(data: &[u8]) -> Result<BuildJob, serde_json::error::Error> {
-    serde_json::from_slice(&data)
+    serde_json::from_slice(data)
 }
 
 pub struct Actions {
