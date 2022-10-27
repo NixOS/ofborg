@@ -38,7 +38,7 @@ fn label_from_title(title: &str) -> Vec<String> {
         .iter()
         .filter(|(word, _label)| {
             let re = Regex::new(&format!("\\b{}\\b", word)).unwrap();
-            re.is_match(&title)
+            re.is_match(title)
         })
         .map(|(_word, label)| (*label).into())
         .collect();
@@ -98,7 +98,7 @@ impl<'a> NixpkgsStrategy<'a> {
             return;
         }
 
-        update_labels(&self.issue_ref, &labels, &[]);
+        update_labels(self.issue_ref, &labels, &[]);
     }
 
     fn check_stdenvs_before(&mut self, dir: &Path) {
@@ -120,7 +120,7 @@ impl<'a> NixpkgsStrategy<'a> {
                 stdenvtagger.changed(stdenvs.changed());
             }
             update_labels(
-                &self.issue_ref,
+                self.issue_ref,
                 &stdenvtagger.tags_to_add(),
                 &stdenvtagger.tags_to_remove(),
             );
@@ -199,7 +199,7 @@ impl<'a> NixpkgsStrategy<'a> {
                 let mut addremovetagger = PkgsAddedRemovedTagger::new();
                 addremovetagger.changed(&removed, &added);
                 update_labels(
-                    &self.issue_ref,
+                    self.issue_ref,
                     &addremovetagger.tags_to_add(),
                     &addremovetagger.tags_to_remove(),
                 );
@@ -218,14 +218,14 @@ impl<'a> NixpkgsStrategy<'a> {
             if let Some(attrs) = rebuildsniff.calculate_rebuild() {
                 if !attrs.is_empty() {
                     overall_status.set_url(self.gist_changed_paths(&attrs));
-                    self.record_impacted_maintainers(&dir, &attrs)?;
+                    self.record_impacted_maintainers(dir, &attrs)?;
                 }
 
                 rebuild_tags.parse_attrs(attrs);
             }
 
             update_labels(
-                &self.issue_ref,
+                self.issue_ref,
                 &rebuild_tags.tags_to_add(),
                 &rebuild_tags.tags_to_remove(),
             );
@@ -235,7 +235,7 @@ impl<'a> NixpkgsStrategy<'a> {
 
     fn gist_changed_paths(&self, attrs: &[PackageArch]) -> Option<String> {
         make_gist(
-            &self.gists,
+            self.gists,
             "Changed Paths",
             Some("".to_owned()),
             attrs
@@ -255,13 +255,13 @@ impl<'a> NixpkgsStrategy<'a> {
         if let Some(ref changed_paths) = self.changed_paths {
             let m = ImpactedMaintainers::calculate(
                 &self.nix,
-                &dir.to_path_buf(),
-                &changed_paths,
+                dir,
+                changed_paths,
                 &changed_attributes,
             );
 
             let gist_url = make_gist(
-                &self.gists,
+                self.gists,
                 "Potential Maintainers",
                 Some("".to_owned()),
                 match m {
@@ -298,12 +298,12 @@ impl<'a> NixpkgsStrategy<'a> {
             status.set(hubcaps::statuses::State::Success)?;
 
             if let Ok(ref maint) = m {
-                request_reviews(&maint, &self.pull);
+                request_reviews(maint, self.pull);
                 let mut maint_tagger = MaintainerPrTagger::new();
                 maint_tagger
                     .record_maintainer(&self.issue.user.login, &maint.maintainers_by_package());
                 update_labels(
-                    &self.issue_ref,
+                    self.issue_ref,
                     &maint_tagger.tags_to_add(),
                     &maint_tagger.tags_to_remove(),
                 );
@@ -332,7 +332,7 @@ impl<'a> NixpkgsStrategy<'a> {
                     let mut try_build: Vec<String> = pkgs
                         .keys()
                         .map(|pkgarch| pkgarch.package.clone())
-                        .filter(|pkg| possibly_touched_packages.contains(&pkg))
+                        .filter(|pkg| possibly_touched_packages.contains(pkg))
                         .flat_map(|pkg| vec![pkg.clone(), pkg + ".passthru.tests"].into_iter())
                         .collect();
                     try_build.sort();
@@ -360,7 +360,7 @@ impl<'a> NixpkgsStrategy<'a> {
                     }
                 }
                 Err(out) => {
-                    status.set_url(make_gist(&self.gists, "Meta Check", None, out.display()));
+                    status.set_url(make_gist(self.gists, "Meta Check", None, out.display()));
                     status.set(hubcaps::statuses::State::Failure)?;
                     Err(Error::Fail(String::from(
                         "Failed to validate package metadata.",
@@ -411,7 +411,7 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
 
     fn merge_conflict(&mut self) {
         update_labels(
-            &self.issue_ref,
+            self.issue_ref,
             &["2.status: merge conflict".to_owned()],
             &[],
         );
@@ -419,7 +419,7 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
 
     fn after_merge(&mut self, status: &mut CommitStatus) -> StepResult<()> {
         update_labels(
-            &self.issue_ref,
+            self.issue_ref,
             &[],
             &["2.status: merge conflict".to_owned()],
         );
@@ -577,10 +577,10 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
         )?;
 
         self.update_new_package_labels();
-        self.update_rebuild_labels(&dir, status)?;
+        self.update_rebuild_labels(dir, status)?;
         let checks = self.performance_stats();
 
-        let builds = self.check_meta_queue_builds(&dir)?;
+        let builds = self.check_meta_queue_builds(dir)?;
         Ok(EvaluationComplete { builds, checks })
     }
 }

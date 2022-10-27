@@ -184,7 +184,7 @@ impl Nix {
             attrargs.push(argstr.to_owned());
         }
 
-        self.safe_command(&Operation::Evaluate, nixpkgs, &attrargs, &extra_paths)
+        self.safe_command(&Operation::Evaluate, nixpkgs, &attrargs, extra_paths)
     }
 
     pub fn safely_build_attrs(
@@ -233,7 +233,7 @@ impl Nix {
         args: Vec<String>,
         keep_stdout: bool,
     ) -> Result<fs::File, fs::File> {
-        self.run(self.safe_command(&op, nixpkgs, &args, &[]), keep_stdout)
+        self.run(self.safe_command(op, nixpkgs, &args, &[]), keep_stdout)
     }
 
     pub fn run(&self, mut cmd: Command, keep_stdout: bool) -> Result<fs::File, fs::File> {
@@ -431,8 +431,8 @@ mod tests {
 
     fn strip_ansi(string: &str) -> String {
         string
-            .replace("‘", "'")
-            .replace("’", "'")
+            .replace('‘', "'")
+            .replace('’', "'")
             .replace("\u{1b}[31;1m", "") // red
             .replace("\u{1b}[0m", "") // reset
     }
@@ -759,7 +759,7 @@ mod tests {
 
         eprintln!("{:?}", ret.1[1].1);
         assert_eq!(ret.1[1].0, "missing-attr");
-        let s = strip_ansi(&ret.1[1].1.last().unwrap());
+        let s = strip_ansi(ret.1[1].1.last().unwrap());
         assert_eq!(
             s.trim_start_matches("error: "),
             "attribute 'missing-attr' in selection path 'missing-attr' not found"
@@ -824,7 +824,7 @@ mod tests {
         assert_run(
             ret,
             Expect::Fail,
-            vec!["access to path", "is forbidden in restricted mode"],
+            vec!["access to absolute path", "is forbidden in restricted mode"],
         );
     }
 
@@ -860,7 +860,10 @@ mod tests {
         assert_run(
             ret,
             Expect::Fail,
-            vec!["access to path '/fake'", "is forbidden in restricted mode"],
+            vec![
+                "access to absolute path '/fake'",
+                "is forbidden in restricted mode",
+            ],
         );
     }
 }

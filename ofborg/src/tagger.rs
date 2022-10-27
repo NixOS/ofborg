@@ -42,7 +42,7 @@ impl StdenvTagger {
         }
 
         for tag in &self.selected {
-            if !self.possible.contains(&tag) {
+            if !self.possible.contains(tag) {
                 panic!(
                     "Tried to add label {} but it isn't in the possible list!",
                     tag
@@ -58,7 +58,7 @@ impl StdenvTagger {
     pub fn tags_to_remove(&self) -> Vec<String> {
         let mut remove = self.possible.clone();
         for tag in &self.selected {
-            let pos = remove.binary_search(&tag).unwrap();
+            let pos = remove.binary_search(tag).unwrap();
             remove.remove(pos);
         }
 
@@ -188,7 +188,7 @@ impl RebuildTagger {
         );
 
         for tag in &self.selected {
-            if !self.possible.contains(&tag) {
+            if !self.possible.contains(tag) {
                 panic!(
                     "Tried to add label {} but it isn't in the possible list!",
                     tag

@@ -41,7 +41,7 @@ impl SysEvents for RabbitMq<lapin::Channel> {
                 .channel
                 .basic_publish(
                     &String::from("stats"),
-                    &"".to_owned(),
+                    "",
                     BasicPublishOptions::default(),
                     serde_json::to_string(&EventMessage {
                         sender: self.identity.clone(),

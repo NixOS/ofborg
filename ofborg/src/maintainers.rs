@@ -67,7 +67,7 @@ impl ImpactedMaintainers {
         argstrs.insert("changedpathsjson", path_file.path().to_str().unwrap());
 
         let mut cmd = nix.safely_evaluate_expr_cmd(
-            &checkout,
+            checkout,
             include_str!("./maintainers.nix"),
             argstrs,
             &[path_file.path(), attr_file.path()],
@@ -181,12 +181,12 @@ mod tests {
             .expect("clone should work");
 
         working_co
-            .checkout_origin_ref(&OsStr::new("master"))
+            .checkout_origin_ref(OsStr::new("master"))
             .unwrap();
 
         let paths = working_co.files_changed_from_head(&hash).unwrap();
 
-        working_co.checkout_ref(&OsStr::new(&hash)).unwrap();
+        working_co.checkout_ref(OsStr::new(&hash)).unwrap();
 
         let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
         let nix = Nix::new(SYSTEM.to_owned(), remote, 1800, None);
