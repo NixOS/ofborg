@@ -13,16 +13,12 @@
       forAllSystems = f: nixpkgs.lib.genAttrs supportedSystems (system: f system);
     in
     {
-      # TODO(cole-h): see if we still need these overlays
-      # overlays.default = import ./nix/overlay.nix;
-      overlays.default = _: _: { };
-
+      devShell = forAllSystems (system: inputs.self.devShells.${system}.default);
       devShells = forAllSystems
         (system:
           let
             pkgs = import nixpkgs {
               inherit system;
-              overlays = [ self.overlays.default ];
             };
 
             phpEnv = pkgs.mkShell {
@@ -87,7 +83,6 @@
         let
           pkgs = import nixpkgs {
             inherit system;
-            overlays = [ self.overlays.default ];
           };
 
           pkg = pkgs.rustPlatform.buildRustPackage {
@@ -124,7 +119,7 @@
           };
 
         in
-        rec {
+        {
           inherit pkg;
 
           ofborg.rs = pkgs.runCommand "ofborg-rs-symlink-compat" { src = pkg; } ''
