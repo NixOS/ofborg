@@ -182,7 +182,7 @@ impl Metric {
 }
 
 fn events() -> Vec<MetricType> {
-    return vec![
+    vec![
         Metric::ticker(
             "StatCollectorLegacyEvent",
             "Number of received legacy events",
@@ -346,7 +346,7 @@ fn events() -> Vec<MetricType> {
             None
         ),
         */
-    ];
+    ]
 }
 
 fn main() {

@@ -14,7 +14,7 @@ use std::process::{Command, Stdio};
 use tempfile::tempfile;
 
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum File {
     DefaultNixpkgs,
     ReleaseNixOS,
@@ -95,7 +95,7 @@ impl fmt::Display for Operation {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Nix {
     pub system: String,
     remote: String,
@@ -348,8 +348,7 @@ impl Nix {
 fn lines_from_file(file: fs::File) -> Vec<String> {
     BufReader::new(file)
         .lines()
-        .filter(|line| line.is_ok())
-        .map(|line| line.unwrap())
+        .filter_map(|line| line.ok())
         .filter(|msg| !is_user_setting_warning(msg))
         .collect()
 }

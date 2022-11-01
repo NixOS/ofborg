@@ -2,7 +2,7 @@ use crate::message::{Pr, Repo};
 
 use hubcaps::checks::Conclusion;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum BuildStatus {
     Skipped,
     Success,

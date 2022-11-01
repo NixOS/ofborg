@@ -16,7 +16,7 @@ pub enum System {
     X8664Linux,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Stdenvs {
     nix: nix::Nix,
     co: PathBuf,
