@@ -27,10 +27,11 @@ use uuid::Uuid;
 
 static MAINTAINER_REVIEW_MAX_CHANGED_PATHS: usize = 64;
 
-const TITLE_LABELS: [(&str, &str); 3] = [
+const TITLE_LABELS: [(&str, &str); 4] = [
     ("bsd", "6.topic: bsd"),
     ("darwin", "6.topic: darwin"),
     ("macos", "6.topic: darwin"),
+    ("cross", "6.topic: cross-compilation"),
 ];
 
 fn label_from_title(title: &str) -> Vec<String> {
@@ -717,6 +718,14 @@ mod tests {
                 String::from("6.topic: bsd")
             ]
             .sort()
+        );
+        assert_eq!(
+            label_from_title("pkg: fix cross"),
+            vec![String::from("6.topic: cross-compilation")]
+        );
+        assert_eq!(
+            label_from_title("pkg: fix cross-compilation"),
+            vec![String::from("6.topic: cross-compilation")]
         );
     }
 }
