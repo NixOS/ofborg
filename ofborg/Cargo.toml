@@ -13,7 +13,9 @@ fs2 = "0.4.3"
 futures-util = "0.3.25"
 hubcaps = { git = "https://github.com/grahamc/hubcaps.git" }
 #hubcaps = { path = "../../../grahamc/hubcaps/" } # for testing patches
-hyper = "0.10.*"
+# to upgrade hyper, hubcaps has to be updated too
+# newer hyper has hyper::StatusCode while hubcaps returns a hyper::status::StatusCode
+hyper = "=0.10.*"
 hyper-native-tls = "0.3.0"
 lapin = "1.10.0"
 lru-cache = "0.1.2"
