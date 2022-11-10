@@ -43,7 +43,7 @@ impl SysEvents for RabbitMq<lapin::Channel> {
                     &String::from("stats"),
                     "",
                     BasicPublishOptions::default(),
-                    serde_json::to_string(&EventMessage {
+                    &serde_json::to_string(&EventMessage {
                         sender: self.identity.clone(),
                         events: vec![event],
                     })
