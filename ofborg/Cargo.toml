@@ -30,4 +30,4 @@ sys-info = "0.9.1"
 tempfile = "3.3.0"
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.16", features = ["json", "env-filter"] }
-uuid = { version = "0.4", features = ["v4"] }
+uuid = { version = "1.2", features = ["v4"] }
