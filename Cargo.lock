@@ -1175,7 +1175,7 @@ dependencies = [
 name = "ofborg-simple-build"
 version = "0.1.0"
 dependencies = [
- "log 0.3.9",
+ "log 0.4.17",
  "ofborg",
 ]
 
