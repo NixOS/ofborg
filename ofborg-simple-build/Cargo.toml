@@ -7,4 +7,4 @@ edition = "2018"
 [dependencies]
 ofborg = { path = "../ofborg" }
 
-log = "0.3.8"
+log = "0.4.17"

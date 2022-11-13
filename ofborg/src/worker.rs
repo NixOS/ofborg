@@ -6,7 +6,7 @@ pub struct Response {}
 
 pub type Actions = Vec<Action>;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Action {
     Ack,
     NackRequeue,
@@ -14,7 +14,7 @@ pub enum Action {
     Publish(Box<QueueMsg>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct QueueMsg {
     pub exchange: Option<String>,
     pub routing_key: Option<String>,

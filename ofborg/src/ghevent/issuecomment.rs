@@ -8,7 +8,7 @@ pub struct IssueComment {
     pub issue: Issue,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum IssueCommentAction {
     Created,

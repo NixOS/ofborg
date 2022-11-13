@@ -91,10 +91,10 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
             pr: pr_msg,
         };
 
-        return vec![
+        vec![
             worker::publish_serde_action(None, Some("mass-rebuild-check-jobs".to_owned()), &msg),
             worker::Action::Ack,
-        ];
+        ]
     }
 }
 

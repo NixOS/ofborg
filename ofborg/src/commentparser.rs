@@ -64,14 +64,14 @@ pub fn parse_line(text: &str) -> Option<Vec<Instruction>> {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum Instruction {
     Build(Subset, Vec<String>),
     Eval,
 }
 
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub enum Subset {
     Nixpkgs,
     NixOS,
