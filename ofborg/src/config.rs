@@ -118,7 +118,7 @@ impl Config {
             // tls configured hyper client
             Credentials::Token(self.github.clone().unwrap().token),
         )
-        .unwrap()
+        .expect("Unable to create a github client instance")
     }
 
     pub fn github_app_vendingmachine(&self) -> GithubAppVendingMachine {
@@ -183,9 +183,8 @@ impl GithubAppVendingMachine {
     }
 
     fn jwt(&self) -> JWTCredentials {
-        // JWTCredentials::new(self.conf.app_id, self.conf.private_key.clone())
-        // FIXME: upstream wants raw bytes of private key
-        JWTCredentials::new(self.conf.app_id, vec![0x00]).unwrap()
+        let key = std::fs::read(self.conf.private_key.clone()).expect("Unable to read private_key");
+        JWTCredentials::new(self.conf.app_id, key).expect("Unable to create JWTCredentials")
     }
 
     fn install_id_for_repo(&mut self, owner: &str, repo: &str) -> Option<u64> {
@@ -222,7 +221,7 @@ impl GithubAppVendingMachine {
                 useragent,
                 Credentials::InstallationToken(InstallationTokenGenerator::new(install_id, jwt)),
             )
-            .unwrap()
+            .expect("Unable to create a github client instance")
         }))
     }
 }
