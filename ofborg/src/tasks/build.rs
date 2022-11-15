@@ -408,7 +408,6 @@ mod tests {
     fn make_worker(path: &Path) -> BuildWorker {
         let cloner = checkout::cached_cloner(path);
         let nix = nix();
-        
 
         BuildWorker::new(
             cloner,
@@ -462,8 +461,12 @@ mod tests {
                     false
                 }
             })
-            .unwrap_or_else(|| panic!("Actions should contain a job matching {}, after the previous check",
-                text_to_match));
+            .unwrap_or_else(|| {
+                panic!(
+                    "Actions should contain a job matching {}, after the previous check",
+                    text_to_match
+                )
+            });
     }
 
     #[test]

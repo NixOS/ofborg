@@ -78,13 +78,14 @@ impl worker::SimpleWorker for GitHubCommentPoster {
             );
             debug!("{:?}", check);
 
-            let check_create_attempt = self
-                .github_vend
-                .for_repo(&repo.owner, &repo.name)
-                .unwrap()
-                .repo(repo.owner.clone(), repo.name.clone())
-                .checkruns()
-                .create(&check);
+            let check_create_attempt = async_std::task::block_on(
+                self.github_vend
+                    .for_repo(&repo.owner, &repo.name)
+                    .unwrap()
+                    .repo(repo.owner.clone(), repo.name.clone())
+                    .checkruns()
+                    .create(&check),
+            );
 
             match check_create_attempt {
                 Ok(_) => info!("Successfully sent."),

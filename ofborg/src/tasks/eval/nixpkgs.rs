@@ -49,11 +49,11 @@ fn label_from_title(title: &str) -> Vec<String> {
 
 pub struct NixpkgsStrategy<'a> {
     job: &'a EvaluationJob,
-    pull: &'a hubcaps::pulls::PullRequest<'a>,
+    pull: &'a hubcaps::pulls::PullRequest,
     issue: &'a Issue,
-    issue_ref: &'a IssueRef<'a>,
-    repo: &'a Repository<'a>,
-    gists: &'a Gists<'a>,
+    issue_ref: &'a IssueRef,
+    repo: &'a Repository,
+    gists: &'a Gists,
     nix: Nix,
     stdenv_diff: Option<Stdenvs>,
     outpath_diff: Option<OutPathDiff>,
@@ -88,7 +88,7 @@ impl<'a> NixpkgsStrategy<'a> {
     }
 
     fn tag_from_title(&self) {
-        let title = match self.issue_ref.get() {
+        let title = match async_std::task::block_on(self.issue_ref.get()) {
             Ok(issue) => issue.title.to_lowercase(),
             Err(_) => return,
         };
@@ -254,12 +254,8 @@ impl<'a> NixpkgsStrategy<'a> {
             .collect::<Vec<Vec<&str>>>();
 
         if let Some(ref changed_paths) = self.changed_paths {
-            let m = ImpactedMaintainers::calculate(
-                &self.nix,
-                dir,
-                changed_paths,
-                &changed_attributes,
-            );
+            let m =
+                ImpactedMaintainers::calculate(&self.nix, dir, changed_paths, &changed_attributes);
 
             let gist_url = make_gist(
                 self.gists,
@@ -587,7 +583,7 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
 }
 
 fn request_reviews(maint: &maintainers::ImpactedMaintainers, pull: &hubcaps::pulls::PullRequest) {
-    let pull_meta = pull.get();
+    let pull_meta = async_std::task::block_on(pull.get());
 
     info!("Impacted maintainers: {:?}", maint.maintainers());
     if maint.maintainers().len() < 10 {
@@ -605,13 +601,12 @@ fn request_reviews(maint: &maintainers::ImpactedMaintainers, pull: &hubcaps::pul
                 }
             }
 
-            if let Err(e) =
-                pull.review_requests()
-                    .create(&hubcaps::review_requests::ReviewRequestOptions {
-                        reviewers: vec![maintainer.clone()],
-                        team_reviewers: vec![],
-                    })
-            {
+            if let Err(e) = async_std::task::block_on(pull.review_requests().create(
+                &hubcaps::review_requests::ReviewRequestOptions {
+                    reviewers: vec![maintainer.clone()],
+                    team_reviewers: vec![],
+                },
+            )) {
                 warn!("Failure requesting a review from {}: {:?}", maintainer, e,);
             }
         }

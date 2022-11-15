@@ -9,9 +9,6 @@ use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 
 use hubcaps::{Credentials, Github, InstallationTokenGenerator, JWTCredentials};
-use hyper::net::HttpsConnector;
-use hyper::Client;
-use hyper_native_tls::NativeTlsClient;
 use serde::de::{self, Deserialize, Deserializer};
 use tracing::{debug, error, info, warn};
 
@@ -57,8 +54,8 @@ pub struct GithubConfig {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GithubAppConfig {
-    pub app_id: i32,
-    pub installation_id: i32,
+    pub app_id: u64,
+    pub installation_id: u64,
     pub private_key: PathBuf,
 }
 
@@ -119,9 +116,9 @@ impl Config {
         Github::new(
             "github.com/grahamc/ofborg",
             // tls configured hyper client
-            Client::with_connector(HttpsConnector::new(NativeTlsClient::new().unwrap())),
             Credentials::Token(self.github.clone().unwrap().token),
         )
+        .unwrap()
     }
 
     pub fn github_app_vendingmachine(&self) -> GithubAppVendingMachine {
@@ -176,8 +173,8 @@ pub fn load(filename: &Path) -> Config {
 
 pub struct GithubAppVendingMachine {
     conf: GithubAppConfig,
-    id_cache: HashMap<(String, String), Option<i32>>,
-    client_cache: HashMap<i32, Github>,
+    id_cache: HashMap<(String, String), Option<u64>>,
+    client_cache: HashMap<u64, Github>,
 }
 
 impl GithubAppVendingMachine {
@@ -186,10 +183,12 @@ impl GithubAppVendingMachine {
     }
 
     fn jwt(&self) -> JWTCredentials {
-        JWTCredentials::new(self.conf.app_id, self.conf.private_key.clone())
+        // JWTCredentials::new(self.conf.app_id, self.conf.private_key.clone())
+        // FIXME: upstream wants raw bytes of private key
+        JWTCredentials::new(self.conf.app_id, vec![0x00]).unwrap()
     }
 
-    fn install_id_for_repo(&mut self, owner: &str, repo: &str) -> Option<i32> {
+    fn install_id_for_repo(&mut self, owner: &str, repo: &str) -> Option<u64> {
         let useragent = self.useragent();
         let jwt = self.jwt();
 
@@ -198,13 +197,9 @@ impl GithubAppVendingMachine {
         *self.id_cache.entry(key).or_insert_with(|| {
             info!("Looking up install ID for {}/{}", owner, repo);
 
-            let lookup_gh = Github::new(
-                useragent,
-                Client::with_connector(HttpsConnector::new(NativeTlsClient::new().unwrap())),
-                Credentials::JWT(jwt),
-            );
+            let lookup_gh = Github::new(useragent, Credentials::JWT(jwt)).unwrap();
 
-            match lookup_gh.app().find_repo_installation(owner, repo) {
+            match async_std::task::block_on(lookup_gh.app().find_repo_installation(owner, repo)) {
                 Ok(install_id) => {
                     debug!("Received install ID {:?}", install_id);
                     Some(install_id.id)
@@ -225,9 +220,9 @@ impl GithubAppVendingMachine {
         Some(self.client_cache.entry(install_id).or_insert_with(|| {
             Github::new(
                 useragent,
-                Client::with_connector(HttpsConnector::new(NativeTlsClient::new().unwrap())),
                 Credentials::InstallationToken(InstallationTokenGenerator::new(install_id, jwt)),
             )
+            .unwrap()
         }))
     }
 }

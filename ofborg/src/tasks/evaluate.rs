@@ -10,6 +10,7 @@ use crate::stats::{self, Event};
 use crate::systems;
 use crate::tasks::eval;
 use crate::worker;
+use futures_util::TryFutureExt;
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -105,8 +106,8 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
 
 struct OneEval<'a, E> {
     client_app: &'a hubcaps::Github,
-    repo: hubcaps::repositories::Repository<'a>,
-    gists: Gists<'a>,
+    repo: hubcaps::repositories::Repository,
+    gists: Gists,
     nix: &'a nix::Nix,
     acl: &'a Acl,
     events: &'a mut E,
@@ -180,11 +181,13 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             &self.job.pr.number, &self.job.pr.head_sha, &description
         );
 
-        self.repo
-            .statuses()
-            .create(&self.job.pr.head_sha, &builder.build())
-            .map(|_| ())
-            .map_err(|e| CommitStatusError::from(e))
+        async_std::task::block_on(
+            self.repo
+                .statuses()
+                .create(&self.job.pr.head_sha, &builder.build())
+                .map_ok(|_| ())
+                .map_err(|e| CommitStatusError::from(e)),
+        )
     }
 
     fn make_gist(
@@ -259,7 +262,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         let issue: Issue;
         let auto_schedule_build_archs: Vec<systems::System>;
 
-        match issue_ref.get() {
+        match async_std::task::block_on(issue_ref.get()) {
             Ok(iss) => {
                 if iss.state == "closed" {
                     self.events.notify(Event::IssueAlreadyClosed);
@@ -465,7 +468,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
 fn send_check_statuses(checks: Vec<CheckRunOptions>, repo: &hubcaps::repositories::Repository) {
     for check in checks {
-        match repo.checkruns().create(&check) {
+        match async_std::task::block_on(repo.checkruns().create(&check)) {
             Ok(_) => debug!("Sent check update"),
             Err(e) => warn!("Failed to send check update: {:?}", e),
         }
@@ -504,8 +507,8 @@ fn schedule_builds(
     response
 }
 
-pub fn make_gist<'a>(
-    gists: &hubcaps::gists::Gists<'a>,
+pub fn make_gist(
+    gists: &hubcaps::gists::Gists,
     name: &str,
     description: Option<String>,
     contents: String,
@@ -520,20 +523,19 @@ pub fn make_gist<'a>(
     );
 
     Some(
-        gists
-            .create(&hubcaps::gists::GistOptions {
-                description,
-                public: Some(true),
-                files,
-            })
-            .expect("Failed to create gist!")
-            .html_url,
+        async_std::task::block_on(gists.create(&hubcaps::gists::GistOptions {
+            description,
+            public: Some(true),
+            files,
+        }))
+        .expect("Failed to create gist!")
+        .html_url,
     )
 }
 
 pub fn update_labels(issueref: &hubcaps::issues::IssueRef, add: &[String], remove: &[String]) {
     let l = issueref.labels();
-    let issue = issueref.get().expect("Failed to get issue");
+    let issue = async_std::task::block_on(issueref.get()).expect("Failed to get issue");
 
     let existing: Vec<String> = issue.labels.iter().map(|l| l.name.clone()).collect();
 
@@ -554,7 +556,7 @@ pub fn update_labels(issueref: &hubcaps::issues::IssueRef, add: &[String], remov
         issue.number, to_add, to_remove, existing
     );
 
-    l.add(to_add.clone()).unwrap_or_else(|e| {
+    async_std::task::block_on(l.add(to_add.clone())).unwrap_or_else(|e| {
         panic!(
             "Failed to add labels {:?} to issue #{}: {:?}",
             to_add, issue.number, e
@@ -562,7 +564,7 @@ pub fn update_labels(issueref: &hubcaps::issues::IssueRef, add: &[String], remov
     });
 
     for label in to_remove {
-        l.remove(&label).unwrap_or_else(|e| {
+        async_std::task::block_on(l.remove(&label)).unwrap_or_else(|e| {
             panic!(
                 "Failed to remove label {:?} from issue #{}: {:?}",
                 label, issue.number, e
@@ -604,12 +606,11 @@ fn indicates_wip(text: &str) -> bool {
 /// that (e.g. if someone used `@ofborg eval`, `@ofborg build`, `@ofborg test`).
 /// Otherwise, if it's a new PR or was recently force-pushed (and therefore
 /// doesn't have any old `grahamcofborg`-prefixed statuses), use the new prefix.
-pub fn get_prefix<'a>(
+pub fn get_prefix(
     statuses: hubcaps::statuses::Statuses,
-    sha: &'a str,
-) -> Result<&'a str, CommitStatusError> {
-    if statuses
-        .list(sha)?
+    sha: &str,
+) -> Result<&str, CommitStatusError> {
+    if async_std::task::block_on(statuses.list(sha))?
         .iter()
         .any(|s| s.context.starts_with("grahamcofborg-"))
     {
