@@ -639,6 +639,13 @@ fn parse_commit_messages(messages: &[String]) -> Vec<String> {
             let pkgs: Vec<&str> = line.split(',').collect();
             pkgs
         })
+        .map(|pkg| {
+            if pkg.contains("python3Packages") {
+                pkg.replace("python3Packages", "python310Packages")
+            } else {
+                pkg.to_owned()
+            }
+        })
         .map(|line| line.trim().to_owned())
         .collect()
 }
@@ -657,6 +664,7 @@ mod tests {
             "buildkite-agent",
             "python.pkgs.ptyprocess",
             "python.pkgs.ptyprocess",
+            "python310Packages.surepy",
             "android-studio-preview",
             "foo",
             "bar",
@@ -671,6 +679,7 @@ mod tests {
               buildkite-agent: enable building on darwin
               python.pkgs.ptyprocess: 0.5 -> 0.5.2
               python.pkgs.ptyprocess: move expression
+              python3Packages.surepy: 0.7.1 -> 0.7.2
               Merge pull request #34465 from steveeJ/steveej-attempt-qtile-bump-0.10.7
               android-studio-preview: 3.1.0.8 -> 3.1.0.9
               Merge pull request #34188 from dotlambda/home-assistant
