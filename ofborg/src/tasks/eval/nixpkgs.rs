@@ -34,6 +34,10 @@ const TITLE_LABELS: [(&str, &str); 4] = [
     ("cross", "6.topic: cross-compilation"),
 ];
 
+const TITLE_REPLACEMENTS: [(&str, &str); 1] = [
+    ("python3Packages", "python310Packages"),
+];
+
 fn label_from_title(title: &str) -> Vec<String> {
     let labels: Vec<_> = TITLE_LABELS
         .iter()
@@ -640,12 +644,17 @@ fn parse_commit_messages(messages: &[String]) -> Vec<String> {
             pkgs
         })
         .map(|pkg| {
-            if pkg.contains("python3Packages") {
-                pkg.replace("python3Packages", "python310Packages")
-            } else {
-                pkg.to_owned()
-            }
+            TITLE_REPLACEMENTS
+                .iter()
+                .map(move |(word, replacement)| {
+                    if pkg.contains(word) {
+                        pkg.replace(word, replacement)
+                    } else {
+                        pkg.to_string()
+                    }
+                })
         })
+        .flatten()
         .map(|line| line.trim().to_owned())
         .collect()
 }
