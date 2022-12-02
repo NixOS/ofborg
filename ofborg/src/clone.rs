@@ -148,6 +148,8 @@ pub trait GitClonable {
         debug!("git checkout {:?}", git_ref);
         let result = Command::new("git")
             .arg("checkout")
+            // we don't care if its dirty
+            .arg("--force")
             .arg(git_ref)
             .current_dir(self.clone_to())
             .stdout(Stdio::null())
