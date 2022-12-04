@@ -1,11 +1,13 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-22.11";
+    nixpkgs-for-php.url = "github:nixos/nixpkgs/nixos-22.05";
   };
 
   outputs =
     { self
     , nixpkgs
+    , nixpkgs-for-php
     , ...
     }@inputs:
     let
@@ -20,15 +22,17 @@
             pkgs = import nixpkgs {
               inherit system;
             };
+            phpPkgs = import nixpkgs-for-php {
+              inherit system;
+            };
 
             phpEnv = pkgs.mkShell {
               name = "gh-event-forwarder";
               buildInputs = with pkgs; [
                 nix-prefetch-git
-                php
-                phpPackages.composer
+                phpPkgs.php
+                phpPkgs.phpPackages.composer
                 git
-                php
                 curl
                 bash
               ];
@@ -82,6 +86,10 @@
       packages = forAllSystems (system:
         let
           pkgs = import nixpkgs {
+            inherit system;
+          };
+
+          phpPkgs = import nixpkgs-for-php {
             inherit system;
           };
 
@@ -142,7 +150,7 @@
             test -e $out/bin/evaluation_filter
           '';
 
-          ofborg.php = import ./php { inherit pkgs; };
+          ofborg.php = import ./php { pkgs = phpPkgs; };
         });
 
       hydraJobs = {

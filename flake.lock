@@ -16,9 +16,26 @@
         "type": "github"
       }
     },
+    "nixpkgs-for-php": {
+      "locked": {
+        "lastModified": 1670538458,
+        "narHash": "sha256-mvKmBkdlhzsMBtnzYXjYn08EGw9rFBEE9hp4Uqgol1Q=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "99ec06122f481588abafd91f2710d80a5320efe6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "nixos-22.05",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "nixpkgs-for-php": "nixpkgs-for-php"
       }
     }
   },
