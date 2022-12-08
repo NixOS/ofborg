@@ -56,10 +56,10 @@ impl Operation {
     fn args(&self, command: &mut Command) {
         match *self {
             Operation::Build => {
-                command.args(&["--no-out-link", "--keep-going"]);
+                command.args(&["--no-out-link", "--keep-going", "--option", "experimental-features", "no-url-literals"]);
             }
             Operation::QueryPackagesJson => {
-                command.args(&["--query", "--available", "--json"]);
+                command.args(&["--query", "--available", "--json", "--option", "experimental-features", "no-url-literals"]);
             }
             Operation::QueryPackagesOutputs => {
                 command.args(&[
@@ -68,13 +68,16 @@ impl Operation {
                     "--no-name",
                     "--attr-path",
                     "--out-path",
+                    "--option",
+                    "experimental-features",
+                    "no-url-literals"
                 ]);
             }
             Operation::NoOp { ref operation } => {
                 operation.args(command);
             }
             Operation::Evaluate => {
-                command.args(&["--eval", "--strict", "--json"]);
+                command.args(&["--eval", "--strict", "--json", "--option", "experimental-features", "no-url-literals"]);
             }
             _ => (),
         };
