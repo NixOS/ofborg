@@ -60,7 +60,7 @@ impl Operation {
                     "--no-out-link",
                     "--keep-going",
                     "--option",
-                    "experimental-features",
+                    "extra-experimental-features",
                     "no-url-literals",
                 ]);
             }
@@ -70,7 +70,7 @@ impl Operation {
                     "--available",
                     "--json",
                     "--option",
-                    "experimental-features",
+                    "extra-experimental-features",
                     "no-url-literals",
                 ]);
             }
@@ -82,7 +82,7 @@ impl Operation {
                     "--attr-path",
                     "--out-path",
                     "--option",
-                    "experimental-features",
+                    "extra-experimental-features",
                     "no-url-literals",
                 ]);
             }
@@ -95,12 +95,12 @@ impl Operation {
                     "--strict",
                     "--json",
                     "--option",
-                    "experimental-features",
+                    "extra-experimental-features",
                     "no-url-literals",
                 ]);
             }
             Operation::Instantiate => {
-                command.args(&["--option", "experimental-features", "no-url-literals"])
+                command.args(&["--option", "extra-experimental-features", "no-url-literals"]);
             }
             _ => (),
         };
