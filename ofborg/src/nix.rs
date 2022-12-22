@@ -79,6 +79,9 @@ impl Operation {
             Operation::Evaluate => {
                 command.args(&["--eval", "--strict", "--json", "--option", "experimental-features", "no-url-literals"]);
             }
+            Operation::Instantiate => {
+                command.args(&["--option", "experimental-features", "no-url-literals"])
+            }
             _ => (),
         };
     }
