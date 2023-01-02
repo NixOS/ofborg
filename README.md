@@ -48,8 +48,8 @@ instructions for ofborg.
 @ofborg test list of tests
 ```
 
-This will run `nix-build ./nixos/release.nix -A tests.list -A tests.of -A
-tests.tests` from the root of the Nixpkgs checkout.
+This will run `nix-build ./default.nix -A nixosTests.list -A nixosTests.of -A
+nixosTests.tests` from the root of the Nixpkgs checkout.
 
 Tests will run on all allowed machines. For more information, see the "[Trusted
 Users](#trusted-users)" section.

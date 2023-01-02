@@ -38,8 +38,8 @@ named!(
                 )) |
                 ws!(do_parse!(
                     tag!("test") >>
-                    tests: ws!(many1!(map!(normal_token, |s| format!("tests.{}", s.0)))) >>
-                    (Some(Instruction::Build(Subset::NixOS, tests)))
+                    tests: ws!(many1!(map!(normal_token, |s| format!("nixosTests.{}", s.0)))) >>
+                    (Some(Instruction::Build(Subset::Nixpkgs, tests)))
                 )) |
                 value!(Some(Instruction::Eval), tag!("eval")) |
                 // TODO: Currently keeping previous behaviour of ignoring unknown commands. Maybe
@@ -195,11 +195,11 @@ baz",
     fn test_comment() {
         assert_eq!(
             Some(vec![Instruction::Build(
-                Subset::NixOS,
+                Subset::Nixpkgs,
                 vec![
-                    String::from("tests.foo"),
-                    String::from("tests.bar"),
-                    String::from("tests.baz"),
+                    String::from("nixosTests.foo"),
+                    String::from("nixosTests.bar"),
+                    String::from("nixosTests.baz"),
                 ]
             ),]),
             parse("@GrahamCOfBorg test foo bar baz")
