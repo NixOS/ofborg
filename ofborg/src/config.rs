@@ -4,7 +4,7 @@ use crate::nix::Nix;
 use std::collections::HashMap;
 use std::fmt;
 use std::fs::File;
-use std::io::Read;
+use std::io::{BufReader, Read};
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 
@@ -183,8 +183,15 @@ impl GithubAppVendingMachine {
     }
 
     fn jwt(&self) -> JWTCredentials {
-        let key = std::fs::read(self.conf.private_key.clone()).expect("Unable to read private_key");
-        JWTCredentials::new(self.conf.app_id, key).expect("Unable to create JWTCredentials")
+        let private_key_file =
+            File::open(self.conf.private_key.clone()).expect("Unable to read private_key");
+        let mut private_key_reader = BufReader::new(private_key_file);
+        let private_keys = rustls_pemfile::rsa_private_keys(&mut private_key_reader)
+            .expect("Unable to convert private_key to DER format");
+        // We can be reasonably certain that there will only be one private key in this file
+        let private_key = &private_keys[0];
+        JWTCredentials::new(self.conf.app_id, private_key.to_vec())
+            .expect("Unable to create JWTCredentials")
     }
 
     fn install_id_for_repo(&mut self, owner: &str, repo: &str) -> Option<u64> {
