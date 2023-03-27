@@ -398,6 +398,7 @@ mod tests {
                 })
             );
 
+            assert!(p.path().join("routing-key-foo/attempt-id-foo").exists());
             assert_eq!(vec![worker::Action::Ack], worker.consumer(&job));
 
             logmsg.line_number = 5;
