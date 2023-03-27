@@ -215,6 +215,11 @@ impl worker::SimpleWorker for LogMessageCollector {
             MsgType::Start(ref start) => {
                 self.write_metadata(&job.from, start)
                     .expect("failed to write metadata");
+
+                // Make sure the log content exists by opening its handle.
+                // This (hopefully) prevents builds that produce no output (for any reason) from
+                // having their logs.nix.ci link complaining about a 404.
+                let _ = self.handle_for(&job.from).unwrap();
             }
             MsgType::Msg(ref message) => {
                 let handle = self.handle_for(&job.from).unwrap();
