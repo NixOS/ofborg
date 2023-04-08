@@ -112,7 +112,7 @@ fn job_to_check(job: &BuildJob, architecture: &str, timestamp: DateTime<Utc>) ->
         started_at: Some(timestamp.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)),
         conclusion: None,
         details_url: Some(format!(
-            "https://logs.nix.ci/?key={}/{}.{}",
+            "https://logs.ofborg.org/?key={}/{}.{}",
             &job.repo.owner.to_lowercase(),
             &job.repo.name.to_lowercase(),
             job.pr.number,
@@ -181,7 +181,7 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
         started_at: None,
         conclusion: Some(conclusion),
         details_url: Some(format!(
-            "https://logs.nix.ci/?key={}/{}.{}&attempt_id={}",
+            "https://logs.ofborg.org/?key={}/{}.{}&attempt_id={}",
             &result.repo.owner.to_lowercase(),
             &result.repo.name.to_lowercase(),
             result.pr.number,
@@ -250,7 +250,7 @@ mod tests {
                 completed_at: None,
                 status: Some(CheckRunState::Queued),
                 conclusion: None,
-                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345".to_string()),
+                details_url: Some("https://logs.ofborg.org/?key=nixos/nixpkgs.2345".to_string()),
                 external_id: None,
                 head_sha: "abc123".to_string(),
                 output: None,
@@ -304,7 +304,7 @@ mod tests {
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Success),
                 details_url: Some(
-                    "https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid"
+                    "https://logs.ofborg.org/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid"
                         .to_string()
                 ),
                 external_id: Some("neatattemptid".to_string()),
@@ -386,7 +386,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Neutral),
                 details_url: Some(
-                    "https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid"
+                    "https://logs.ofborg.org/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid"
                         .to_string()
                 ),
                 external_id: Some("neatattemptid".to_string()),
@@ -465,7 +465,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Neutral),
                 details_url: Some(
-                    "https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid"
+                    "https://logs.ofborg.org/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid"
                         .to_string()
                 ),
                 external_id: Some("neatattemptid".to_string()),
@@ -545,7 +545,7 @@ error: build of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' failed
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Success),
                 details_url: Some(
-                    "https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid"
+                    "https://logs.ofborg.org/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid"
                         .to_string()
                 ),
                 external_id: Some("neatattemptid".to_string()),
@@ -623,7 +623,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Neutral),
                 details_url: Some(
-                    "https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid"
+                    "https://logs.ofborg.org/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid"
                         .to_string()
                 ),
                 external_id: Some("neatattemptid".to_string()),
@@ -689,7 +689,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Skipped),
-                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
+                details_url: Some("https://logs.ofborg.org/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
                 external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
@@ -742,7 +742,7 @@ foo
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
                 status: Some(CheckRunState::Completed),
                 conclusion: Some(Conclusion::Skipped),
-                details_url: Some("https://logs.nix.ci/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
+                details_url: Some("https://logs.ofborg.org/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid".to_string()),
                 external_id: Some("neatattemptid".to_string()),
                 head_sha: "abc123".to_string(),
                 output: Some(Output {
