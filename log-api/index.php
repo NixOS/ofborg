@@ -20,7 +20,7 @@ if (!isset($_SERVER['REQUEST_URI']) || empty($_SERVER['REQUEST_URI'])) {
 
 $reqd = substr($_SERVER['REQUEST_URI'], strlen("/logs/"));
 $req = realpath("$root/$reqd");
-$serve_root = "https://logs.nix.ci/logfile/$reqd";
+$serve_root = "https://logs.ofborg.org/logfile/$reqd";
 
 if ($req === false) {
     abrt("absent");
