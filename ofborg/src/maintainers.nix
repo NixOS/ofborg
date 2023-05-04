@@ -1,6 +1,9 @@
 { changedattrsjson, changedpathsjson }:
 let
   pkgs = import ./. {};
+  moduleMaintainers = (import ./nixos {
+    configuration = {};
+  }).meta.maintainers;
 
   changedattrs = builtins.fromJSON (builtins.readFile changedattrsjson);
   changedpaths = builtins.fromJSON (builtins.readFile changedpathsjson);
@@ -73,26 +76,39 @@ let
     (pkg: anyMatchingFiles pkg.filenames)
     attrsWithFilenames;
 
-  listToPing = pkgs.lib.lists.flatten
+  modulesWithModifiedFiles = pkgs.lib.filterAttrs
+    (filename: _: anyMatchingFiles filename)
+    moduleMaintainers;
+
+  modulesWithModifiedFiles' = builtins.attrValues (pkgs.lib.attrsets.mapAttrs
+    (filename: maintainers:
+      pkgs.lib.attrsets.nameValuePair filename {
+        filenames = [ filename ];
+        entityName = filename;
+        inherit maintainers;
+      }
+    ) modulesWithModifiedFiles);
+
+  listToPing = modifiedAttrs: pkgs.lib.lists.flatten
     (builtins.map
       (pkg:
         builtins.map (maintainer: {
           handle = pkgs.lib.toLower maintainer.github;
-          packageName = pkg.name;
+          entityName = pkg.name;
           dueToFiles = pkg.filenames;
         })
         pkg.maintainers
       )
-      attrsWithModifiedFiles);
+      modifiedAttrs);
 
-  byMaintainer = pkgs.lib.lists.foldr
-    (ping: collector: collector // { "${ping.handle}" = [ { inherit (ping) packageName dueToFiles; } ] ++ (collector."${ping.handle}" or []); })
+  byMaintainer = pingList: pkgs.lib.lists.foldr
+    (ping: collector: collector // { "${ping.handle}" = [ { inherit (ping) entityName dueToFiles; } ] ++ (collector."${ping.handle}" or []); })
     {}
-    listToPing;
+    pingList;
 
   textForPackages = packages:
     pkgs.lib.strings.concatStringsSep ", " (
-      builtins.map (pkg: pkg.packageName)
+      builtins.map (pkg: pkg.entityName)
       packages);
 
   textPerMaintainer = pkgs.lib.attrsets.mapAttrs
@@ -101,7 +117,16 @@ let
 
   packagesPerMaintainer = pkgs.lib.attrsets.mapAttrs
     (maintainer: packages:
-      builtins.map (pkg: pkg.packageName)
+      builtins.map (pkg: pkg.entityName)
       packages)
-    byMaintainer;
-in packagesPerMaintainer
+  (byMaintainer (listToPing attrsWithModifiedFiles));
+
+  modulesPerMaintainer = pkgs.lib.attrsets.mapAttrs
+    (maintainer: modules:
+      builtins.map (module: module.entityName)
+      modules
+    )
+    (byMaintainer (listToPing modulesWithModifiedFiles'));
+in {
+  inherit packagesPerMaintainer modulesPerMaintainer;
+}
