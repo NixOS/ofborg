@@ -16,6 +16,7 @@ use crate::tasks::evaluate::{get_prefix, make_gist, update_labels};
 
 use std::path::Path;
 
+use brace_expand::brace_expand;
 use chrono::Utc;
 use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
 use hubcaps::gists::Gists;
@@ -623,17 +624,9 @@ fn parse_commit_messages(messages: &[String]) -> Vec<String> {
         .iter()
         .filter_map(|line| {
             // Convert "foo: some notes" in to "foo"
-            let parts: Vec<&str> = line.splitn(2, ':').collect();
-            if parts.len() == 2 {
-                Some(parts[0])
-            } else {
-                None
-            }
+            line.split_once(':').map(|(pre, _)| pre.trim())
         })
-        .flat_map(|line| {
-            let pkgs: Vec<&str> = line.split(',').collect();
-            pkgs
-        })
+        .flat_map(|line| brace_expand(&format!("{{{}}}", line)))
         .map(|line| line.trim().to_owned())
         .collect()
 }
@@ -646,8 +639,8 @@ mod tests {
     #[test]
     fn test_parse_commit_messages() {
         let expect: Vec<&str> = vec![
-            "firefox{-esr", // don't support such fancy syntax
-            "}",            // Don't support such fancy syntax
+            "firefox-esr",
+            "firefox",
             "firefox",
             "buildkite-agent",
             "python.pkgs.ptyprocess",
@@ -655,6 +648,11 @@ mod tests {
             "android-studio-preview",
             "foo",
             "bar",
+            "firefox",
+            "firefox-bin",
+            "firefox-beta",
+            "firefox-beta-bin",
+            "librewolf",
         ];
         assert_eq!(
             parse_commit_messages(
@@ -671,6 +669,7 @@ mod tests {
               Merge pull request #34188 from dotlambda/home-assistant
               Merge pull request #34414 from dotlambda/postfix
               foo,bar: something here: yeah
+              firefox{,-beta}{,-bin}, librewolf: blah blah blah
             "
                 .lines()
                 .map(|l| l.to_owned())
