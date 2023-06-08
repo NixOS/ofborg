@@ -446,7 +446,7 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
             ),
             EvalChecker::new(
                 "package-list-no-aliases",
-                nix::Operation::QueryPackagesJson,
+                nix::Operation::QueryPackagesOutputs,
                 vec![
                     String::from("--file"),
                     String::from("."),
