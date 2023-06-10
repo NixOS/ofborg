@@ -357,6 +357,7 @@ impl Nix {
             &format!("{}", self.build_timeout),
         ]);
         command.args(&["--argstr", "system", &self.system]);
+        command.args(&["--arg", "config", "{ allowUnfree = true; }"]);
 
         if self.limit_supported_systems {
             command.args(&[
@@ -693,7 +694,15 @@ mod tests {
 
         let ret: Result<fs::File, fs::File> = nix.run(command, true);
 
-        assert_run(ret, Expect::Pass, vec!["./default.nix", "-A foo -A bar"]);
+        assert_run(
+            ret,
+            Expect::Pass,
+            vec![
+                "./default.nix",
+                "-A foo -A bar",
+                "--arg config { allowUnfree = true; }",
+            ],
+        );
     }
 
     #[test]
@@ -716,6 +725,7 @@ mod tests {
             vec![
                 "./nixos/release.nix",
                 "--arg nixpkgs { outPath=./.; revCount=999999; shortRev=\"ofborg\"; rev=\"0000000000000000000000000000000000000000\"; }",
+                "--arg config { allowUnfree = true; }",
             ],
         );
     }
