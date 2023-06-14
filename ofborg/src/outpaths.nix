@@ -19,6 +19,7 @@ let
 
       nixpkgsArgs = {
         config = {
+          allowAliases = false;
           allowBroken = true;
           allowUnfree = true;
           allowInsecurePredicate = x: true;
