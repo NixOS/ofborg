@@ -34,6 +34,10 @@ const TITLE_LABELS: [(&str, &str); 4] = [
     ("cross", "6.topic: cross-compilation"),
 ];
 
+const TITLE_REPLACEMENTS: [(&str, &str); 1] = [
+    ("python3Packages", "python310Packages"),
+];
+
 fn label_from_title(title: &str) -> Vec<String> {
     let labels: Vec<_> = TITLE_LABELS
         .iter()
@@ -634,6 +638,18 @@ fn parse_commit_messages(messages: &[String]) -> Vec<String> {
             let pkgs: Vec<&str> = line.split(',').collect();
             pkgs
         })
+        .map(|pkg| {
+            TITLE_REPLACEMENTS
+                .iter()
+                .map(move |(word, replacement)| {
+                    if pkg.contains(word) {
+                        pkg.replace(word, replacement)
+                    } else {
+                        pkg.to_string()
+                    }
+                })
+        })
+        .flatten()
         .map(|line| line.trim().to_owned())
         .collect()
 }
@@ -652,6 +668,7 @@ mod tests {
             "buildkite-agent",
             "python.pkgs.ptyprocess",
             "python.pkgs.ptyprocess",
+            "python310Packages.surepy",
             "android-studio-preview",
             "foo",
             "bar",
@@ -666,6 +683,7 @@ mod tests {
               buildkite-agent: enable building on darwin
               python.pkgs.ptyprocess: 0.5 -> 0.5.2
               python.pkgs.ptyprocess: move expression
+              python3Packages.surepy: 0.7.1 -> 0.7.2
               Merge pull request #34465 from steveeJ/steveej-attempt-qtile-bump-0.10.7
               android-studio-preview: 3.1.0.8 -> 3.1.0.9
               Merge pull request #34188 from dotlambda/home-assistant
