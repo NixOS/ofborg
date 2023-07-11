@@ -20,7 +20,7 @@ Example commit titles and the builds they will start:
 | `vim: 1.0.0 -> 2.0.0`                                                 | `vim`                                                    |
 | `vagrant: Fix dependencies for version 2.0.2 `                        | `vagrant`                                                |
 | `python36Packages.requests,python27Packages.requests: 1.0.0 -> 2.0.0` | `python36Packages.requests`, `python27Packages.requests` |
-| `python{2,3}Packages.requests: 1.0.0 -> 2.0.0`                        | `python2Packages.requests`, `python3Packages.requests`   |
+| `python{27,310}Packages.requests: 1.0.0 -> 2.0.0`                        | `python27Packages.requests`, `python310Packages.requests`   |
 
 When opening a PR with multiple commits, ofborg creates a single build job for
 all detected packages. If multiple commits get pushed to a PR one-by-one, each
