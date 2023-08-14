@@ -434,8 +434,7 @@ mod tests {
 
     fn strip_escaped_ansi(string: &str) -> String {
         string
-            .replace('‘', "'")
-            .replace('’', "'")
+            .replace(['‘', '’'], "'")
             .replace("\\u001b[31;1m", "") // red
             .replace("\\u001b[0m", "") // reset
     }

@@ -63,7 +63,7 @@ impl MetricType {
         let fields: Vec<String> = event
             .fields
             .iter()
-            .map(|&(ref _fieldname, ref fieldtype)| fieldtype.clone())
+            .map(|(_fieldname, fieldtype)| fieldtype.clone())
             .collect();
 
         fields
@@ -94,7 +94,7 @@ impl MetricType {
         let fields: Vec<String> = event
             .fields
             .iter()
-            .map(|&(ref fieldname, ref _fieldtype)| fieldname.clone())
+            .map(|(fieldname, _fieldtype)| fieldname.clone())
             .collect();
 
         fields
@@ -352,7 +352,7 @@ fn events() -> Vec<MetricType> {
 fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join("events.rs");
-    let mut f = File::create(&dest_path).unwrap();
+    let mut f = File::create(dest_path).unwrap();
 
     println!("cargo:rerun-if-changed=build.rs");
 
