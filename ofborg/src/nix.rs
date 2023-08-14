@@ -374,7 +374,7 @@ impl Nix {
 fn lines_from_file(file: fs::File) -> Vec<String> {
     BufReader::new(file)
         .lines()
-        .filter_map(|line| line.ok())
+        .map_while(Result::ok)
         .filter(|msg| !is_user_setting_warning(msg))
         .collect()
 }

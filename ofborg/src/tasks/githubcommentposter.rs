@@ -240,7 +240,7 @@ mod tests {
             attrs: vec!["foo".to_owned(), "bar".to_owned()],
         };
 
-        let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
+        let timestamp = Utc.with_ymd_and_hms(2023, 4, 20, 13, 37, 42).unwrap();
         assert_eq!(
             job_to_check(&job, "x86_64-linux", timestamp),
             CheckRunOptions {
@@ -292,7 +292,7 @@ mod tests {
             status: BuildStatus::Success,
         };
 
-        let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
+        let timestamp = Utc.with_ymd_and_hms(2023, 4, 20, 13, 37, 42).unwrap();
 
         assert_eq!(
             result_to_check(&result, timestamp),
@@ -374,7 +374,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             status: BuildStatus::Failure,
         };
 
-        let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
+        let timestamp = Utc.with_ymd_and_hms(2023, 4, 20, 13, 37, 42).unwrap();
 
         assert_eq!(
             result_to_check(&result, timestamp),
@@ -453,7 +453,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             status: BuildStatus::TimedOut,
         };
 
-        let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
+        let timestamp = Utc.with_ymd_and_hms(2023, 4, 20, 13, 37, 42).unwrap();
 
         assert_eq!(
             result_to_check(&result, timestamp),
@@ -533,7 +533,7 @@ error: build of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' failed
             status: BuildStatus::Success,
         };
 
-        let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
+        let timestamp = Utc.with_ymd_and_hms(2023, 4, 20, 13, 37, 42).unwrap();
 
         assert_eq!(
             result_to_check(&result, timestamp),
@@ -611,7 +611,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             status: BuildStatus::Failure,
         };
 
-        let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
+        let timestamp = Utc.with_ymd_and_hms(2023, 4, 20, 13, 37, 42).unwrap();
 
         assert_eq!(
             result_to_check(&result, timestamp),
@@ -678,7 +678,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
             status: BuildStatus::Skipped,
         };
 
-        let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
+        let timestamp = Utc.with_ymd_and_hms(2023, 4, 20, 13, 37, 42).unwrap();
 
         assert_eq!(
             result_to_check(&result, timestamp),
@@ -731,7 +731,7 @@ foo
             status: BuildStatus::Skipped,
         };
 
-        let timestamp = Utc.ymd(2023, 4, 20).and_hms(13, 37, 42);
+        let timestamp = Utc.with_ymd_and_hms(2023, 4, 20, 13, 37, 42).unwrap();
 
         assert_eq!(
             result_to_check(&result, timestamp),
