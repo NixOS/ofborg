@@ -47,6 +47,7 @@
                 nix-prefetch-git
                 rustc
                 cargo
+                cargo-edit
                 clippy
                 rustfmt
                 pkg-config
@@ -98,7 +99,7 @@
             src = pkgs.nix-gitignore.gitignoreSource [ ] ./.;
 
             nativeBuildInputs = with pkgs; [
-              pkgconfig
+              pkg-config
               pkgs.rustPackages.clippy
             ];
 
