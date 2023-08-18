@@ -290,7 +290,13 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             }
         };
 
-        let mut evaluation_strategy: Box<dyn eval::EvaluationStrategy> = if job.is_nixpkgs() {
+        if !job.is_nixpkgs() {
+            error!(
+                "Ofborg only supports nixpkgs repositories, but this is {}",
+                job.repo.full_name
+            );
+        }
+        let mut evaluation_strategy: Box<dyn eval::EvaluationStrategy> =
             Box::new(eval::NixpkgsStrategy::new(
                 job,
                 &pull,
@@ -299,10 +305,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 &repo,
                 &self.gists,
                 self.nix.clone(),
-            ))
-        } else {
-            Box::new(eval::GenericStrategy::new())
-        };
+            ));
 
         let prefix = get_prefix(repo.statuses(), &job.pr.head_sha)?;
 
