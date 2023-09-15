@@ -16,7 +16,6 @@ use crate::tasks::evaluate::{get_prefix, make_gist, update_labels};
 
 use std::path::Path;
 
-use brace_expand::brace_expand;
 use chrono::Utc;
 use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
 use hubcaps::gists::Gists;
@@ -626,7 +625,10 @@ fn parse_commit_messages(messages: &[String]) -> Vec<String> {
             // Convert "foo: some notes" in to "foo"
             line.split_once(':').map(|(pre, _)| pre.trim())
         })
-        .flat_map(|line| brace_expand(&format!("{{{}}}", line)))
+        // NOTE: This transforms `{foo,bar}` into `{{foo,bar}}` and `foo,bar` into `{foo,bar}`,
+        // which allows both the old style (`foo,bar`) and the new style (`{foo,bar}`) to expand to
+        // `foo` and `bar`.
+        .flat_map(|line| brace_expand::brace_expand(&format!("{{{}}}", line)))
         .map(|line| line.trim().to_owned())
         .collect()
 }
