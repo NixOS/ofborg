@@ -16,6 +16,18 @@ pub struct HydraNixEnv {
     check_meta: bool,
 }
 
+/// Clone enough of a std::process::Command to be able to display it
+/// in debug output upon failure.  The non-Clone fields of Command
+/// (e.g. stdin, stdout, stderr) are not cloned, so this is not an
+/// `impl Clone`.
+fn quasiclone_command(cmd : &std::process::Command) -> std::process::Command {
+    let mut c = std::process::Command::new(&cmd.get_program());
+    c.args(cmd.get_args());
+    c.envs(cmd.get_envs().into_iter().map_while(|(k,vo)| if let Some(v)=vo { Some((k,v)) } else { None }));
+    if let Some(dir) = cmd.get_current_dir() { c.current_dir(dir.clone()); };
+    c
+}
+
 impl HydraNixEnv {
     pub fn new(nix: nix::Nix, path: PathBuf, check_meta: bool) -> HydraNixEnv {
         HydraNixEnv {
@@ -29,7 +41,7 @@ impl HydraNixEnv {
         &self,
     ) -> Result<(outpathdiff::PackageOutPaths, EvaluationStats), Error> {
         self.place_nix()?;
-        let (status, stdout, stderr, stats) = self.run_nix_env();
+        let (failed_command, status, stdout, stderr, stats) = self.run_nix_env();
         self.remove_nix()?;
 
         if status {
@@ -55,7 +67,7 @@ impl HydraNixEnv {
             })?;
             Ok((outpaths, stats))
         } else {
-            Err(Error::CommandFailed(stderr))
+            Err(Error::CommandFailed(failed_command, stderr))
         }
     }
 
@@ -93,7 +105,7 @@ impl HydraNixEnv {
         self.path.join(".gc-of-borg-stats.json")
     }
 
-    fn run_nix_env(&self) -> (bool, File, File, Result<File, io::Error>) {
+    fn run_nix_env(&self) -> (std::process::Command, bool, File, File, Result<File, io::Error>) {
         let check_meta = if self.check_meta { "true" } else { "false" };
 
         let mut cmd = self.nix.safe_command(
@@ -111,10 +123,11 @@ impl HydraNixEnv {
         cmd.env("NIX_SHOW_STATS", "1");
         cmd.env("NIX_SHOW_STATS_PATH", self.outpath_stats_path());
 
+        let quasicloned_cmd = quasiclone_command(&cmd);
         let (status, stdout, stderr) = self.nix.run_stderr_stdout(cmd);
         let stats = File::open(self.outpath_stats_path());
 
-        (status, stdout, stderr, stats)
+        (quasicloned_cmd, status, stdout, stderr, stats)
     }
 }
 
@@ -123,7 +136,7 @@ pub enum Error {
     CreateFile(PathBuf, io::Error),
     RemoveFile(PathBuf, io::Error),
     WriteFile(File, io::Error),
-    CommandFailed(File),
+    CommandFailed(std::process::Command, File),
     StatsParse(File, Result<u64, io::Error>, serde_json::Error),
     UncleanEvaluation(Vec<String>),
 }
@@ -143,13 +156,19 @@ impl Error {
             Error::WriteFile(file, err) => {
                 format!("Failed to write to file '{:?}': {:?}", file, err)
             }
-            Error::CommandFailed(mut fd) => {
+            Error::CommandFailed(failed_command, mut fd) => {
                 let mut buffer = Vec::new();
                 let read_result = fd.read_to_end(&mut buffer);
                 let bufstr = String::from_utf8_lossy(&buffer);
 
                 match read_result {
-                    Ok(_) => format!("nix-env failed:\n{}", bufstr),
+                    Ok(_) => format!(concat!("nix-env invocation failed:\n",
+                                             "  invocation: {:#?}\n",
+                                             "  environment: {:#?}\n",
+                                             "{}"),
+                                     failed_command.get_args(),
+                                     failed_command.get_envs(),
+                                     bufstr),
                     Err(e) => format!(
                         "nix-env failed and loading the error result caused a new error {:?}\n\n{}",
                         e, bufstr
