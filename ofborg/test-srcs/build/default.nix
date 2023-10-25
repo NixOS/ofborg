@@ -21,6 +21,6 @@ in
     system = builtins.currentSystem;
     src = ./../../src;
     inherit builder;
-    args = [ "-c" "echo hi; echo ${toString builtins.currentTime} > $out" ];
+    args = [ "-c" "echo hi; echo ${toString builtins.currentTime}; echo ${toString ./../../src}; echo $src" ];
   };
 }

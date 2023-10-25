@@ -849,7 +849,7 @@ mod tests {
         assert_run(
             ret,
             Expect::Fail,
-            vec!["access to absolute path", "is forbidden in restricted mode"],
+            vec!["1access to absolute path", "is forbidden in restricted mode1"],
         );
     }
 
