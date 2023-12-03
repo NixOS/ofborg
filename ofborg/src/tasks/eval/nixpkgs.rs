@@ -468,6 +468,14 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
                 self.nix.clone(),
             ),
             EvalChecker::new(
+                "ct",
+                nix::Operation::Unknown { program: "nix-shell".to_owned() },
+                vec![
+                    String::from("./ct"),
+                ],
+                self.nix.clone(),
+            ),
+            EvalChecker::new(
                 "nixos",
                 nix::Operation::Instantiate,
                 vec![
