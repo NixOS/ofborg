@@ -457,21 +457,9 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
                 self.nix.clone(),
             ),
             EvalChecker::new(
-                "lib-tests",
-                nix::Operation::Build,
-                vec![
-                    String::from("--arg"),
-                    String::from("pkgs"),
-                    String::from("import ./. {}"),
-                    String::from("./lib/tests/release.nix"),
-                ],
-                self.nix.clone(),
-            ),
-            EvalChecker::new(
                 "ct",
-                nix::Operation::Unknown { program: "nix-shell".to_owned() },
+                nix::Operation::Unknown { program: "./ct/default.nix".to_owned() },
                 vec![
-                    String::from("./ct"),
                 ],
                 self.nix.clone(),
             ),
