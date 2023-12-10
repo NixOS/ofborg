@@ -81,7 +81,10 @@ let
           packageName = pkg.name;
           dueToFiles = pkg.filenames;
         })
-        pkg.maintainers
+        (builtins.filter
+          (maintainer:
+            pkgs.lib.hasAttrByPath ["github"] maintainer)
+          pkg.maintainers)
       )
       attrsWithModifiedFiles);
 
