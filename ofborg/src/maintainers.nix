@@ -62,6 +62,17 @@ let
             #(builtins.unsafeGetAttrPos "name" drv)
             (builtins.unsafeGetAttrPos "pname" drv)
             (builtins.unsafeGetAttrPos "version" drv)
+
+            # Use ".meta.position" for cases when most of the package is
+            # defined in a "common" section and the only place where
+            # reference to the file with a derivation the "pos"
+            # attribute.
+            #
+            # ".meta.position" has the following form:
+            #   "pkgs/tools/package-management/nix/default.nix:155"
+            # We transform it to the following:
+            #   { file = "pkgs/tools/package-management/nix/default.nix"; }
+            { file = pkgs.lib.head (pkgs.lib.splitString ":" (drv.meta.position or "")); }
           ]
         )));
 
