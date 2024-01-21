@@ -92,6 +92,10 @@ impl<'a, 'b> JobActions<'a, 'b> {
         self.snippet_log.clone().into()
     }
 
+    pub fn pr_head_missing(&mut self) {
+        self.tell(worker::Action::Ack);
+    }
+
     pub fn commit_missing(&mut self) {
         self.tell(worker::Action::Ack);
     }
@@ -311,7 +315,12 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         };
 
         let refpath = co.checkout_origin_ref(target_branch.as_ref()).unwrap();
-        co.fetch_pr(job.pr.number).unwrap();
+
+        if co.fetch_pr(job.pr.number).is_err() {
+            info!("Failed to fetch {}", job.pr.number);
+            actions.pr_head_missing();
+            return;
+        }
 
         if !co.commit_exists(job.pr.head_sha.as_ref()) {
             info!("Commit {} doesn't exist", job.pr.head_sha);
