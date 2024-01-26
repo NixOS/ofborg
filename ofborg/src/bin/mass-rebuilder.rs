@@ -35,7 +35,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let conn = easylapin::from_config(&cfg.rabbitmq)?;
     let mut chan = task::block_on(conn.create_channel())?;
 
-    let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
+    let root = Path::new(&cfg.checkout.root);
+    let cloner = checkout::cached_cloner(&root.join(cfg.runner.instance.to_string()));
     let nix = cfg.nix();
 
     let events = stats::RabbitMq::from_lapin(&cfg.whoami(), task::block_on(conn.create_channel())?);
