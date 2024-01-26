@@ -64,8 +64,14 @@ pub struct LogStorage {
     pub path: String,
 }
 
+const fn default_instance() -> u8 {
+    1
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RunnerConfig {
+    #[serde(default = "default_instance")]
+    pub instance: u8,
     pub identity: String,
     pub repos: Option<Vec<String>>,
     #[serde(default = "Default::default")]
