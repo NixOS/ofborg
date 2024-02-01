@@ -384,7 +384,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 started_at: None,
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
                 status: Some(CheckRunState::Completed),
-                conclusion: Some(Conclusion::Neutral),
+                conclusion: Some(Conclusion::Failure),
                 details_url: Some(
                     "https://logs.ofborg.org/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid"
                         .to_string()
@@ -621,7 +621,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
                 started_at: None,
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
                 status: Some(CheckRunState::Completed),
-                conclusion: Some(Conclusion::Neutral),
+                conclusion: Some(Conclusion::Failure),
                 details_url: Some(
                     "https://logs.ofborg.org/?key=nixos/nixpkgs.2345&attempt_id=neatattemptid"
                         .to_string()
