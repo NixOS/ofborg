@@ -79,9 +79,7 @@ impl ImpactedMaintainers {
     }
 
     pub fn maintainers(&self) -> Vec<String> {
-        self.0
-            .iter()
-            .map(|(maintainer, _)| maintainer.0.clone())
+        self.0.keys().map(|maintainer| maintainer.0.clone())
             .collect()
     }
 

@@ -45,7 +45,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         }
 
         let instructions = commentparser::parse(&job.comment.body);
-        if instructions == None {
+        if instructions.is_none() {
             return vec![worker::Action::Ack];
         }
 

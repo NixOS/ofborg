@@ -314,14 +314,12 @@ mod tests {
     impl From<PackageArchSrc> for Vec<PackageArch> {
         fn from(src: PackageArchSrc) -> Vec<PackageArch> {
             let darwin: Vec<PackageArch> = (0..src.darwin)
-                .into_iter()
                 .map(|_| PackageArch {
                     package: String::from("bogus :)"),
                     architecture: String::from("x86_64-darwin"),
                 })
                 .collect();
             let linux: Vec<PackageArch> = (0..src.linux)
-                .into_iter()
                 .map(|_| PackageArch {
                     package: String::from("bogus :)"),
                     architecture: String::from("x86_64-linux"),

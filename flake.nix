@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-22.11";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.05";
     nixpkgs-for-php.url = "github:nixos/nixpkgs/nixos-22.05";
   };
 
@@ -47,6 +47,7 @@
                 nix-prefetch-git
                 rustc
                 cargo
+                cargo-edit
                 clippy
                 rustfmt
                 pkg-config
@@ -98,7 +99,7 @@
             src = pkgs.nix-gitignore.gitignoreSource [ ] ./.;
 
             nativeBuildInputs = with pkgs; [
-              pkgconfig
+              pkg-config
               pkgs.rustPackages.clippy
             ];
 
