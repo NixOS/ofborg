@@ -36,8 +36,22 @@ let
     (pkg: pkg // { package = pkgs.lib.attrsets.attrByPath pkg.path null pkgs; })
     validPackageAttributes;
 
+  # meta.maintainers can contain either individual maintainers or maintainer teams
+  # maintainer teams can be nested
+  # multiple teams can have overlapping membership
+  extractMembersFromTeams = maintainers:
+    (pkg.lib.lists.unique (
+      builtins.concatMap
+        (maintainerOrTeam:
+          if maintainerOrTeam ? members
+          then extractMembersFromTeams maintainerOrTeam.members
+          else [ maintainerOrTeam ]
+        )
+        maintainers
+    ));
+
   attrsWithMaintainers = builtins.map
-    (pkg: pkg // { maintainers = (pkg.package.meta or {}).maintainers or []; })
+    (pkg: pkg // { maintainers = extractMembersFromTeams (pkg.package.meta or {}).maintainers or []; })
     attrsWithPackages;
 
   attrsWeCanPing = builtins.filter
