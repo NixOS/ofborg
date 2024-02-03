@@ -16,7 +16,7 @@ futures-util = "0.3.25"
 # for Conclusion::Skipped which is in master
 hubcaps = { git = "https://github.com/softprops/hubcaps.git", rev = "d60d157b6638760fc725b2e4e4f329a4ec6b901e" }
 # hyper = { version = "0.14", features = ["full"] }
-hyper = "=0.10.*"
+hyper = "=0.14.*"
 # maybe can be removed when hyper is updated
 http = "0.2"
 lapin = "2.1.1"
