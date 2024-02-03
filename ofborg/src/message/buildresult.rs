@@ -30,10 +30,10 @@ impl From<BuildStatus> for Conclusion {
         match status {
             BuildStatus::Skipped => Conclusion::Skipped,
             BuildStatus::Success => Conclusion::Success,
-            BuildStatus::Failure => Conclusion::Neutral,
+            BuildStatus::Failure => Conclusion::Failure,
             BuildStatus::HashMismatch => Conclusion::Failure,
             BuildStatus::TimedOut => Conclusion::Neutral,
-            BuildStatus::UnexpectedError { .. } => Conclusion::Neutral,
+            BuildStatus::UnexpectedError { .. } => Conclusion::Failure,
         }
     }
 }
