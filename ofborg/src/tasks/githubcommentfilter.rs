@@ -141,6 +141,36 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                             },
                         ));
                     }
+                    commentparser::Instruction::BuildOnSystem(system, subset, attrs) => {
+                        if !build_destinations.contains(&system) {
+                            continue;
+                        };
+                        if subset == commentparser::Subset::NixOS && !system.can_run_nixos_tests() {
+                            continue;
+                        };
+
+                        let msg = buildjob::BuildJob::new(
+                            repo_msg.clone(),
+                            pr_msg.clone(),
+                            subset,
+                            attrs,
+                            None,
+                            None,
+                            format!("{}", Uuid::new_v4()),
+                        );
+
+                        let (exchange, routingkey) = system.as_build_destination();
+                        response.push(worker::publish_serde_action(exchange, routingkey, &msg));
+
+                        response.push(worker::publish_serde_action(
+                            Some("build-results".to_string()),
+                            None,
+                            &buildjob::QueuedBuildJobs {
+                                job: msg,
+                                architectures: vec![system.to_string()],
+                            },
+                        ));
+                    }
                     commentparser::Instruction::Eval => {
                         let msg = evaluationjob::EvaluationJob {
                             repo: repo_msg.clone(),
