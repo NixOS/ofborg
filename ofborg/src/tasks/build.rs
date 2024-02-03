@@ -334,10 +334,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             return;
         }
 
-        info!(
-            "Got path: {:?}, determining which ones we can build ",
-            refpath
-        );
+        info!("Determining which attributes we can build");
         let (can_build, cannot_build) = self.nix.safely_partition_instantiable_attrs(
             refpath.as_ref(),
             buildfile,
@@ -349,6 +346,25 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             .into_iter()
             .map(|(attr, _)| attr)
             .collect();
+
+        info!("Checking for stdenv rebuild");
+        match self.nix.safely_query_cache_for_attr(
+            refpath.as_ref(),
+            buildfile,
+            String::from("stdenv"),
+        ) {
+            Ok(false) => {
+                info!(
+                    "Skip build: '{}', Cannot build: '{}'",
+                    can_build.join(", "),
+                    cannot_build_attrs.join(", ")
+                );
+                actions.build_not_attempted(job.attrs.clone());
+                return;
+            }
+            Ok(true) => (),
+            Err(err) => error!("Failed to detect stdenv rebuild: {:?}", err),
+        }
 
         info!(
             "Can build: '{}', Cannot build: '{}'",
@@ -406,7 +422,10 @@ mod tests {
     const SYSTEM: &str = "x86_64-darwin";
 
     fn nix() -> nix::Nix {
+        let path = env::var("PATH").unwrap();
+        let test_path = format!("{}/test-nix/bin:{}", env!("CARGO_MANIFEST_DIR"), path);
         let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
+        env::set_var("PATH", test_path);
         nix::Nix::new("x86_64-linux".to_owned(), remote, 1800, None)
     }
 
@@ -430,6 +449,21 @@ mod tests {
         let output = Command::new("bash")
             .current_dir(tpath("./test-srcs"))
             .arg("make-pr.sh")
+            .arg(bare)
+            .arg(co)
+            .stderr(Stdio::null())
+            .stdout(Stdio::piped())
+            .output()
+            .expect("building the test PR failed");
+        let hash = String::from_utf8(output.stdout).expect("Should just be a hash");
+
+        hash.trim().to_owned()
+    }
+
+    fn make_stdenv_pr_repo(bare: &Path, co: &Path) -> String {
+        let output = Command::new("bash")
+            .current_dir(tpath("./test-srcs"))
+            .arg("make-stdenv-pr.sh")
             .arg(bare)
             .arg(co)
             .stderr(Stdio::null())
@@ -520,6 +554,45 @@ mod tests {
         assert_contains_job(&mut actions, "output\":\"4");
         assert_contains_job(&mut actions, "status\":\"Success\""); // First one to the github poster
         assert_contains_job(&mut actions, "status\":\"Success\""); // This one to the logs
+        assert_eq!(actions.next(), Some(worker::Action::Ack));
+    }
+
+    #[test]
+    pub fn test_stdenv_rebuild() {
+        let p = TestScratch::new_dir("build-stdenv-build-working");
+        let bare_repo = TestScratch::new_dir("build-stdenv-build-bare");
+        let co_repo = TestScratch::new_dir("build-stdenv-build-co");
+
+        let head_sha = make_stdenv_pr_repo(&bare_repo.path(), &co_repo.path());
+        let worker = make_worker(&p.path());
+
+        let job = buildjob::BuildJob {
+            attrs: vec!["success".to_owned()],
+            pr: Pr {
+                head_sha,
+                number: 1,
+                target_branch: Some("staging".to_owned()),
+            },
+            repo: Repo {
+                clone_url: bare_repo.path().to_str().unwrap().to_owned(),
+                full_name: "test-git".to_owned(),
+                name: "nixos".to_owned(),
+                owner: "ofborg-test".to_owned(),
+            },
+            subset: None,
+            logs: Some((Some(String::from("logs")), Some(String::from("build.log")))),
+            statusreport: Some((Some(String::from("build-results")), None)),
+            request_id: "bogus-request-id".to_owned(),
+        };
+
+        let mut dummyreceiver = notifyworker::DummyNotificationReceiver::new();
+
+        worker.consumer(&job, &mut dummyreceiver);
+
+        println!("Total actions: {:?}", dummyreceiver.actions.len());
+        let mut actions = dummyreceiver.actions.into_iter();
+        assert_contains_job(&mut actions, "skipped_attrs\":[\"success"); // First one to the github poster
+        assert_contains_job(&mut actions, "skipped_attrs\":[\"success"); // This one to the logs
         assert_eq!(actions.next(), Some(worker::Action::Ack));
     }
 

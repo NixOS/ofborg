@@ -4,12 +4,15 @@ use crate::ofborg::partition_result;
 
 use std::collections::HashMap;
 use std::env;
+use std::error::Error;
 use std::ffi::OsStr;
 use std::fmt;
 use std::fs;
+use std::io;
 use std::io::{BufRead, BufReader, Seek, SeekFrom};
 use std::path::Path;
 use std::process::{Command, Stdio};
+use tracing::{debug, info};
 
 use tempfile::tempfile;
 
@@ -162,6 +165,47 @@ impl Nix {
         let mut n = self.clone();
         n.limit_supported_systems = false;
         n
+    }
+
+    pub fn safely_query_cache_for_attr(
+        &self,
+        nixpkgs: &Path,
+        file: File,
+        attr: String,
+    ) -> Result<bool, Box<dyn Error>> {
+        let mut command = self.safe_command::<&OsStr>(&Operation::Instantiate, nixpkgs, &[], &[]);
+        self.set_attrs_command(&mut command, file, vec![attr]);
+        let output = command
+            .stderr(Stdio::piped())
+            .stdout(Stdio::piped())
+            .output()?;
+        debug!("{}", String::from_utf8(output.stderr)?.trim());
+
+        let drv = String::from_utf8(output.stdout)?;
+        let output = Command::new("nix-store")
+            .args(&["-q", "--binding", "out"])
+            .arg(drv.trim())
+            .stderr(Stdio::piped())
+            .stdout(Stdio::piped())
+            .output()?;
+        debug!("{}", String::from_utf8(output.stderr)?.trim());
+        if !output.status.success() {
+            let err = io::Error::new(io::ErrorKind::Other, "Could not evaluate stdenv");
+            return Err(Box::new(err));
+        }
+
+        let out = String::from_utf8(output.stdout)?;
+        info!("stdenv {}", out);
+        let output = Command::new("nix-store")
+            .args(&["--option", "store", "https://cache.nixos.org"])
+            .args(&["-q", "--size"])
+            .arg(out.trim())
+            .stderr(Stdio::piped())
+            .stdout(Stdio::null())
+            .output()?;
+        debug!("{}", String::from_utf8(output.stderr)?.trim());
+
+        Ok(output.status.success())
     }
 
     pub fn safely_partition_instantiable_attrs(
