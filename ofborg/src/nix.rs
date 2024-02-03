@@ -17,6 +17,7 @@ use tempfile::tempfile;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum File {
     DefaultNixpkgs,
+    ReleaseLibTests,
     ReleaseNixOS,
 }
 
@@ -24,6 +25,7 @@ impl fmt::Display for File {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             File::DefaultNixpkgs => write!(f, "./default.nix"),
+            File::ReleaseLibTests => write!(f, "./lib/tests/release.nix"),
             File::ReleaseNixOS => write!(f, "./nixos/release.nix"),
         }
     }

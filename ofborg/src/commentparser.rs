@@ -73,6 +73,7 @@ pub enum Instruction {
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub enum Subset {
+    LibTests,
     Nixpkgs,
     NixOS,
 }

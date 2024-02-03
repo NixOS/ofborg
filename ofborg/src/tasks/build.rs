@@ -310,6 +310,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         };
 
         let buildfile = match job.subset {
+            Some(commentparser::Subset::LibTests) => nix::File::ReleaseLibTests,
             Some(commentparser::Subset::NixOS) => nix::File::ReleaseNixOS,
             _ => nix::File::DefaultNixpkgs,
         };
