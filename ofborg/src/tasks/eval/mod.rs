@@ -1,8 +1,6 @@
-mod generic;
 mod nixpkgs;
 pub mod stdenvs;
 
-pub use self::generic::GenericStrategy;
 pub use self::nixpkgs::NixpkgsStrategy;
 pub use self::stdenvs::Stdenvs;
 use crate::checkout::CachedProjectCo;
