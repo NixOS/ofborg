@@ -7,7 +7,12 @@ use std::io::Write;
 use std::path::Path;
 
 #[derive(Deserialize, Debug, Eq, PartialEq)]
-pub struct ImpactedMaintainers(HashMap<Maintainer, Vec<Package>>);
+#[serde(rename_all = "camelCase")]
+pub struct ImpactedMaintainers {
+    packages_per_maintainer: HashMap<Maintainer, Vec<Package>>,
+    modules_per_maintainer: HashMap<Maintainer, Vec<Module>>
+}
+
 pub struct MaintainersByPackage(pub HashMap<Package, HashSet<Maintainer>>);
 
 #[derive(Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
@@ -24,6 +29,14 @@ impl<'a> From<&'a str> for Package {
         Package(name.to_owned())
     }
 }
+#[derive(Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
+pub struct Module(String);
+impl<'a> From<&'a str> for Module {
+    fn from(name: &'a str) -> Module {
+        Module(name.to_owned())
+    }
+}
+
 
 #[derive(Debug)]
 pub enum CalculationError {
@@ -79,16 +92,17 @@ impl ImpactedMaintainers {
     }
 
     pub fn maintainers(&self) -> Vec<String> {
-        self.0
+        self.packages_per_maintainer
             .iter()
             .map(|(maintainer, _)| maintainer.0.clone())
+            .chain(self.modules_per_maintainer.iter().map(|(maintainer, _)| maintainer.0.clone()))
             .collect()
     }
 
     pub fn maintainers_by_package(&self) -> MaintainersByPackage {
         let mut bypkg = MaintainersByPackage(HashMap::new());
 
-        for (maintainer, packages) in self.0.iter() {
+        for (maintainer, packages) in self.packages_per_maintainer.iter() {
             for package in packages.iter() {
                 bypkg
                     .0
@@ -105,7 +119,7 @@ impl ImpactedMaintainers {
 impl std::fmt::Display for ImpactedMaintainers {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let d = self
-            .0
+            .packages_per_maintainer
             .iter()
             .map(|(maintainer, packages)| {
                 format!(
@@ -194,8 +208,11 @@ mod tests {
         let parsed =
             ImpactedMaintainers::calculate(&nix, &working_co.clone_to(), &paths, &attributes);
 
-        let mut expect = ImpactedMaintainers(HashMap::new());
-        expect.0.insert(
+        let mut expect = ImpactedMaintainers {
+            packages_per_maintainer: HashMap::new(),
+            modules_per_maintainer: HashMap::new()
+        };
+        expect.packages_per_maintainer.insert(
             Maintainer::from("test"),
             vec![Package::from("foo.bar.packageA")],
         );
