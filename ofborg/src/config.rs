@@ -55,7 +55,6 @@ pub struct GithubConfig {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GithubAppConfig {
     pub app_id: u64,
-    pub installation_id: u64,
     pub private_key: PathBuf,
 }
 
