@@ -1,7 +1,7 @@
 {
     "name": "nixos/ofborg-webhook",
     "require": {
-        "php-amqplib/php-amqplib": ">=2.6.1",
-        "svanderburg/composer2nix": ">=0.0.3"
+        "php-amqplib/php-amqplib": ">=3.6.2",
+        "svanderburg/composer2nix": ">=0.0.6"
     }
 }

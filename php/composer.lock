@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6bf65db2920cc5f1530dd0c9d42fdaaa",
+    "content-hash": "cddc3bf153efe4b7d2314531fd7850a3",
     "packages": [
         {
             "name": "paragonie/constant_time_encoding",
-            "version": "v2.4.0",
+            "version": "v2.7.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/paragonie/constant_time_encoding.git",
-                "reference": "f34c2b11eb9d2c9318e13540a1dbc2a3afbd939c"
+                "reference": "52a0d99e69f56b9ec27ace92ba56897fe6993105"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/paragonie/constant_time_encoding/zipball/f34c2b11eb9d2c9318e13540a1dbc2a3afbd939c",
-                "reference": "f34c2b11eb9d2c9318e13540a1dbc2a3afbd939c",
+                "url": "https://api.github.com/repos/paragonie/constant_time_encoding/zipball/52a0d99e69f56b9ec27ace92ba56897fe6993105",
+                "reference": "52a0d99e69f56b9ec27ace92ba56897fe6993105",
                 "shasum": ""
             },
             "require": {
@@ -71,7 +71,7 @@
                 "issues": "https://github.com/paragonie/constant_time_encoding/issues",
                 "source": "https://github.com/paragonie/constant_time_encoding"
             },
-            "time": "2020-12-06T15:14:20+00:00"
+            "time": "2024-05-08T12:18:48+00:00"
         },
         {
             "name": "paragonie/random_compat",
@@ -125,22 +125,22 @@
         },
         {
             "name": "php-amqplib/php-amqplib",
-            "version": "v3.0.0",
+            "version": "v3.6.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-amqplib/php-amqplib.git",
-                "reference": "c0a8eade209b7e43d6a405303d8de716dfd02749"
+                "reference": "cb514530ce45a6d2f636be5196010c47c3bcf6e0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-amqplib/php-amqplib/zipball/c0a8eade209b7e43d6a405303d8de716dfd02749",
-                "reference": "c0a8eade209b7e43d6a405303d8de716dfd02749",
+                "url": "https://api.github.com/repos/php-amqplib/php-amqplib/zipball/cb514530ce45a6d2f636be5196010c47c3bcf6e0",
+                "reference": "cb514530ce45a6d2f636be5196010c47c3bcf6e0",
                 "shasum": ""
             },
             "require": {
                 "ext-mbstring": "*",
                 "ext-sockets": "*",
-                "php": "^7.0|~8.0.0",
+                "php": "^7.2||^8.0",
                 "phpseclib/phpseclib": "^2.0|^3.0"
             },
             "conflict": {
@@ -152,8 +152,8 @@
             "require-dev": {
                 "ext-curl": "*",
                 "nategood/httpful": "^0.2.20",
-                "phpunit/phpunit": "^6.5|^7.0|^9.5",
-                "squizlabs/php_codesniffer": "^3.5"
+                "phpunit/phpunit": "^7.5|^9.5",
+                "squizlabs/php_codesniffer": "^3.6"
             },
             "type": "library",
             "extra": {
@@ -200,22 +200,22 @@
             ],
             "support": {
                 "issues": "https://github.com/php-amqplib/php-amqplib/issues",
-                "source": "https://github.com/php-amqplib/php-amqplib/tree/v3.0.0"
+                "source": "https://github.com/php-amqplib/php-amqplib/tree/v3.6.2"
             },
-            "time": "2021-03-16T15:00:23+00:00"
+            "time": "2024-04-15T18:31:22+00:00"
         },
         {
             "name": "phpseclib/phpseclib",
-            "version": "3.0.8",
+            "version": "3.0.37",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpseclib/phpseclib.git",
-                "reference": "d9615a6fb970d9933866ca8b4036ec3407b020b6"
+                "reference": "cfa2013d0f68c062055180dd4328cc8b9d1f30b8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpseclib/phpseclib/zipball/d9615a6fb970d9933866ca8b4036ec3407b020b6",
-                "reference": "d9615a6fb970d9933866ca8b4036ec3407b020b6",
+                "url": "https://api.github.com/repos/phpseclib/phpseclib/zipball/cfa2013d0f68c062055180dd4328cc8b9d1f30b8",
+                "reference": "cfa2013d0f68c062055180dd4328cc8b9d1f30b8",
                 "shasum": ""
             },
             "require": {
@@ -224,11 +224,10 @@
                 "php": ">=5.6.1"
             },
             "require-dev": {
-                "phing/phing": "~2.7",
-                "phpunit/phpunit": "^5.7|^6.0|^9.4",
-                "squizlabs/php_codesniffer": "~2.0"
+                "phpunit/phpunit": "*"
             },
             "suggest": {
+                "ext-dom": "Install the DOM extension to load XML formatted public keys.",
                 "ext-gmp": "Install the GMP (GNU Multiple Precision) extension in order to speed up arbitrary precision integer arithmetic operations.",
                 "ext-libsodium": "SSH2/SFTP can make use of some algorithms provided by the libsodium-php extension.",
                 "ext-mcrypt": "Install the Mcrypt extension in order to speed up a few other cryptographic operations.",
@@ -297,7 +296,7 @@
             ],
             "support": {
                 "issues": "https://github.com/phpseclib/phpseclib/issues",
-                "source": "https://github.com/phpseclib/phpseclib/tree/3.0.8"
+                "source": "https://github.com/phpseclib/phpseclib/tree/3.0.37"
             },
             "funding": [
                 {
@@ -313,27 +312,24 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2021-04-19T03:20:48+00:00"
+            "time": "2024-03-03T02:14:58+00:00"
         },
         {
             "name": "svanderburg/composer2nix",
-            "version": "v0.0.5",
+            "version": "v0.0.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/svanderburg/composer2nix.git",
-                "reference": "9983c6fafb277f6b305edf232c2690d6d28ec092"
+                "reference": "299caca4aac42d7639a42eb4dde951c010f6e91c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/svanderburg/composer2nix/zipball/9983c6fafb277f6b305edf232c2690d6d28ec092",
-                "reference": "9983c6fafb277f6b305edf232c2690d6d28ec092",
+                "url": "https://api.github.com/repos/svanderburg/composer2nix/zipball/299caca4aac42d7639a42eb4dde951c010f6e91c",
+                "reference": "299caca4aac42d7639a42eb4dde951c010f6e91c",
                 "shasum": ""
             },
             "require": {
-                "svanderburg/pndp": "0.0.2"
-            },
-            "require-dev": {
-                "phpdocumentor/phpdocumentor": "2.9.x"
+                "svanderburg/pndp": "0.0.4"
             },
             "bin": [
                 "bin/composer2nix"
@@ -358,26 +354,23 @@
             "description": "Generate Nix expressions to build PHP composer packages",
             "support": {
                 "issues": "https://github.com/svanderburg/composer2nix/issues",
-                "source": "https://github.com/svanderburg/composer2nix/tree/v0.0.5"
+                "source": "https://github.com/svanderburg/composer2nix/tree/v0.0.6"
             },
-            "time": "2021-02-27T12:58:49+00:00"
+            "time": "2022-03-01T23:41:50+00:00"
         },
         {
             "name": "svanderburg/pndp",
-            "version": "v0.0.2",
+            "version": "v0.0.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/svanderburg/pndp.git",
-                "reference": "4bfe9c4120c23354ab8dc295957dc3009a39bff0"
+                "reference": "bc795b341d95c24bb577e0d7a4a37fde98b1cce8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/svanderburg/pndp/zipball/4bfe9c4120c23354ab8dc295957dc3009a39bff0",
-                "reference": "4bfe9c4120c23354ab8dc295957dc3009a39bff0",
+                "url": "https://api.github.com/repos/svanderburg/pndp/zipball/bc795b341d95c24bb577e0d7a4a37fde98b1cce8",
+                "reference": "bc795b341d95c24bb577e0d7a4a37fde98b1cce8",
                 "shasum": ""
-            },
-            "require-dev": {
-                "phpdocumentor/phpdocumentor": "2.9.x"
             },
             "bin": [
                 "bin/pndp-build"
@@ -402,9 +395,9 @@
             "description": "PNDP: An internal DSL for Nix in PHP",
             "support": {
                 "issues": "https://github.com/svanderburg/pndp/issues",
-                "source": "https://github.com/svanderburg/pndp/tree/v0.0.2"
+                "source": "https://github.com/svanderburg/pndp/tree/v0.0.4"
             },
-            "time": "2017-10-22T12:43:22+00:00"
+            "time": "2022-02-26T22:15:06+00:00"
         }
     ],
     "packages-dev": [],
@@ -415,5 +408,5 @@
     "prefer-lowest": false,
     "platform": [],
     "platform-dev": [],
-    "plugin-api-version": "2.0.0"
+    "plugin-api-version": "2.6.0"
 }
