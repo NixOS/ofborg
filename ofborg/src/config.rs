@@ -35,7 +35,7 @@ pub struct RabbitMqConfig {
     pub host: String,
     pub virtualhost: Option<String>,
     pub username: String,
-    pub password: String,
+    pub password_file: PathBuf,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -155,15 +155,17 @@ impl Config {
 }
 
 impl RabbitMqConfig {
-    pub fn as_uri(&self) -> String {
-        format!(
+    pub fn as_uri(&self) -> Result<String, std::io::Error> {
+        let password = std::fs::read_to_string(&self.password_file)?;
+        let uri = format!(
             "{}://{}:{}@{}/{}",
             if self.ssl { "amqps" } else { "amqp" },
             self.username,
-            self.password,
+            password,
             self.host,
             self.virtualhost.clone().unwrap_or_else(|| "/".to_owned()),
-        )
+        );
+        Ok(uri)
     }
 }
 

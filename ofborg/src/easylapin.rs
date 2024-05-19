@@ -31,7 +31,7 @@ pub fn from_config(cfg: &RabbitMqConfig) -> Result<Connection, lapin::Error> {
         client_properties: props,
         ..Default::default()
     };
-    task::block_on(Connection::connect(&cfg.as_uri(), opts))
+    task::block_on(Connection::connect(&cfg.as_uri()?, opts))
 }
 
 impl ChannelExt for Channel {
