@@ -49,7 +49,7 @@ pub struct NixConfig {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GithubConfig {
-    pub token: String,
+    pub token_file: PathBuf,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -119,10 +119,12 @@ impl Config {
     }
 
     pub fn github(&self) -> Github {
+        let token = std::fs::read_to_string(self.github.clone().unwrap().token_file)
+            .expect("Couldn't read from GitHub token file");
         Github::new(
             "github.com/grahamc/ofborg",
             // tls configured hyper client
-            Credentials::Token(self.github.clone().unwrap().token),
+            Credentials::Token(token),
         )
         .expect("Unable to create a github client instance")
     }
