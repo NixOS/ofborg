@@ -14,7 +14,7 @@ fs2 = "0.4.3"
 futures-util = "0.3.25"
 #hubcaps = "0.6"
 # for Conclusion::Skipped which is in master
-hubcaps = { git = "https://github.com/softprops/hubcaps.git", rev = "d60d157b6638760fc725b2e4e4f329a4ec6b901e" }
+hubcaps = { git = "https://github.com/softprops/hubcaps.git", rev = "d60d157b6638760fc725b2e4e4f329a4ec6b901e", default-features = false, features = ["app", "rustls-tls"] }
 # hyper = { version = "0.14", features = ["full"] }
 hyper = "=0.10.*"
 # maybe can be removed when hyper is updated

@@ -53,7 +53,6 @@
                 git
               ];
               buildInputs = with pkgs; [
-                openssl
               ] ++ lib.optionals stdenv.isDarwin [ darwin.Security libiconv ];
 
               postHook = ''
@@ -103,7 +102,6 @@
             ];
 
             buildInputs = with pkgs; [
-              openssl
             ] ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [
               darwin.apple_sdk.frameworks.Security
               darwin.apple_sdk.frameworks.CoreFoundation
