@@ -56,7 +56,7 @@ impl Operation {
     fn args(&self, command: &mut Command) {
         match *self {
             Operation::Build => {
-                command.args(&[
+                command.args([
                     "--no-out-link",
                     "--keep-going",
                     "--option",
@@ -65,7 +65,7 @@ impl Operation {
                 ]);
             }
             Operation::QueryPackagesJson => {
-                command.args(&[
+                command.args([
                     "--query",
                     "--available",
                     "--json",
@@ -75,7 +75,7 @@ impl Operation {
                 ]);
             }
             Operation::QueryPackagesOutputs => {
-                command.args(&[
+                command.args([
                     "--query",
                     "--available",
                     "--no-name",
@@ -90,7 +90,7 @@ impl Operation {
                 operation.args(command);
             }
             Operation::Evaluate => {
-                command.args(&[
+                command.args([
                     "--eval",
                     "--strict",
                     "--json",
@@ -100,7 +100,7 @@ impl Operation {
                 ]);
             }
             Operation::Instantiate => {
-                command.args(&["--option", "extra-experimental-features", "no-url-literals"]);
+                command.args(["--option", "extra-experimental-features", "no-url-literals"]);
             }
             _ => (),
         };
@@ -343,23 +343,23 @@ impl Nix {
         command.env("NIX_REMOTE", &self.remote);
 
         if let Some(ref initial_heap_size) = self.initial_heap_size {
-            command.env("GC_INITIAL_HEAP_SIZE", &initial_heap_size);
+            command.env("GC_INITIAL_HEAP_SIZE", initial_heap_size);
         }
 
         let path = env::var("PATH").unwrap();
         command.env("PATH", path);
 
-        command.args(&["--show-trace"]);
-        command.args(&["--option", "restrict-eval", "true"]);
-        command.args(&[
+        command.args(["--show-trace"]);
+        command.args(["--option", "restrict-eval", "true"]);
+        command.args([
             "--option",
             "build-timeout",
             &format!("{}", self.build_timeout),
         ]);
-        command.args(&["--argstr", "system", &self.system]);
+        command.args(["--argstr", "system", &self.system]);
 
         if self.limit_supported_systems {
-            command.args(&[
+            command.args([
                 "--arg",
                 "supportedSystems",
                 &format!("[\"{}\"]", &self.system),

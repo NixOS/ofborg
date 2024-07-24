@@ -124,7 +124,7 @@ mod tests {
     #[test]
     fn stdenv_checking() {
         let output = Command::new("nix-instantiate")
-            .args(&["--eval", "-E", "<nixpkgs>"])
+            .args(["--eval", "-E", "<nixpkgs>"])
             .output()
             .expect("nix-instantiate required");
 

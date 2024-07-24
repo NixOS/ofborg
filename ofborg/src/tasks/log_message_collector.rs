@@ -157,7 +157,7 @@ impl LogMessageCollector {
             .read(true)
             .write(true)
             .create(true)
-            .open(&path);
+            .open(path);
 
         match attempt {
             Ok(handle) => Ok(handle),

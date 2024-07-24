@@ -14,7 +14,7 @@ impl TestScratch {
             root: Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("test-scratch")
                 .join("dirs")
-                .join(&format!("dir-{}", ident)),
+                .join(format!("dir-{}", ident)),
         };
 
         TestScratch::create_dir(&scratch);
@@ -27,7 +27,7 @@ impl TestScratch {
             root: Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("test-scratch")
                 .join("files")
-                .join(&format!("file-{}", ident)),
+                .join(format!("file-{}", ident)),
         };
 
         TestScratch::create_dir(&scratch);

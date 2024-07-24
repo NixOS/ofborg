@@ -39,7 +39,7 @@ impl CachedCloner {
 
         let mut new_root = self.root.clone();
         new_root.push("repo");
-        new_root.push(format!("{:x}", md5::compute(&name)));
+        new_root.push(format!("{:x}", md5::compute(name)));
 
         CachedProject {
             root: new_root,

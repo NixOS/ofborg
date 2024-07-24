@@ -149,11 +149,11 @@ impl<'a, 'b> JobActions<'a, 'b> {
     }
 
     pub fn log_instantiation_errors(&mut self, cannot_build: Vec<(String, Vec<String>)>) {
-        for (attr, log) in cannot_build {
-            self.log_line(&format!("Cannot nix-instantiate `{}' because:", &attr));
+        for (attr, log) in &cannot_build {
+            self.log_line(&format!("Cannot nix-instantiate `{}' because:", attr));
 
             for line in log {
-                self.log_line(&line);
+                self.log_line(line);
             }
             self.log_line("");
         }
