@@ -63,7 +63,7 @@ impl MetricType {
         let fields: Vec<String> = event
             .fields
             .iter()
-            .map(|&(ref _fieldname, ref fieldtype)| fieldtype.clone())
+            .map(|(_fieldname, fieldtype)| fieldtype.clone())
             .collect();
 
         fields
@@ -94,7 +94,7 @@ impl MetricType {
         let fields: Vec<String> = event
             .fields
             .iter()
-            .map(|&(ref fieldname, ref _fieldtype)| fieldname.clone())
+            .map(|(fieldname, _fieldtype)| fieldname.clone())
             .collect();
 
         fields
