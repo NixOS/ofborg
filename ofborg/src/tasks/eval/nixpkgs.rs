@@ -635,8 +635,15 @@ fn parse_commit_messages(messages: &[String]) -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
+
+    trait PipeSort<T: Ord>: Sized + AsMut<[T]> {
+        fn sorted(mut self) -> Self {
+            self.as_mut().sort();
+            self
+        }
+    }
+    impl<T: Ord, L: Sized + AsMut<[T]>> PipeSort<T> for L {}
 
     #[test]
     fn test_parse_commit_messages() {
@@ -708,12 +715,12 @@ mod tests {
             vec![String::from("6.topic: darwin")]
         );
         assert_eq!(
-            label_from_title("fix build on bsd and darwin").sort(),
+            label_from_title("fix build on bsd and darwin").sorted(),
             vec![
                 String::from("6.topic: darwin"),
                 String::from("6.topic: bsd")
             ]
-            .sort()
+            .sorted()
         );
         assert_eq!(
             label_from_title("pkg: fix cross"),
