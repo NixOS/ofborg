@@ -150,7 +150,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
 
     pub fn log_instantiation_errors(&mut self, cannot_build: Vec<(String, Vec<String>)>) {
         for (attr, log) in &cannot_build {
-            self.log_line(&format!("Cannot nix-instantiate `{}' because:", attr));
+            self.log_line(&format!("Cannot nix-instantiate `{}` because:", attr));
 
             for line in log {
                 self.log_line(line);
@@ -558,7 +558,7 @@ mod tests {
         let mut actions = dummyreceiver.actions.into_iter();
         assert_contains_job(
             &mut actions,
-            "\"line_number\":1,\"output\":\"Cannot nix-instantiate `not-real\' because:\"",
+            r#""line_number":1,"output":"Cannot nix-instantiate `not-real` because:""#,
         );
         assert_contains_job(
             &mut actions,
