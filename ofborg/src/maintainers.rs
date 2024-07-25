@@ -93,7 +93,7 @@ impl ImpactedMaintainers {
                 bypkg
                     .0
                     .entry(package.clone())
-                    .or_insert_with(HashSet::new)
+                    .or_default()
                     .insert(maintainer.clone());
             }
         }
