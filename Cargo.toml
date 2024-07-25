@@ -3,6 +3,7 @@ members = [
     "ofborg",
     "ofborg-simple-build"
 ]
+resolver = "2"
 
 [profile.release]
 debug = true

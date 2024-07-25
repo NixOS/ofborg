@@ -2,7 +2,7 @@
 name = "ofborg-simple-build"
 version = "0.1.0"
 authors = ["Daiderd Jordan <daiderd@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 ofborg = { path = "../ofborg" }
