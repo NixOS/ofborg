@@ -155,7 +155,6 @@ impl LogMessageCollector {
         let attempt = OpenOptions::new()
             .append(true)
             .read(true)
-            .write(true)
             .create(true)
             .open(path);
 
