@@ -78,10 +78,10 @@ impl ImpactedMaintainers {
         Ok(serde_json::from_str(&String::from_utf8(ret.stdout)?)?)
     }
 
-    pub fn maintainers(&self) -> Vec<String> {
+    pub fn maintainers(&self) -> Vec<&str> {
         self.0
-            .iter()
-            .map(|(maintainer, _)| maintainer.0.clone())
+            .keys()
+            .map(|Maintainer(name)| name.as_str())
             .collect()
     }
 

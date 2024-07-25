@@ -603,7 +603,7 @@ fn request_reviews(maint: &maintainers::ImpactedMaintainers, pull: &hubcaps::pul
 
             if let Err(e) = async_std::task::block_on(pull.review_requests().create(
                 &hubcaps::review_requests::ReviewRequestOptions {
-                    reviewers: vec![maintainer.clone()],
+                    reviewers: vec![maintainer.to_owned()],
                     team_reviewers: vec![],
                 },
             )) {
