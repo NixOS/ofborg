@@ -456,8 +456,7 @@ mod tests {
 
     fn strip_ansi(string: &str) -> String {
         string
-            .replace('‘', "'")
-            .replace('’', "'")
+            .replace(['‘', '’'], "'")
             .replace("\u{1b}[31;1m", "") // red
             .replace("\u{1b}[0m", "") // reset
     }
