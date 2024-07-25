@@ -64,7 +64,7 @@ fn create_handle(
     })?;
 
     let queue_name = if cfg.runner.build_all_jobs != Some(true) {
-        let queue_name = format!("build-inputs-{}", system);
+        let queue_name = format!("build-inputs-{system}");
         chan.declare_queue(easyamqp::QueueConfig {
             queue: queue_name.clone(),
             passive: false,

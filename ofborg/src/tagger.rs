@@ -43,10 +43,7 @@ impl StdenvTagger {
 
         for tag in &self.selected {
             if !self.possible.contains(tag) {
-                panic!(
-                    "Tried to add label {} but it isn't in the possible list!",
-                    tag
-                );
+                panic!("Tried to add label {tag} but it isn't in the possible list!");
             }
         }
     }
@@ -176,23 +173,20 @@ impl RebuildTagger {
         self.selected.extend(
             RebuildTagger::bucket(counter_darwin)
                 .iter()
-                .map(|bucket| format!("10.rebuild-darwin: {}", bucket))
+                .map(|bucket| format!("10.rebuild-darwin: {bucket}"))
                 .collect::<Vec<String>>(),
         );
 
         self.selected.extend(
             RebuildTagger::bucket(counter_linux)
                 .iter()
-                .map(|bucket| format!("10.rebuild-linux: {}", bucket))
+                .map(|bucket| format!("10.rebuild-linux: {bucket}"))
                 .collect::<Vec<String>>(),
         );
 
         for tag in &self.selected {
             if !self.possible.contains(tag) {
-                panic!(
-                    "Tried to add label {} but it isn't in the possible list!",
-                    tag
-                );
+                panic!("Tried to add label {tag} but it isn't in the possible list!");
             }
         }
     }

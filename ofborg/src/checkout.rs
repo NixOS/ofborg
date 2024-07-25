@@ -101,7 +101,7 @@ impl CachedProjectCo {
         let result = Command::new("git")
             .arg("fetch")
             .arg("origin")
-            .arg(format!("+refs/pull/{}/head:pr", pr_id))
+            .arg(format!("+refs/pull/{pr_id}/head:pr"))
             .current_dir(self.clone_to())
             .stdout(Stdio::null())
             .status()?;
@@ -162,7 +162,7 @@ impl CachedProjectCo {
         let result = Command::new("git")
             .arg("log")
             .arg("--format=format:%s")
-            .arg(format!("HEAD..{}", commit))
+            .arg(format!("HEAD..{commit}"))
             .current_dir(self.clone_to())
             .output()?;
 
@@ -187,7 +187,7 @@ impl CachedProjectCo {
         let result = Command::new("git")
             .arg("diff")
             .arg("--name-only")
-            .arg(format!("HEAD...{}", commit))
+            .arg(format!("HEAD...{commit}"))
             .current_dir(self.clone_to())
             .output()?;
 
@@ -278,8 +278,8 @@ mod tests {
             .expect("building the test PR failed");
 
         let stderr =
-            String::from_utf8(output.stderr).unwrap_or_else(|err| format!("warning: {}", err));
-        println!("{}", stderr);
+            String::from_utf8(output.stderr).unwrap_or_else(|err| format!("warning: {err}"));
+        println!("{stderr}");
 
         let hash = String::from_utf8(output.stdout).expect("Should just be a hash");
         return hash.trim().to_owned();

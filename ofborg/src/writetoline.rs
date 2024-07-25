@@ -27,7 +27,7 @@ impl LineWriter {
             .lines()
             .map(|line| match line {
                 Ok(s) => s,
-                Err(e) => format!("UTF-8 Decode err: {:?}", e),
+                Err(err) => format!("UTF-8 Decode err: {err:?}"),
             })
             .collect()
     }

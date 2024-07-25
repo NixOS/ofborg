@@ -65,12 +65,11 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
                 self.events.notify(Event::JobDecodeSuccess);
                 Ok(e)
             }
-            Err(e) => {
+            Err(err) => {
                 self.events.notify(Event::JobDecodeFailure);
                 error!(
-                    "Failed to decode message: {:?}, Err: {:?}",
-                    String::from_utf8(body.to_vec()),
-                    e
+                    "Failed to decode message: {:?}, Err: {err:?}",
+                    String::from_utf8(body.to_vec())
                 );
                 Err("Failed to decode message".to_owned())
             }
@@ -169,7 +168,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         let prefix = get_prefix(repo.statuses(), &self.job.pr.head_sha)?;
 
         let mut builder = hubcaps::statuses::StatusOptions::builder(state);
-        builder.context(format!("{}-eval", prefix));
+        builder.context(format!("{prefix}-eval"));
         builder.description(description.clone());
 
         if let Some(url) = url {
@@ -309,7 +308,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         let mut overall_status = CommitStatus::new(
             repo.statuses(),
             job.pr.head_sha.clone(),
-            format!("{}-eval", &prefix),
+            format!("{prefix}-eval"),
             "Starting".to_owned(),
             None,
         );
@@ -404,7 +403,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 let mut status = CommitStatus::new(
                     repo.statuses(),
                     job.pr.head_sha.clone(),
-                    format!("{}-eval-{}", prefix, check.name()),
+                    format!("{prefix}-eval-{}", check.name()),
                     check.cli_cmd(),
                     None,
                 );
@@ -423,8 +422,8 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                     Err(mut out) => {
                         state = hubcaps::statuses::State::Failure;
                         gist_url = self.make_gist(
-                            &format!("{}-eval-{}", prefix, check.name()),
-                            Some(format!("{:?}", state)),
+                            &format!("{prefix}-eval-{}", check.name()),
+                            Some(format!("{state:?}")),
                             file_to_str(&mut out),
                         );
                     }
@@ -551,24 +550,16 @@ pub fn update_labels(issueref: &hubcaps::issues::IssueRef, add: &[String], remov
         .cloned()
         .collect();
 
-    info!(
-        "Labeling issue #{}: + {:?} , - {:?}, = {:?}",
-        issue.number, to_add, to_remove, existing
-    );
+    let issue = issue.number;
 
-    async_std::task::block_on(l.add(to_add.clone())).unwrap_or_else(|e| {
-        panic!(
-            "Failed to add labels {:?} to issue #{}: {:?}",
-            to_add, issue.number, e
-        )
-    });
+    info!("Labeling issue #{issue}: + {to_add:?} , - {to_remove:?}, = {existing:?}");
+
+    async_std::task::block_on(l.add(to_add.clone()))
+        .unwrap_or_else(|err| panic!("Failed to add labels {to_add:?} to issue #{issue}: {err:?}"));
 
     for label in to_remove {
-        async_std::task::block_on(l.remove(&label)).unwrap_or_else(|e| {
-            panic!(
-                "Failed to remove label {:?} from issue #{}: {:?}",
-                label, issue.number, e
-            )
+        async_std::task::block_on(l.remove(&label)).unwrap_or_else(|err| {
+            panic!("Failed to remove label {label:?} from issue #{issue}: {err:?}")
         });
     }
 }

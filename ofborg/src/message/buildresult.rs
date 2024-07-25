@@ -20,7 +20,7 @@ impl From<BuildStatus> for String {
             BuildStatus::Failure => "Failure".into(),
             BuildStatus::HashMismatch => "A fixed output derivation's hash was incorrect".into(),
             BuildStatus::TimedOut => "Timed out, unknown build status".into(),
-            BuildStatus::UnexpectedError { ref err } => format!("Unexpected error: {}", err),
+            BuildStatus::UnexpectedError { ref err } => format!("Unexpected error: {err}"),
         }
     }
 }

@@ -20,10 +20,9 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
 
     fn msg_to_job(&mut self, _: &str, _: &Option<String>, body: &[u8]) -> Result<Self::J, String> {
         match serde_json::from_slice(body) {
-            Ok(e) => Ok(e),
-            Err(e) => Err(format!(
-                "Failed to deserialize job {:?}: {:?}",
-                e,
+            Ok(event) => Ok(event),
+            Err(err) => Err(format!(
+                "Failed to deserialize job {err:?}: {:?}",
                 String::from_utf8(body.to_vec())
             )),
         }

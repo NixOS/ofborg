@@ -237,7 +237,7 @@ impl Nix {
 
     fn set_attrs_command(&self, command: &mut Command, file: File, attrs: Vec<String>) {
         let mut args: Vec<String> = Vec::with_capacity(3 + (attrs.len() * 2));
-        args.push(format!("{}", file));
+        args.push(format!("{file}"));
         for attr in attrs {
             args.push(String::from("-A"));
             args.push(attr);
@@ -392,15 +392,15 @@ pub fn wait_for_build_status(spawned: SpawnedAsyncCmd) -> BuildStatus {
             Some(100) => BuildStatus::Failure, // nix permanent failure
             Some(101) => BuildStatus::TimedOut, // nix build timedout
             Some(102) => BuildStatus::HashMismatch, // Fixed Output Derivation's hash was wrong
-            Some(i) => BuildStatus::UnexpectedError {
-                err: format!("command failed with exit code {}", i),
+            Some(code) => BuildStatus::UnexpectedError {
+                err: format!("command failed with exit code {code}"),
             },
             None => BuildStatus::UnexpectedError {
                 err: "unexpected build failure".into(),
             },
         },
-        e => BuildStatus::UnexpectedError {
-            err: format!("failed on interior command {:?}", e),
+        Err(err) => BuildStatus::UnexpectedError {
+            err: format!("failed on interior command {err}"),
         },
     }
 }
@@ -418,7 +418,7 @@ mod tests {
 
     fn nix() -> Nix {
         let path = env::var("PATH").unwrap();
-        let test_path = format!("{}/test-nix/bin:{}", env!("CARGO_MANIFEST_DIR"), path);
+        let test_path = format!("{}/test-nix/bin:{path}", env!("CARGO_MANIFEST_DIR"));
         env::set_var("PATH", test_path);
         let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
         Nix::new(SYSTEM.to_owned(), remote, 1800, None)
@@ -483,7 +483,7 @@ mod tests {
         let buildlog = lines
             .into_iter()
             .map(|line| strip_ansi(&line))
-            .map(|line| format!("   | {}", line))
+            .map(|line| format!("   | {line}"))
             .collect::<Vec<String>>()
             .join("\n");
 
@@ -511,7 +511,7 @@ mod tests {
             ));
             prefixes.push("".to_owned());
         } else {
-            prefixes.push(format!("The run was expected to {:?}, and did.", expected));
+            prefixes.push(format!("The run was expected to {expected:?}, and did."));
             prefixes.push("".to_owned());
         }
 
@@ -526,7 +526,7 @@ mod tests {
         ];
 
         for expected_line in requirements_held {
-            suffixes.push(format!(" - {:?}", expected_line));
+            suffixes.push(format!(" - {expected_line:?}"));
         }
         suffixes.push("".to_owned());
 
@@ -542,7 +542,7 @@ mod tests {
 
         if expectation_held && missed_requirements == 0 {
         } else {
-            panic!("{}", output);
+            panic!("{output}");
         }
     }
 

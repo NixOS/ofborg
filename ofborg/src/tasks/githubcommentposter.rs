@@ -106,7 +106,7 @@ fn job_to_check(job: &BuildJob, architecture: &str, timestamp: DateTime<Utc>) ->
     }
 
     CheckRunOptions {
-        name: format!("{} on {}", all_attrs.join(", "), architecture),
+        name: format!("{} on {architecture}", all_attrs.join(", ")),
         actions: None,
         completed_at: None,
         started_at: Some(timestamp.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)),
@@ -205,7 +205,7 @@ fn list_segment(name: &str, things: &[String]) -> Vec<String> {
     let mut reply: Vec<String> = vec![];
 
     if !things.is_empty() {
-        reply.push(format!("{}: {}", name, things.join(", ")));
+        reply.push(format!("{name}: {}", things.join(", ")));
         reply.push("".to_owned());
     }
 

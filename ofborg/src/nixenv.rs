@@ -137,27 +137,24 @@ impl From<io::Error> for Error {
 impl Error {
     pub fn display(self) -> String {
         match self {
-            Error::Io(e) => format!("Failed during the setup of executing nix-env: {:?}", e),
-            Error::CreateFile(path, err) => format!("Failed to create file {:?}: {:?}", path, err),
-            Error::RemoveFile(path, err) => format!("Failed to remove file {:?}: {:?}", path, err),
-            Error::WriteFile(file, err) => {
-                format!("Failed to write to file '{:?}': {:?}", file, err)
-            }
+            Error::Io(err) => format!("Failed during the setup of executing nix-env: {err:?}"),
+            Error::CreateFile(path, err) => format!("Failed to create file {path:?}: {err:?}"),
+            Error::RemoveFile(path, err) => format!("Failed to remove file {path:?}: {err:?}"),
+            Error::WriteFile(file, err) => format!("Failed to write to file '{file:?}': {err:?}"),
             Error::CommandFailed(mut fd) => {
                 let mut buffer = Vec::new();
                 let read_result = fd.read_to_end(&mut buffer);
                 let bufstr = String::from_utf8_lossy(&buffer);
 
                 match read_result {
-                    Ok(_) => format!("nix-env failed:\n{}", bufstr),
-                    Err(e) => format!(
-                        "nix-env failed and loading the error result caused a new error {:?}\n\n{}",
-                        e, bufstr
+                    Ok(_) => format!("nix-env failed:\n{bufstr}"),
+                    Err(err) => format!(
+                        "nix-env failed and loading the error result caused a new error {err:?}\n\n{bufstr}"
                     ),
                 }
             }
             Error::UncleanEvaluation(warnings) => {
-                format!("nix-env did not evaluate cleanly:\n {:?}", warnings)
+                format!("nix-env did not evaluate cleanly:\n {warnings:?}")
             }
             Error::StatsParse(mut fd, seek, parse_err) => {
                 let mut buffer = Vec::new();
@@ -169,21 +166,19 @@ impl Error {
 
                 if let Err(seek_err) = seek {
                     lines.push_str(&format!(
-                        "Additionally, resetting to the beginning of the output failed with:\n{:?}\n\n",
-                        seek_err
+                        "Additionally, resetting to the beginning of the output failed with:\n{seek_err:?}\n\n"
                     ));
                 }
 
                 if let Err(read_err) = read_result {
                     lines.push_str(&format!(
-                        "Additionally, loading the output failed with:\n{:?}\n\n",
-                        read_err
+                        "Additionally, loading the output failed with:\n{read_err:?}\n\n"
                     ));
                 }
 
-                lines.push_str(&format!("Parse error:\n{:?}\n\n", parse_err));
+                lines.push_str(&format!("Parse error:\n{parse_err:?}\n\n"));
 
-                lines.push_str(&format!("Evaluation output:\n{}", bufstr));
+                lines.push_str(&format!("Evaluation output:\n{bufstr}"));
 
                 lines
             }

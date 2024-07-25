@@ -23,13 +23,13 @@ impl worker::SimpleWorker for GitHubCommentWorker {
 
     fn msg_to_job(&mut self, _: &str, _: &Option<String>, body: &[u8]) -> Result<Self::J, String> {
         match serde_json::from_slice(body) {
-            Ok(e) => Ok(e),
-            Err(e) => {
+            Ok(comment) => Ok(comment),
+            Err(err) => {
                 error!(
                     "Failed to deserialize IsssueComment: {:?}",
                     String::from_utf8(body.to_vec())
                 );
-                panic!("{:?}", e);
+                panic!("{err:?}");
             }
         }
     }
@@ -120,7 +120,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                             attrs,
                             None,
                             None,
-                            format!("{}", Uuid::new_v4()),
+                            Uuid::new_v4().to_string(),
                         );
 
                         for arch in build_destinations.iter() {

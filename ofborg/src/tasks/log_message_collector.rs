@@ -68,13 +68,13 @@ impl LogMessageCollector {
 
         match serde_json::to_string(data) {
             Ok(data) => {
-                if let Err(e) = fp.write(data.as_bytes()) {
-                    Err(format!("Failed to write metadata: {:?}", e))
+                if let Err(err) = fp.write(data.as_bytes()) {
+                    Err(format!("Failed to write metadata: {err:?}"))
                 } else {
                     Ok(())
                 }
             }
-            Err(e) => Err(format!("Failed to stringify metadata: {:?}", e)),
+            Err(err) => Err(format!("Failed to stringify metadata: {err:?}")),
         }
     }
 
@@ -84,13 +84,13 @@ impl LogMessageCollector {
 
         match serde_json::to_string(data) {
             Ok(data) => {
-                if let Err(e) = fp.write(data.as_bytes()) {
-                    Err(format!("Failed to write result: {:?}", e))
+                if let Err(err) = fp.write(data.as_bytes()) {
+                    Err(format!("Failed to write result: {err:?}"))
                 } else {
                     Ok(())
                 }
             }
-            Err(e) => Err(format!("Failed to stringify result: {:?}", e)),
+            Err(err) => Err(format!("Failed to stringify result: {err:?}")),
         }
     }
 
@@ -142,8 +142,7 @@ impl LogMessageCollector {
             Ok(location)
         } else {
             Err(format!(
-                "Calculating the log location for {:?} resulted in an invalid path {:?}",
-                from, location
+                "Calculating the log location for {from:?} resulted in an invalid path {location:?}"
             ))
         }
     }
@@ -160,9 +159,8 @@ impl LogMessageCollector {
 
         match attempt {
             Ok(handle) => Ok(handle),
-            Err(e) => Err(format!(
-                "Failed to open the file for {:?}, err: {:?}",
-                &path, e
+            Err(err) => Err(format!(
+                "Failed to open the file for {path:?}, err: {err:?}"
             )),
         }
     }
@@ -195,7 +193,7 @@ impl worker::SimpleWorker for LogMessageCollector {
                     attempt_id = msg.legacy().attempt_id;
                     message = MsgType::Finish(Box::new(msg));
                 } else {
-                    return Err(format!("failed to decode job: {:?}", decode_msg));
+                    return Err(format!("failed to decode job: {decode_msg:?}"));
                 }
             }
         }
@@ -251,8 +249,8 @@ mod tests {
 
     fn make_from(id: &str) -> LogFrom {
         LogFrom {
-            attempt_id: format!("attempt-id-{}", &id),
-            routing_key: format!("routing-key-{}", &id),
+            attempt_id: format!("attempt-id-{id}"),
+            routing_key: format!("routing-key-{id}"),
         }
     }
 
@@ -337,7 +335,7 @@ mod tests {
             routing_key: String::from("./../../foobar"),
         });
 
-        println!("path: {:?}", path);
+        println!("path: {path:?}");
         assert!(path.is_err());
     }
 

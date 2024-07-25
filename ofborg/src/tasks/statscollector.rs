@@ -35,12 +35,11 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for StatCollectorWorker
                             events: vec![e],
                         })
                     }
-                    Err(e) => {
+                    Err(err) => {
                         self.events.notify(stats::Event::StatCollectorBogusEvent);
                         error!(
-                            "Failed to decode message: {:?}, Err: {:?}",
-                            String::from_utf8(body.to_vec()),
-                            e
+                            "Failed to decode message: {:?}, Err: {err:?}",
+                            String::from_utf8(body.to_vec())
                         );
                         Err("Failed to decode message".to_owned())
                     }

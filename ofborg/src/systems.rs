@@ -19,7 +19,7 @@ impl std::fmt::Display for System {
 
 impl System {
     pub fn as_build_destination(&self) -> (Option<String>, Option<String>) {
-        (None, Some(format!("build-inputs-{}", self)))
+        (None, Some(format!("build-inputs-{self}")))
     }
 
     pub fn can_run_nixos_tests(&self) -> bool {

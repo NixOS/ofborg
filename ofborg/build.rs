@@ -427,7 +427,7 @@ pub struct MetricCollector {
             let fields_str = {
                 let s = fields.join(", ");
                 if fields.len() > 1 {
-                    format!("({})", s)
+                    format!("({s})")
                 } else {
                     s
                 }
@@ -476,7 +476,7 @@ impl MetricCollector {
 
             let mut index_fields = index_names.join(", ");
             if index_names.len() > 1 {
-                index_fields = format!("({})", index_fields);
+                index_fields = format!("({index_fields})");
             }
 
             format!(
@@ -526,7 +526,7 @@ impl MetricCollector {
 
             let key_value_pairs: Vec<String> = index_fields
                 .iter()
-                .map(|name| format!("            format!(\"{}=\\\"{{}}\\\"\", {})", &name, &name))
+                .map(|name| format!("            format!(\"{name}=\\\"{{}}\\\"\", {name})",))
                 .collect();
             format!(
                 "

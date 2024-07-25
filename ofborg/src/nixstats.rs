@@ -138,7 +138,7 @@ impl<'a> EvaluationStatsDiff<'a> {
                 Row {
                     before: left.separated_string(),
                     after: right.separated_string(),
-                    diff: format!("{}{}", direction, diff.separated_string()),
+                    diff: format!("{direction}{}", diff.separated_string()),
                     diff_pct,
                 }
             }
@@ -163,9 +163,9 @@ impl<'a> EvaluationStatsDiff<'a> {
                 };
 
                 Row {
-                    before: format!("{:.2}", left),
-                    after: format!("{:.2}", right),
-                    diff: format!("{}{:.2}", direction, diff),
+                    before: format!("{left:.2}"),
+                    after: format!("{right:.2}"),
+                    diff: format!("{direction}{diff:.2}"),
                     diff_pct,
                 }
             }
@@ -316,13 +316,15 @@ impl<'a> EvaluationStatsDiff<'a> {
         let rows = keys
             .into_iter()
             .map(|key| {
-                let row = &data[&key];
-                format!("| {key:<keywidth$} | {before:>beforewidth$} | {after:>afterwidth$} | {diff:<diffwidth$} | {diff_pct:>diff_pctwidth$} |",
-                        key=format!("**{}**", key), keywidth=(keylen + 4),
-                        before=row.before, beforewidth=beforelen,
-                        after=row.after, afterwidth=afterlen,
-                        diff=row.diff, diffwidth=difflen,
-                        diff_pct=row.diff_pct, diff_pctwidth=diff_pctlen)
+                let Row {
+                    before,
+                    after,
+                    diff,
+                    diff_pct,
+                } = &data[&key];
+                let key = format!("**{key}**");
+                let keywidth = keylen + 4;
+                format!("| {key:<keywidth$} | {before:>beforelen$} | {after:>afterlen$} | {diff:<difflen$} | {diff_pct:>diff_pctlen$} |")
             })
             .collect::<Vec<String>>();
 
@@ -482,8 +484,8 @@ mod tests {
     }
 
     fn diff_text(left: &str, right: &str) {
-        println!("left:\n{}", left);
-        println!("right:\n{}", right);
+        println!("left:\n{left}");
+        println!("right:\n{right}");
 
         let lines = left.split('\n').zip(right.split('\n'));
 

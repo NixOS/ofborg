@@ -38,7 +38,7 @@ fn label_from_title(title: &str) -> Vec<String> {
     let labels: Vec<_> = TITLE_LABELS
         .iter()
         .filter(|(word, _label)| {
-            let re = Regex::new(&format!("\\b{}\\b", word)).unwrap();
+            let re = Regex::new(&format!("\\b{word}\\b")).unwrap();
             re.is_match(title)
         })
         .map(|(_word, label)| (*label).into())
@@ -262,8 +262,8 @@ impl<'a> NixpkgsStrategy<'a> {
                 "Potential Maintainers",
                 Some("".to_owned()),
                 match m {
-                    Ok(ref maintainers) => format!("Maintainers:\n{}", maintainers),
-                    Err(ref e) => format!("Ignorable calculation error:\n{:?}", e),
+                    Ok(ref maintainers) => format!("Maintainers:\n{maintainers}"),
+                    Err(ref err) => format!("Ignorable calculation error:\n{err:?}"),
                 },
             );
 
@@ -277,7 +277,7 @@ impl<'a> NixpkgsStrategy<'a> {
                 let status = CommitStatus::new(
                     self.repo.statuses(),
                     self.job.pr.head_sha.clone(),
-                    format!("{}-eval-check-maintainers", prefix),
+                    format!("{prefix}-eval-check-maintainers"),
                     String::from("large change, skipping automatic review requests"),
                     gist_url,
                 );
@@ -288,7 +288,7 @@ impl<'a> NixpkgsStrategy<'a> {
             let status = CommitStatus::new(
                 self.repo.statuses(),
                 self.job.pr.head_sha.clone(),
-                format!("{}-eval-check-maintainers", prefix),
+                format!("{prefix}-eval-check-maintainers"),
                 String::from("matching changed paths to changed attrs..."),
                 gist_url,
             );
@@ -317,7 +317,7 @@ impl<'a> NixpkgsStrategy<'a> {
             let mut status = CommitStatus::new(
                 self.repo.statuses(),
                 self.job.pr.head_sha.clone(),
-                format!("{}-eval-check-meta", prefix),
+                format!("{prefix}-eval-check-meta"),
                 String::from("config.nix: checkMeta = true"),
                 None,
             );
@@ -350,7 +350,7 @@ impl<'a> NixpkgsStrategy<'a> {
                             try_build,
                             None,
                             None,
-                            format!("{}", Uuid::new_v4()),
+                            Uuid::new_v4().to_string(),
                         )])
                     } else {
                         Ok(vec![])
@@ -628,7 +628,7 @@ fn parse_commit_messages(messages: &[String]) -> Vec<String> {
         // NOTE: This transforms `{foo,bar}` into `{{foo,bar}}` and `foo,bar` into `{foo,bar}`,
         // which allows both the old style (`foo,bar`) and the new style (`{foo,bar}`) to expand to
         // `foo` and `bar`.
-        .flat_map(|line| brace_expand::brace_expand(&format!("{{{}}}", line)))
+        .flat_map(|line| brace_expand::brace_expand(&format!("{{{line}}}")))
         .map(|line| line.trim().to_owned())
         .collect()
 }

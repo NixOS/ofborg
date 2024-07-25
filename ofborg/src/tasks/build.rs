@@ -80,7 +80,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
             job,
             line_counter: 0,
             snippet_log: VecDeque::with_capacity(10),
-            attempt_id: format!("{}", Uuid::new_v4()),
+            attempt_id: Uuid::new_v4().to_string(),
             log_exchange,
             log_routing_key,
             result_exchange,
@@ -150,7 +150,7 @@ impl<'a, 'b> JobActions<'a, 'b> {
 
     pub fn log_instantiation_errors(&mut self, cannot_build: Vec<(String, Vec<String>)>) {
         for (attr, log) in &cannot_build {
-            self.log_line(&format!("Cannot nix-instantiate `{}` because:", attr));
+            self.log_line(&format!("Cannot nix-instantiate `{attr}` because:"));
 
             for line in log {
                 self.log_line(line);
@@ -267,10 +267,10 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
     fn msg_to_job(&self, _: &str, _: &Option<String>, body: &[u8]) -> Result<Self::J, String> {
         info!("lmao I got a job?");
         match buildjob::from(body) {
-            Ok(e) => Ok(e),
-            Err(e) => {
+            Ok(job) => Ok(job),
+            Err(err) => {
                 error!("{:?}", String::from_utf8(body.to_vec()));
-                panic!("{:?}", e);
+                panic!("{err:?}");
             }
         }
     }
@@ -449,31 +449,28 @@ mod tests {
     }
 
     fn assert_contains_job(actions: &mut IntoIter<worker::Action>, text_to_match: &str) {
-        println!("\n\n   Searching: {:?}", text_to_match);
+        println!("\n\n   Searching: {text_to_match:?}");
         actions
             .position(|job| match job {
                 worker::Action::Publish(ref body) => {
                     let content = String::from_utf8(body.content.clone()).unwrap();
                     let text = strip_escaped_ansi(&content);
-                    eprintln!("{}", text);
+                    eprintln!("{text}");
                     if text.contains(text_to_match) {
                         println!(" ok");
                         true
                     } else {
-                        println!(" notContains: {}", text);
+                        println!(" notContains: {text}");
                         false
                     }
                 }
-                e => {
-                    println!(" notPublish: {:?}", e);
+                other => {
+                    println!(" notPublish: {other:?}");
                     false
                 }
             })
             .unwrap_or_else(|| {
-                panic!(
-                    "Actions should contain a job matching {}, after the previous check",
-                    text_to_match
-                )
+                panic!("Actions should contain a job matching {text_to_match}, after the previous check")
             });
     }
 

@@ -56,11 +56,11 @@ impl ImpactedMaintainers {
     ) -> Result<ImpactedMaintainers, CalculationError> {
         let mut path_file = NamedTempFile::new()?;
         let pathstr = serde_json::to_string(&paths)?;
-        write!(path_file, "{}", pathstr)?;
+        write!(path_file, "{pathstr}")?;
 
         let mut attr_file = NamedTempFile::new()?;
         let attrstr = serde_json::to_string(&attributes)?;
-        write!(attr_file, "{}", attrstr)?;
+        write!(attr_file, "{attrstr}")?;
 
         let mut argstrs: HashMap<&str, &str> = HashMap::new();
         argstrs.insert("changedattrsjson", attr_file.path().to_str().unwrap());
@@ -156,8 +156,8 @@ mod tests {
             .expect("building the test PR failed");
 
         let stderr =
-            String::from_utf8(output.stderr).unwrap_or_else(|err| format!("warning: {}", err));
-        println!("{}", stderr);
+            String::from_utf8(output.stderr).unwrap_or_else(|err| format!("warning: {err}"));
+        println!("{stderr}");
 
         let hash = String::from_utf8(output.stdout).expect("Should just be a hash");
         return hash.trim().to_owned();
