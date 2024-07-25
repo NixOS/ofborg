@@ -24,14 +24,11 @@ pub struct QueueMsg {
     pub content: Vec<u8>,
 }
 
-pub fn publish_serde_action<T: ?Sized>(
+pub fn publish_serde_action<T: Serialize + ?Sized>(
     exchange: Option<String>,
     routing_key: Option<String>,
     msg: &T,
-) -> Action
-where
-    T: Serialize,
-{
+) -> Action {
     Action::Publish(Box::new(QueueMsg {
         exchange,
         routing_key,
