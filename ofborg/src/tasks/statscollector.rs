@@ -26,13 +26,13 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for StatCollectorWorker
                 modified_body.push(b"\""[0]);
 
                 match serde_json::from_slice(&modified_body) {
-                    Ok(e) => {
+                    Ok(event) => {
                         self.events.notify(stats::Event::StatCollectorLegacyEvent(
-                            stats::event_metric_name(&e),
+                            stats::event_metric_name(&event),
                         ));
                         Ok(stats::EventMessage {
                             sender: "".to_owned(),
-                            events: vec![e],
+                            events: vec![event],
                         })
                     }
                     Err(err) => {

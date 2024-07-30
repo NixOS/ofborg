@@ -254,16 +254,16 @@ impl<'a> NixpkgsStrategy<'a> {
             .collect::<Vec<Vec<&str>>>();
 
         if let Some(ref changed_paths) = self.changed_paths {
-            let m =
+            let maintainers =
                 ImpactedMaintainers::calculate(&self.nix, dir, changed_paths, &changed_attributes);
 
             let gist_url = make_gist(
                 self.gists,
                 "Potential Maintainers",
                 Some("".to_owned()),
-                match m {
-                    Ok(ref maintainers) => format!("Maintainers:\n{maintainers}"),
-                    Err(ref err) => format!("Ignorable calculation error:\n{err:?}"),
+                match &maintainers {
+                    Ok(maintainers) => format!("Maintainers:\n{maintainers}"),
+                    Err(err) => format!("Ignorable calculation error:\n{err:?}"),
                 },
             );
 
@@ -294,15 +294,17 @@ impl<'a> NixpkgsStrategy<'a> {
             );
             status.set(hubcaps::statuses::State::Success)?;
 
-            if let Ok(ref maint) = m {
-                request_reviews(maint, self.pull);
-                let mut maint_tagger = MaintainerPrTagger::new();
-                maint_tagger
-                    .record_maintainer(&self.issue.user.login, &maint.maintainers_by_package());
+            if let Ok(maintainers) = &maintainers {
+                request_reviews(maintainers, self.pull);
+                let mut tagger = MaintainerPrTagger::new();
+                tagger.record_maintainer(
+                    &self.issue.user.login,
+                    &maintainers.maintainers_by_package(),
+                );
                 update_labels(
                     self.issue_ref,
-                    &maint_tagger.tags_to_add(),
-                    &maint_tagger.tags_to_remove(),
+                    &tagger.tags_to_add(),
+                    &tagger.tags_to_remove(),
                 );
             }
         }

@@ -61,9 +61,9 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
     fn msg_to_job(&mut self, _: &str, _: &Option<String>, body: &[u8]) -> Result<Self::J, String> {
         self.events.notify(Event::JobReceived);
         match evaluationjob::from(body) {
-            Ok(e) => {
+            Ok(job) => {
                 self.events.notify(Event::JobDecodeSuccess);
-                Ok(e)
+                Ok(job)
             }
             Err(err) => {
                 self.events.notify(Event::JobDecodeFailure);
