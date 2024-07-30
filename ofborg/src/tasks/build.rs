@@ -269,7 +269,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         match buildjob::from(body) {
             Ok(job) => Ok(job),
             Err(err) => {
-                error!("{:?}", String::from_utf8(body.to_vec()));
+                error!("{:?}", std::str::from_utf8(body).unwrap_or("<not utf8>"));
                 panic!("{err:?}");
             }
         }
@@ -453,8 +453,8 @@ mod tests {
         actions
             .position(|job| match job {
                 worker::Action::Publish(ref body) => {
-                    let content = String::from_utf8(body.content.clone()).unwrap();
-                    let text = strip_escaped_ansi(&content);
+                    let content = std::str::from_utf8(&body.content).unwrap();
+                    let text = strip_escaped_ansi(content);
                     eprintln!("{text}");
                     if text.contains(text_to_match) {
                         println!(" ok");

@@ -39,7 +39,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for StatCollectorWorker
                         self.events.notify(stats::Event::StatCollectorBogusEvent);
                         error!(
                             "Failed to decode message: {:?}, Err: {err:?}",
-                            String::from_utf8(body.to_vec())
+                            std::str::from_utf8(body).unwrap_or("<message not utf8>")
                         );
                         Err("Failed to decode message".to_owned())
                     }

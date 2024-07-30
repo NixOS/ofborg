@@ -27,7 +27,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
             Err(err) => {
                 error!(
                     "Failed to deserialize IsssueComment: {:?}",
-                    String::from_utf8(body.to_vec())
+                    std::str::from_utf8(body).unwrap_or("<not utf8>")
                 );
                 panic!("{err:?}");
             }

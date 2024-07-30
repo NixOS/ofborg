@@ -68,8 +68,8 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             Err(err) => {
                 self.events.notify(Event::JobDecodeFailure);
                 error!(
-                    "Failed to decode message: {:?}, Err: {err:?}",
-                    String::from_utf8(body.to_vec())
+                    "Failed to decode message: {}, Err: {err:?}",
+                    std::str::from_utf8(body).unwrap_or("<message not utf8>")
                 );
                 Err("Failed to decode message".to_owned())
             }

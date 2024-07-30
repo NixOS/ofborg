@@ -23,7 +23,7 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
             Ok(event) => Ok(event),
             Err(err) => Err(format!(
                 "Failed to deserialize job {err:?}: {:?}",
-                String::from_utf8(body.to_vec())
+                std::str::from_utf8(body).unwrap_or("<job not utf8>")
             )),
         }
     }
