@@ -104,23 +104,29 @@ impl ImpactedMaintainers {
 
 impl std::fmt::Display for ImpactedMaintainers {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let d = self
-            .0
-            .iter()
-            .map(|(maintainer, packages)| {
-                format!(
-                    "{}: {}",
-                    maintainer.0,
-                    packages
-                        .iter()
-                        .map(|pkg| pkg.0.clone())
-                        .collect::<Vec<String>>()
-                        .join(", ")
-                )
-            })
-            .collect::<Vec<String>>()
-            .join("\n");
-        write!(f, "{}", d)
+        let mut is_first = true;
+        for (Maintainer(maintainer), packages) in &self.0 {
+            if is_first {
+                is_first = false;
+            } else {
+                f.write_str("\n")?;
+            }
+
+            f.write_fmt(format_args!("{maintainer}"))?;
+
+            let (first, rest) = {
+                let mut packages = packages.iter();
+                (packages.next(), packages)
+            };
+            if let Some(Package(package)) = first {
+                f.write_fmt(format_args!(": {package}"))?;
+
+                for Package(package) in rest {
+                    f.write_fmt(format_args!(", {package}"))?;
+                }
+            }
+        }
+        Ok(())
     }
 }
 
