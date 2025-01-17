@@ -6,9 +6,6 @@
 #![allow(clippy::redundant_closure)]
 
 #[macro_use]
-extern crate serde_derive;
-
-#[macro_use]
 extern crate nom;
 
 use std::env;

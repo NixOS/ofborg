@@ -1,4 +1,4 @@
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct BuildLogMsg {
     pub system: String,
     pub identity: String,
@@ -7,7 +7,7 @@ pub struct BuildLogMsg {
     pub output: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct BuildLogStart {
     pub system: String,
     pub identity: String,

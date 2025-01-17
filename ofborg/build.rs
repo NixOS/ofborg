@@ -362,7 +362,7 @@ fn main() {
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 #[serde(rename_all=\"kebab-case\")]
 pub enum Event {
 ",

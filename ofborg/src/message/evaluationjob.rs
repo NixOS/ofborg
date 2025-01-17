@@ -5,7 +5,7 @@ pub fn from(data: &[u8]) -> Result<EvaluationJob, serde_json::error::Error> {
     serde_json::from_slice(data)
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct EvaluationJob {
     pub repo: Repo,
     pub pr: Pr,

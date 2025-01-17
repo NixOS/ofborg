@@ -1,6 +1,6 @@
 use crate::ghevent::{Comment, Issue, Repository};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct IssueComment {
     pub action: IssueCommentAction,
     pub comment: Comment,
@@ -8,7 +8,7 @@ pub struct IssueComment {
     pub issue: Issue,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum IssueCommentAction {
     Created,

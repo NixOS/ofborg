@@ -6,18 +6,18 @@ use std::collections::{HashMap, HashSet};
 use std::io::Write;
 use std::path::Path;
 
-#[derive(Deserialize, Debug, Eq, PartialEq)]
+#[derive(serde::Deserialize, Debug, Eq, PartialEq)]
 pub struct ImpactedMaintainers(HashMap<Maintainer, Vec<Package>>);
 pub struct MaintainersByPackage(pub HashMap<Package, HashSet<Maintainer>>);
 
-#[derive(Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(serde::Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Maintainer(String);
 impl<'a> From<&'a str> for Maintainer {
     fn from(name: &'a str) -> Maintainer {
         Maintainer(name.to_ascii_lowercase())
     }
 }
-#[derive(Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(serde::Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Package(String);
 impl<'a> From<&'a str> for Package {
     fn from(name: &'a str) -> Package {

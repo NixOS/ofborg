@@ -1,4 +1,4 @@
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct Repo {
     pub owner: String,
     pub name: String,
@@ -6,7 +6,7 @@ pub struct Repo {
     pub clone_url: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct Pr {
     pub target_branch: Option<String>,
     pub number: u64,
