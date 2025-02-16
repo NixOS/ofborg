@@ -91,7 +91,8 @@ impl CachedProjectCo {
 
         // let build_dir = self.build_dir();
 
-        Ok(self.clone_to().to_str().unwrap().to_string())
+        let canonicalized = fs::canonicalize(self.clone_to()).unwrap();
+        Ok(canonicalized.to_str().unwrap().to_string())
     }
 
     pub fn fetch_pr(&self, pr_id: u64) -> Result<(), Error> {
