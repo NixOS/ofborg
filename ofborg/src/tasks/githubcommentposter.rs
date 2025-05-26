@@ -106,7 +106,7 @@ fn job_to_check(job: &BuildJob, architecture: &str, timestamp: DateTime<Utc>) ->
     }
 
     CheckRunOptions {
-        name: format!("{} on {architecture}", all_attrs.join(", ")),
+        name: format!(".{architecture}: {}", all_attrs.join(", ")),
         actions: None,
         completed_at: None,
         started_at: Some(timestamp.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)),
@@ -175,7 +175,7 @@ fn result_to_check(result: &LegacyBuildResult, timestamp: DateTime<Utc>) -> Chec
     };
 
     CheckRunOptions {
-        name: format!("{} on {}", all_attrs.join(", "), result.system),
+        name: format!(".{}: {}", result.system, all_attrs.join(", ")),
         actions: None,
         completed_at: Some(timestamp.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)),
         started_at: None,
@@ -244,7 +244,7 @@ mod tests {
         assert_eq!(
             job_to_check(&job, "x86_64-linux", timestamp),
             CheckRunOptions {
-                name: "bar, foo on x86_64-linux".to_string(),
+                name: ".x86_64-linux: bar, foo".to_string(),
                 actions: None,
                 started_at: Some("2023-04-20T13:37:42Z".to_string()),
                 completed_at: None,
@@ -297,7 +297,7 @@ mod tests {
         assert_eq!(
             result_to_check(&result, timestamp),
             CheckRunOptions {
-                name: "bar, foo on x86_64-linux".to_string(),
+                name: ".x86_64-linux: bar, foo".to_string(),
                 actions: None,
                 started_at: None,
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
@@ -379,7 +379,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
         assert_eq!(
             result_to_check(&result, timestamp),
             CheckRunOptions {
-                name: "foo on x86_64-linux".to_string(),
+                name: ".x86_64-linux: foo".to_string(),
                 actions: None,
                 started_at: None,
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
@@ -458,7 +458,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
         assert_eq!(
             result_to_check(&result, timestamp),
             CheckRunOptions {
-                name: "foo on x86_64-linux".to_string(),
+                name: ".x86_64-linux: foo".to_string(),
                 actions: None,
                 started_at: None,
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
@@ -538,7 +538,7 @@ error: build of '/nix/store/l1limh50lx2cx45yb2gqpv7k8xl1mik2-gdb-8.1.drv' failed
         assert_eq!(
             result_to_check(&result, timestamp),
             CheckRunOptions {
-                name: "(unknown attributes) on x86_64-linux".to_string(),
+                name: ".x86_64-linux: (unknown attributes)".to_string(),
                 actions: None,
                 started_at: None,
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
@@ -616,7 +616,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
         assert_eq!(
             result_to_check(&result, timestamp),
             CheckRunOptions {
-                name: "(unknown attributes) on x86_64-linux".to_string(),
+                name: ".x86_64-linux: (unknown attributes)".to_string(),
                 actions: None,
                 started_at: None,
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
@@ -683,7 +683,7 @@ patching script interpreter paths in /nix/store/pcja75y9isdvgz5i00pkrpif9rxzxc29
         assert_eq!(
             result_to_check(&result, timestamp),
             CheckRunOptions {
-                name: "not-attempted on x86_64-linux".to_string(),
+                name: ".x86_64-linux: not-attempted".to_string(),
                 actions: None,
                 started_at: None,
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
@@ -736,7 +736,7 @@ foo
         assert_eq!(
             result_to_check(&result, timestamp),
             CheckRunOptions {
-                name: "not-attempted on x86_64-linux".to_string(),
+                name: ".x86_64-linux: not-attempted".to_string(),
                 actions: None,
                 started_at: None,
                 completed_at: Some("2023-04-20T13:37:42Z".to_string()),
