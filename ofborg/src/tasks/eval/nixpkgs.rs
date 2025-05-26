@@ -174,6 +174,10 @@ fn parse_commit_messages(messages: &[String]) -> Vec<String> {
             // Convert "foo: some notes" in to "foo"
             line.split_once(':').map(|(pre, _)| pre.trim())
         })
+        .filter(|line| {
+            // When a prefix contains a slash, it targets a certain file, but not a buildable package.
+            !line.contains("/")
+        })
         // NOTE: This transforms `{foo,bar}` into `{{foo,bar}}` and `foo,bar` into `{foo,bar}`,
         // which allows both the old style (`foo,bar`) and the new style (`{foo,bar}`) to expand to
         // `foo` and `bar`.
@@ -228,6 +232,7 @@ mod tests {
               Merge pull request #34414 from dotlambda/postfix
               foo,bar: something here: yeah
               firefox{,-beta}{,-bin}, librewolf: blah blah blah
+              workflows/eval: should be ignored
             "
                 .lines()
                 .map(|l| l.to_owned())
