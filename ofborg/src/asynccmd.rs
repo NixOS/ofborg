@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::io::{self, BufRead, BufReader, Read};
 use std::process::{Child, Command, ExitStatus, Stdio};
-use std::sync::mpsc::{self, sync_channel, Receiver, SyncSender};
+use std::sync::mpsc::{self, Receiver, SyncSender, sync_channel};
 use std::thread::{self, JoinHandle};
 
 use tracing::{debug, error, info};

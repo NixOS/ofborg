@@ -103,7 +103,7 @@ impl<'a> NixpkgsStrategy<'a> {
     }
 }
 
-impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
+impl EvaluationStrategy for NixpkgsStrategy<'_> {
     fn pre_clone(&mut self) -> StepResult<()> {
         self.tag_from_title();
         Ok(())

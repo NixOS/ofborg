@@ -2,13 +2,13 @@ use std::env;
 use std::error::Error;
 
 use async_std::task;
-use lapin::message::Delivery;
 use lapin::BasicProperties;
+use lapin::message::Delivery;
 
 use ofborg::commentparser;
 use ofborg::config;
 use ofborg::easylapin;
-use ofborg::message::{buildjob, Pr, Repo};
+use ofborg::message::{Pr, Repo, buildjob};
 use ofborg::notifyworker::NotificationReceiver;
 use ofborg::worker;
 

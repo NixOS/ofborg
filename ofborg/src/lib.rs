@@ -10,8 +10,8 @@ extern crate nom;
 
 use std::env;
 
-use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
+use tracing_subscriber::prelude::*;
 
 pub mod acl;
 pub mod asynccmd;

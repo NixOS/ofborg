@@ -419,7 +419,7 @@ mod tests {
     fn nix() -> Nix {
         let path = env::var("PATH").unwrap();
         let test_path = format!("{}/test-nix/bin:{path}", env!("CARGO_MANIFEST_DIR"));
-        env::set_var("PATH", test_path);
+        unsafe { env::set_var("PATH", test_path) };
         let remote = env::var("NIX_REMOTE").unwrap_or("".to_owned());
         Nix::new(SYSTEM.to_owned(), remote, 1800, None)
     }

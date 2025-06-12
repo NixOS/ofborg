@@ -1,6 +1,6 @@
 use crate::acl;
 use crate::ghevent;
-use crate::message::{evaluationjob, Pr, Repo};
+use crate::message::{Pr, Repo, evaluationjob};
 use crate::worker;
 
 use tracing::{debug_span, info};

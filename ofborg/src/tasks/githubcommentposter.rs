@@ -1,7 +1,7 @@
 use crate::config::GithubAppVendingMachine;
+use crate::message::Repo;
 use crate::message::buildjob::{BuildJob, QueuedBuildJobs};
 use crate::message::buildresult::{BuildResult, BuildStatus, LegacyBuildResult};
-use crate::message::Repo;
 use crate::worker;
 
 use chrono::{DateTime, Utc};
