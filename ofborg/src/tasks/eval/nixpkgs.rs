@@ -128,21 +128,7 @@ impl<'a> EvaluationStrategy for NixpkgsStrategy<'a> {
         Ok(())
     }
 
-    fn merge_conflict(&mut self) {
-        update_labels(
-            self.issue_ref,
-            &["2.status: merge conflict".to_owned()],
-            &[],
-        );
-    }
-
     fn after_merge(&mut self, status: &mut CommitStatus) -> StepResult<()> {
-        update_labels(
-            self.issue_ref,
-            &[],
-            &["2.status: merge conflict".to_owned()],
-        );
-
         status.set_with_description("Checking new out paths", hubcaps::statuses::State::Pending)?;
         self.check_outpaths_after()?;
 

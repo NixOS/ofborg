@@ -13,7 +13,6 @@ pub trait EvaluationStrategy {
 
     fn on_target_branch(&mut self, co: &Path, status: &mut CommitStatus) -> StepResult<()>;
     fn after_fetch(&mut self, co: &CachedProjectCo) -> StepResult<()>;
-    fn merge_conflict(&mut self);
     fn after_merge(&mut self, status: &mut CommitStatus) -> StepResult<()>;
     fn evaluation_checks(&self) -> Vec<EvalChecker>;
     fn all_evaluations_passed(

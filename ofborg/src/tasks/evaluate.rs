@@ -355,8 +355,6 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
             info!("Failed to merge {}", job.pr.head_sha);
 
-            evaluation_strategy.merge_conflict();
-
             return Ok(self.actions().skip(job));
         }
 
