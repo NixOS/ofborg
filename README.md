@@ -26,8 +26,8 @@ When opening a PR with multiple commits, ofborg creates a single build job for
 all detected packages. If multiple commits get pushed to a PR one-by-one, each
 detected package will get a separate build job.
 
-If the title of a PR begins with `WIP:`, contains `[WIP]` anywhere, or has the
-`2.status: work-in-progress` label, its packages are not built automatically.
+If the title of a PR begins with `WIP:` or contains `[WIP]` anywhere, its
+packages are not built automatically.
 **Note**: Marking a PR as a draft does not prevent automatic builds.
 
 ## Commands
