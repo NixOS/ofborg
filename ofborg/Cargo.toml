@@ -19,7 +19,7 @@ hubcaps = { git = "https://github.com/softprops/hubcaps.git", rev = "d60d157b663
 hyper = "=0.10.*"
 # maybe can be removed when hyper is updated
 http = "0.2"
-lapin = "2.1.1"
+lapin = "2.5.4"
 lru-cache = "0.1.2"
 md5 = "0.7.0"
 nom = "4.2.3"
