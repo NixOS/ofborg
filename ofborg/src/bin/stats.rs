@@ -1,24 +1,53 @@
 use std::env;
 use std::error::Error;
+use std::net::SocketAddr;
 use std::sync::Arc;
-use std::thread;
 
-use hyper::server::{Request, Response, Server};
+use http::StatusCode;
+use http_body_util::Full;
+use hyper::body::Bytes;
+use hyper::server::conn::http1;
+use hyper::service::service_fn;
+use hyper::{Request, Response};
+use hyper_util::rt::TokioIo;
 use ofborg::block_on;
-use tracing::{error, info};
+use tokio::net::TcpListener;
+use tracing::{error, info, warn};
 
 use ofborg::easyamqp::{ChannelExt, ConsumerExt};
 use ofborg::{config, easyamqp, easylapin, stats, tasks};
 
-fn run_http_server(metrics: Arc<stats::MetricCollector>) {
-    let addr = "0.0.0.0:9898";
+fn response(body: String) -> Response<Full<Bytes>> {
+    Response::builder()
+        .status(StatusCode::OK)
+        .body(Full::new(Bytes::from(body)))
+        .unwrap()
+}
+
+async fn run_http_server(
+    addr: SocketAddr,
+    metrics: Arc<stats::MetricCollector>,
+) -> Result<(), Box<dyn Error + Send + Sync>> {
+    let listener = TcpListener::bind(addr).await?;
     info!("HTTP server listening on {}", addr);
-    Server::http(addr)
-        .expect("Failed to bind HTTP server")
-        .handle(move |_: Request, res: Response| {
-            res.send(metrics.prometheus_output().as_bytes()).unwrap();
-        })
-        .expect("Failed to start HTTP server");
+
+    loop {
+        let (stream, _) = listener.accept().await?;
+        let io = TokioIo::new(stream);
+
+        let metrics = metrics.clone();
+
+        tokio::task::spawn(async move {
+            let service = service_fn(move |_req: Request<hyper::body::Incoming>| {
+                let metrics = metrics.clone();
+                async move { Ok::<_, hyper::Error>(response(metrics.prometheus_output())) }
+            });
+
+            if let Err(err) = http1::Builder::new().serve_connection(io, service).await {
+                warn!("Error serving connection: {:?}", err);
+            }
+        });
+    }
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -82,10 +111,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         },
     )?;
 
-    // Spawn HTTP server in a separate thread
+    // Spawn HTTP server in a separate thread with its own tokio runtime
     let metrics_clone = metrics.clone();
-    thread::spawn(move || {
-        run_http_server(metrics_clone);
+    std::thread::spawn(move || {
+        let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
+        let addr: SocketAddr = "0.0.0.0:9898".parse().unwrap();
+        if let Err(e) = rt.block_on(run_http_server(addr, metrics_clone)) {
+            error!("HTTP server error: {:?}", e);
+        }
     });
 
     info!("Fetching jobs from {}", &queue_name);

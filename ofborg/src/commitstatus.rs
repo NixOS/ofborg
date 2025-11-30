@@ -1,3 +1,4 @@
+use crate::block_on;
 use futures_util::future::TryFutureExt;
 use tracing::warn;
 
@@ -57,7 +58,7 @@ impl CommitStatus {
         } else {
             self.description.clone()
         };
-        crate::block_on(
+        block_on(
             self.api
                 .create(
                     self.sha.as_ref(),

@@ -1,8 +1,9 @@
 use std::env;
 use std::error::Error;
+use std::future::Future;
 use std::path::Path;
+use std::pin::Pin;
 
-use async_std::task::{JoinHandle, spawn};
 use futures_util::future;
 use ofborg::block_on;
 use tracing::{error, info, warn};
@@ -25,7 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     let conn = easylapin::from_config(&builder_cfg.rabbitmq)?;
-    let mut handles = Vec::new();
+    let mut handles: Vec<Pin<Box<dyn Future<Output = ()> + Send>>> = Vec::new();
 
     for system in &cfg.nix.system {
         let handle_ext = self::create_handle(&conn, &cfg, system.to_string())?;
@@ -39,11 +40,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[allow(clippy::type_complexity)]
 fn create_handle(
     conn: &lapin::Connection,
     cfg: &config::Config,
     system: String,
-) -> Result<JoinHandle<()>, Box<dyn Error>> {
+) -> Result<Pin<Box<dyn Future<Output = ()> + Send>>, Box<dyn Error>> {
     let mut chan = block_on(conn.create_channel())?;
 
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
@@ -105,5 +107,5 @@ fn create_handle(
     )?;
 
     info!("Fetching jobs from {}", &queue_name);
-    Ok(spawn(handle))
+    Ok(handle)
 }

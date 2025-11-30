@@ -1,8 +1,7 @@
-use std::env;
-use std::error::Error;
-
 use lapin::BasicProperties;
 use lapin::message::Delivery;
+use std::env;
+use std::error::Error;
 
 use ofborg::block_on;
 use ofborg::commentparser;

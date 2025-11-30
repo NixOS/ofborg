@@ -9,8 +9,6 @@ use crate::notifyworker::{NotificationReceiver, SimpleNotifyWorker};
 use crate::ofborg;
 use crate::worker::{Action, SimpleWorker};
 
-use async_std::future::Future;
-use async_std::stream::StreamExt;
 use lapin::message::Delivery;
 use lapin::options::{
     BasicAckOptions, BasicConsumeOptions, BasicNackOptions, BasicPublishOptions, BasicQosOptions,
@@ -18,6 +16,7 @@ use lapin::options::{
 };
 use lapin::types::{AMQPValue, FieldTable};
 use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind};
+use tokio_stream::StreamExt;
 use tracing::{debug, trace};
 
 pub fn from_config(cfg: &RabbitMqConfig) -> Result<Connection, lapin::Error> {

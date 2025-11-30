@@ -1,12 +1,15 @@
-use std::{collections::HashMap, error::Error, path::PathBuf};
+use std::net::SocketAddr;
+use std::{collections::HashMap, error::Error, path::PathBuf, sync::Arc};
 
-use hyper::{
-    header::ContentType,
-    mime,
-    server::{Request, Response, Server},
-    status::StatusCode,
-};
+use http::{Method, StatusCode};
+use http_body_util::Full;
+use hyper::body::Bytes;
+use hyper::server::conn::http1;
+use hyper::service::service_fn;
+use hyper::{Request, Response};
+use hyper_util::rt::TokioIo;
 use ofborg::config;
+use tokio::net::TcpListener;
 use tracing::{error, info, warn};
 
 #[derive(serde::Serialize, Default)]
@@ -27,28 +30,39 @@ struct LogApiConfig {
     serve_root: String,
 }
 
-fn handle_request(req: Request, mut res: Response, cfg: &LogApiConfig) {
-    if req.method != hyper::Get {
-        *res.status_mut() = StatusCode::MethodNotAllowed;
-        return;
+fn response(status: StatusCode, body: &'static str) -> Response<Full<Bytes>> {
+    Response::builder()
+        .status(status)
+        .body(Full::new(Bytes::from(body)))
+        .unwrap()
+}
+
+fn json_response(status: StatusCode, body: String) -> Response<Full<Bytes>> {
+    Response::builder()
+        .status(status)
+        .header("Content-Type", "application/json")
+        .body(Full::new(Bytes::from(body)))
+        .unwrap()
+}
+
+async fn handle_request(
+    req: Request<hyper::body::Incoming>,
+    cfg: Arc<LogApiConfig>,
+) -> Result<Response<Full<Bytes>>, hyper::Error> {
+    if req.method() != Method::GET {
+        return Ok(response(StatusCode::METHOD_NOT_ALLOWED, ""));
     }
 
-    let uri = req.uri.to_string();
+    let uri = req.uri().path().to_string();
     let Some(reqd) = uri.strip_prefix("/logs/").map(ToOwned::to_owned) else {
-        *res.status_mut() = StatusCode::NotFound;
-        let _ = res.send(b"invalid uri");
-        return;
+        return Ok(response(StatusCode::NOT_FOUND, "invalid uri"));
     };
     let path: PathBuf = [&cfg.logs_path, &reqd].iter().collect();
     let Ok(path) = std::fs::canonicalize(&path) else {
-        *res.status_mut() = StatusCode::NotFound;
-        let _ = res.send(b"absent");
-        return;
+        return Ok(response(StatusCode::NOT_FOUND, "absent"));
     };
     let Ok(iter) = std::fs::read_dir(path) else {
-        *res.status_mut() = StatusCode::NotFound;
-        let _ = res.send(b"non dir");
-        return;
+        return Ok(response(StatusCode::NOT_FOUND, "non dir"));
     };
 
     let mut attempts = HashMap::<String, Attempt>::new();
@@ -56,9 +70,7 @@ fn handle_request(req: Request, mut res: Response, cfg: &LogApiConfig) {
         let Ok(e) = e else { continue };
         let e_metadata = e.metadata();
         if e_metadata.as_ref().map(|v| v.is_dir()).unwrap_or(true) {
-            *res.status_mut() = StatusCode::InternalServerError;
-            let _ = res.send(b"dir found");
-            return;
+            return Ok(response(StatusCode::INTERNAL_SERVER_ERROR, "dir found"));
         }
 
         if e_metadata.as_ref().map(|v| v.is_file()).unwrap_or_default() {
@@ -97,21 +109,12 @@ fn handle_request(req: Request, mut res: Response, cfg: &LogApiConfig) {
         }
     }
 
-    *res.status_mut() = StatusCode::Ok;
-    res.headers_mut()
-        .set::<ContentType>(hyper::header::ContentType(mime::Mime(
-            mime::TopLevel::Application,
-            mime::SubLevel::Json,
-            Vec::new(),
-        )));
-    let _ = res.send(
-        serde_json::to_string(&LogResponse { attempts })
-            .unwrap_or_default()
-            .as_bytes(),
-    );
+    let body = serde_json::to_string(&LogResponse { attempts }).unwrap_or_default();
+    Ok(json_response(StatusCode::OK, body))
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     ofborg::setup_log();
 
     let arg = std::env::args()
@@ -122,20 +125,27 @@ fn main() -> Result<(), Box<dyn Error>> {
         panic!();
     };
 
-    let api_cfg = LogApiConfig {
+    let api_cfg = Arc::new(LogApiConfig {
         logs_path: cfg.logs_path,
         serve_root: cfg.serve_root,
-    };
+    });
 
-    let threads = std::thread::available_parallelism()
-        .map(|x| x.get())
-        .unwrap_or(1);
-    info!("Will listen on {} with {threads} threads", cfg.listen);
-    Server::http(cfg.listen)?.handle_threads(
-        move |req: Request, res: Response| {
-            handle_request(req, res, &api_cfg);
-        },
-        threads,
-    )?;
-    Ok(())
+    let addr: SocketAddr = cfg.listen.parse()?;
+    let listener = TcpListener::bind(addr).await?;
+    info!("Listening on {}", addr);
+
+    loop {
+        let (stream, _) = listener.accept().await?;
+        let io = TokioIo::new(stream);
+
+        let api_cfg = api_cfg.clone();
+
+        tokio::task::spawn(async move {
+            let service = service_fn(move |req| handle_request(req, api_cfg.clone()));
+
+            if let Err(err) = http1::Builder::new().serve_connection(io, service).await {
+                warn!("Error serving connection: {:?}", err);
+            }
+        });
+    }
 }
