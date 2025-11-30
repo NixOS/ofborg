@@ -1,5 +1,6 @@
 use std::env;
 use std::error::Error;
+use std::sync::Arc;
 use std::thread;
 
 use async_std::task;
@@ -8,6 +9,17 @@ use tracing::{error, info};
 
 use ofborg::easyamqp::{ChannelExt, ConsumerExt};
 use ofborg::{config, easyamqp, easylapin, stats, tasks};
+
+fn run_http_server(metrics: Arc<stats::MetricCollector>) {
+    let addr = "0.0.0.0:9898";
+    info!("HTTP server listening on {}", addr);
+    Server::http(addr)
+        .expect("Failed to bind HTTP server")
+        .handle(move |_: Request, res: Response| {
+            res.send(metrics.prometheus_output().as_bytes()).unwrap();
+        })
+        .expect("Failed to start HTTP server");
+}
 
 fn main() -> Result<(), Box<dyn Error>> {
     ofborg::setup_log();
@@ -28,8 +40,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let events = stats::RabbitMq::from_lapin(&cfg.whoami(), task::block_on(conn.create_channel())?);
 
-    let metrics = stats::MetricCollector::new();
-    let collector = tasks::statscollector::StatCollectorWorker::new(events, metrics.clone());
+    let metrics = Arc::new(stats::MetricCollector::new());
+    let collector = tasks::statscollector::StatCollectorWorker::new(events, (*metrics).clone());
 
     chan.declare_exchange(easyamqp::ExchangeConfig {
         exchange: "stats".to_owned(),
@@ -70,13 +82,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         },
     )?;
 
-    thread::spawn(|| {
-        let addr = "0.0.0.0:9898";
-        info!("listening addr {:?}", addr);
-        Server::http(addr)?.handle(move |_: Request, res: Response| {
-            res.send(metrics.prometheus_output().as_bytes()).unwrap();
-        })?;
-        Ok::<_, Box<dyn Error + Sync + Send + '_>>(())
+    // Spawn HTTP server in a separate thread
+    let metrics_clone = metrics.clone();
+    thread::spawn(move || {
+        run_http_server(metrics_clone);
     });
 
     info!("Fetching jobs from {}", &queue_name);
