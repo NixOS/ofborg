@@ -1,7 +1,7 @@
 use crate::acl;
 use crate::commentparser;
 use crate::ghevent;
-use crate::message::{buildjob, evaluationjob, Pr, Repo};
+use crate::message::{Pr, Repo, buildjob, evaluationjob};
 use crate::worker;
 
 use tracing::{debug_span, error, info};

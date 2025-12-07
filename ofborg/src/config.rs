@@ -9,11 +9,11 @@ use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 
 use hubcaps::{Credentials, Github, InstallationTokenGenerator, JWTCredentials};
-use serde::de::{self, Deserialize, Deserializer};
+use serde::de::{self, Deserializer};
 use tracing::{debug, error, info, warn};
 
 /// Main ofBorg configuration
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct Config {
     /// Configuration for the webhook receiver
     pub github_webhook_receiver: Option<GithubWebhookConfig>,
@@ -40,7 +40,7 @@ pub struct Config {
 }
 
 /// Configuration for the webhook receiver
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct GithubWebhookConfig {
     /// Listen host/port
@@ -60,7 +60,7 @@ fn default_serve_root() -> String {
 }
 
 /// Configuration for logapi
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct LogApiConfig {
     /// Listen host/port
@@ -72,7 +72,7 @@ pub struct LogApiConfig {
 }
 
 /// Configuration for the evaluation filter
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct EvaluationFilter {
     /// RabbitMQ broker to connect to
@@ -80,7 +80,7 @@ pub struct EvaluationFilter {
 }
 
 /// Configuration for the GitHub comment filter
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct GithubCommentFilter {
     /// RabbitMQ broker to connect to
@@ -88,7 +88,7 @@ pub struct GithubCommentFilter {
 }
 
 /// Configuration for the GitHub comment poster
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct GithubCommentPoster {
     /// RabbitMQ broker to connect to
@@ -96,7 +96,7 @@ pub struct GithubCommentPoster {
 }
 
 /// Configuration for the mass rebuilder
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct MassRebuilder {
     /// RabbitMQ broker to connect to
@@ -104,7 +104,7 @@ pub struct MassRebuilder {
 }
 
 /// Configuration for the builder
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct Builder {
     /// RabbitMQ broker to connect to
@@ -112,7 +112,7 @@ pub struct Builder {
 }
 
 /// Configuration for the log message collector
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct LogMessageCollector {
     /// RabbitMQ broker to connect to
@@ -122,7 +122,7 @@ pub struct LogMessageCollector {
 }
 
 /// Configuration for the stats exporter
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct Stats {
     /// RabbitMQ broker to connect to
@@ -130,7 +130,7 @@ pub struct Stats {
 }
 
 /// Configures the connection to a RabbitMQ instance
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct RabbitMqConfig {
     /// Whether or not to use SSL
@@ -145,7 +145,7 @@ pub struct RabbitMqConfig {
     pub password_file: PathBuf,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct NixConfig {
     #[serde(deserialize_with = "deserialize_one_or_many")]
     pub system: Vec<String>,
@@ -160,7 +160,7 @@ pub struct NixConfig {
     pub list_system: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct GithubAppConfig {
     pub app_id: u64,
     pub private_key: PathBuf,
@@ -172,7 +172,7 @@ const fn default_instance() -> u8 {
     1
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct RunnerConfig {
     #[serde(default = "default_instance")]
     pub instance: u8,
@@ -194,7 +194,7 @@ pub struct RunnerConfig {
     pub build_all_jobs: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct CheckoutConfig {
     pub root: String,
 }
@@ -320,10 +320,11 @@ impl GithubAppVendingMachine {
             File::open(self.conf.private_key.clone()).expect("Unable to read private_key");
         let mut private_key_reader = BufReader::new(private_key_file);
         let private_keys = rustls_pemfile::rsa_private_keys(&mut private_key_reader)
+            .collect::<Result<Vec<_>, _>>()
             .expect("Unable to convert private_key to DER format");
         // We can be reasonably certain that there will only be one private key in this file
         let private_key = &private_keys[0];
-        JWTCredentials::new(self.conf.app_id, private_key.to_vec())
+        JWTCredentials::new(self.conf.app_id, private_key.secret_pkcs1_der().to_vec())
             .expect("Unable to create JWTCredentials")
     }
 
@@ -391,7 +392,7 @@ where
         where
             S: de::SeqAccess<'de>,
         {
-            Deserialize::deserialize(de::value::SeqAccessDeserializer::new(visitor))
+            serde::de::Deserialize::deserialize(de::value::SeqAccessDeserializer::new(visitor))
         }
     }
 

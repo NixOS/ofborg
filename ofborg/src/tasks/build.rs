@@ -381,7 +381,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             .log_snippet()
             .iter()
             .inspect(|x| info!("{}", x))
-            .last();
+            .next_back();
         info!("----->8-----");
 
         actions.build_finished(status, can_build, cannot_build_attrs);

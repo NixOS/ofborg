@@ -6,15 +6,12 @@
 #![allow(clippy::redundant_closure)]
 
 #[macro_use]
-extern crate serde_derive;
-
-#[macro_use]
 extern crate nom;
 
 use std::env;
 
-use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
+use tracing_subscriber::prelude::*;
 
 pub mod acl;
 pub mod asynccmd;
@@ -93,7 +90,7 @@ pub fn setup_log() {
         .or_else(|_| EnvFilter::try_new("info"))
         .unwrap();
 
-    let log_json = env::var("RUST_LOG_JSON").map_or(false, |s| s == "1");
+    let log_json = env::var("RUST_LOG_JSON").is_ok_and(|s| s == "1");
 
     if log_json {
         let fmt_layer = tracing_subscriber::fmt::layer().json();

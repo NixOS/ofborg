@@ -143,7 +143,7 @@ impl<'a> ChannelNotificationReceiver<'a> {
     }
 }
 
-impl<'a> NotificationReceiver for ChannelNotificationReceiver<'a> {
+impl NotificationReceiver for ChannelNotificationReceiver<'_> {
     fn tell(&mut self, action: Action) {
         task::block_on(action_deliver(self.channel, self.deliver, action))
             .expect("action deliver failure");

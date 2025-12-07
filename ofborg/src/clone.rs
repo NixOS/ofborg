@@ -2,7 +2,7 @@ use fs2::FileExt;
 
 use std::ffi::OsStr;
 use std::fs;
-use std::io::{Error, ErrorKind};
+use std::io::Error;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
@@ -77,14 +77,11 @@ pub trait GitClonable {
         if result.success() {
             Ok(())
         } else {
-            Err(Error::new(
-                ErrorKind::Other,
-                format!(
-                    "Failed to clone from {:?} to {:?}",
-                    self.clone_from(),
-                    self.clone_to()
-                ),
-            ))
+            Err(Error::other(format!(
+                "Failed to clone from {:?} to {:?}",
+                self.clone_from(),
+                self.clone_to()
+            )))
         }
     }
 
@@ -104,7 +101,7 @@ pub trait GitClonable {
         if result.success() {
             Ok(())
         } else {
-            Err(Error::new(ErrorKind::Other, "Failed to fetch"))
+            Err(Error::other("Failed to fetch"))
         }
     }
 
@@ -170,7 +167,7 @@ pub trait GitClonable {
         if result.success() {
             Ok(())
         } else {
-            Err(Error::new(ErrorKind::Other, "Failed to checkout"))
+            Err(Error::other("Failed to checkout"))
         }
     }
 }

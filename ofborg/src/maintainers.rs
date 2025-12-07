@@ -6,18 +6,18 @@ use std::collections::{HashMap, HashSet};
 use std::io::Write;
 use std::path::Path;
 
-#[derive(Deserialize, Debug, Eq, PartialEq)]
+#[derive(serde::Deserialize, Debug, Eq, PartialEq)]
 pub struct ImpactedMaintainers(HashMap<Maintainer, Vec<Package>>);
 pub struct MaintainersByPackage(pub HashMap<Package, HashSet<Maintainer>>);
 
-#[derive(Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(serde::Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Maintainer(String);
 impl<'a> From<&'a str> for Maintainer {
     fn from(name: &'a str) -> Maintainer {
         Maintainer(name.to_ascii_lowercase())
     }
 }
-#[derive(Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(serde::Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Package(String);
 impl<'a> From<&'a str> for Package {
     fn from(name: &'a str) -> Package {
@@ -148,7 +148,7 @@ mod tests {
     const SYSTEM: &str = "x86_64-darwin";
 
     fn tpath(component: &str) -> PathBuf {
-        return Path::new(env!("CARGO_MANIFEST_DIR")).join(component);
+        Path::new(env!("CARGO_MANIFEST_DIR")).join(component)
     }
 
     fn make_pr_repo(bare: &Path, co: &Path) -> String {
@@ -166,7 +166,7 @@ mod tests {
         println!("{stderr}");
 
         let hash = String::from_utf8(output.stdout).expect("Should just be a hash");
-        return hash.trim().to_owned();
+        hash.trim().to_owned()
     }
 
     #[test]

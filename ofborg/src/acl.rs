@@ -8,7 +8,7 @@ pub struct Acl {
 impl Acl {
     pub fn new(repos: Vec<String>, mut trusted_users: Option<Vec<String>>) -> Acl {
         if let Some(ref mut users) = trusted_users {
-            users.iter_mut().map(|x| *x = x.to_lowercase()).last();
+            users.iter_mut().map(|x| *x = x.to_lowercase()).next_back();
         }
 
         Acl {

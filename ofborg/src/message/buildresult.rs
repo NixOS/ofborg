@@ -2,7 +2,7 @@ use crate::message::{Pr, Repo};
 
 use hubcaps::checks::Conclusion;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum BuildStatus {
     Skipped,
     Success,
@@ -50,12 +50,12 @@ pub struct LegacyBuildResult {
     pub attempted_attrs: Option<Vec<String>>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub enum V1Tag {
     V1,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(untagged)]
 pub enum BuildResult {
     V1 {

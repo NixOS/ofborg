@@ -28,8 +28,8 @@ impl MetricType {
 
     fn variant(&self) -> String {
         match self {
-            MetricType::Ticker(ref event) => event.variant.clone(),
-            MetricType::Counter(ref event) => event.variant.clone(),
+            MetricType::Ticker(event) => event.variant.clone(),
+            MetricType::Counter(event) => event.variant.clone(),
         }
     }
 
@@ -42,22 +42,22 @@ impl MetricType {
 
     fn metric_name(&self) -> String {
         match self {
-            MetricType::Ticker(ref event) => event.metric_name.clone(),
-            MetricType::Counter(ref event) => event.metric_name.clone(),
+            MetricType::Ticker(event) => event.metric_name.clone(),
+            MetricType::Counter(event) => event.metric_name.clone(),
         }
     }
 
     fn description(&self) -> String {
         match self {
-            MetricType::Ticker(ref event) => event.description.clone(),
-            MetricType::Counter(ref event) => event.description.clone(),
+            MetricType::Ticker(event) => event.description.clone(),
+            MetricType::Counter(event) => event.description.clone(),
         }
     }
 
     fn enum_index_types(&self) -> Vec<String> {
         let event: &Metric = match self {
-            MetricType::Ticker(ref i_event) => i_event,
-            MetricType::Counter(ref i_event) => i_event,
+            MetricType::Ticker(i_event) => i_event,
+            MetricType::Counter(i_event) => i_event,
         };
 
         let fields: Vec<String> = event
@@ -87,8 +87,8 @@ impl MetricType {
 
     fn enum_index_names(&self) -> Vec<String> {
         let event: &Metric = match self {
-            MetricType::Ticker(ref i_event) => i_event,
-            MetricType::Counter(ref i_event) => i_event,
+            MetricType::Ticker(i_event) => i_event,
+            MetricType::Counter(i_event) => i_event,
         };
 
         let fields: Vec<String> = event
@@ -362,7 +362,7 @@ fn main() {
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 #[serde(rename_all=\"kebab-case\")]
 pub enum Event {
 ",

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::io::{self, BufRead, BufReader, Read};
 use std::process::{Child, Command, ExitStatus, Stdio};
-use std::sync::mpsc::{self, sync_channel, Receiver, SyncSender};
+use std::sync::mpsc::{self, Receiver, SyncSender, sync_channel};
 use std::thread::{self, JoinHandle};
 
 use tracing::{debug, error, info};
@@ -139,11 +139,9 @@ impl SpawnedAsyncCmd {
     pub fn wait(self) -> Result<ExitStatus, io::Error> {
         self.waiter
             .join()
-            .map_err(|_err| io::Error::new(io::ErrorKind::Other, "Couldn't join thread."))
+            .map_err(|_err| io::Error::other("Couldn't join thread."))
             .and_then(|opt| {
-                opt.ok_or_else(|| {
-                    io::Error::new(io::ErrorKind::Other, "Thread didn't return an exit status.")
-                })
+                opt.ok_or_else(|| io::Error::other("Thread didn't return an exit status."))
             })
             .and_then(|res| res)
     }

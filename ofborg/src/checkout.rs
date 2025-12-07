@@ -2,7 +2,7 @@ use crate::clone::{self, GitClonable};
 
 use std::ffi::{OsStr, OsString};
 use std::fs;
-use std::io::{Error, ErrorKind};
+use std::io::Error;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -112,7 +112,7 @@ impl CachedProjectCo {
         if result.success() {
             Ok(())
         } else {
-            Err(Error::new(ErrorKind::Other, "Failed to fetch PR"))
+            Err(Error::other("Failed to fetch PR"))
         }
     }
 
@@ -153,7 +153,7 @@ impl CachedProjectCo {
         if result.success() {
             Ok(())
         } else {
-            Err(Error::new(ErrorKind::Other, "Failed to merge"))
+            Err(Error::other("Failed to merge"))
         }
     }
 
@@ -175,8 +175,7 @@ impl CachedProjectCo {
                 .map(|l| l.to_owned())
                 .collect())
         } else {
-            Err(Error::new(
-                ErrorKind::Other,
+            Err(Error::other(
                 String::from_utf8_lossy(&result.stderr).to_lowercase(),
             ))
         }
@@ -200,8 +199,7 @@ impl CachedProjectCo {
                 .map(|l| l.to_owned())
                 .collect())
         } else {
-            Err(Error::new(
-                ErrorKind::Other,
+            Err(Error::other(
                 String::from_utf8_lossy(&result.stderr).to_lowercase(),
             ))
         }
@@ -265,7 +263,7 @@ mod tests {
     use std::process::{Command, Stdio};
 
     fn tpath(component: &str) -> PathBuf {
-        return Path::new(env!("CARGO_MANIFEST_DIR")).join(component);
+        Path::new(env!("CARGO_MANIFEST_DIR")).join(component)
     }
 
     fn make_pr_repo(bare: &Path, co: &Path) -> String {
@@ -283,7 +281,7 @@ mod tests {
         println!("{stderr}");
 
         let hash = String::from_utf8(output.stdout).expect("Should just be a hash");
-        return hash.trim().to_owned();
+        hash.trim().to_owned()
     }
 
     #[test]

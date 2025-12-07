@@ -13,7 +13,7 @@ pub trait SysEvents: Send {
     fn notify(&mut self, event: Event);
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct EventMessage {
     pub sender: String,
     pub events: Vec<Event>,

@@ -483,7 +483,7 @@ pub fn update_labels(issueref: &hubcaps::issues::IssueRef, add: &[String], remov
 }
 
 fn issue_is_wip(issue: &hubcaps::issues::Issue) -> bool {
-    return issue.title.starts_with("WIP:") || issue.title.contains("[WIP]");
+    issue.title.starts_with("WIP:") || issue.title.contains("[WIP]")
 }
 
 /// Determine whether or not to use the "old" status prefix, `grahamcofborg`, or
