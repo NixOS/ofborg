@@ -78,9 +78,7 @@
       packages = forAllSystems (
         system:
         let
-          pkgs = import nixpkgs {
-            inherit system;
-          };
+          pkgs = import nixpkgs { inherit system; };
 
           pkg = pkgs.rustPlatform.buildRustPackage {
             name = "ofborg";
@@ -113,7 +111,8 @@
             cargoLock = {
               lockFile = ./Cargo.lock;
               outputHashes = {
-                "hubcaps-0.6.2" = "sha256-hv2zl9FEKvWuh3dG/ZA5UUdvghsvf8ZnRKnFaqZhUvg=";
+                "hubcaps-0.6.2" = "sha256-4IzhR3QPz3oRjPNZuTw6z8BI7hX2iIWhYG44BMZtjz4=";
+                "hyperx-1.4.0" = "sha256-MW/KxxMYvj/DYVKrYa7rDKwrH6s8uQOCA0dR2W7GBeg=";
               };
             };
           };
