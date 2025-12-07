@@ -148,7 +148,7 @@ mod tests {
     const SYSTEM: &str = "x86_64-darwin";
 
     fn tpath(component: &str) -> PathBuf {
-        return Path::new(env!("CARGO_MANIFEST_DIR")).join(component);
+        Path::new(env!("CARGO_MANIFEST_DIR")).join(component)
     }
 
     fn make_pr_repo(bare: &Path, co: &Path) -> String {
@@ -166,7 +166,7 @@ mod tests {
         println!("{stderr}");
 
         let hash = String::from_utf8(output.stdout).expect("Should just be a hash");
-        return hash.trim().to_owned();
+        hash.trim().to_owned()
     }
 
     #[test]

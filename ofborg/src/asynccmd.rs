@@ -139,11 +139,9 @@ impl SpawnedAsyncCmd {
     pub fn wait(self) -> Result<ExitStatus, io::Error> {
         self.waiter
             .join()
-            .map_err(|_err| io::Error::new(io::ErrorKind::Other, "Couldn't join thread."))
+            .map_err(|_err| io::Error::other("Couldn't join thread."))
             .and_then(|opt| {
-                opt.ok_or_else(|| {
-                    io::Error::new(io::ErrorKind::Other, "Thread didn't return an exit status.")
-                })
+                opt.ok_or_else(|| io::Error::other("Thread didn't return an exit status."))
             })
             .and_then(|res| res)
     }
