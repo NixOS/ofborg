@@ -11,7 +11,6 @@ use crate::worker::{Action, SimpleWorker};
 
 use async_std::future::Future;
 use async_std::stream::StreamExt;
-use async_std::task;
 use lapin::message::Delivery;
 use lapin::options::{
     BasicAckOptions, BasicConsumeOptions, BasicNackOptions, BasicPublishOptions, BasicQosOptions,
@@ -31,7 +30,7 @@ pub fn from_config(cfg: &RabbitMqConfig) -> Result<Connection, lapin::Error> {
         client_properties: props,
         ..Default::default()
     };
-    task::block_on(Connection::connect(&cfg.as_uri()?, opts))
+    crate::block_on(Connection::connect(&cfg.as_uri()?, opts))
 }
 
 impl ChannelExt for Channel {
@@ -51,7 +50,12 @@ impl ChannelExt for Channel {
             ExchangeType::Fanout => ExchangeKind::Fanout,
             _ => panic!("exchange kind"),
         };
-        task::block_on(self.exchange_declare(&config.exchange, kind, opts, FieldTable::default()))?;
+        crate::block_on(self.exchange_declare(
+            &config.exchange,
+            kind,
+            opts,
+            FieldTable::default(),
+        ))?;
         Ok(())
     }
 
@@ -64,7 +68,7 @@ impl ChannelExt for Channel {
             nowait: config.no_wait,
         };
 
-        task::block_on(self.queue_declare(&config.queue, opts, FieldTable::default()))?;
+        crate::block_on(self.queue_declare(&config.queue, opts, FieldTable::default()))?;
         Ok(())
     }
 
@@ -73,7 +77,7 @@ impl ChannelExt for Channel {
             nowait: config.no_wait,
         };
 
-        task::block_on(self.queue_bind(
+        crate::block_on(self.queue_bind(
             &config.queue,
             &config.exchange,
             &config.routing_key.unwrap_or_else(|| "".into()),
@@ -89,7 +93,7 @@ impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for Channel {
     type Handle = Pin<Box<dyn Future<Output = ()> + 'a>>;
 
     fn consume(self, mut worker: W, config: ConsumeConfig) -> Result<Self::Handle, Self::Error> {
-        let mut consumer = task::block_on(self.basic_consume(
+        let mut consumer = crate::block_on(self.basic_consume(
             &config.queue,
             &config.consumer_tag,
             BasicConsumeOptions::default(),
@@ -127,7 +131,7 @@ impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for WorkerChannel {
     type Handle = Pin<Box<dyn Future<Output = ()> + 'a>>;
 
     fn consume(self, worker: W, config: ConsumeConfig) -> Result<Self::Handle, Self::Error> {
-        task::block_on(self.0.basic_qos(1, BasicQosOptions::default()))?;
+        crate::block_on(self.0.basic_qos(1, BasicQosOptions::default()))?;
         self.0.consume(worker, config)
     }
 }
@@ -145,7 +149,7 @@ impl<'a> ChannelNotificationReceiver<'a> {
 
 impl NotificationReceiver for ChannelNotificationReceiver<'_> {
     fn tell(&mut self, action: Action) {
-        task::block_on(action_deliver(self.channel, self.deliver, action))
+        crate::block_on(action_deliver(self.channel, self.deliver, action))
             .expect("action deliver failure");
     }
 }
@@ -159,9 +163,9 @@ impl<'a, W: SimpleNotifyWorker + 'a + Send> ConsumerExt<'a, W> for NotifyChannel
     type Handle = Pin<Box<dyn Future<Output = ()> + 'a + Send>>;
 
     fn consume(self, worker: W, config: ConsumeConfig) -> Result<Self::Handle, Self::Error> {
-        task::block_on(self.0.basic_qos(1, BasicQosOptions::default()))?;
+        crate::block_on(self.0.basic_qos(1, BasicQosOptions::default()))?;
 
-        let mut consumer = task::block_on(self.0.basic_consume(
+        let mut consumer = crate::block_on(self.0.basic_consume(
             &config.queue,
             &config.consumer_tag,
             BasicConsumeOptions::default(),

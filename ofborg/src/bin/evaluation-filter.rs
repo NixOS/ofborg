@@ -1,7 +1,7 @@
 use std::env;
 use std::error::Error;
 
-use async_std::task;
+use ofborg::block_on;
 use tracing::{error, info};
 
 use ofborg::config;
@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     let conn = easylapin::from_config(&filter_cfg.rabbitmq)?;
-    let mut chan = task::block_on(conn.create_channel())?;
+    let mut chan = block_on(conn.create_channel())?;
 
     chan.declare_exchange(easyamqp::ExchangeConfig {
         exchange: "github-events".to_owned(),
@@ -74,7 +74,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     )?;
 
     info!("Fetching jobs from {}", &queue_name);
-    task::block_on(handle);
+    block_on(handle);
 
     drop(conn); // Close connection.
     info!("Closed the session... EOF");

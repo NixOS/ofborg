@@ -49,7 +49,7 @@ impl<'a> NixpkgsStrategy<'a> {
     }
 
     fn tag_from_title(&self) {
-        let title = match async_std::task::block_on(self.issue_ref.get()) {
+        let title = match crate::block_on(self.issue_ref.get()) {
             Ok(issue) => issue.title.to_lowercase(),
             Err(_) => return,
         };

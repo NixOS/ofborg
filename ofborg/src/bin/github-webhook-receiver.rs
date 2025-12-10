@@ -4,7 +4,6 @@ use std::io::Read as _;
 #[macro_use]
 extern crate hyper;
 
-use async_std::task;
 use hmac::{Hmac, Mac};
 use hyper::header::ContentType;
 use hyper::mime;
@@ -14,6 +13,7 @@ use hyper::{
 };
 use lapin::options::BasicPublishOptions;
 use lapin::{BasicProperties, Channel};
+use ofborg::block_on;
 use ofborg::ghevent::GenericWebhook;
 use ofborg::{config, easyamqp, easyamqp::ChannelExt, easylapin};
 use sha2::Sha256;
@@ -181,7 +181,7 @@ fn handle_request(mut req: Request, mut res: Response, webhook_secret: &str, cha
     let routing_key = format!("{event_type}.{}", input.repository.full_name.to_lowercase());
 
     // Publish message
-    let _confirmation = task::block_on(async {
+    let _confirmation = block_on(async {
         chan.basic_publish(
             "github-events",
             &routing_key,
@@ -212,10 +212,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let webhook_secret = webhook_secret.trim().to_string();
 
     let conn = easylapin::from_config(&cfg.rabbitmq)?;
-    let mut chan = task::block_on(conn.create_channel())?;
+    let mut chan = block_on(conn.create_channel())?;
     setup_amqp(&mut chan)?;
 
-    //let events = stats::RabbitMq::from_lapin(&cfg.whoami(), task::block_on(conn.create_channel())?);
+    //let events = stats::RabbitMq::from_lapin(&cfg.whoami(), block_on(conn.create_channel())?);
     let threads = std::thread::available_parallelism()
         .map(|x| x.get())
         .unwrap_or(1);

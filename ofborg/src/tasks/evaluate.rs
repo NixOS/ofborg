@@ -158,7 +158,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             &self.job.pr.number, &self.job.pr.head_sha, &description
         );
 
-        async_std::task::block_on(
+        crate::block_on(
             self.repo
                 .statuses()
                 .create(&self.job.pr.head_sha, &builder.build())
@@ -231,7 +231,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         let issue_ref = repo.issue(job.pr.number);
         let auto_schedule_build_archs: Vec<systems::System>;
 
-        match async_std::task::block_on(issue_ref.get()) {
+        match crate::block_on(issue_ref.get()) {
             Ok(iss) => {
                 if iss.state == "closed" {
                     self.events.notify(Event::IssueAlreadyClosed);
@@ -452,7 +452,7 @@ fn schedule_builds(
 
 pub fn update_labels(issueref: &hubcaps::issues::IssueRef, add: &[String], remove: &[String]) {
     let l = issueref.labels();
-    let issue = async_std::task::block_on(issueref.get()).expect("Failed to get issue");
+    let issue = crate::block_on(issueref.get()).expect("Failed to get issue");
 
     let existing: Vec<String> = issue.labels.iter().map(|l| l.name.clone()).collect();
 
@@ -472,11 +472,11 @@ pub fn update_labels(issueref: &hubcaps::issues::IssueRef, add: &[String], remov
 
     info!("Labeling issue #{issue}: + {to_add:?} , - {to_remove:?}, = {existing:?}");
 
-    async_std::task::block_on(l.add(to_add.clone()))
+    crate::block_on(l.add(to_add.clone()))
         .unwrap_or_else(|err| panic!("Failed to add labels {to_add:?} to issue #{issue}: {err:?}"));
 
     for label in to_remove {
-        async_std::task::block_on(l.remove(&label)).unwrap_or_else(|err| {
+        crate::block_on(l.remove(&label)).unwrap_or_else(|err| {
             panic!("Failed to remove label {label:?} from issue #{issue}: {err:?}")
         });
     }
@@ -497,7 +497,7 @@ pub fn get_prefix(
     statuses: hubcaps::statuses::Statuses,
     sha: &str,
 ) -> Result<&str, CommitStatusError> {
-    if async_std::task::block_on(statuses.list(sha))?
+    if crate::block_on(statuses.list(sha))?
         .iter()
         .any(|s| s.context.starts_with("grahamcofborg-"))
     {

@@ -2,8 +2,9 @@ use std::env;
 use std::error::Error;
 use std::path::Path;
 
-use async_std::task::{self, JoinHandle};
+use async_std::task::{JoinHandle, spawn};
 use futures_util::future;
+use ofborg::block_on;
 use tracing::{error, info, warn};
 
 use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
@@ -31,7 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         handles.push(handle_ext);
     }
 
-    task::block_on(future::join_all(handles));
+    block_on(future::join_all(handles));
 
     drop(conn); // Close connection.
     info!("Closed the session... EOF");
@@ -43,7 +44,7 @@ fn create_handle(
     cfg: &config::Config,
     system: String,
 ) -> Result<JoinHandle<()>, Box<dyn Error>> {
-    let mut chan = task::block_on(conn.create_channel())?;
+    let mut chan = block_on(conn.create_channel())?;
 
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
     let nix = cfg.nix().with_system(system.clone());
@@ -104,5 +105,5 @@ fn create_handle(
     )?;
 
     info!("Fetching jobs from {}", &queue_name);
-    Ok(task::spawn(handle))
+    Ok(spawn(handle))
 }

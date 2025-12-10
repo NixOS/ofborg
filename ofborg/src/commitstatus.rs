@@ -57,7 +57,7 @@ impl CommitStatus {
         } else {
             self.description.clone()
         };
-        async_std::task::block_on(
+        crate::block_on(
             self.api
                 .create(
                     self.sha.as_ref(),

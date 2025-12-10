@@ -65,7 +65,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         let instructions = commentparser::parse(&job.comment.body);
         info!("Instructions: {:?}", instructions);
 
-        let pr = async_std::task::block_on(
+        let pr = crate::block_on(
             self.github
                 .repo(
                     job.repository.owner.login.clone(),

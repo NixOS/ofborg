@@ -2,7 +2,7 @@ use std::env;
 use std::error::Error;
 use std::path::Path;
 
-use async_std::task;
+use ofborg::block_on;
 use tracing::{error, info};
 
 use ofborg::checkout;
@@ -26,12 +26,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     let conn = easylapin::from_config(&rebuilder_cfg.rabbitmq)?;
-    let mut chan = task::block_on(conn.create_channel())?;
+    let mut chan = block_on(conn.create_channel())?;
 
     let root = Path::new(&cfg.checkout.root);
     let cloner = checkout::cached_cloner(&root.join(cfg.runner.instance.to_string()));
 
-    let events = stats::RabbitMq::from_lapin(&cfg.whoami(), task::block_on(conn.create_channel())?);
+    let events = stats::RabbitMq::from_lapin(&cfg.whoami(), block_on(conn.create_channel())?);
 
     let queue_name = String::from("mass-rebuild-check-jobs");
     chan.declare_queue(easyamqp::QueueConfig {
@@ -62,7 +62,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     )?;
 
     info!("Fetching jobs from {}", queue_name);
-    task::block_on(handle);
+    block_on(handle);
 
     drop(conn); // Close connection.
     info!("Closed the session... EOF");

@@ -1,4 +1,3 @@
-use async_std::task;
 use lapin::options::BasicPublishOptions;
 
 include!(concat!(env!("OUT_DIR"), "/events.rs"));
@@ -36,7 +35,7 @@ impl RabbitMq<lapin::Channel> {
 impl SysEvents for RabbitMq<lapin::Channel> {
     fn notify(&mut self, event: Event) {
         let props = lapin::BasicProperties::default().with_content_type("application/json".into());
-        task::block_on(async {
+        crate::block_on(async {
             let _confirmaton = self
                 .channel
                 .basic_publish(

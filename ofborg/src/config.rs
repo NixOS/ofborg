@@ -339,7 +339,7 @@ impl GithubAppVendingMachine {
 
             let lookup_gh = Github::new(useragent, Credentials::JWT(jwt)).unwrap();
 
-            match async_std::task::block_on(lookup_gh.app().find_repo_installation(owner, repo)) {
+            match crate::block_on(lookup_gh.app().find_repo_installation(owner, repo)) {
                 Ok(install_id) => {
                     debug!("Received install ID {:?}", install_id);
                     Some(install_id.id)

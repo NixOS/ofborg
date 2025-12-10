@@ -3,8 +3,8 @@ use std::error::Error;
 use std::sync::Arc;
 use std::thread;
 
-use async_std::task;
 use hyper::server::{Request, Response, Server};
+use ofborg::block_on;
 use tracing::{error, info};
 
 use ofborg::easyamqp::{ChannelExt, ConsumerExt};
@@ -36,9 +36,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let conn = easylapin::from_config(&stats_cfg.rabbitmq)?;
 
-    let mut chan = task::block_on(conn.create_channel())?;
+    let mut chan = block_on(conn.create_channel())?;
 
-    let events = stats::RabbitMq::from_lapin(&cfg.whoami(), task::block_on(conn.create_channel())?);
+    let events = stats::RabbitMq::from_lapin(&cfg.whoami(), block_on(conn.create_channel())?);
 
     let metrics = Arc::new(stats::MetricCollector::new());
     let collector = tasks::statscollector::StatCollectorWorker::new(events, (*metrics).clone());
@@ -89,7 +89,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     });
 
     info!("Fetching jobs from {}", &queue_name);
-    task::block_on(handle);
+    block_on(handle);
 
     drop(conn); // Close connection.
     info!("Closed the session... EOF");

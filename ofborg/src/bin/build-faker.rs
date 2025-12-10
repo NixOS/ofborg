@@ -1,10 +1,10 @@
 use std::env;
 use std::error::Error;
 
-use async_std::task;
 use lapin::BasicProperties;
 use lapin::message::Delivery;
 
+use ofborg::block_on;
 use ofborg::commentparser;
 use ofborg::config;
 use ofborg::easylapin;
@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let cfg = config::load(arg.as_ref());
 
     let conn = easylapin::from_config(&cfg.builder.unwrap().rabbitmq)?;
-    let mut chan = task::block_on(conn.create_channel())?;
+    let mut chan = block_on(conn.create_channel())?;
 
     let repo_msg = Repo {
         clone_url: "https://github.com/nixos/ofborg.git".to_owned(),

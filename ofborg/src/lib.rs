@@ -9,6 +9,7 @@
 extern crate nom;
 
 use std::env;
+use std::future::Future;
 
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::prelude::*;
@@ -107,4 +108,9 @@ pub fn setup_log() {
     }
 
     tracing::info!("Logging configured");
+}
+
+/// Block on a future from synchronous code.
+pub fn block_on<F: Future>(f: F) -> F::Output {
+    async_std::task::block_on(f)
 }
