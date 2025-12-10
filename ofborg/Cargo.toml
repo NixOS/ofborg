@@ -15,25 +15,24 @@ chrono = { version = "0.4.38", default-features = false, features = [
 either = "1.13.0"
 fs2 = "0.4.3"
 futures-util = "0.3.31"
+hex = "0.4.3"
+hmac = "0.12.1"
+http = "1"
 #hubcaps = "0.6"
 # for Conclusion::Skipped which is in master
 hubcaps = { git = "https://github.com/ofborg/hubcaps.git", rev = "50dbe6ec45c9dfea4e3cfdf27bbadfa565f69dec", default-features = false, features = ["app", "rustls-tls"] }
-http = "1"
 # hyper = { version = "0.14", features = ["full"] }
 hyper = "=0.10.*"
-# maybe can be removed when hyper is updated
 lapin = "2.5.4"
 lru-cache = "0.1.2"
 md5 = "0.8.0"
 nom = "4.2.3"
 regex = "1.11.1"
+rustls-pemfile = "2.2.0"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.135"
+sha2 = "0.10.8"
 tempfile = "3.15.0"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["json", "env-filter"] }
 uuid = { version = "1.12", features = ["v4"] }
-rustls-pemfile = "2.2.0"
-hmac = "0.12.1"
-sha2 = "0.10.8"
-hex = "0.4.3"
