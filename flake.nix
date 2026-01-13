@@ -89,16 +89,6 @@
               pkgs.rustPackages.clippy
             ];
 
-            buildInputs =
-              with pkgs;
-              lib.optionals pkgs.stdenv.isDarwin (
-                with pkgs;
-                [
-                  darwin.apple_sdk.frameworks.Security
-                  darwin.apple_sdk.frameworks.CoreFoundation
-                ]
-              );
-
             preBuild = ''
               cargo clippy
             '';
