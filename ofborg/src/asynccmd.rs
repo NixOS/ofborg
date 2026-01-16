@@ -136,6 +136,10 @@ impl SpawnedAsyncCmd {
         self.rx.iter()
     }
 
+    pub fn get_next_line(&mut self) -> Result<String, mpsc::RecvError> {
+        self.rx.recv()
+    }
+
     pub fn wait(self) -> Result<ExitStatus, io::Error> {
         self.waiter
             .join()

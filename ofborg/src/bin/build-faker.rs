@@ -3,7 +3,6 @@ use lapin::message::Delivery;
 use std::env;
 use std::error::Error;
 
-use ofborg::block_on;
 use ofborg::commentparser;
 use ofborg::config;
 use ofborg::easylapin;
@@ -11,14 +10,15 @@ use ofborg::message::{Pr, Repo, buildjob};
 use ofborg::notifyworker::NotificationReceiver;
 use ofborg::worker;
 
-fn main() -> Result<(), Box<dyn Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
     ofborg::setup_log();
 
     let arg = env::args().nth(1).expect("usage: build-faker <config>");
     let cfg = config::load(arg.as_ref());
 
-    let conn = easylapin::from_config(&cfg.builder.unwrap().rabbitmq)?;
-    let mut chan = block_on(conn.create_channel())?;
+    let conn = easylapin::from_config(&cfg.builder.unwrap().rabbitmq).await?;
+    let chan = conn.create_channel().await?;
 
     let repo_msg = Repo {
         clone_url: "https://github.com/nixos/ofborg.git".to_owned(),
@@ -55,14 +55,15 @@ fn main() -> Result<(), Box<dyn Error>> {
             data: vec![],
             acker: Default::default(),
         };
-        let mut recv = easylapin::ChannelNotificationReceiver::new(&mut chan, &deliver);
+        let recv = easylapin::ChannelNotificationReceiver::new(chan.clone(), deliver);
 
         for _i in 1..2 {
             recv.tell(worker::publish_serde_action(
                 None,
                 Some("build-inputs-x86_64-darwin".to_owned()),
                 &msg,
-            ));
+            ))
+            .await;
         }
     }
 

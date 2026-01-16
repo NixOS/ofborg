@@ -7,6 +7,8 @@ use crate::notifyworker;
 use crate::worker;
 
 use std::collections::VecDeque;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use tracing::{debug, debug_span, error, info};
 use uuid::Uuid;
@@ -33,22 +35,24 @@ impl BuildWorker {
         }
     }
 
-    fn actions<'a, 'b>(
+    fn actions(
         &self,
-        job: &'b buildjob::BuildJob,
-        receiver: &'a mut dyn notifyworker::NotificationReceiver,
-    ) -> JobActions<'a, 'b> {
+        job: buildjob::BuildJob,
+        receiver: Arc<
+            dyn notifyworker::NotificationReceiver + std::marker::Send + std::marker::Sync,
+        >,
+    ) -> JobActions {
         JobActions::new(&self.system, &self.identity, job, receiver)
     }
 }
 
-pub struct JobActions<'a, 'b> {
+pub struct JobActions {
     system: String,
     identity: String,
-    receiver: &'a mut dyn notifyworker::NotificationReceiver,
-    job: &'b buildjob::BuildJob,
-    line_counter: u64,
-    snippet_log: VecDeque<String>,
+    receiver: Arc<dyn notifyworker::NotificationReceiver + std::marker::Send + std::marker::Sync>,
+    job: buildjob::BuildJob,
+    line_counter: AtomicU64,
+    snippet_log: parking_lot::RwLock<VecDeque<String>>,
     attempt_id: String,
     log_exchange: Option<String>,
     log_routing_key: Option<String>,
@@ -56,13 +60,15 @@ pub struct JobActions<'a, 'b> {
     result_routing_key: Option<String>,
 }
 
-impl<'a, 'b> JobActions<'a, 'b> {
+impl JobActions {
     pub fn new(
         system: &str,
         identity: &str,
-        job: &'b buildjob::BuildJob,
-        receiver: &'a mut dyn notifyworker::NotificationReceiver,
-    ) -> JobActions<'a, 'b> {
+        job: buildjob::BuildJob,
+        receiver: Arc<
+            dyn notifyworker::NotificationReceiver + std::marker::Send + std::marker::Sync,
+        >,
+    ) -> JobActions {
         let (log_exchange, log_routing_key) = job
             .logs
             .clone()
@@ -78,8 +84,8 @@ impl<'a, 'b> JobActions<'a, 'b> {
             identity: identity.to_owned(),
             receiver,
             job,
-            line_counter: 0,
-            snippet_log: VecDeque::with_capacity(10),
+            line_counter: 0.into(),
+            snippet_log: parking_lot::RwLock::new(VecDeque::with_capacity(10)),
             attempt_id: Uuid::new_v4().to_string(),
             log_exchange,
             log_routing_key,
@@ -89,22 +95,22 @@ impl<'a, 'b> JobActions<'a, 'b> {
     }
 
     pub fn log_snippet(&self) -> Vec<String> {
-        self.snippet_log.clone().into()
+        self.snippet_log.read().clone().into()
     }
 
-    pub fn pr_head_missing(&mut self) {
-        self.tell(worker::Action::Ack);
+    pub async fn pr_head_missing(&self) {
+        self.tell(worker::Action::Ack).await;
     }
 
-    pub fn commit_missing(&mut self) {
-        self.tell(worker::Action::Ack);
+    pub async fn commit_missing(&self) {
+        self.tell(worker::Action::Ack).await;
     }
 
-    pub fn nothing_to_do(&mut self) {
-        self.tell(worker::Action::Ack);
+    pub async fn nothing_to_do(&self) {
+        self.tell(worker::Action::Ack).await;
     }
 
-    pub fn merge_failed(&mut self) {
+    pub async fn merge_failed(&self) {
         let msg = BuildResult::V1 {
             tag: V1Tag::V1,
             repo: self.job.repo.clone(),
@@ -125,11 +131,12 @@ impl<'a, 'b> JobActions<'a, 'b> {
             result_exchange,
             result_routing_key,
             &msg,
-        ));
-        self.tell(worker::Action::Ack);
+        ))
+        .await;
+        self.tell(worker::Action::Ack).await;
     }
 
-    pub fn log_started(&mut self, can_build: Vec<String>, cannot_build: Vec<String>) {
+    pub async fn log_started(&self, can_build: Vec<String>, cannot_build: Vec<String>) {
         let msg = buildlogmsg::BuildLogStart {
             identity: self.identity.clone(),
             system: self.system.clone(),
@@ -145,34 +152,39 @@ impl<'a, 'b> JobActions<'a, 'b> {
             log_exchange,
             log_routing_key,
             &msg,
-        ));
+        ))
+        .await;
     }
 
-    pub fn log_instantiation_errors(&mut self, cannot_build: Vec<(String, Vec<String>)>) {
-        for (attr, log) in &cannot_build {
-            self.log_line(&format!("Cannot nix-instantiate `{attr}` because:"));
+    pub async fn log_instantiation_errors(&self, cannot_build: Vec<(String, Vec<String>)>) {
+        for (attr, log) in cannot_build {
+            self.log_line(format!("Cannot nix-instantiate `{attr}` because:"))
+                .await;
 
             for line in log {
-                self.log_line(line);
+                self.log_line(line).await;
             }
-            self.log_line("");
+            self.log_line("".into()).await;
         }
     }
 
-    pub fn log_line(&mut self, line: &str) {
-        self.line_counter += 1;
+    pub async fn log_line(&self, line: String) {
+        self.line_counter.fetch_add(1, Ordering::SeqCst);
 
-        if self.snippet_log.len() >= 10 {
-            self.snippet_log.pop_front();
+        {
+            let mut snippet_log = self.snippet_log.write();
+            if snippet_log.len() >= 10 {
+                snippet_log.pop_front();
+            }
+            snippet_log.push_back(line.clone());
         }
-        self.snippet_log.push_back(line.to_owned());
 
         let msg = buildlogmsg::BuildLogMsg {
             identity: self.identity.clone(),
             system: self.system.clone(),
             attempt_id: self.attempt_id.clone(),
-            line_number: self.line_counter,
-            output: line.to_owned(),
+            line_number: self.line_counter.load(Ordering::SeqCst),
+            output: line,
         };
 
         let log_exchange = self.log_exchange.clone();
@@ -182,10 +194,11 @@ impl<'a, 'b> JobActions<'a, 'b> {
             log_exchange,
             log_routing_key,
             &msg,
-        ));
+        ))
+        .await;
     }
 
-    pub fn build_not_attempted(&mut self, not_attempted_attrs: Vec<String>) {
+    pub async fn build_not_attempted(&self, not_attempted_attrs: Vec<String>) {
         let msg = BuildResult::V1 {
             tag: V1Tag::V1,
             repo: self.job.repo.clone(),
@@ -205,7 +218,8 @@ impl<'a, 'b> JobActions<'a, 'b> {
             result_exchange,
             result_routing_key,
             &msg,
-        ));
+        ))
+        .await;
 
         let log_exchange = self.log_exchange.clone();
         let log_routing_key = self.log_routing_key.clone();
@@ -213,13 +227,14 @@ impl<'a, 'b> JobActions<'a, 'b> {
             log_exchange,
             log_routing_key,
             &msg,
-        ));
+        ))
+        .await;
 
-        self.tell(worker::Action::Ack);
+        self.tell(worker::Action::Ack).await;
     }
 
-    pub fn build_finished(
-        &mut self,
+    pub async fn build_finished(
+        &self,
         status: BuildStatus,
         attempted_attrs: Vec<String>,
         not_attempted_attrs: Vec<String>,
@@ -243,7 +258,8 @@ impl<'a, 'b> JobActions<'a, 'b> {
             result_exchange,
             result_routing_key,
             &msg,
-        ));
+        ))
+        .await;
 
         let log_exchange = self.log_exchange.clone();
         let log_routing_key = self.log_routing_key.clone();
@@ -251,16 +267,18 @@ impl<'a, 'b> JobActions<'a, 'b> {
             log_exchange,
             log_routing_key,
             &msg,
-        ));
+        ))
+        .await;
 
-        self.tell(worker::Action::Ack);
+        self.tell(worker::Action::Ack).await;
     }
 
-    fn tell(&mut self, action: worker::Action) {
-        self.receiver.tell(action);
+    async fn tell(&self, action: worker::Action) {
+        self.receiver.tell(action).await;
     }
 }
 
+#[async_trait::async_trait]
 impl notifyworker::SimpleNotifyWorker for BuildWorker {
     type J = buildjob::BuildJob;
 
@@ -277,60 +295,63 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
 
     // FIXME: remove with rust/cargo update
     #[allow(clippy::cognitive_complexity)]
-    fn consumer(
+    async fn consumer(
         &self,
-        job: &buildjob::BuildJob,
-        notifier: &mut dyn notifyworker::NotificationReceiver,
+        job: buildjob::BuildJob,
+        notifier: Arc<
+            dyn notifyworker::NotificationReceiver + std::marker::Send + std::marker::Sync,
+        >,
     ) {
         let span = debug_span!("job", pr = ?job.pr.number);
         let _enter = span.enter();
 
-        let mut actions = self.actions(job, notifier);
+        let actions = self.actions(job, notifier);
 
-        if job.attrs.is_empty() {
+        if actions.job.attrs.is_empty() {
             debug!("No attrs to build");
-            actions.nothing_to_do();
+            actions.nothing_to_do().await;
             return;
         }
 
         info!(
             "Working on https://github.com/{}/pull/{}",
-            job.repo.full_name, job.pr.number
+            actions.job.repo.full_name, actions.job.pr.number
         );
-        let project = self
-            .cloner
-            .project(&job.repo.full_name, job.repo.clone_url.clone());
+        let project = self.cloner.project(
+            &actions.job.repo.full_name,
+            actions.job.repo.clone_url.clone(),
+        );
         let co = project
             .clone_for("builder".to_string(), self.identity.clone())
             .unwrap();
 
-        let target_branch = match job.pr.target_branch.clone() {
+        let target_branch = match actions.job.pr.target_branch.clone() {
             Some(x) => x,
             None => String::from("origin/master"),
         };
 
-        let buildfile = match job.subset {
+        let buildfile = match actions.job.subset {
             Some(commentparser::Subset::NixOS) => nix::File::ReleaseNixOS,
             _ => nix::File::DefaultNixpkgs,
         };
 
         let refpath = co.checkout_origin_ref(target_branch.as_ref()).unwrap();
 
-        if co.fetch_pr(job.pr.number).is_err() {
-            info!("Failed to fetch {}", job.pr.number);
-            actions.pr_head_missing();
+        if co.fetch_pr(actions.job.pr.number).is_err() {
+            info!("Failed to fetch {}", actions.job.pr.number);
+            actions.pr_head_missing().await;
             return;
         }
 
-        if !co.commit_exists(job.pr.head_sha.as_ref()) {
-            info!("Commit {} doesn't exist", job.pr.head_sha);
-            actions.commit_missing();
+        if !co.commit_exists(actions.job.pr.head_sha.as_ref()) {
+            info!("Commit {} doesn't exist", actions.job.pr.head_sha);
+            actions.commit_missing().await;
             return;
         }
 
-        if co.merge_commit(job.pr.head_sha.as_ref()).is_err() {
-            info!("Failed to merge {}", job.pr.head_sha);
-            actions.merge_failed();
+        if co.merge_commit(actions.job.pr.head_sha.as_ref()).is_err() {
+            info!("Failed to merge {}", actions.job.pr.head_sha);
+            actions.merge_failed().await;
             return;
         }
 
@@ -341,7 +362,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         let (can_build, cannot_build) = self.nix.safely_partition_instantiable_attrs(
             refpath.as_ref(),
             buildfile,
-            job.attrs.clone(),
+            actions.job.attrs.clone(),
         );
 
         let cannot_build_attrs: Vec<String> = cannot_build
@@ -356,11 +377,13 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             cannot_build_attrs.join(", ")
         );
 
-        actions.log_started(can_build.clone(), cannot_build_attrs.clone());
-        actions.log_instantiation_errors(cannot_build);
+        actions
+            .log_started(can_build.clone(), cannot_build_attrs.clone())
+            .await;
+        actions.log_instantiation_errors(cannot_build).await;
 
         if can_build.is_empty() {
-            actions.build_not_attempted(cannot_build_attrs);
+            actions.build_not_attempted(cannot_build_attrs).await;
             return;
         }
 
@@ -368,8 +391,8 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             self.nix
                 .safely_build_attrs_async(refpath.as_ref(), buildfile, can_build.clone());
 
-        for line in spawned.lines() {
-            actions.log_line(&line);
+        while let Ok(line) = spawned.get_next_line() {
+            actions.log_line(line).await;
         }
 
         let status = nix::wait_for_build_status(spawned);
@@ -384,7 +407,9 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
             .next_back();
         info!("----->8-----");
 
-        actions.build_finished(status, can_build, cannot_build_attrs);
+        actions
+            .build_finished(status, can_build, cannot_build_attrs)
+            .await;
         info!("Build done!");
     }
 }
@@ -474,8 +499,8 @@ mod tests {
             });
     }
 
-    #[test]
-    pub fn test_simple_build() {
+    #[tokio::test]
+    pub async fn test_simple_build() {
         let p = TestScratch::new_dir("build-simple-build-working");
         let bare_repo = TestScratch::new_dir("build-simple-build-bare");
         let co_repo = TestScratch::new_dir("build-simple-build-co");
@@ -502,12 +527,13 @@ mod tests {
             request_id: "bogus-request-id".to_owned(),
         };
 
-        let mut dummyreceiver = notifyworker::DummyNotificationReceiver::new();
+        let dummyreceiver = Arc::new(notifyworker::DummyNotificationReceiver::new());
 
-        worker.consumer(&job, &mut dummyreceiver);
+        worker.consumer(job, dummyreceiver.clone()).await;
 
-        println!("Total actions: {:?}", dummyreceiver.actions.len());
-        let mut actions = dummyreceiver.actions.into_iter();
+        println!("Total actions: {:?}", dummyreceiver.actions.lock().len());
+        let actions_vec = dummyreceiver.actions.lock().clone();
+        let mut actions = actions_vec.into_iter();
 
         assert_contains_job(&mut actions, "output\":\"hi");
         assert_contains_job(&mut actions, "output\":\"1");
@@ -519,8 +545,8 @@ mod tests {
         assert_eq!(actions.next(), Some(worker::Action::Ack));
     }
 
-    #[test]
-    pub fn test_all_jobs_skipped() {
+    #[tokio::test]
+    pub async fn test_all_jobs_skipped() {
         let p = TestScratch::new_dir("no-attempt");
         let bare_repo = TestScratch::new_dir("no-attempt-bare");
         let co_repo = TestScratch::new_dir("no-attempt-co");
@@ -547,12 +573,14 @@ mod tests {
             request_id: "bogus-request-id".to_owned(),
         };
 
-        let mut dummyreceiver = notifyworker::DummyNotificationReceiver::new();
+        let dummyreceiver = Arc::new(notifyworker::DummyNotificationReceiver::new());
 
-        worker.consumer(&job, &mut dummyreceiver);
+        worker.consumer(job, dummyreceiver.clone()).await;
 
-        println!("Total actions: {:?}", dummyreceiver.actions.len());
-        let mut actions = dummyreceiver.actions.into_iter();
+        println!("Total actions: {:?}", dummyreceiver.actions.lock().len());
+        let actions_vec = dummyreceiver.actions.lock().clone();
+        let mut actions = actions_vec.into_iter();
+
         assert_contains_job(
             &mut actions,
             r#""line_number":1,"output":"Cannot nix-instantiate `not-real` because:""#,

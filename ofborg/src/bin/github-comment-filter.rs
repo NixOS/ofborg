@@ -1,7 +1,6 @@
 use std::env;
 use std::error::Error;
 
-use ofborg::block_on;
 use ofborg::systems::System;
 use tracing::{error, info};
 
@@ -10,7 +9,8 @@ use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
 use ofborg::easylapin;
 use ofborg::tasks;
 
-fn main() -> Result<(), Box<dyn Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
     ofborg::setup_log();
 
     let arg = env::args()
@@ -23,8 +23,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         panic!();
     };
 
-    let conn = easylapin::from_config(&filter_cfg.rabbitmq)?;
-    let mut chan = block_on(conn.create_channel())?;
+    let conn = easylapin::from_config(&filter_cfg.rabbitmq).await?;
+    let mut chan = conn.create_channel().await?;
 
     chan.declare_exchange(easyamqp::ExchangeConfig {
         exchange: "github-events".to_owned(),
@@ -34,7 +34,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         auto_delete: false,
         no_wait: false,
         internal: false,
-    })?;
+    })
+    .await?;
 
     chan.declare_exchange(easyamqp::ExchangeConfig {
         exchange: "build-jobs".to_owned(),
@@ -44,7 +45,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         auto_delete: false,
         no_wait: false,
         internal: false,
-    })?;
+    })
+    .await?;
 
     let queue_name = "build-inputs";
     chan.declare_queue(easyamqp::QueueConfig {
@@ -54,14 +56,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         exclusive: false,
         auto_delete: false,
         no_wait: false,
-    })?;
+    })
+    .await?;
 
     chan.bind_queue(easyamqp::BindQueueConfig {
         queue: "build-inputs".to_owned(),
         exchange: "github-events".to_owned(),
         routing_key: Some("issue_comment.*".to_owned()),
         no_wait: false,
-    })?;
+    })
+    .await?;
 
     chan.declare_exchange(easyamqp::ExchangeConfig {
         exchange: "build-results".to_owned(),
@@ -71,7 +75,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         auto_delete: false,
         no_wait: false,
         internal: false,
-    })?;
+    })
+    .await?;
 
     // Create build job queues
     for sys in System::all_known_systems().iter().map(System::to_string) {
@@ -82,23 +87,26 @@ fn main() -> Result<(), Box<dyn Error>> {
             exclusive: false,
             auto_delete: false,
             no_wait: false,
-        })?;
+        })
+        .await?;
     }
 
-    let handle = easylapin::WorkerChannel(chan).consume(
-        tasks::githubcommentfilter::GitHubCommentWorker::new(cfg.acl(), cfg.github()),
-        easyamqp::ConsumeConfig {
-            queue: "build-inputs".to_owned(),
-            consumer_tag: format!("{}-github-comment-filter", cfg.whoami()),
-            no_local: false,
-            no_ack: false,
-            no_wait: false,
-            exclusive: false,
-        },
-    )?;
+    let handle = easylapin::WorkerChannel(chan)
+        .consume(
+            tasks::githubcommentfilter::GitHubCommentWorker::new(cfg.acl(), cfg.github()),
+            easyamqp::ConsumeConfig {
+                queue: "build-inputs".to_owned(),
+                consumer_tag: format!("{}-github-comment-filter", cfg.whoami()),
+                no_local: false,
+                no_ack: false,
+                no_wait: false,
+                exclusive: false,
+            },
+        )
+        .await?;
 
     info!("Fetching jobs from {}", &queue_name);
-    block_on(handle);
+    handle.await;
 
     drop(conn); // Close connection.
     info!("Closed the session... EOF");

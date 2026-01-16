@@ -17,7 +17,12 @@ impl<E: stats::SysEvents + 'static> StatCollectorWorker<E> {
 impl<E: stats::SysEvents + 'static> worker::SimpleWorker for StatCollectorWorker<E> {
     type J = stats::EventMessage;
 
-    fn msg_to_job(&mut self, _: &str, _: &Option<String>, body: &[u8]) -> Result<Self::J, String> {
+    async fn msg_to_job(
+        &mut self,
+        _: &str,
+        _: &Option<String>,
+        body: &[u8],
+    ) -> Result<Self::J, String> {
         match serde_json::from_slice(body) {
             Ok(e) => Ok(e),
             Err(_) => {
@@ -27,16 +32,20 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for StatCollectorWorker
 
                 match serde_json::from_slice(&modified_body) {
                     Ok(event) => {
-                        self.events.notify(stats::Event::StatCollectorLegacyEvent(
-                            stats::event_metric_name(&event),
-                        ));
+                        self.events
+                            .notify(stats::Event::StatCollectorLegacyEvent(
+                                stats::event_metric_name(&event),
+                            ))
+                            .await;
                         Ok(stats::EventMessage {
                             sender: "".to_owned(),
                             events: vec![event],
                         })
                     }
                     Err(err) => {
-                        self.events.notify(stats::Event::StatCollectorBogusEvent);
+                        self.events
+                            .notify(stats::Event::StatCollectorBogusEvent)
+                            .await;
                         error!(
                             "Failed to decode message: {:?}, Err: {err:?}",
                             std::str::from_utf8(body).unwrap_or("<message not utf8>")
@@ -48,7 +57,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for StatCollectorWorker
         }
     }
 
-    fn consumer(&mut self, job: &stats::EventMessage) -> worker::Actions {
+    async fn consumer(&mut self, job: &stats::EventMessage) -> worker::Actions {
         let sender = job.sender.clone();
         for event in job.events.iter() {
             self.collector.record(sender.clone(), event.clone());

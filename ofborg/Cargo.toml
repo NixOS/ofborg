@@ -6,6 +6,7 @@ build = "build.rs"
 edition = "2024"
 
 [dependencies]
+async-trait = "0.1.89"
 brace-expand = "0.1.0"
 chrono = { version = "0.4.38", default-features = false, features = [
   "clock",
@@ -13,6 +14,7 @@ chrono = { version = "0.4.38", default-features = false, features = [
 ] }
 either = "1.13.0"
 fs2 = "0.4.3"
+futures = "0.3.31"
 futures-util = "0.3.31"
 hex = "0.4.3"
 hmac = "0.12.1"
@@ -28,6 +30,7 @@ lru-cache = "0.1.2"
 md5 = "0.8.0"
 mime = "0.3"
 nom = "4.2.3"
+parking_lot = "0.12.4"
 regex = "1.11.1"
 rustls-pemfile = "2.2.0"
 serde = { version = "1.0.217", features = ["derive"] }

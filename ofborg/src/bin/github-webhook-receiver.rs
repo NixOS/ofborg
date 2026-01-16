@@ -22,7 +22,7 @@ use tracing::{error, info, warn};
 
 /// Prepares the the exchange we will write to, the queues that are bound to it
 /// and binds them.
-fn setup_amqp(chan: &mut Channel) -> Result<(), Box<dyn Error + Send + Sync>> {
+async fn setup_amqp(chan: &mut Channel) -> Result<(), Box<dyn Error + Send + Sync>> {
     chan.declare_exchange(easyamqp::ExchangeConfig {
         exchange: "github-events".to_owned(),
         exchange_type: easyamqp::ExchangeType::Topic,
@@ -31,7 +31,8 @@ fn setup_amqp(chan: &mut Channel) -> Result<(), Box<dyn Error + Send + Sync>> {
         auto_delete: false,
         no_wait: false,
         internal: false,
-    })?;
+    })
+    .await?;
 
     let queue_name = String::from("build-inputs");
     chan.declare_queue(easyamqp::QueueConfig {
@@ -41,13 +42,15 @@ fn setup_amqp(chan: &mut Channel) -> Result<(), Box<dyn Error + Send + Sync>> {
         exclusive: false,
         auto_delete: false,
         no_wait: false,
-    })?;
+    })
+    .await?;
     chan.bind_queue(easyamqp::BindQueueConfig {
         queue: queue_name.clone(),
         exchange: "github-events".to_owned(),
         routing_key: Some(String::from("issue_comment.*")),
         no_wait: false,
-    })?;
+    })
+    .await?;
 
     let queue_name = String::from("github-events-unknown");
     chan.declare_queue(easyamqp::QueueConfig {
@@ -57,13 +60,15 @@ fn setup_amqp(chan: &mut Channel) -> Result<(), Box<dyn Error + Send + Sync>> {
         exclusive: false,
         auto_delete: false,
         no_wait: false,
-    })?;
+    })
+    .await?;
     chan.bind_queue(easyamqp::BindQueueConfig {
         queue: queue_name.clone(),
         exchange: "github-events".to_owned(),
         routing_key: Some(String::from("unknown.*")),
         no_wait: false,
-    })?;
+    })
+    .await?;
 
     let queue_name = String::from("mass-rebuild-check-inputs");
     chan.declare_queue(easyamqp::QueueConfig {
@@ -73,13 +78,15 @@ fn setup_amqp(chan: &mut Channel) -> Result<(), Box<dyn Error + Send + Sync>> {
         exclusive: false,
         auto_delete: false,
         no_wait: false,
-    })?;
+    })
+    .await?;
     chan.bind_queue(easyamqp::BindQueueConfig {
         queue: queue_name.clone(),
         exchange: "github-events".to_owned(),
         routing_key: Some(String::from("pull_request.*")),
         no_wait: false,
-    })?;
+    })
+    .await?;
     Ok(())
 }
 
@@ -243,9 +250,9 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         .expect("Unable to read webhook secret file");
     let webhook_secret = Arc::new(webhook_secret.trim().to_string());
 
-    let conn = easylapin::from_config(&cfg.rabbitmq)?;
+    let conn = easylapin::from_config(&cfg.rabbitmq).await?;
     let mut chan = conn.create_channel().await?;
-    setup_amqp(&mut chan)?;
+    setup_amqp(&mut chan).await?;
     let chan = Arc::new(Mutex::new(chan));
 
     let addr: SocketAddr = cfg.listen.parse()?;

@@ -169,7 +169,7 @@ impl LogMessageCollector {
 impl worker::SimpleWorker for LogMessageCollector {
     type J = LogMessage;
 
-    fn msg_to_job(
+    async fn msg_to_job(
         &mut self,
         routing_key: &str,
         _: &Option<String>,
@@ -207,7 +207,7 @@ impl worker::SimpleWorker for LogMessageCollector {
         })
     }
 
-    fn consumer(&mut self, job: &LogMessage) -> worker::Actions {
+    async fn consumer(&mut self, job: &LogMessage) -> worker::Actions {
         match job.message {
             MsgType::Start(ref start) => {
                 self.write_metadata(&job.from, start)
@@ -374,8 +374,8 @@ mod tests {
         );
     }
 
-    #[test]
-    pub fn test_logs_collect() {
+    #[tokio::test]
+    pub async fn test_logs_collect() {
         let mut logmsg = BuildLogMsg {
             attempt_id: String::from("my-attempt-id"),
             identity: String::from("my-identity"),
@@ -394,59 +394,63 @@ mod tests {
             let mut worker = make_worker(p.path());
             assert_eq!(
                 vec![worker::Action::Ack],
-                worker.consumer(&LogMessage {
-                    from: make_from("foo"),
-                    message: MsgType::Start(BuildLogStart {
-                        attempt_id: String::from("my-attempt-id"),
-                        identity: String::from("my-identity"),
-                        system: String::from("foobar-x8664"),
-                        attempted_attrs: Some(vec!["foo".to_owned()]),
-                        skipped_attrs: Some(vec!["bar".to_owned()]),
+                worker
+                    .consumer(&LogMessage {
+                        from: make_from("foo"),
+                        message: MsgType::Start(BuildLogStart {
+                            attempt_id: String::from("my-attempt-id"),
+                            identity: String::from("my-identity"),
+                            system: String::from("foobar-x8664"),
+                            attempted_attrs: Some(vec!["foo".to_owned()]),
+                            skipped_attrs: Some(vec!["bar".to_owned()]),
+                        })
                     })
-                })
+                    .await
             );
 
             assert!(p.path().join("routing-key-foo/attempt-id-foo").exists());
-            assert_eq!(vec![worker::Action::Ack], worker.consumer(&job));
+            assert_eq!(vec![worker::Action::Ack], worker.consumer(&job).await);
 
             logmsg.line_number = 5;
             logmsg.output = String::from("line-5");
             job.message = MsgType::Msg(logmsg.clone());
-            assert_eq!(vec![worker::Action::Ack], worker.consumer(&job));
+            assert_eq!(vec![worker::Action::Ack], worker.consumer(&job).await);
 
             job.from.attempt_id = String::from("my-other-attempt");
             logmsg.attempt_id = String::from("my-other-attempt");
             logmsg.line_number = 3;
             logmsg.output = String::from("line-3");
             job.message = MsgType::Msg(logmsg);
-            assert_eq!(vec![worker::Action::Ack], worker.consumer(&job));
+            assert_eq!(vec![worker::Action::Ack], worker.consumer(&job).await);
 
             assert_eq!(
                 vec![worker::Action::Ack],
-                worker.consumer(&LogMessage {
-                    from: make_from("foo"),
-                    message: MsgType::Finish(Box::new(BuildResult::V1 {
-                        tag: V1Tag::V1,
-                        repo: Repo {
-                            clone_url: "https://github.com/nixos/ofborg.git".to_owned(),
-                            full_name: "NixOS/ofborg".to_owned(),
-                            owner: "NixOS".to_owned(),
-                            name: "ofborg".to_owned(),
-                        },
-                        pr: Pr {
-                            number: 42,
-                            head_sha: "6dd9f0265d52b946dd13daf996f30b64e4edb446".to_owned(),
-                            target_branch: Some("scratch".to_owned()),
-                        },
-                        system: "x86_64-linux".to_owned(),
-                        output: vec![],
-                        attempt_id: "attempt-id-foo".to_owned(),
-                        request_id: "bogus-request-id".to_owned(),
-                        status: BuildStatus::Success,
-                        attempted_attrs: Some(vec!["foo".to_owned()]),
-                        skipped_attrs: Some(vec!["bar".to_owned()]),
-                    }))
-                })
+                worker
+                    .consumer(&LogMessage {
+                        from: make_from("foo"),
+                        message: MsgType::Finish(Box::new(BuildResult::V1 {
+                            tag: V1Tag::V1,
+                            repo: Repo {
+                                clone_url: "https://github.com/nixos/ofborg.git".to_owned(),
+                                full_name: "NixOS/ofborg".to_owned(),
+                                owner: "NixOS".to_owned(),
+                                name: "ofborg".to_owned(),
+                            },
+                            pr: Pr {
+                                number: 42,
+                                head_sha: "6dd9f0265d52b946dd13daf996f30b64e4edb446".to_owned(),
+                                target_branch: Some("scratch".to_owned()),
+                            },
+                            system: "x86_64-linux".to_owned(),
+                            output: vec![],
+                            attempt_id: "attempt-id-foo".to_owned(),
+                            request_id: "bogus-request-id".to_owned(),
+                            status: BuildStatus::Success,
+                            attempted_attrs: Some(vec!["foo".to_owned()]),
+                            skipped_attrs: Some(vec!["bar".to_owned()]),
+                        }))
+                    })
+                    .await
             );
         }
 

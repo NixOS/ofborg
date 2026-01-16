@@ -5,14 +5,14 @@ use std::path::Path;
 use std::pin::Pin;
 
 use futures_util::future;
-use ofborg::block_on;
 use tracing::{error, info, warn};
 
 use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
 use ofborg::easylapin;
 use ofborg::{checkout, config, tasks};
 
-fn main() -> Result<(), Box<dyn Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
     ofborg::setup_log();
 
     let arg = env::args()
@@ -25,15 +25,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         panic!();
     };
 
-    let conn = easylapin::from_config(&builder_cfg.rabbitmq)?;
+    let conn = easylapin::from_config(&builder_cfg.rabbitmq).await?;
     let mut handles: Vec<Pin<Box<dyn Future<Output = ()> + Send>>> = Vec::new();
 
     for system in &cfg.nix.system {
-        let handle_ext = self::create_handle(&conn, &cfg, system.to_string())?;
-        handles.push(handle_ext);
+        handles.push(self::create_handle(&conn, &cfg, system.to_string()).await?);
     }
 
-    block_on(future::join_all(handles));
+    future::join_all(handles).await;
 
     drop(conn); // Close connection.
     info!("Closed the session... EOF");
@@ -41,12 +40,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 #[allow(clippy::type_complexity)]
-fn create_handle(
+async fn create_handle(
     conn: &lapin::Connection,
     cfg: &config::Config,
     system: String,
 ) -> Result<Pin<Box<dyn Future<Output = ()> + Send>>, Box<dyn Error>> {
-    let mut chan = block_on(conn.create_channel())?;
+    let mut chan = conn.create_channel().await?;
 
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
     let nix = cfg.nix().with_system(system.clone());
@@ -59,7 +58,8 @@ fn create_handle(
         auto_delete: false,
         no_wait: false,
         internal: false,
-    })?;
+    })
+    .await?;
 
     let queue_name = if cfg.runner.build_all_jobs != Some(true) {
         let queue_name = format!("build-inputs-{system}");
@@ -70,7 +70,8 @@ fn create_handle(
             exclusive: false,
             auto_delete: false,
             no_wait: false,
-        })?;
+        })
+        .await?;
         queue_name
     } else {
         warn!("Building all jobs, please don't use this unless you're");
@@ -83,7 +84,8 @@ fn create_handle(
             exclusive: true,
             auto_delete: true,
             no_wait: false,
-        })?;
+        })
+        .await?;
         queue_name
     };
 
@@ -92,19 +94,22 @@ fn create_handle(
         exchange: "build-jobs".to_owned(),
         routing_key: None,
         no_wait: false,
-    })?;
+    })
+    .await?;
 
-    let handle = easylapin::NotifyChannel(chan).consume(
-        tasks::build::BuildWorker::new(cloner, nix, system, cfg.runner.identity.clone()),
-        easyamqp::ConsumeConfig {
-            queue: queue_name.clone(),
-            consumer_tag: format!("{}-builder", cfg.whoami()),
-            no_local: false,
-            no_ack: false,
-            no_wait: false,
-            exclusive: false,
-        },
-    )?;
+    let handle = easylapin::NotifyChannel(chan)
+        .consume(
+            tasks::build::BuildWorker::new(cloner, nix, system, cfg.runner.identity.clone()),
+            easyamqp::ConsumeConfig {
+                queue: queue_name.clone(),
+                consumer_tag: format!("{}-builder", cfg.whoami()),
+                no_local: false,
+                no_ack: false,
+                no_wait: false,
+                exclusive: false,
+            },
+        )
+        .await?;
 
     info!("Fetching jobs from {}", &queue_name);
     Ok(handle)

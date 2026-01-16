@@ -42,11 +42,16 @@ impl PostableEvent {
 impl worker::SimpleWorker for GitHubCommentPoster {
     type J = PostableEvent;
 
-    fn msg_to_job(&mut self, _: &str, _: &Option<String>, body: &[u8]) -> Result<Self::J, String> {
+    async fn msg_to_job(
+        &mut self,
+        _: &str,
+        _: &Option<String>,
+        body: &[u8],
+    ) -> Result<Self::J, String> {
         PostableEvent::from(body)
     }
 
-    fn consumer(&mut self, job: &PostableEvent) -> worker::Actions {
+    async fn consumer(&mut self, job: &PostableEvent) -> worker::Actions {
         let mut checks: Vec<CheckRunOptions> = vec![];
         let repo: Repo;
 
@@ -78,14 +83,15 @@ impl worker::SimpleWorker for GitHubCommentPoster {
             );
             debug!("{:?}", check);
 
-            let check_create_attempt = crate::block_on(
-                self.github_vend
-                    .for_repo(&repo.owner, &repo.name)
-                    .unwrap()
-                    .repo(repo.owner.clone(), repo.name.clone())
-                    .checkruns()
-                    .create(&check),
-            );
+            let check_create_attempt = self
+                .github_vend
+                .for_repo(&repo.owner, &repo.name)
+                .await
+                .unwrap()
+                .repo(repo.owner.clone(), repo.name.clone())
+                .checkruns()
+                .create(&check)
+                .await;
 
             match check_create_attempt {
                 Ok(_) => info!("Successfully sent."),

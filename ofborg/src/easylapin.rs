@@ -1,4 +1,5 @@
 use std::pin::Pin;
+use std::sync::Arc;
 
 use crate::config::RabbitMqConfig;
 use crate::easyamqp::{
@@ -19,7 +20,7 @@ use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, Exchange
 use tokio_stream::StreamExt;
 use tracing::{debug, trace};
 
-pub fn from_config(cfg: &RabbitMqConfig) -> Result<Connection, lapin::Error> {
+pub async fn from_config(cfg: &RabbitMqConfig) -> Result<Connection, lapin::Error> {
     let mut props = FieldTable::default();
     props.insert(
         "ofborg_version".into(),
@@ -29,13 +30,13 @@ pub fn from_config(cfg: &RabbitMqConfig) -> Result<Connection, lapin::Error> {
         client_properties: props,
         ..Default::default()
     };
-    crate::block_on(Connection::connect(&cfg.as_uri()?, opts))
+    Connection::connect(&cfg.as_uri()?, opts).await
 }
 
 impl ChannelExt for Channel {
     type Error = lapin::Error;
 
-    fn declare_exchange(&mut self, config: ExchangeConfig) -> Result<(), Self::Error> {
+    async fn declare_exchange(&mut self, config: ExchangeConfig) -> Result<(), Self::Error> {
         let opts = ExchangeDeclareOptions {
             passive: config.passive,
             durable: config.durable,
@@ -49,16 +50,12 @@ impl ChannelExt for Channel {
             ExchangeType::Fanout => ExchangeKind::Fanout,
             _ => panic!("exchange kind"),
         };
-        crate::block_on(self.exchange_declare(
-            &config.exchange,
-            kind,
-            opts,
-            FieldTable::default(),
-        ))?;
+        self.exchange_declare(&config.exchange, kind, opts, FieldTable::default())
+            .await?;
         Ok(())
     }
 
-    fn declare_queue(&mut self, config: QueueConfig) -> Result<(), Self::Error> {
+    async fn declare_queue(&mut self, config: QueueConfig) -> Result<(), Self::Error> {
         let opts = QueueDeclareOptions {
             passive: config.passive,
             durable: config.durable,
@@ -67,22 +64,24 @@ impl ChannelExt for Channel {
             nowait: config.no_wait,
         };
 
-        crate::block_on(self.queue_declare(&config.queue, opts, FieldTable::default()))?;
+        self.queue_declare(&config.queue, opts, FieldTable::default())
+            .await?;
         Ok(())
     }
 
-    fn bind_queue(&mut self, config: BindQueueConfig) -> Result<(), Self::Error> {
+    async fn bind_queue(&mut self, config: BindQueueConfig) -> Result<(), Self::Error> {
         let opts = QueueBindOptions {
             nowait: config.no_wait,
         };
 
-        crate::block_on(self.queue_bind(
+        self.queue_bind(
             &config.queue,
             &config.exchange,
             &config.routing_key.unwrap_or_else(|| "".into()),
             opts,
             FieldTable::default(),
-        ))?;
+        )
+        .await?;
         Ok(())
     }
 }
@@ -91,13 +90,19 @@ impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for Channel {
     type Error = lapin::Error;
     type Handle = Pin<Box<dyn Future<Output = ()> + 'a>>;
 
-    fn consume(self, mut worker: W, config: ConsumeConfig) -> Result<Self::Handle, Self::Error> {
-        let mut consumer = crate::block_on(self.basic_consume(
-            &config.queue,
-            &config.consumer_tag,
-            BasicConsumeOptions::default(),
-            FieldTable::default(),
-        ))?;
+    async fn consume(
+        self,
+        mut worker: W,
+        config: ConsumeConfig,
+    ) -> Result<Self::Handle, Self::Error> {
+        let mut consumer = self
+            .basic_consume(
+                &config.queue,
+                &config.consumer_tag,
+                BasicConsumeOptions::default(),
+                FieldTable::default(),
+            )
+            .await?;
         Ok(Box::pin(async move {
             while let Some(Ok(deliver)) = consumer.next().await {
                 debug!(?deliver.delivery_tag, "consumed delivery");
@@ -108,9 +113,10 @@ impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for Channel {
                         &content_type.as_ref().map(|s| s.to_string()),
                         &deliver.data,
                     )
+                    .await
                     .expect("worker unexpected message consumed");
 
-                for action in worker.consumer(&job) {
+                for action in worker.consumer(&job).await {
                     action_deliver(&self, &deliver, action)
                         .await
                         .expect("action deliver failure");
@@ -129,26 +135,28 @@ impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for WorkerChannel {
     type Error = lapin::Error;
     type Handle = Pin<Box<dyn Future<Output = ()> + 'a>>;
 
-    fn consume(self, worker: W, config: ConsumeConfig) -> Result<Self::Handle, Self::Error> {
-        crate::block_on(self.0.basic_qos(1, BasicQosOptions::default()))?;
-        self.0.consume(worker, config)
+    async fn consume(self, worker: W, config: ConsumeConfig) -> Result<Self::Handle, Self::Error> {
+        self.0.basic_qos(1, BasicQosOptions::default()).await?;
+        self.0.consume(worker, config).await
     }
 }
 
-pub struct ChannelNotificationReceiver<'a> {
-    channel: &'a mut lapin::Channel,
-    deliver: &'a Delivery,
+pub struct ChannelNotificationReceiver {
+    channel: lapin::Channel,
+    deliver: Delivery,
 }
 
-impl<'a> ChannelNotificationReceiver<'a> {
-    pub fn new(channel: &'a mut lapin::Channel, deliver: &'a Delivery) -> Self {
+impl ChannelNotificationReceiver {
+    pub fn new(channel: lapin::Channel, deliver: Delivery) -> Self {
         ChannelNotificationReceiver { channel, deliver }
     }
 }
 
-impl NotificationReceiver for ChannelNotificationReceiver<'_> {
-    fn tell(&mut self, action: Action) {
-        crate::block_on(action_deliver(self.channel, self.deliver, action))
+#[async_trait::async_trait]
+impl NotificationReceiver for ChannelNotificationReceiver {
+    async fn tell(&self, action: Action) {
+        action_deliver(&self.channel, &self.deliver, action)
+            .await
             .expect("action deliver failure");
     }
 }
@@ -161,35 +169,39 @@ impl<'a, W: SimpleNotifyWorker + 'a + Send> ConsumerExt<'a, W> for NotifyChannel
     type Error = lapin::Error;
     type Handle = Pin<Box<dyn Future<Output = ()> + 'a + Send>>;
 
-    fn consume(self, worker: W, config: ConsumeConfig) -> Result<Self::Handle, Self::Error> {
-        crate::block_on(self.0.basic_qos(1, BasicQosOptions::default()))?;
+    async fn consume(self, worker: W, config: ConsumeConfig) -> Result<Self::Handle, Self::Error> {
+        self.0.basic_qos(1, BasicQosOptions::default()).await?;
 
-        let mut consumer = crate::block_on(self.0.basic_consume(
-            &config.queue,
-            &config.consumer_tag,
-            BasicConsumeOptions::default(),
-            FieldTable::default(),
-        ))?;
-        let mut chan = self.0;
+        let mut consumer = self
+            .0
+            .basic_consume(
+                &config.queue,
+                &config.consumer_tag,
+                BasicConsumeOptions::default(),
+                FieldTable::default(),
+            )
+            .await?;
+        let chan = self.0;
         Ok(Box::pin(async move {
             while let Some(Ok(deliver)) = consumer.next().await {
-                debug!(?deliver.delivery_tag, "consumed delivery");
-                let mut receiver = ChannelNotificationReceiver {
-                    channel: &mut chan,
-                    deliver: &deliver,
+                let delivery_tag = deliver.delivery_tag;
+                debug!(?delivery_tag, "consumed delivery");
+                let receiver = ChannelNotificationReceiver {
+                    channel: chan.clone(),
+                    deliver,
                 };
 
-                let content_type = deliver.properties.content_type();
+                let content_type = receiver.deliver.properties.content_type();
                 let job = worker
                     .msg_to_job(
-                        deliver.routing_key.as_str(),
+                        receiver.deliver.routing_key.as_str(),
                         &content_type.as_ref().map(|s| s.to_string()),
-                        &deliver.data,
+                        &receiver.deliver.data,
                     )
                     .expect("worker unexpected message consumed");
 
-                worker.consumer(&job, &mut receiver);
-                debug!(?deliver.delivery_tag, "done");
+                worker.consumer(job, Arc::new(receiver)).await;
+                debug!(?delivery_tag, "done");
             }
         }))
     }
@@ -219,21 +231,21 @@ async fn action_deliver(
             chan.basic_nack(deliver.delivery_tag, BasicNackOptions::default())
                 .await
         }
-        Action::Publish(mut msg) => {
-            let exch = msg.exchange.take().unwrap_or_else(|| "".to_owned());
-            let key = msg.routing_key.take().unwrap_or_else(|| "".to_owned());
+        Action::Publish(msg) => {
+            let exch = msg.exchange.as_deref().unwrap_or("");
+            let key = msg.routing_key.as_deref().unwrap_or("");
             trace!(?exch, ?key, "action publish");
 
             let mut props = BasicProperties::default().with_delivery_mode(2); // persistent.
 
-            if let Some(s) = msg.content_type {
+            if let Some(s) = msg.content_type.as_deref() {
                 props = props.with_content_type(s.into());
             }
 
             let _confirmaton = chan
                 .basic_publish(
-                    &exch,
-                    &key,
+                    exch,
+                    key,
                     BasicPublishOptions::default(),
                     &msg.content,
                     props,

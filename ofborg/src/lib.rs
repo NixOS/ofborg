@@ -9,7 +9,6 @@
 extern crate nom;
 
 use std::env;
-use std::future::Future;
 
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::prelude::*;
@@ -108,23 +107,4 @@ pub fn setup_log() {
     }
 
     tracing::info!("Logging configured");
-}
-
-/// Block on a future from synchronous code.
-///
-/// This helper bridges sync and async code throughout the codebase,
-/// used for both RabbitMQ (lapin) and GitHub API (hubcaps) operations.
-pub fn block_on<F: Future>(f: F) -> F::Output {
-    // Try to use the current runtime if we're already in one
-    if let Ok(handle) = tokio::runtime::Handle::try_current() {
-        // We're inside a tokio runtime, use block_in_place
-        tokio::task::block_in_place(|| handle.block_on(f))
-    } else {
-        // Create a new runtime for this blocking call
-        tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .expect("Failed to create tokio runtime")
-            .block_on(f)
-    }
 }
