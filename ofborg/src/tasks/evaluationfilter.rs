@@ -18,7 +18,12 @@ impl EvaluationFilterWorker {
 impl worker::SimpleWorker for EvaluationFilterWorker {
     type J = ghevent::PullRequestEvent;
 
-    fn msg_to_job(&mut self, _: &str, _: &Option<String>, body: &[u8]) -> Result<Self::J, String> {
+    async fn msg_to_job(
+        &mut self,
+        _: &str,
+        _: &Option<String>,
+        body: &[u8],
+    ) -> Result<Self::J, String> {
         match serde_json::from_slice(body) {
             Ok(event) => Ok(event),
             Err(err) => Err(format!(
@@ -28,7 +33,7 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
         }
     }
 
-    fn consumer(&mut self, job: &ghevent::PullRequestEvent) -> worker::Actions {
+    async fn consumer(&mut self, job: &ghevent::PullRequestEvent) -> worker::Actions {
         let span = debug_span!("job", pr = ?job.number);
         let _enter = span.enter();
 
@@ -102,8 +107,8 @@ mod tests {
     use super::*;
     use crate::worker::SimpleWorker;
 
-    #[test]
-    fn changed_base() {
+    #[tokio::test]
+    async fn changed_base() {
         let data = include_str!("../../test-srcs/events/pr-changed-base.json");
 
         let job: ghevent::PullRequestEvent =
@@ -115,7 +120,7 @@ mod tests {
         ));
 
         assert_eq!(
-            worker.consumer(&job),
+            worker.consumer(&job).await,
             vec![
                 worker::publish_serde_action(
                     None,

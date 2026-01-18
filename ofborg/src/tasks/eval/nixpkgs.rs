@@ -48,8 +48,8 @@ impl<'a> NixpkgsStrategy<'a> {
         }
     }
 
-    fn tag_from_title(&self) {
-        let title = match async_std::task::block_on(self.issue_ref.get()) {
+    async fn tag_from_title(&self) {
+        let title = match self.issue_ref.get().await {
             Ok(issue) => issue.title.to_lowercase(),
             Err(_) => return,
         };
@@ -60,7 +60,7 @@ impl<'a> NixpkgsStrategy<'a> {
             return;
         }
 
-        update_labels(self.issue_ref, &labels, &[]);
+        update_labels(self.issue_ref, &labels, &[]).await;
     }
 
     fn check_outpaths_before(&mut self, _dir: &Path) -> StepResult<()> {
@@ -104,16 +104,18 @@ impl<'a> NixpkgsStrategy<'a> {
 }
 
 impl EvaluationStrategy for NixpkgsStrategy<'_> {
-    fn pre_clone(&mut self) -> StepResult<()> {
-        self.tag_from_title();
+    async fn pre_clone(&mut self) -> StepResult<()> {
+        self.tag_from_title().await;
         Ok(())
     }
 
-    fn on_target_branch(&mut self, dir: &Path, status: &mut CommitStatus) -> StepResult<()> {
-        status.set_with_description(
-            "Checking original out paths",
-            hubcaps::statuses::State::Pending,
-        )?;
+    async fn on_target_branch(&mut self, dir: &Path, status: &mut CommitStatus) -> StepResult<()> {
+        status
+            .set_with_description(
+                "Checking original out paths",
+                hubcaps::statuses::State::Pending,
+            )
+            .await?;
         self.check_outpaths_before(dir)?;
 
         Ok(())
@@ -128,8 +130,10 @@ impl EvaluationStrategy for NixpkgsStrategy<'_> {
         Ok(())
     }
 
-    fn after_merge(&mut self, status: &mut CommitStatus) -> StepResult<()> {
-        status.set_with_description("Checking new out paths", hubcaps::statuses::State::Pending)?;
+    async fn after_merge(&mut self, status: &mut CommitStatus) -> StepResult<()> {
+        status
+            .set_with_description("Checking new out paths", hubcaps::statuses::State::Pending)
+            .await?;
         self.check_outpaths_after()?;
 
         Ok(())
@@ -139,14 +143,16 @@ impl EvaluationStrategy for NixpkgsStrategy<'_> {
         vec![]
     }
 
-    fn all_evaluations_passed(
+    async fn all_evaluations_passed(
         &mut self,
         status: &mut CommitStatus,
     ) -> StepResult<EvaluationComplete> {
-        status.set_with_description(
-            "Calculating Changed Outputs",
-            hubcaps::statuses::State::Pending,
-        )?;
+        status
+            .set_with_description(
+                "Calculating Changed Outputs",
+                hubcaps::statuses::State::Pending,
+            )
+            .await?;
 
         let builds = self.queue_builds()?;
         Ok(EvaluationComplete { builds })

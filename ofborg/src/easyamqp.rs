@@ -260,13 +260,28 @@ pub struct QueueConfig {
 
 pub trait ChannelExt {
     type Error;
-    fn declare_exchange(&mut self, config: ExchangeConfig) -> Result<(), Self::Error>;
-    fn declare_queue(&mut self, config: QueueConfig) -> Result<(), Self::Error>;
-    fn bind_queue(&mut self, config: BindQueueConfig) -> Result<(), Self::Error>;
+
+    fn declare_exchange(
+        &mut self,
+        config: ExchangeConfig,
+    ) -> impl std::future::Future<Output = Result<(), Self::Error>>;
+    fn declare_queue(
+        &mut self,
+        config: QueueConfig,
+    ) -> impl std::future::Future<Output = Result<(), Self::Error>>;
+    fn bind_queue(
+        &mut self,
+        config: BindQueueConfig,
+    ) -> impl std::future::Future<Output = Result<(), Self::Error>>;
 }
 
 pub trait ConsumerExt<'a, C> {
     type Error;
     type Handle;
-    fn consume(self, callback: C, config: ConsumeConfig) -> Result<Self::Handle, Self::Error>;
+
+    fn consume(
+        self,
+        callback: C,
+        config: ConsumeConfig,
+    ) -> impl std::future::Future<Output = Result<Self::Handle, Self::Error>>;
 }

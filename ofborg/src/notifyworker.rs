@@ -1,9 +1,16 @@
+use std::sync::Arc;
+
 use crate::worker::Action;
 
+#[async_trait::async_trait]
 pub trait SimpleNotifyWorker {
     type J;
 
-    fn consumer(&self, job: &Self::J, notifier: &mut dyn NotificationReceiver);
+    async fn consumer(
+        &self,
+        job: Self::J,
+        notifier: Arc<dyn NotificationReceiver + std::marker::Send + std::marker::Sync>,
+    );
 
     fn msg_to_job(
         &self,
@@ -13,13 +20,14 @@ pub trait SimpleNotifyWorker {
     ) -> Result<Self::J, String>;
 }
 
+#[async_trait::async_trait]
 pub trait NotificationReceiver {
-    fn tell(&mut self, action: Action);
+    async fn tell(&self, action: Action);
 }
 
 #[derive(Default)]
 pub struct DummyNotificationReceiver {
-    pub actions: Vec<Action>,
+    pub actions: parking_lot::Mutex<Vec<Action>>,
 }
 
 impl DummyNotificationReceiver {
@@ -28,8 +36,10 @@ impl DummyNotificationReceiver {
     }
 }
 
+#[async_trait::async_trait]
 impl NotificationReceiver for DummyNotificationReceiver {
-    fn tell(&mut self, action: Action) {
-        self.actions.push(action);
+    async fn tell(&self, action: Action) {
+        let mut actions = self.actions.lock();
+        actions.push(action);
     }
 }

@@ -1,12 +1,15 @@
-use std::{collections::HashMap, error::Error, path::PathBuf};
+use std::net::SocketAddr;
+use std::{collections::HashMap, error::Error, path::PathBuf, sync::Arc};
 
-use hyper::{
-    header::ContentType,
-    mime,
-    server::{Request, Response, Server},
-    status::StatusCode,
-};
+use http::{Method, StatusCode};
+use http_body_util::Full;
+use hyper::body::Bytes;
+use hyper::server::conn::http1;
+use hyper::service::service_fn;
+use hyper::{Request, Response};
+use hyper_util::rt::TokioIo;
 use ofborg::config;
+use tokio::net::TcpListener;
 use tracing::{error, info, warn};
 
 #[derive(serde::Serialize, Default)]
@@ -21,7 +24,97 @@ struct LogResponse {
     attempts: HashMap<String, Attempt>,
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+#[derive(Clone)]
+struct LogApiConfig {
+    logs_path: String,
+    serve_root: String,
+}
+
+fn response(status: StatusCode, body: &'static str) -> Response<Full<Bytes>> {
+    Response::builder()
+        .status(status)
+        .body(Full::new(Bytes::from(body)))
+        .unwrap()
+}
+
+fn json_response(status: StatusCode, body: String) -> Response<Full<Bytes>> {
+    Response::builder()
+        .status(status)
+        .header("Content-Type", "application/json")
+        .body(Full::new(Bytes::from(body)))
+        .unwrap()
+}
+
+async fn handle_request(
+    req: Request<hyper::body::Incoming>,
+    cfg: Arc<LogApiConfig>,
+) -> Result<Response<Full<Bytes>>, hyper::Error> {
+    if req.method() != Method::GET {
+        return Ok(response(StatusCode::METHOD_NOT_ALLOWED, ""));
+    }
+
+    let uri = req.uri().path().to_string();
+    let Some(reqd) = uri.strip_prefix("/logs/").map(ToOwned::to_owned) else {
+        return Ok(response(StatusCode::NOT_FOUND, "invalid uri"));
+    };
+    let path: PathBuf = [&cfg.logs_path, &reqd].iter().collect();
+    let Ok(path) = std::fs::canonicalize(&path) else {
+        return Ok(response(StatusCode::NOT_FOUND, "absent"));
+    };
+    let Ok(iter) = std::fs::read_dir(path) else {
+        return Ok(response(StatusCode::NOT_FOUND, "non dir"));
+    };
+
+    let mut attempts = HashMap::<String, Attempt>::new();
+    for e in iter {
+        let Ok(e) = e else { continue };
+        let e_metadata = e.metadata();
+        if e_metadata.as_ref().map(|v| v.is_dir()).unwrap_or(true) {
+            return Ok(response(StatusCode::INTERNAL_SERVER_ERROR, "dir found"));
+        }
+
+        if e_metadata.as_ref().map(|v| v.is_file()).unwrap_or_default() {
+            let Ok(file_name) = e.file_name().into_string() else {
+                warn!("entry filename is not a utf-8 string: {:?}", e.file_name());
+                continue;
+            };
+
+            if file_name.ends_with(".metadata.json") || file_name.ends_with(".result.json") {
+                let Ok(file) = std::fs::File::open(e.path()) else {
+                    warn!("could not open file: {file_name}");
+                    continue;
+                };
+                let Ok(json) = serde_json::from_reader::<_, serde_json::Value>(file) else {
+                    warn!("file is not a valid json file: {file_name}");
+                    continue;
+                };
+                let Some(attempt_id) = json
+                    .get("attempt_id")
+                    .and_then(|v| v.as_str())
+                    .map(ToOwned::to_owned)
+                else {
+                    warn!("attempt_id not found in file: {file_name}");
+                    continue;
+                };
+                let attempt_obj = attempts.entry(attempt_id).or_default();
+                if file_name.ends_with(".metadata.json") {
+                    attempt_obj.metadata = Some(json);
+                } else {
+                    attempt_obj.result = Some(json);
+                }
+            } else {
+                let attempt_obj = attempts.entry(file_name.clone()).or_default();
+                attempt_obj.log_url = Some(format!("{}/{reqd}/{file_name}", &cfg.serve_root));
+            }
+        }
+    }
+
+    let body = serde_json::to_string(&LogResponse { attempts }).unwrap_or_default();
+    Ok(json_response(StatusCode::OK, body))
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     ofborg::setup_log();
 
     let arg = std::env::args()
@@ -32,97 +125,27 @@ fn main() -> Result<(), Box<dyn Error>> {
         panic!();
     };
 
-    let threads = std::thread::available_parallelism()
-        .map(|x| x.get())
-        .unwrap_or(1);
-    info!("Will listen on {} with {threads} threads", cfg.listen);
-    Server::http(cfg.listen)?.handle_threads(
-        move |req: Request, mut res: Response| {
-            if req.method != hyper::Get {
-                *res.status_mut() = StatusCode::MethodNotAllowed;
-                return;
+    let api_cfg = Arc::new(LogApiConfig {
+        logs_path: cfg.logs_path,
+        serve_root: cfg.serve_root,
+    });
+
+    let addr: SocketAddr = cfg.listen.parse()?;
+    let listener = TcpListener::bind(addr).await?;
+    info!("Listening on {}", addr);
+
+    loop {
+        let (stream, _) = listener.accept().await?;
+        let io = TokioIo::new(stream);
+
+        let api_cfg = api_cfg.clone();
+
+        tokio::task::spawn(async move {
+            let service = service_fn(move |req| handle_request(req, api_cfg.clone()));
+
+            if let Err(err) = http1::Builder::new().serve_connection(io, service).await {
+                warn!("Error serving connection: {:?}", err);
             }
-
-            let uri = req.uri.to_string();
-            let Some(reqd) = uri.strip_prefix("/logs/").map(ToOwned::to_owned) else {
-                *res.status_mut() = StatusCode::NotFound;
-                let _ = res.send(b"invalid uri");
-                return;
-            };
-            let path: PathBuf = [&cfg.logs_path, &reqd].iter().collect();
-            let Ok(path) = std::fs::canonicalize(&path) else {
-                *res.status_mut() = StatusCode::NotFound;
-                let _ = res.send(b"absent");
-                return;
-            };
-            let Ok(iter) = std::fs::read_dir(path) else {
-                *res.status_mut() = StatusCode::NotFound;
-                let _ = res.send(b"non dir");
-                return;
-            };
-
-            let mut attempts = HashMap::<String, Attempt>::new();
-            for e in iter {
-                let Ok(e) = e else { continue };
-                let e_metadata = e.metadata();
-                if e_metadata.as_ref().map(|v| v.is_dir()).unwrap_or(true) {
-                    *res.status_mut() = StatusCode::InternalServerError;
-                    let _ = res.send(b"dir found");
-                    return;
-                }
-
-                if e_metadata.as_ref().map(|v| v.is_file()).unwrap_or_default() {
-                    let Ok(file_name) = e.file_name().into_string() else {
-                        warn!("entry filename is not a utf-8 string: {:?}", e.file_name());
-                        continue;
-                    };
-
-                    if file_name.ends_with(".metadata.json") || file_name.ends_with(".result.json")
-                    {
-                        let Ok(file) = std::fs::File::open(e.path()) else {
-                            warn!("could not open file: {file_name}");
-                            continue;
-                        };
-                        let Ok(json) = serde_json::from_reader::<_, serde_json::Value>(file) else {
-                            warn!("file is not a valid json file: {file_name}");
-                            continue;
-                        };
-                        let Some(attempt_id) = json
-                            .get("attempt_id")
-                            .and_then(|v| v.as_str())
-                            .map(ToOwned::to_owned)
-                        else {
-                            warn!("attempt_id not found in file: {file_name}");
-                            continue;
-                        };
-                        let attempt_obj = attempts.entry(attempt_id).or_default();
-                        if file_name.ends_with(".metadata.json") {
-                            attempt_obj.metadata = Some(json);
-                        } else {
-                            attempt_obj.result = Some(json);
-                        }
-                    } else {
-                        let attempt_obj = attempts.entry(file_name.clone()).or_default();
-                        attempt_obj.log_url =
-                            Some(format!("{}/{reqd}/{file_name}", &cfg.serve_root));
-                    }
-                }
-            }
-
-            *res.status_mut() = StatusCode::Ok;
-            res.headers_mut()
-                .set::<ContentType>(hyper::header::ContentType(mime::Mime(
-                    mime::TopLevel::Application,
-                    mime::SubLevel::Json,
-                    Vec::new(),
-                )));
-            let _ = res.send(
-                serde_json::to_string(&LogResponse { attempts })
-                    .unwrap_or_default()
-                    .as_bytes(),
-            );
-        },
-        threads,
-    )?;
-    Ok(())
+        });
+    }
 }

@@ -1,7 +1,7 @@
 use crate::acl;
 use crate::nix::Nix;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, hash_map::Entry};
 use std::fmt;
 use std::fs::File;
 use std::io::{BufReader, Read};
@@ -328,34 +328,38 @@ impl GithubAppVendingMachine {
             .expect("Unable to create JWTCredentials")
     }
 
-    fn install_id_for_repo(&mut self, owner: &str, repo: &str) -> Option<u64> {
+    async fn install_id_for_repo(&mut self, owner: &str, repo: &str) -> Option<u64> {
         let useragent = self.useragent();
         let jwt = self.jwt();
 
         let key = (owner.to_owned(), repo.to_owned());
 
-        *self.id_cache.entry(key).or_insert_with(|| {
-            info!("Looking up install ID for {}/{}", owner, repo);
+        match self.id_cache.entry(key) {
+            Entry::Occupied(entry) => *entry.get(),
+            Entry::Vacant(entry) => {
+                info!("Looking up install ID for {}/{}", owner, repo);
 
-            let lookup_gh = Github::new(useragent, Credentials::JWT(jwt)).unwrap();
+                let lookup_gh = Github::new(useragent, Credentials::JWT(jwt)).unwrap();
 
-            match async_std::task::block_on(lookup_gh.app().find_repo_installation(owner, repo)) {
-                Ok(install_id) => {
-                    debug!("Received install ID {:?}", install_id);
-                    Some(install_id.id)
-                }
-                Err(e) => {
-                    warn!("Error during install ID lookup: {:?}", e);
-                    None
-                }
+                let v = match lookup_gh.app().find_repo_installation(owner, repo).await {
+                    Ok(install_id) => {
+                        debug!("Received install ID {:?}", install_id);
+                        Some(install_id.id)
+                    }
+                    Err(e) => {
+                        warn!("Error during install ID lookup: {:?}", e);
+                        None
+                    }
+                };
+                *entry.insert(v)
             }
-        })
+        }
     }
 
-    pub fn for_repo<'a>(&'a mut self, owner: &str, repo: &str) -> Option<&'a Github> {
+    pub async fn for_repo<'a>(&'a mut self, owner: &str, repo: &str) -> Option<&'a Github> {
         let useragent = self.useragent();
         let jwt = self.jwt();
-        let install_id = self.install_id_for_repo(owner, repo)?;
+        let install_id = self.install_id_for_repo(owner, repo).await?;
 
         Some(self.client_cache.entry(install_id).or_insert_with(|| {
             Github::new(

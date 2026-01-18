@@ -21,7 +21,12 @@ impl GitHubCommentWorker {
 impl worker::SimpleWorker for GitHubCommentWorker {
     type J = ghevent::IssueComment;
 
-    fn msg_to_job(&mut self, _: &str, _: &Option<String>, body: &[u8]) -> Result<Self::J, String> {
+    async fn msg_to_job(
+        &mut self,
+        _: &str,
+        _: &Option<String>,
+        body: &[u8],
+    ) -> Result<Self::J, String> {
         match serde_json::from_slice(body) {
             Ok(comment) => Ok(comment),
             Err(err) => {
@@ -36,7 +41,7 @@ impl worker::SimpleWorker for GitHubCommentWorker {
 
     // FIXME: remove with rust/cargo update
     #[allow(clippy::cognitive_complexity)]
-    fn consumer(&mut self, job: &ghevent::IssueComment) -> worker::Actions {
+    async fn consumer(&mut self, job: &ghevent::IssueComment) -> worker::Actions {
         let span = debug_span!("job", pr = ?job.issue.number);
         let _enter = span.enter();
 
@@ -65,16 +70,16 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         let instructions = commentparser::parse(&job.comment.body);
         info!("Instructions: {:?}", instructions);
 
-        let pr = async_std::task::block_on(
-            self.github
-                .repo(
-                    job.repository.owner.login.clone(),
-                    job.repository.name.clone(),
-                )
-                .pulls()
-                .get(job.issue.number)
-                .get(),
-        );
+        let pr = self
+            .github
+            .repo(
+                job.repository.owner.login.clone(),
+                job.repository.name.clone(),
+            )
+            .pulls()
+            .get(job.issue.number)
+            .get()
+            .await;
 
         if let Err(x) = pr {
             info!(

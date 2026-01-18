@@ -1,4 +1,4 @@
-use std::marker::Send;
+use std::{marker::Send, sync::Arc};
 
 use serde::Serialize;
 
@@ -6,12 +6,12 @@ pub struct Response {}
 
 pub type Actions = Vec<Action>;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Action {
     Ack,
     NackRequeue,
     NackDump,
-    Publish(Box<QueueMsg>),
+    Publish(Arc<QueueMsg>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -29,7 +29,7 @@ pub fn publish_serde_action<T: Serialize + ?Sized>(
     routing_key: Option<String>,
     msg: &T,
 ) -> Action {
-    Action::Publish(Box::new(QueueMsg {
+    Action::Publish(Arc::new(QueueMsg {
         exchange,
         routing_key,
         mandatory: false,
@@ -42,12 +42,12 @@ pub fn publish_serde_action<T: Serialize + ?Sized>(
 pub trait SimpleWorker: Send {
     type J: Send;
 
-    fn consumer(&mut self, job: &Self::J) -> Actions;
+    fn consumer(&mut self, job: &Self::J) -> impl std::future::Future<Output = Actions>;
 
     fn msg_to_job(
         &mut self,
         method: &str,
         headers: &Option<String>,
         body: &[u8],
-    ) -> Result<Self::J, String>;
+    ) -> impl std::future::Future<Output = Result<Self::J, String>>;
 }

@@ -34,20 +34,20 @@ impl CommitStatus {
         self.url = url.unwrap_or_else(|| String::from(""))
     }
 
-    pub fn set_with_description(
+    pub async fn set_with_description(
         &mut self,
         description: &str,
         state: hubcaps::statuses::State,
     ) -> Result<(), CommitStatusError> {
         self.set_description(description.to_owned());
-        self.set(state)
+        self.set(state).await
     }
 
     pub fn set_description(&mut self, description: String) {
         self.description = description;
     }
 
-    pub fn set(&self, state: hubcaps::statuses::State) -> Result<(), CommitStatusError> {
+    pub async fn set(&self, state: hubcaps::statuses::State) -> Result<(), CommitStatusError> {
         let desc = if self.description.len() >= 140 {
             warn!(
                 "description is over 140 char; truncating: {:?}",
@@ -57,19 +57,19 @@ impl CommitStatus {
         } else {
             self.description.clone()
         };
-        async_std::task::block_on(
-            self.api
-                .create(
-                    self.sha.as_ref(),
-                    &hubcaps::statuses::StatusOptions::builder(state)
-                        .context(self.context.clone())
-                        .description(desc)
-                        .target_url(self.url.clone())
-                        .build(),
-                )
-                .map_ok(|_| ())
-                .map_err(|e| CommitStatusError::from(e)),
-        )
+        self.api
+            .create(
+                self.sha.as_ref(),
+                &hubcaps::statuses::StatusOptions::builder(state)
+                    .context(self.context.clone())
+                    .description(desc)
+                    .target_url(self.url.clone())
+                    .build(),
+            )
+            .map_ok(|_| ())
+            .map_err(|e| CommitStatusError::from(e))
+            .await?;
+        Ok(())
     }
 }
 

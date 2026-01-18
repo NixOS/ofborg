@@ -9,17 +9,17 @@ use crate::systems;
 use crate::tasks::eval;
 use crate::tasks::eval::EvaluationStrategy;
 use crate::worker;
+use futures::stream::StreamExt;
 use futures_util::TryFutureExt;
 
 use std::path::Path;
-use std::sync::RwLock;
 use std::time::Instant;
 
 use tracing::{debug_span, error, info, warn};
 
 pub struct EvaluationWorker<E> {
     cloner: checkout::CachedCloner,
-    github_vend: RwLock<GithubAppVendingMachine>,
+    github_vend: tokio::sync::RwLock<GithubAppVendingMachine>,
     acl: Acl,
     identity: String,
     events: E,
@@ -35,7 +35,7 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
     ) -> EvaluationWorker<E> {
         EvaluationWorker {
             cloner,
-            github_vend: RwLock::new(github_vend),
+            github_vend: tokio::sync::RwLock::new(github_vend),
             acl,
             identity,
             events,
@@ -46,15 +46,20 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
 impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E> {
     type J = evaluationjob::EvaluationJob;
 
-    fn msg_to_job(&mut self, _: &str, _: &Option<String>, body: &[u8]) -> Result<Self::J, String> {
-        self.events.notify(Event::JobReceived);
+    async fn msg_to_job(
+        &mut self,
+        _: &str,
+        _: &Option<String>,
+        body: &[u8],
+    ) -> Result<Self::J, String> {
+        self.events.notify(Event::JobReceived).await;
         match evaluationjob::from(body) {
             Ok(job) => {
-                self.events.notify(Event::JobDecodeSuccess);
+                self.events.notify(Event::JobDecodeSuccess).await;
                 Ok(job)
             }
             Err(err) => {
-                self.events.notify(Event::JobDecodeFailure);
+                self.events.notify(Event::JobDecodeFailure).await;
                 error!(
                     "Failed to decode message: {}, Err: {err:?}",
                     std::str::from_utf8(body).unwrap_or("<message not utf8>")
@@ -64,17 +69,15 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
         }
     }
 
-    fn consumer(&mut self, job: &evaluationjob::EvaluationJob) -> worker::Actions {
+    async fn consumer(&mut self, job: &evaluationjob::EvaluationJob) -> worker::Actions {
         let span = debug_span!("job", pr = ?job.pr.number);
         let _enter = span.enter();
 
-        let mut vending_machine = self
-            .github_vend
-            .write()
-            .expect("Failed to get write lock on github vending machine");
+        let mut vending_machine = self.github_vend.write().await;
 
         let github_client = vending_machine
             .for_repo(&job.repo.owner, &job.repo.name)
+            .await
             .expect("Failed to get a github client token");
 
         OneEval::new(
@@ -86,6 +89,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
             job,
         )
         .worker_actions()
+        .await
     }
 }
 
@@ -125,7 +129,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         evaluationjob::Actions {}
     }
 
-    fn update_status(
+    async fn update_status(
         &self,
         description: String,
         url: Option<String>,
@@ -143,7 +147,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         let repo = self
             .client_app
             .repo(self.job.repo.owner.clone(), self.job.repo.name.clone());
-        let prefix = get_prefix(repo.statuses(), &self.job.pr.head_sha)?;
+        let prefix = get_prefix(repo.statuses(), &self.job.pr.head_sha).await?;
 
         let mut builder = hubcaps::statuses::StatusOptions::builder(state);
         builder.context(format!("{prefix}-eval"));
@@ -158,30 +162,32 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             &self.job.pr.number, &self.job.pr.head_sha, &description
         );
 
-        async_std::task::block_on(
-            self.repo
-                .statuses()
-                .create(&self.job.pr.head_sha, &builder.build())
-                .map_ok(|_| ())
-                .map_err(|e| CommitStatusError::from(e)),
-        )
+        self.repo
+            .statuses()
+            .create(&self.job.pr.head_sha, &builder.build())
+            .map_ok(|_| ())
+            .map_err(|e| CommitStatusError::from(e))
+            .await
     }
 
-    fn worker_actions(&mut self) -> worker::Actions {
-        let eval_result = self.evaluate_job().map_err(|eval_error| match eval_error {
-            // Handle error cases which expect us to post statuses
-            // to github. Convert Eval Errors in to Result<_, CommitStatusWrite>
-            EvalWorkerError::EvalError(eval::Error::Fail(msg)) => {
-                self.update_status(msg, None, hubcaps::statuses::State::Failure)
-            }
-            EvalWorkerError::EvalError(eval::Error::CommitStatusWrite(e)) => Err(e),
-            EvalWorkerError::CommitStatusWrite(e) => Err(e),
-        });
+    async fn worker_actions(&mut self) -> worker::Actions {
+        let eval_result = match self.evaluate_job().await {
+            Ok(v) => Ok(v),
+            Err(eval_error) => match eval_error {
+                // Handle error cases which expect us to post statuses
+                // to github. Convert Eval Errors in to Result<_, CommitStatusWrite>
+                EvalWorkerError::EvalError(eval::Error::Fail(msg)) => Err(self
+                    .update_status(msg, None, hubcaps::statuses::State::Failure)
+                    .await),
+                EvalWorkerError::EvalError(eval::Error::CommitStatusWrite(e)) => Err(Err(e)),
+                EvalWorkerError::CommitStatusWrite(e) => Err(Err(e)),
+            },
+        };
 
         match eval_result {
             Ok(eval_actions) => {
                 let issue_ref = self.repo.issue(self.job.pr.number);
-                update_labels(&issue_ref, &[], &[String::from("ofborg-internal-error")]);
+                update_labels(&issue_ref, &[], &[String::from("ofborg-internal-error")]).await;
 
                 eval_actions
             }
@@ -190,7 +196,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 // updated the PR.
 
                 let issue_ref = self.repo.issue(self.job.pr.number);
-                update_labels(&issue_ref, &[], &[String::from("ofborg-internal-error")]);
+                update_labels(&issue_ref, &[], &[String::from("ofborg-internal-error")]).await;
 
                 self.actions().skip(self.job)
             }
@@ -216,14 +222,14 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                     cswerr
                 );
                 let issue_ref = self.repo.issue(self.job.pr.number);
-                update_labels(&issue_ref, &[String::from("ofborg-internal-error")], &[]);
+                update_labels(&issue_ref, &[String::from("ofborg-internal-error")], &[]).await;
 
                 self.actions().skip(self.job)
             }
         }
     }
 
-    fn evaluate_job(&mut self) -> Result<worker::Actions, EvalWorkerError> {
+    async fn evaluate_job(&mut self) -> Result<worker::Actions, EvalWorkerError> {
         let job = self.job;
         let repo = self
             .client_app
@@ -231,10 +237,10 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         let issue_ref = repo.issue(job.pr.number);
         let auto_schedule_build_archs: Vec<systems::System>;
 
-        match async_std::task::block_on(issue_ref.get()) {
+        match issue_ref.get().await {
             Ok(iss) => {
                 if iss.state == "closed" {
-                    self.events.notify(Event::IssueAlreadyClosed);
+                    self.events.notify(Event::IssueAlreadyClosed).await;
                     info!("Skipping {} because it is closed", job.pr.number);
                     return Ok(self.actions().skip(job));
                 }
@@ -250,7 +256,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             }
 
             Err(e) => {
-                self.events.notify(Event::IssueFetchFailed);
+                self.events.notify(Event::IssueFetchFailed).await;
                 error!("Error fetching {}!", job.pr.number);
                 error!("E: {:?}", e);
                 return Ok(self.actions().skip(job));
@@ -259,7 +265,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         let mut evaluation_strategy = eval::NixpkgsStrategy::new(job, &issue_ref);
 
-        let prefix = get_prefix(repo.statuses(), &job.pr.head_sha)?;
+        let prefix = get_prefix(repo.statuses(), &job.pr.head_sha).await?;
 
         let mut overall_status = CommitStatus::new(
             repo.statuses(),
@@ -269,16 +275,19 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             None,
         );
 
-        overall_status.set_with_description("Starting", hubcaps::statuses::State::Pending)?;
+        overall_status
+            .set_with_description("Starting", hubcaps::statuses::State::Pending)
+            .await?;
 
-        evaluation_strategy.pre_clone()?;
+        evaluation_strategy.pre_clone().await?;
 
         let project = self
             .cloner
             .project(&job.repo.full_name, job.repo.clone_url.clone());
 
         overall_status
-            .set_with_description("Cloning project", hubcaps::statuses::State::Pending)?;
+            .set_with_description("Cloning project", hubcaps::statuses::State::Pending)
+            .await?;
 
         info!("Working on {}", job.pr.number);
         let co = project
@@ -295,20 +304,24 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         };
 
         if target_branch.starts_with("nixos-") || target_branch.starts_with("nixpkgs-") {
-            overall_status.set_with_description(
-                "The branch you have targeted is a read-only mirror for channels. \
+            overall_status
+                .set_with_description(
+                    "The branch you have targeted is a read-only mirror for channels. \
                     Please target release-* or master.",
-                hubcaps::statuses::State::Error,
-            )?;
+                    hubcaps::statuses::State::Error,
+                )
+                .await?;
 
             info!("PR targets a nixos-* or nixpkgs-* branch");
             return Ok(self.actions().skip(job));
         };
 
-        overall_status.set_with_description(
-            format!("Checking out {}", &target_branch).as_ref(),
-            hubcaps::statuses::State::Pending,
-        )?;
+        overall_status
+            .set_with_description(
+                format!("Checking out {}", &target_branch).as_ref(),
+                hubcaps::statuses::State::Pending,
+            )
+            .await?;
         info!("Checking out target branch {}", &target_branch);
         let refpath = co
             .checkout_origin_ref(target_branch.as_ref())
@@ -318,18 +331,25 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 )))
             })?;
 
-        evaluation_strategy.on_target_branch(Path::new(&refpath), &mut overall_status)?;
+        evaluation_strategy
+            .on_target_branch(Path::new(&refpath), &mut overall_status)
+            .await?;
 
         let target_branch_rebuild_sniff_start = Instant::now();
 
-        self.events.notify(Event::EvaluationDuration(
-            target_branch.clone(),
-            target_branch_rebuild_sniff_start.elapsed().as_secs(),
-        ));
         self.events
-            .notify(Event::EvaluationDurationCount(target_branch));
+            .notify(Event::EvaluationDuration(
+                target_branch.clone(),
+                target_branch_rebuild_sniff_start.elapsed().as_secs(),
+            ))
+            .await;
+        self.events
+            .notify(Event::EvaluationDurationCount(target_branch))
+            .await;
 
-        overall_status.set_with_description("Fetching PR", hubcaps::statuses::State::Pending)?;
+        overall_status
+            .set_with_description("Fetching PR", hubcaps::statuses::State::Pending)
+            .await?;
 
         co.fetch_pr(job.pr.number).map_err(|e| {
             EvalWorkerError::CommitStatusWrite(CommitStatusError::InternalError(format!(
@@ -339,7 +359,8 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         if !co.commit_exists(job.pr.head_sha.as_ref()) {
             overall_status
-                .set_with_description("Commit not found", hubcaps::statuses::State::Error)?;
+                .set_with_description("Commit not found", hubcaps::statuses::State::Error)
+                .await?;
 
             info!("Commit {} doesn't exist", job.pr.head_sha);
             return Ok(self.actions().skip(job));
@@ -347,71 +368,89 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         evaluation_strategy.after_fetch(&co)?;
 
-        overall_status.set_with_description("Merging PR", hubcaps::statuses::State::Pending)?;
+        overall_status
+            .set_with_description("Merging PR", hubcaps::statuses::State::Pending)
+            .await?;
 
         if co.merge_commit(job.pr.head_sha.as_ref()).is_err() {
             overall_status
-                .set_with_description("Failed to merge", hubcaps::statuses::State::Failure)?;
+                .set_with_description("Failed to merge", hubcaps::statuses::State::Failure)
+                .await?;
 
             info!("Failed to merge {}", job.pr.head_sha);
 
             return Ok(self.actions().skip(job));
         }
 
-        evaluation_strategy.after_merge(&mut overall_status)?;
+        evaluation_strategy.after_merge(&mut overall_status).await?;
 
         info!("Got path: {:?}, building", refpath);
         overall_status
-            .set_with_description("Beginning Evaluations", hubcaps::statuses::State::Pending)?;
+            .set_with_description("Beginning Evaluations", hubcaps::statuses::State::Pending)
+            .await?;
 
-        let eval_results: bool = evaluation_strategy
-            .evaluation_checks()
-            .into_iter()
+        let eval_results: bool = futures::stream::iter(evaluation_strategy.evaluation_checks())
             .map(|check| {
-                let status = CommitStatus::new(
-                    repo.statuses(),
-                    job.pr.head_sha.clone(),
-                    format!("{prefix}-eval-{}", check.name()),
-                    check.cli_cmd(),
-                    None,
-                );
+                // We need to clone or move variables into the async block
+                let repo_statuses = repo.statuses();
+                let head_sha = job.pr.head_sha.clone();
+                let refpath = refpath.clone();
 
-                status
-                    .set(hubcaps::statuses::State::Pending)
-                    .expect("Failed to set status on eval strategy");
+                async move {
+                    let status = CommitStatus::new(
+                        repo_statuses,
+                        head_sha,
+                        format!("{prefix}-eval-{}", check.name()),
+                        check.cli_cmd(),
+                        None,
+                    );
 
-                let state = match check.execute(Path::new(&refpath)) {
-                    Ok(_) => hubcaps::statuses::State::Success,
-                    Err(_) => hubcaps::statuses::State::Failure,
-                };
+                    status
+                        .set(hubcaps::statuses::State::Pending)
+                        .await
+                        .expect("Failed to set status on eval strategy");
 
-                status
-                    .set(state.clone())
-                    .expect("Failed to set status on eval strategy");
+                    let state = match check.execute(Path::new(&refpath)) {
+                        Ok(_) => hubcaps::statuses::State::Success,
+                        Err(_) => hubcaps::statuses::State::Failure,
+                    };
 
-                if state == hubcaps::statuses::State::Success {
-                    Ok(())
-                } else {
-                    Err(())
+                    status
+                        .set(state.clone())
+                        .await
+                        .expect("Failed to set status on eval strategy");
+
+                    if state == hubcaps::statuses::State::Success {
+                        Ok(())
+                    } else {
+                        Err(())
+                    }
                 }
             })
-            .all(|status| status == Ok(()));
+            .buffered(1)
+            .all(|res| async move { res.is_ok() })
+            .await;
 
         info!("Finished evaluations");
         let mut response: worker::Actions = vec![];
 
         if eval_results {
-            let complete = evaluation_strategy.all_evaluations_passed(&mut overall_status)?;
+            let complete = evaluation_strategy
+                .all_evaluations_passed(&mut overall_status)
+                .await?;
 
             response.extend(schedule_builds(complete.builds, auto_schedule_build_archs));
 
-            overall_status.set_with_description("^.^!", hubcaps::statuses::State::Success)?;
+            overall_status
+                .set_with_description("^.^!", hubcaps::statuses::State::Success)
+                .await?;
         } else {
             overall_status
-                .set_with_description("Complete, with errors", hubcaps::statuses::State::Failure)?;
+                .set_with_description("Complete, with errors", hubcaps::statuses::State::Failure)
+                .await?;
         }
 
-        self.events.notify(Event::TaskEvaluationCheckComplete);
+        self.events.notify(Event::TaskEvaluationCheckComplete).await;
 
         info!("Evaluations done!");
         Ok(self.actions().done(job, response))
@@ -450,9 +489,13 @@ fn schedule_builds(
     response
 }
 
-pub fn update_labels(issueref: &hubcaps::issues::IssueRef, add: &[String], remove: &[String]) {
+pub async fn update_labels(
+    issueref: &hubcaps::issues::IssueRef,
+    add: &[String],
+    remove: &[String],
+) {
     let l = issueref.labels();
-    let issue = async_std::task::block_on(issueref.get()).expect("Failed to get issue");
+    let issue = issueref.get().await.expect("Failed to get issue");
 
     let existing: Vec<String> = issue.labels.iter().map(|l| l.name.clone()).collect();
 
@@ -472,11 +515,12 @@ pub fn update_labels(issueref: &hubcaps::issues::IssueRef, add: &[String], remov
 
     info!("Labeling issue #{issue}: + {to_add:?} , - {to_remove:?}, = {existing:?}");
 
-    async_std::task::block_on(l.add(to_add.clone()))
+    l.add(to_add.clone())
+        .await
         .unwrap_or_else(|err| panic!("Failed to add labels {to_add:?} to issue #{issue}: {err:?}"));
 
     for label in to_remove {
-        async_std::task::block_on(l.remove(&label)).unwrap_or_else(|err| {
+        l.remove(&label).await.unwrap_or_else(|err| {
             panic!("Failed to remove label {label:?} from issue #{issue}: {err:?}")
         });
     }
@@ -493,11 +537,13 @@ fn issue_is_wip(issue: &hubcaps::issues::Issue) -> bool {
 /// that (e.g. if someone used `@ofborg eval`, `@ofborg build`, `@ofborg test`).
 /// Otherwise, if it's a new PR or was recently force-pushed (and therefore
 /// doesn't have any old `grahamcofborg`-prefixed statuses), use the new prefix.
-pub fn get_prefix(
+pub async fn get_prefix(
     statuses: hubcaps::statuses::Statuses,
     sha: &str,
 ) -> Result<&str, CommitStatusError> {
-    if async_std::task::block_on(statuses.list(sha))?
+    if statuses
+        .list(sha)
+        .await?
         .iter()
         .any(|s| s.context.starts_with("grahamcofborg-"))
     {
