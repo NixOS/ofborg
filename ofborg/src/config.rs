@@ -4,11 +4,12 @@ use crate::nix::Nix;
 use std::collections::{HashMap, hash_map::Entry};
 use std::fmt;
 use std::fs::File;
-use std::io::{BufReader, Read};
+use std::io::Read;
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 
 use hubcaps::{Credentials, Github, InstallationTokenGenerator, JWTCredentials};
+use rustls_pki_types::pem::PemObject as _;
 use serde::de::{self, Deserializer};
 use tracing::{debug, error, info, warn};
 
@@ -316,15 +317,10 @@ impl GithubAppVendingMachine {
     }
 
     fn jwt(&self) -> JWTCredentials {
-        let private_key_file =
-            File::open(self.conf.private_key.clone()).expect("Unable to read private_key");
-        let mut private_key_reader = BufReader::new(private_key_file);
-        let private_keys = rustls_pemfile::rsa_private_keys(&mut private_key_reader)
-            .collect::<Result<Vec<_>, _>>()
-            .expect("Unable to convert private_key to DER format");
-        // We can be reasonably certain that there will only be one private key in this file
-        let private_key = &private_keys[0];
-        JWTCredentials::new(self.conf.app_id, private_key.secret_pkcs1_der().to_vec())
+        let pem = rustls_pki_types::PrivatePkcs1KeyDer::from_pem_file(&self.conf.private_key)
+            .expect("Unable to read private key");
+        let private_key_der = pem.secret_pkcs1_der().to_vec();
+        JWTCredentials::new(self.conf.app_id, private_key_der)
             .expect("Unable to create JWTCredentials")
     }
 
