@@ -22,7 +22,7 @@ http = "1"
 http-body-util = "0.1"
 #hubcaps = "0.6"
 # for Conclusion::Skipped which is in master
-hubcaps = { git = "https://github.com/ofborg/hubcaps.git", rev = "50dbe6ec45c9dfea4e3cfdf27bbadfa565f69dec", default-features = false, features = ["app", "rustls-tls"] }
+hubcaps = { git = "https://github.com/ofborg/hubcaps.git", rev = "0d7466ef941a7a8e160c071e2846e56b90b6ea86" }
 hyper = { version = "1.0", features = ["full", "server", "http1"] }
 hyper-util = { version = "0.1", features = ["server", "tokio", "http1"] }
 lapin = "4.3.0"
