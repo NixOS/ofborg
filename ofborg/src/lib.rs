@@ -5,9 +5,6 @@
 // seems much less clear and I just don't like it :)
 #![allow(clippy::redundant_closure)]
 
-#[macro_use]
-extern crate nom;
-
 use std::env;
 
 use tracing_subscriber::EnvFilter;

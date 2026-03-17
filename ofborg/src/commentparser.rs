@@ -1,4 +1,13 @@
-use nom::types::CompleteStr;
+use nom::IResult;
+use nom::Parser;
+use nom::branch::alt;
+use nom::bytes::complete::tag;
+use nom::bytes::complete::tag_no_case;
+use nom::character::complete::multispace0;
+use nom::character::complete::multispace1;
+use nom::combinator::map;
+use nom::multi::many1;
+use nom::sequence::preceded;
 use tracing::warn;
 
 pub fn parse(text: &str) -> Option<Vec<Instruction>> {
@@ -17,61 +26,93 @@ pub fn parse(text: &str) -> Option<Vec<Instruction>> {
     }
 }
 
-named!(
-    normal_token(CompleteStr) -> CompleteStr,
-    verify!(
-        take_while1!(|c: char| c.is_ascii_graphic()),
-        |s: CompleteStr| !s.0.eq_ignore_ascii_case("@grahamcofborg")
+fn is_not_whitespace(c: char) -> bool {
+    !c.is_ascii_whitespace()
+}
+
+fn normal_token(input: &str) -> IResult<&str, String> {
+    let (input, tokens) =
+        many1(nom::character::complete::satisfy(is_not_whitespace)).parse(input)?;
+
+    let s: String = tokens.into_iter().collect();
+    if s.eq_ignore_ascii_case("@grahamcofborg") {
+        Err(nom::Err::Error(nom::error::Error::new(
+            input,
+            nom::error::ErrorKind::Tag,
+        )))
+    } else {
+        Ok((input, s))
+    }
+}
+
+fn parse_command(input: &str) -> IResult<&str, Instruction> {
+    alt((
+        preceded(
+            preceded(multispace0, tag("build")),
+            preceded(
+                multispace1,
+                map(many1(preceded(multispace0, normal_token)), |pkgs| {
+                    Instruction::Build(Subset::Nixpkgs, pkgs)
+                }),
+            ),
+        ),
+        preceded(
+            preceded(multispace0, tag("test")),
+            preceded(
+                multispace1,
+                map(many1(preceded(multispace0, normal_token)), |tokens| {
+                    let tests: Vec<String> = tokens
+                        .into_iter()
+                        .map(|s| format!("nixosTests.{}", s))
+                        .collect();
+                    Instruction::Build(Subset::Nixpkgs, tests)
+                }),
+            ),
+        ),
+        preceded(multispace0, map(tag("eval"), |_| Instruction::Eval)),
+    ))
+    .parse(input)
+}
+
+fn parse_line_impl(input: &str) -> IResult<&str, Option<Vec<Instruction>>> {
+    let (input, _) = multispace0.parse(input)?;
+
+    let result = map(
+        many1(preceded(
+            multispace0,
+            preceded(
+                alt((tag_no_case("@grahamcofborg"), tag_no_case("@ofborg"))),
+                preceded(multispace1, parse_command),
+            ),
+        )),
+        |instructions| Some(instructions),
     )
-);
-named!(
-    parse_line_impl(CompleteStr) -> Option<Vec<Instruction>>,
-    alt!(
-        do_parse!(
-            res: ws!(many1!(ws!(preceded!(
-                alt!(tag_no_case!("@grahamcofborg") | tag_no_case!("@ofborg")),
-                alt!(
-                    ws!(do_parse!(
-                    tag!("build") >>
-                    pkgs: ws!(many1!(map!(normal_token, |s| s.0.to_owned()))) >>
-                    (Some(Instruction::Build(Subset::Nixpkgs, pkgs)))
-                )) |
-                ws!(do_parse!(
-                    tag!("test") >>
-                    tests: ws!(many1!(map!(normal_token, |s| format!("nixosTests.{}", s.0)))) >>
-                    (Some(Instruction::Build(Subset::Nixpkgs, tests)))
-                )) |
-                value!(Some(Instruction::Eval), tag!("eval")) |
-                // TODO: Currently keeping previous behaviour of ignoring unknown commands. Maybe
-                // it would be better to return an error so that the caller would know one of the
-                // commands couldn't be handled?
-                value!(None, many_till!(take!(1), tag_no_case!("@grahamcofborg")))
-                )
-            )))) >> eof!()
-                >> (Some(res.into_iter().flatten().collect()))
-        ) | value!(None)
-    )
-);
+    .parse(input);
+
+    match result {
+        Ok((rest, instructions)) => Ok((rest, instructions)),
+        Err(_e) => Ok((input, None)),
+    }
+}
 
 pub fn parse_line(text: &str) -> Option<Vec<Instruction>> {
-    match parse_line_impl(CompleteStr(text)) {
+    match parse_line_impl(text) {
         Ok((_, res)) => res,
         Err(e) => {
-            // This should likely never happen thanks to the | value!(None), but well...
-            warn!("Failed parsing string ‘{}’: result was {:?}", text, e);
+            warn!("Failed parsing string '{}': result was {:?}", text, e);
             None
         }
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Instruction {
     Build(Subset, Vec<String>),
     Eval,
 }
 
 #[allow(clippy::upper_case_acronyms)]
-#[derive(serde::Serialize, serde::Deserialize, Debug, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, PartialEq, Eq, Clone)]
 pub enum Subset {
     Nixpkgs,
     NixOS,
