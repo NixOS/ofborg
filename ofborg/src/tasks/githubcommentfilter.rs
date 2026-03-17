@@ -45,7 +45,10 @@ impl worker::SimpleWorker for GitHubCommentWorker {
         let span = debug_span!("job", pr = ?job.issue.number);
         let _enter = span.enter();
 
-        if job.action == ghevent::IssueCommentAction::Deleted {
+        if job.action == ghevent::IssueCommentAction::Deleted
+            || job.action == ghevent::IssueCommentAction::Pinned
+            || job.action == ghevent::IssueCommentAction::Unpinned
+        {
             return vec![worker::Action::Ack];
         }
 

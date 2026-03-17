@@ -12,6 +12,8 @@ pub struct IssueComment {
 #[serde(rename_all = "snake_case")]
 pub enum IssueCommentAction {
     Created,
+    Pinned,
+    Unpinned,
     Edited,
     Deleted,
 }
