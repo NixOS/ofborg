@@ -1,4 +1,3 @@
-use lapin::BasicProperties;
 use lapin::message::Delivery;
 use std::env;
 use std::error::Error;
@@ -46,15 +45,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     };
 
     {
-        let deliver = Delivery {
-            delivery_tag: 0,
-            exchange: "no-exchange".into(),
-            routing_key: "".into(),
-            redelivered: false,
-            properties: BasicProperties::default(),
-            data: vec![],
-            acker: Default::default(),
-        };
+        let deliver = Delivery::mock(0, "no-exchange".into(), "".into(), false, vec![]);
         let recv = easylapin::ChannelNotificationReceiver::new(chan.clone(), deliver);
 
         for _i in 1..2 {

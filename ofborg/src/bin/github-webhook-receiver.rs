@@ -221,8 +221,8 @@ async fn handle_request(
     let chan = chan.lock().await;
     let _confirmation = chan
         .basic_publish(
-            "github-events",
-            &routing_key,
+            "github-events".into(),
+            routing_key.as_str().into(),
             BasicPublishOptions::default(),
             &raw,
             BasicProperties::default()

@@ -25,7 +25,7 @@ http-body-util = "0.1"
 hubcaps = { git = "https://github.com/ofborg/hubcaps.git", rev = "50dbe6ec45c9dfea4e3cfdf27bbadfa565f69dec", default-features = false, features = ["app", "rustls-tls"] }
 hyper = { version = "1.0", features = ["full", "server", "http1"] }
 hyper-util = { version = "0.1", features = ["server", "tokio", "http1"] }
-lapin = "2.5.4"
+lapin = "4.3.0"
 lru-cache = "0.1.2"
 md5 = "0.8.0"
 mime = "0.3"

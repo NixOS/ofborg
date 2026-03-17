@@ -15,21 +15,14 @@ use lapin::options::{
     BasicAckOptions, BasicConsumeOptions, BasicNackOptions, BasicPublishOptions, BasicQosOptions,
     ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions,
 };
-use lapin::types::{AMQPValue, FieldTable};
+use lapin::types::FieldTable;
 use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind};
 use tokio_stream::StreamExt;
 use tracing::{debug, trace};
 
 pub async fn from_config(cfg: &RabbitMqConfig) -> Result<Connection, lapin::Error> {
-    let mut props = FieldTable::default();
-    props.insert(
-        "ofborg_version".into(),
-        AMQPValue::LongString(ofborg::VERSION.into()),
-    );
-    let opts = ConnectionProperties {
-        client_properties: props,
-        ..Default::default()
-    };
+    let opts = ConnectionProperties::default()
+        .with_client_property("ofborg_version".into(), ofborg::VERSION.into());
     Connection::connect(&cfg.as_uri()?, opts).await
 }
 
@@ -50,7 +43,7 @@ impl ChannelExt for Channel {
             ExchangeType::Fanout => ExchangeKind::Fanout,
             _ => panic!("exchange kind"),
         };
-        self.exchange_declare(&config.exchange, kind, opts, FieldTable::default())
+        self.exchange_declare(config.exchange.into(), kind, opts, FieldTable::default())
             .await?;
         Ok(())
     }
@@ -64,7 +57,7 @@ impl ChannelExt for Channel {
             nowait: config.no_wait,
         };
 
-        self.queue_declare(&config.queue, opts, FieldTable::default())
+        self.queue_declare(config.queue.into(), opts, FieldTable::default())
             .await?;
         Ok(())
     }
@@ -75,9 +68,9 @@ impl ChannelExt for Channel {
         };
 
         self.queue_bind(
-            &config.queue,
-            &config.exchange,
-            &config.routing_key.unwrap_or_else(|| "".into()),
+            config.queue.into(),
+            config.exchange.into(),
+            config.routing_key.unwrap_or_else(|| "".into()).into(),
             opts,
             FieldTable::default(),
         )
@@ -97,8 +90,8 @@ impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for Channel {
     ) -> Result<Self::Handle, Self::Error> {
         let mut consumer = self
             .basic_consume(
-                &config.queue,
-                &config.consumer_tag,
+                config.queue.into(),
+                config.consumer_tag.into(),
                 BasicConsumeOptions::default(),
                 FieldTable::default(),
             )
@@ -175,8 +168,8 @@ impl<'a, W: SimpleNotifyWorker + 'a + Send> ConsumerExt<'a, W> for NotifyChannel
         let mut consumer = self
             .0
             .basic_consume(
-                &config.queue,
-                &config.consumer_tag,
+                config.queue.into(),
+                config.consumer_tag.into(),
                 BasicConsumeOptions::default(),
                 FieldTable::default(),
             )
@@ -244,8 +237,8 @@ async fn action_deliver(
 
             let _confirmaton = chan
                 .basic_publish(
-                    exch,
-                    key,
+                    exch.into(),
+                    key.into(),
                     BasicPublishOptions::default(),
                     &msg.content,
                     props,
