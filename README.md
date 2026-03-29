@@ -81,6 +81,19 @@ the Nixpkgs checkout (see also "[How does ofborg call
 Builds will run on all allowed machines. For more information, see the "[Trusted
 Users](#trusted-users)" section.
 
+### build_system
+
+```
+@ofborg build_system SYSTEM list of attrs
+```
+
+Same as [build](#build), but restricts building to only one platform specification
+instead of attempting to build on all allowed and supported systems.
+This can be helpful to reduce needless builds and noise when debugging a platform-specific issue.
+
+Only the currently supported Nixpkgs systems can be passed to `build_system`:
+`x86_64-linux`, `aarch64-linux`, `x86_64-darwin`, and `aarch64-darwin`.
+
 ## Multiple Commands
 
 You can use multiple commands in a variety ways. Here are some valid

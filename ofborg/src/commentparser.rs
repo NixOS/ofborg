@@ -1,3 +1,4 @@
+use crate::systems::System;
 use nom::types::CompleteStr;
 use tracing::warn;
 
@@ -24,32 +25,79 @@ named!(
         |s: CompleteStr| !s.0.eq_ignore_ascii_case("@grahamcofborg")
     )
 );
+
 named!(
-    parse_line_impl(CompleteStr) -> Option<Vec<Instruction>>,
+    system(CompleteStr) -> System,
     alt!(
-        do_parse!(
-            res: ws!(many1!(ws!(preceded!(
-                alt!(tag_no_case!("@grahamcofborg") | tag_no_case!("@ofborg")),
-                alt!(
-                    ws!(do_parse!(
-                    tag!("build") >>
+        value!(System::X8664Linux, tag!("x86_64-linux")) |
+        value!(System::Aarch64Linux, tag!("aarch64-linux")) |
+        value!(System::X8664Darwin, tag!("x86_64-darwin")) |
+        value!(System::Aarch64Darwin, tag!("aarch64-darwin"))
+    )
+);
+
+named!(
+    invocation_prefix(CompleteStr) -> CompleteStr,
+    alt!(tag_no_case!("@ofborg") | tag_no_case!("@grahamcofborg"))
+);
+
+enum Command {
+    Eval,
+    Build,
+    BuildSystem,
+    Test,
+}
+
+named!(
+    command_str(CompleteStr) -> Option<Command>,
+    alt!(
+        value!(Some(Command::Eval), tag!("eval")) |
+        value!(Some(Command::BuildSystem), tag!("build_system")) |
+        value!(Some(Command::Build), tag!("build")) |
+        value!(Some(Command::Test), tag!("test")) |
+
+        // TODO: Currently keeping previous behaviour of ignoring unknown commands. Maybe
+        // it would be better to return an error so that the caller would know one of the
+        // commands couldn't be handled?
+        value!(None, many_till!(take!(1), invocation_prefix))
+    )
+);
+
+named!(
+    command(CompleteStr) -> Option<Instruction>,
+    preceded!(
+        ws!(invocation_prefix),
+        switch!( ws!(command_str),
+            Some(Command::Build) =>
+                ws!(do_parse!(
                     pkgs: ws!(many1!(map!(normal_token, |s| s.0.to_owned()))) >>
                     (Some(Instruction::Build(Subset::Nixpkgs, pkgs)))
                 )) |
+            Some(Command::BuildSystem) =>
                 ws!(do_parse!(
-                    tag!("test") >>
+                    system: ws!(system) >>
+                    pkgs: ws!(many1!(map!(normal_token, |s| s.0.to_owned()))) >>
+                    (Some(Instruction::BuildOnSystem(system, Subset::Nixpkgs, pkgs)))
+                )) |
+            Some(Command::Test) =>
+                ws!(do_parse!(
                     tests: ws!(many1!(map!(normal_token, |s| format!("nixosTests.{}", s.0)))) >>
                     (Some(Instruction::Build(Subset::Nixpkgs, tests)))
                 )) |
-                value!(Some(Instruction::Eval), tag!("eval")) |
-                // TODO: Currently keeping previous behaviour of ignoring unknown commands. Maybe
-                // it would be better to return an error so that the caller would know one of the
-                // commands couldn't be handled?
-                value!(None, many_till!(take!(1), tag_no_case!("@grahamcofborg")))
-                )
-            )))) >> eof!()
-                >> (Some(res.into_iter().flatten().collect()))
-        ) | value!(None)
+            Some(Command::Eval) => ws!(do_parse!( (Some(Instruction::Eval)) )) |
+            None => do_parse!( (None) )
+        )
+    )
+);
+
+named!(
+    parse_line_impl(CompleteStr) -> Option<Vec<Instruction>>,
+    opt!(
+        do_parse!(
+            res: ws!(many1!(ws!(command)))
+            >> eof!()
+            >> (res.into_iter().flatten().collect())
+        )
     )
 );
 
@@ -68,6 +116,7 @@ pub fn parse_line(text: &str) -> Option<Vec<Instruction>> {
 pub enum Instruction {
     Build(Subset, Vec<String>),
     Eval,
+    BuildOnSystem(System, Subset, Vec<String>),
 }
 
 #[allow(clippy::upper_case_acronyms)]
@@ -106,6 +155,23 @@ mod tests {
     #[test]
     fn bogus_build_comment_empty_list() {
         assert_eq!(None, parse("@grahamcofborg build"));
+    }
+
+    #[test]
+    fn build_system_comment() {
+        assert_eq!(
+            Some(vec![Instruction::BuildOnSystem(
+                System::X8664Linux,
+                Subset::Nixpkgs,
+                vec![String::from("foo")]
+            ),]),
+            parse("@ofborg build_system x86_64-linux foo")
+        );
+    }
+
+    #[test]
+    fn unknown_system_comment() {
+        assert_eq!(None, parse("@ofborg build_system x86_64-foolinux foo"));
     }
 
     #[test]
