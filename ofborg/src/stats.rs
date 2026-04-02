@@ -38,8 +38,8 @@ impl SysEvents for RabbitMq<lapin::Channel> {
         let _confirmaton = self
             .channel
             .basic_publish(
-                &String::from("stats"),
-                "",
+                "stats".into(),
+                "".into(),
                 BasicPublishOptions::default(),
                 &serde_json::to_string(&EventMessage {
                     sender: self.identity.clone(),

@@ -101,7 +101,7 @@
             cargoLock = {
               lockFile = ./Cargo.lock;
               outputHashes = {
-                "hubcaps-0.6.2" = "sha256-4IzhR3QPz3oRjPNZuTw6z8BI7hX2iIWhYG44BMZtjz4=";
+                "hubcaps-0.6.2" = "sha256-Vl4wQIKQVRxkpQxL8fL9rndAN3TKLV4OjgnZOpT6HRo=";
                 "hyperx-1.4.0" = "sha256-MW/KxxMYvj/DYVKrYa7rDKwrH6s8uQOCA0dR2W7GBeg=";
               };
             };
