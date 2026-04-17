@@ -26,7 +26,7 @@ struct LogResponse {
 
 #[derive(Clone)]
 struct LogApiConfig {
-    logs_path: String,
+    logs_path: PathBuf,
     serve_root: String,
 }
 
@@ -57,10 +57,13 @@ async fn handle_request(
     let Some(reqd) = uri.strip_prefix("/logs/").map(ToOwned::to_owned) else {
         return Ok(response(StatusCode::NOT_FOUND, "invalid uri"));
     };
-    let path: PathBuf = [&cfg.logs_path, &reqd].iter().collect();
+    let path: PathBuf = cfg.logs_path.join(&reqd);
     let Ok(path) = std::fs::canonicalize(&path) else {
         return Ok(response(StatusCode::NOT_FOUND, "absent"));
     };
+    if !path.starts_with(&cfg.logs_path) {
+        return Ok(response(StatusCode::NOT_FOUND, "invalid path"));
+    }
     let Ok(iter) = std::fs::read_dir(path) else {
         return Ok(response(StatusCode::NOT_FOUND, "non dir"));
     };
@@ -125,8 +128,11 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         panic!();
     };
 
+    let logs_path = std::fs::canonicalize(&cfg.logs_path)
+        .expect("logs_path does not exist or is not accessible");
+
     let api_cfg = Arc::new(LogApiConfig {
-        logs_path: cfg.logs_path,
+        logs_path,
         serve_root: cfg.serve_root,
     });
 
