@@ -12,7 +12,6 @@ chrono = { version = "0.4.38", default-features = false, features = [
   "clock",
   "std",
 ] }
-either = "1.13.0"
 fs2 = "0.4.3"
 futures = "0.3.31"
 futures-util = "0.3.31"
@@ -28,7 +27,6 @@ hyper-util = { version = "0.1", features = ["server", "tokio", "http1"] }
 lapin = "4.3.0"
 lru-cache = "0.1.2"
 md5 = "0.8.0"
-mime = "0.3"
 nom = "8"
 parking_lot = "0.12.4"
 regex = "1.11.1"

@@ -1,5 +1,3 @@
-extern crate log;
-
 use std::env;
 use std::fs::File;
 use std::io::Read;
@@ -11,11 +9,11 @@ use ofborg::nix;
 fn main() {
     ofborg::setup_log();
 
-    log::info!("Loading config...");
+    tracing::info!("Loading config...");
     let cfg = config::load(env::args().nth(1).unwrap().as_ref());
     let nix = cfg.nix();
 
-    log::info!("Running build...");
+    tracing::info!("Running build...");
     match nix.safely_build_attrs(
         Path::new("./"),
         nix::File::DefaultNixpkgs,

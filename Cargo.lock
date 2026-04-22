@@ -1689,7 +1689,6 @@ dependencies = [
  "async-trait",
  "brace-expand",
  "chrono",
- "either",
  "fs2",
  "futures",
  "futures-util",
@@ -1703,7 +1702,6 @@ dependencies = [
  "lapin",
  "lru-cache",
  "md5",
- "mime",
  "nom 8.0.0",
  "parking_lot",
  "regex",
@@ -1723,8 +1721,8 @@ dependencies = [
 name = "ofborg-simple-build"
 version = "0.1.0"
 dependencies = [
- "log",
  "ofborg",
+ "tracing",
 ]
 
 [[package]]
