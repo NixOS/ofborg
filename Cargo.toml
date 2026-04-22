@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "ofborg",
+    "ofborg", "ofborg-send-event",
     "ofborg-simple-build"
 ]
 resolver = "2"
