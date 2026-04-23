@@ -118,7 +118,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Spawn HTTP server in a separate thread with its own tokio runtime
     let metrics_clone = metrics.clone();
-    std::thread::spawn(async move || {
+    tokio::task::spawn(async move {
         let addr: SocketAddr = "0.0.0.0:9898".parse().unwrap();
         if let Err(e) = run_http_server(addr, metrics_clone).await {
             error!("HTTP server error: {:?}", e);
