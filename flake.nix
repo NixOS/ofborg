@@ -69,7 +69,7 @@
 
             RUSTFLAGS = "-D warnings";
             RUST_BACKTRACE = "1";
-            RUST_LOG = "ofborg=debug";
+            RUST_LOG = "ofborg=debug,info";
             NIX_PATH = "nixpkgs=${pkgs.path}";
           };
         }
