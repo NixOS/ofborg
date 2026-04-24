@@ -1,5 +1,3 @@
-use std::env;
-use std::error::Error;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
@@ -26,7 +24,7 @@ fn response(body: String) -> Response<Full<Bytes>> {
 async fn run_http_server(
     addr: SocketAddr,
     metrics: Arc<stats::MetricCollector>,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
+) -> anyhow::Result<()> {
     let listener = TcpListener::bind(addr).await?;
     info!("HTTP server listening on {}", addr);
 
@@ -50,10 +48,10 @@ async fn run_http_server(
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> anyhow::Result<()> {
     ofborg::setup_log();
 
-    let arg = env::args()
+    let arg = std::env::args()
         .nth(1)
         .unwrap_or_else(|| panic!("usage: {} <config>", std::env::args().next().unwrap()));
     let cfg = config::load(arg.as_ref());

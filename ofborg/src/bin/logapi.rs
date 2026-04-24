@@ -1,6 +1,3 @@
-use std::net::SocketAddr;
-use std::{collections::HashMap, error::Error, path::PathBuf, sync::Arc};
-
 use http::{Method, StatusCode};
 use http_body_util::Full;
 use hyper::body::Bytes;
@@ -21,12 +18,12 @@ struct Attempt {
 
 #[derive(serde::Serialize)]
 struct LogResponse {
-    attempts: HashMap<String, Attempt>,
+    attempts: std::collections::HashMap<String, Attempt>,
 }
 
 #[derive(Clone)]
 struct LogApiConfig {
-    logs_path: PathBuf,
+    logs_path: std::path::PathBuf,
     serve_root: String,
 }
 
@@ -47,7 +44,7 @@ fn json_response(status: StatusCode, body: String) -> Response<Full<Bytes>> {
 
 async fn handle_request(
     req: Request<hyper::body::Incoming>,
-    cfg: Arc<LogApiConfig>,
+    cfg: std::sync::Arc<LogApiConfig>,
 ) -> Result<Response<Full<Bytes>>, hyper::Error> {
     if req.method() != Method::GET {
         return Ok(response(StatusCode::METHOD_NOT_ALLOWED, ""));
@@ -57,7 +54,7 @@ async fn handle_request(
     let Some(reqd) = uri.strip_prefix("/logs/").map(ToOwned::to_owned) else {
         return Ok(response(StatusCode::NOT_FOUND, "invalid uri"));
     };
-    let path: PathBuf = cfg.logs_path.join(&reqd);
+    let path: std::path::PathBuf = cfg.logs_path.join(&reqd);
     let Ok(path) = std::fs::canonicalize(&path) else {
         return Ok(response(StatusCode::NOT_FOUND, "absent"));
     };
@@ -68,7 +65,7 @@ async fn handle_request(
         return Ok(response(StatusCode::NOT_FOUND, "non dir"));
     };
 
-    let mut attempts = HashMap::<String, Attempt>::new();
+    let mut attempts = std::collections::HashMap::<String, Attempt>::new();
     for e in iter {
         let Ok(e) = e else { continue };
         let e_metadata = e.metadata();
@@ -117,7 +114,7 @@ async fn handle_request(
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
+async fn main() -> anyhow::Result<()> {
     ofborg::setup_log();
 
     let arg = std::env::args()
@@ -131,12 +128,12 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     let logs_path = std::fs::canonicalize(&cfg.logs_path)
         .expect("logs_path does not exist or is not accessible");
 
-    let api_cfg = Arc::new(LogApiConfig {
+    let api_cfg = std::sync::Arc::new(LogApiConfig {
         logs_path,
         serve_root: cfg.serve_root,
     });
 
-    let addr: SocketAddr = cfg.listen.parse()?;
+    let addr: std::net::SocketAddr = cfg.listen.parse()?;
     let listener = TcpListener::bind(addr).await?;
     info!("Listening on {}", addr);
 

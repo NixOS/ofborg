@@ -1,5 +1,3 @@
-use std::env;
-use std::error::Error;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
@@ -23,7 +21,7 @@ use ofborg::{config, easyamqp, easyamqp::ChannelExt, easylapin};
 
 /// Prepares the the exchange we will write to, the queues that are bound to it
 /// and binds them.
-async fn setup_amqp(chan: &mut Channel) -> Result<(), Box<dyn Error + Send + Sync>> {
+async fn setup_amqp(chan: &mut Channel) -> anyhow::Result<()> {
     chan.declare_exchange(easyamqp::ExchangeConfig {
         exchange: "github-events".to_owned(),
         exchange_type: easyamqp::ExchangeType::Topic,
@@ -236,10 +234,10 @@ async fn handle_request(
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
+async fn main() -> anyhow::Result<()> {
     ofborg::setup_log();
 
-    let arg = env::args()
+    let arg = std::env::args()
         .nth(1)
         .unwrap_or_else(|| panic!("usage: {} <config>", std::env::args().next().unwrap()));
     let Some(cfg) = config::load(arg.as_ref()).github_webhook_receiver else {

@@ -1,6 +1,3 @@
-use std::env;
-use std::error::Error;
-
 use lapin::message::Delivery;
 
 use ofborg::commentparser;
@@ -11,10 +8,12 @@ use ofborg::notifyworker::NotificationReceiver;
 use ofborg::worker;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> anyhow::Result<()> {
     ofborg::setup_log();
 
-    let arg = env::args().nth(1).expect("usage: build-faker <config>");
+    let arg = std::env::args()
+        .nth(1)
+        .expect("usage: build-faker <config>");
     let cfg = config::load(arg.as_ref());
 
     let conn = easylapin::from_config(&cfg.builder.unwrap().rabbitmq).await?;

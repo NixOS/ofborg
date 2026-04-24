@@ -1,5 +1,3 @@
-use std::env;
-use std::error::Error;
 use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
@@ -12,10 +10,10 @@ use ofborg::easylapin;
 use ofborg::{checkout, config, tasks};
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> anyhow::Result<()> {
     ofborg::setup_log();
 
-    let arg = env::args()
+    let arg = std::env::args()
         .nth(1)
         .unwrap_or_else(|| panic!("usage: {} <config>", std::env::args().next().unwrap()));
     let cfg = config::load(arg.as_ref());
@@ -44,7 +42,7 @@ async fn create_handle(
     conn: &lapin::Connection,
     cfg: &config::Config,
     system: String,
-) -> Result<Pin<Box<dyn Future<Output = ()> + Send>>, Box<dyn Error>> {
+) -> anyhow::Result<Pin<Box<dyn Future<Output = ()> + Send>>> {
     let mut chan = conn.create_channel().await?;
 
     let cloner = checkout::cached_cloner(Path::new(&cfg.checkout.root));
