@@ -9,6 +9,7 @@ pub struct CommitStatus {
     context: String,
     description: String,
     url: String,
+    enable_publish: bool,
 }
 
 impl CommitStatus {
@@ -25,7 +26,12 @@ impl CommitStatus {
             context,
             description,
             url: url.unwrap_or_else(|| String::from("")),
+            enable_publish: true,
         }
+    }
+
+    pub fn set_enable_publish(&mut self, enable_publish: bool) {
+        self.enable_publish = enable_publish;
     }
 
     pub fn set_url(&mut self, url: Option<String>) {
@@ -46,6 +52,10 @@ impl CommitStatus {
     }
 
     pub async fn set(&self, state: StatusState) -> Result<(), CommitStatusError> {
+        if !self.enable_publish {
+            return Ok(());
+        }
+
         let desc = if self.description.len() >= 140 {
             warn!(
                 "description is over 140 char; truncating: {:?}",

@@ -18,7 +18,7 @@ use crate::{checkout, systems, worker};
 
 pub struct EvaluationWorker<E> {
     cloner: checkout::CachedCloner,
-    github_vend: tokio::sync::RwLock<GithubAppVendingMachine>,
+    github_vend: Option<tokio::sync::RwLock<GithubAppVendingMachine>>,
     acl: Acl,
     identity: String,
     events: E,
@@ -27,14 +27,14 @@ pub struct EvaluationWorker<E> {
 impl<E: stats::SysEvents> EvaluationWorker<E> {
     pub fn new(
         cloner: checkout::CachedCloner,
-        github_vend: GithubAppVendingMachine,
+        github_vend: Option<GithubAppVendingMachine>,
         acl: Acl,
         identity: String,
         events: E,
     ) -> EvaluationWorker<E> {
         EvaluationWorker {
             cloner,
-            github_vend: tokio::sync::RwLock::new(github_vend),
+            github_vend: github_vend.map(tokio::sync::RwLock::new),
             acl,
             identity,
             events,
@@ -71,13 +71,13 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
     async fn consumer(&mut self, job: &evaluationjob::EvaluationJob) -> worker::Actions {
         let span = debug_span!("job", pr = ?job.pr.number);
         async {
-            let github_client = {
-                let mut vending_machine = self.github_vend.write().await;
+            let github_client = if let Some(github_vend) = self.github_vend.as_ref() {
+                let mut vending_machine = github_vend.write().await;
                 match vending_machine
                     .for_repo(&job.repo.owner, &job.repo.name)
                     .await
                 {
-                    Some(client) => client.clone(),
+                    Some(client) => Some(client.clone()),
                     None => {
                         error!(
                             "Failed to get a github client token for {}/{}",
@@ -86,10 +86,12 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
                         return vec![worker::Action::NackRequeue];
                     }
                 }
+            } else {
+                None
             };
 
             OneEval::new(
-                &github_client,
+                github_client,
                 &self.acl,
                 &mut self.events,
                 &self.identity,
@@ -106,6 +108,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
 
 struct OneEval<'a, E> {
     repo: GithubRepo,
+    enable_publish: bool,
     acl: &'a Acl,
     events: &'a mut E,
     identity: &'a str,
@@ -117,19 +120,28 @@ struct OneEval<'a, E> {
 impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
     #[allow(clippy::too_many_arguments)]
     fn new(
-        octocrab: &'a Octocrab,
+        octocrab: Option<Octocrab>,
         acl: &'a Acl,
         events: &'a mut E,
         identity: &'a str,
         cloner: &'a checkout::CachedCloner,
         job: &'a evaluationjob::EvaluationJob,
     ) -> OneEval<'a, E> {
+        let (repo, enable_publish) = if let Some(octocrab) = octocrab {
+            (
+                GithubRepo::new(octocrab, job.repo.owner.clone(), job.repo.name.clone()),
+                true,
+            )
+        } else {
+            let octocrab = Octocrab::builder().build().unwrap();
+            (
+                GithubRepo::new(octocrab, job.repo.owner.clone(), job.repo.name.clone()),
+                false,
+            )
+        };
         OneEval {
-            repo: GithubRepo::new(
-                octocrab.clone(),
-                job.repo.owner.clone(),
-                job.repo.name.clone(),
-            ),
+            repo,
+            enable_publish,
             acl,
             events,
             identity,
@@ -149,6 +161,10 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         url: Option<String>,
         state: StatusState,
     ) -> Result<(), CommitStatusError> {
+        if !self.enable_publish {
+            return Ok(());
+        }
+
         let prefix = self
             .prefix
             .expect("prefix should have been set in worker_actions");
@@ -193,8 +209,8 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         match eval_result {
             Ok(eval_actions) => {
-                let issue = self.repo.issues().get(self.job.pr.number).await;
-                if let Ok(issue) = issue
+                if self.enable_publish
+                    && let Ok(issue) = self.repo.issues().get(self.job.pr.number).await
                     && let Err(e) = self
                         .repo
                         .update_labels(issue.number, &[], &[String::from("ofborg-internal-error")])
@@ -209,8 +225,8 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 // There was an error during eval, but we successfully
                 // updated the PR.
 
-                let issue = self.repo.issues().get(self.job.pr.number).await;
-                if let Ok(issue) = issue
+                if self.enable_publish
+                    && let Ok(issue) = self.repo.issues().get(self.job.pr.number).await
                     && let Err(e) = self
                         .repo
                         .update_labels(issue.number, &[], &[String::from("ofborg-internal-error")])
@@ -279,12 +295,15 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             "Starting".to_owned(),
             None,
         );
+        overall_status.set_enable_publish(self.enable_publish);
 
         overall_status
             .set_with_description("Starting", StatusState::Pending)
             .await?;
 
-        evaluation_strategy.pre_clone(&self.repo).await?;
+        if self.enable_publish {
+            evaluation_strategy.pre_clone(&self.repo).await?;
+        }
 
         let project = self
             .cloner
@@ -394,6 +413,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             .set_with_description("Beginning Evaluations", StatusState::Pending)
             .await?;
 
+        let enable_publish = self.enable_publish;
         let eval_results: bool = futures::stream::iter(evaluation_strategy.evaluation_checks())
             .map(|check| {
                 let repo = self.repo.clone();
@@ -401,13 +421,14 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 let refpath = refpath.clone();
 
                 async move {
-                    let status = CommitStatus::new(
+                    let mut status = CommitStatus::new(
                         repo,
                         head_sha,
                         format!("{prefix}-eval-{}", check.name()),
                         check.cli_cmd(),
                         None,
                     );
+                    status.set_enable_publish(enable_publish);
 
                     if let Err(e) = status.set(StatusState::Pending).await {
                         warn!("Failed to set pending status on eval strategy: {e:?}");

@@ -51,7 +51,9 @@ async fn main() -> anyhow::Result<()> {
 
     let handle = easylapin::WorkerChannel(chan)
         .consume(
-            tasks::githubcommentposter::GitHubCommentPoster::new(cfg.github_app_vendingmachine()),
+            tasks::githubcommentposter::GitHubCommentPoster::new(
+                cfg.github_app_vendingmachine().unwrap(),
+            ),
             easyamqp::ConsumeConfig {
                 queue: "build-results".to_owned(),
                 consumer_tag: format!("{}-github-comment-poster", cfg.whoami()),

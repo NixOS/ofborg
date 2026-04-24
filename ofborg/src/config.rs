@@ -249,12 +249,12 @@ impl Config {
             .expect("Unable to create a github client instance")
     }
 
-    pub fn github_app_vendingmachine(&self) -> GithubAppVendingMachine {
-        GithubAppVendingMachine {
-            conf: self.github_app.clone().unwrap(),
+    pub fn github_app_vendingmachine(&self) -> Option<GithubAppVendingMachine> {
+        Some(GithubAppVendingMachine {
+            conf: self.github_app.clone()?,
             id_cache: HashMap::new(),
             client_cache: HashMap::new(),
-        }
+        })
     }
 
     pub fn nix(&self) -> Nix {
