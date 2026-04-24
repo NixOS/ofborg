@@ -34,7 +34,15 @@ pub mod systems;
 pub mod tagger;
 pub mod tasks;
 pub mod test_scratch;
+pub mod test_utils;
 pub mod worker;
+
+use async_trait::async_trait;
+
+#[async_trait]
+pub trait MessagePublisher: Send + Sync {
+    async fn publish(&self, exchange: &str, routing_key: &str, body: &[u8]) -> anyhow::Result<()>;
+}
 pub mod writetoline;
 
 pub mod ofborg {
