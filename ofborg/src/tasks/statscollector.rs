@@ -1,7 +1,7 @@
+use tracing::error;
+
 use crate::stats;
 use crate::worker;
-
-use tracing::error;
 
 pub struct StatCollectorWorker<E> {
     events: E,

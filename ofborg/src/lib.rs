@@ -7,8 +7,7 @@
 
 use std::env;
 
-use tracing_subscriber::EnvFilter;
-use tracing_subscriber::prelude::*;
+use tracing_subscriber::{EnvFilter, prelude::*};
 
 pub mod acl;
 pub mod asynccmd;
@@ -22,6 +21,7 @@ pub mod easylapin;
 pub mod evalchecker;
 pub mod files;
 pub mod ghevent;
+pub mod github;
 pub mod locks;
 pub mod maintainers;
 pub mod message;

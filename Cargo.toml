@@ -9,5 +9,4 @@ resolver = "2"
 debug = true
 
 [patch.crates-io]
-#hubcaps = { path = "../hubcaps" }
 #amq-proto = { path = "rust-amq-proto" }

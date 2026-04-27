@@ -1,5 +1,3 @@
-use crate::clone::{self, GitClonable};
-
 use std::ffi::{OsStr, OsString};
 use std::fs;
 use std::io::Error;
@@ -7,6 +5,8 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use tracing::info;
+
+use crate::clone::{self, GitClonable};
 
 pub struct CachedCloner {
     root: PathBuf,

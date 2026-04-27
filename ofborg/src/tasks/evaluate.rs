@@ -1,21 +1,20 @@
 /// This is what evaluates every pull-request
-use crate::acl::Acl;
-use crate::checkout;
-use crate::commitstatus::{CommitStatus, CommitStatusError};
-use crate::config::GithubAppVendingMachine;
-use crate::message::{buildjob, evaluationjob};
-use crate::stats::{self, Event};
-use crate::systems;
-use crate::tasks::eval;
-use crate::tasks::eval::EvaluationStrategy;
-use crate::worker;
-use futures::stream::StreamExt;
-use futures_util::TryFutureExt;
-
 use std::path::Path;
 use std::time::Instant;
 
-use tracing::{debug_span, error, info, warn};
+use futures::stream::StreamExt;
+use octocrab::{Octocrab, models::StatusState};
+use tracing::{Instrument, debug_span, error, info, warn};
+
+use crate::acl::Acl;
+use crate::commitstatus::{CommitStatus, CommitStatusError};
+use crate::config::GithubAppVendingMachine;
+use crate::github::GithubRepo;
+use crate::message::{buildjob, evaluationjob};
+use crate::stats::{self, Event};
+use crate::tasks::eval;
+use crate::tasks::eval::EvaluationStrategy;
+use crate::{checkout, systems, worker};
 
 pub struct EvaluationWorker<E> {
     cloner: checkout::CachedCloner,
@@ -71,57 +70,72 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
 
     async fn consumer(&mut self, job: &evaluationjob::EvaluationJob) -> worker::Actions {
         let span = debug_span!("job", pr = ?job.pr.number);
-        let _enter = span.enter();
+        async {
+            let github_client = {
+                let mut vending_machine = self.github_vend.write().await;
+                match vending_machine
+                    .for_repo(&job.repo.owner, &job.repo.name)
+                    .await
+                {
+                    Some(client) => client.clone(),
+                    None => {
+                        error!(
+                            "Failed to get a github client token for {}/{}",
+                            job.repo.owner, job.repo.name
+                        );
+                        return vec![worker::Action::NackRequeue];
+                    }
+                }
+            };
 
-        let mut vending_machine = self.github_vend.write().await;
-
-        let github_client = vending_machine
-            .for_repo(&job.repo.owner, &job.repo.name)
+            OneEval::new(
+                &github_client,
+                &self.acl,
+                &mut self.events,
+                &self.identity,
+                &self.cloner,
+                job,
+            )
+            .worker_actions()
             .await
-            .expect("Failed to get a github client token");
-
-        OneEval::new(
-            github_client,
-            &self.acl,
-            &mut self.events,
-            &self.identity,
-            &self.cloner,
-            job,
-        )
-        .worker_actions()
+        }
+        .instrument(span)
         .await
     }
 }
 
 struct OneEval<'a, E> {
-    client_app: &'a hubcaps::Github,
-    repo: hubcaps::repositories::Repository,
+    repo: GithubRepo,
     acl: &'a Acl,
     events: &'a mut E,
     identity: &'a str,
     cloner: &'a checkout::CachedCloner,
     job: &'a evaluationjob::EvaluationJob,
+    prefix: Option<&'static str>,
 }
 
 impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
     #[allow(clippy::too_many_arguments)]
     fn new(
-        client_app: &'a hubcaps::Github,
+        octocrab: &'a Octocrab,
         acl: &'a Acl,
         events: &'a mut E,
         identity: &'a str,
         cloner: &'a checkout::CachedCloner,
         job: &'a evaluationjob::EvaluationJob,
     ) -> OneEval<'a, E> {
-        let repo = client_app.repo(job.repo.owner.clone(), job.repo.name.clone());
         OneEval {
-            client_app,
-            repo,
+            repo: GithubRepo::new(
+                octocrab.clone(),
+                job.repo.owner.clone(),
+                job.repo.name.clone(),
+            ),
             acl,
             events,
             identity,
             cloner,
             job,
+            prefix: None,
         }
     }
 
@@ -133,52 +147,45 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         &self,
         description: String,
         url: Option<String>,
-        state: hubcaps::statuses::State,
+        state: StatusState,
     ) -> Result<(), CommitStatusError> {
-        let description = if description.len() >= 140 {
-            warn!(
-                "description is over 140 char; truncating: {:?}",
-                &description
-            );
-            description.chars().take(140).collect()
-        } else {
-            description
-        };
-        let repo = self
-            .client_app
-            .repo(self.job.repo.owner.clone(), self.job.repo.name.clone());
-        let prefix = get_prefix(repo.statuses(), &self.job.pr.head_sha).await?;
-
-        let mut builder = hubcaps::statuses::StatusOptions::builder(state);
-        builder.context(format!("{prefix}-eval"));
-        builder.description(description.clone());
-
-        if let Some(url) = url {
-            builder.target_url(url);
-        }
+        let prefix = self
+            .prefix
+            .expect("prefix should have been set in worker_actions");
 
         info!(
             "Updating status on {}:{} -> {}",
             &self.job.pr.number, &self.job.pr.head_sha, &description
         );
 
-        self.repo
-            .statuses()
-            .create(&self.job.pr.head_sha, &builder.build())
-            .map_ok(|_| ())
-            .map_err(|e| CommitStatusError::from(e))
-            .await
+        let status = CommitStatus::new(
+            self.repo.clone(),
+            self.job.pr.head_sha.clone(),
+            format!("{prefix}-eval"),
+            description,
+            url,
+        );
+
+        status.set(state).await
     }
 
     async fn worker_actions(&mut self) -> worker::Actions {
+        self.prefix = Some(match self.repo.get_prefix(&self.job.pr.head_sha).await {
+            Ok(p) => p,
+            Err(e) => {
+                error!("Failed to determine commit status prefix: {:?}", e);
+                return self.actions().retry_later(self.job);
+            }
+        });
+
         let eval_result = match self.evaluate_job().await {
             Ok(v) => Ok(v),
             Err(eval_error) => match eval_error {
                 // Handle error cases which expect us to post statuses
                 // to github. Convert Eval Errors in to Result<_, CommitStatusWrite>
-                EvalWorkerError::EvalError(eval::Error::Fail(msg)) => Err(self
-                    .update_status(msg, None, hubcaps::statuses::State::Failure)
-                    .await),
+                EvalWorkerError::EvalError(eval::Error::Fail(msg)) => {
+                    Err(self.update_status(msg, None, StatusState::Failure).await)
+                }
                 EvalWorkerError::EvalError(eval::Error::CommitStatusWrite(e)) => Err(Err(e)),
                 EvalWorkerError::CommitStatusWrite(e) => Err(Err(e)),
             },
@@ -186,8 +193,15 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         match eval_result {
             Ok(eval_actions) => {
-                let issue_ref = self.repo.issue(self.job.pr.number);
-                update_labels(&issue_ref, &[], &[String::from("ofborg-internal-error")]).await;
+                let issue = self.repo.issues().get(self.job.pr.number).await;
+                if let Ok(issue) = issue
+                    && let Err(e) = self
+                        .repo
+                        .update_labels(issue.number, &[], &[String::from("ofborg-internal-error")])
+                        .await
+                {
+                    warn!("Failed to update labels: {e:?}");
+                }
 
                 eval_actions
             }
@@ -195,51 +209,38 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 // There was an error during eval, but we successfully
                 // updated the PR.
 
-                let issue_ref = self.repo.issue(self.job.pr.number);
-                update_labels(&issue_ref, &[], &[String::from("ofborg-internal-error")]).await;
+                let issue = self.repo.issues().get(self.job.pr.number).await;
+                if let Ok(issue) = issue
+                    && let Err(e) = self
+                        .repo
+                        .update_labels(issue.number, &[], &[String::from("ofborg-internal-error")])
+                        .await
+                {
+                    warn!("Failed to update labels: {e:?}");
+                }
 
                 self.actions().skip(self.job)
             }
-            Err(Err(CommitStatusError::ExpiredCreds(e))) => {
-                error!("Failed writing commit status: creds expired: {:?}", e);
+            Err(Err(CommitStatusError::OctocrabError(e))) => {
+                error!("Failed writing commit status: {:?}", e);
                 self.actions().retry_later(self.job)
             }
             Err(Err(CommitStatusError::InternalError(e))) => {
                 error!("Failed writing commit status: internal error: {:?}", e);
                 self.actions().retry_later(self.job)
             }
-            Err(Err(CommitStatusError::MissingSha(e))) => {
-                error!(
-                    "Failed writing commit status: commit sha was force-pushed away: {:?}",
-                    e
-                );
-                self.actions().skip(self.job)
-            }
-
-            Err(Err(CommitStatusError::Error(cswerr))) => {
-                error!(
-                    "Internal error writing commit status: {:?}, marking internal error",
-                    cswerr
-                );
-                let issue_ref = self.repo.issue(self.job.pr.number);
-                update_labels(&issue_ref, &[String::from("ofborg-internal-error")], &[]).await;
-
-                self.actions().skip(self.job)
-            }
         }
     }
 
     async fn evaluate_job(&mut self) -> Result<worker::Actions, EvalWorkerError> {
         let job = self.job;
-        let repo = self
-            .client_app
-            .repo(self.job.repo.owner.clone(), self.job.repo.name.clone());
-        let issue_ref = repo.issue(job.pr.number);
         let auto_schedule_build_archs: Vec<systems::System>;
 
-        match issue_ref.get().await {
+        let issue = self.repo.issues().get(job.pr.number).await;
+
+        match issue {
             Ok(iss) => {
-                if iss.state == "closed" {
+                if iss.state == octocrab::models::IssueState::Closed {
                     self.events.notify(Event::IssueAlreadyClosed).await;
                     info!("Skipping {} because it is closed", job.pr.number);
                     return Ok(self.actions().skip(job));
@@ -263,12 +264,16 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             }
         };
 
-        let mut evaluation_strategy = eval::NixpkgsStrategy::new(job, &issue_ref);
+        let issue = self.repo.issues().get(job.pr.number).await.ok();
 
-        let prefix = get_prefix(repo.statuses(), &job.pr.head_sha).await?;
+        let mut evaluation_strategy = eval::NixpkgsStrategy::new(job, issue.as_ref());
+
+        let prefix = self
+            .prefix
+            .expect("prefix should have been set in worker_actions");
 
         let mut overall_status = CommitStatus::new(
-            repo.statuses(),
+            self.repo.clone(),
             job.pr.head_sha.clone(),
             format!("{prefix}-eval"),
             "Starting".to_owned(),
@@ -276,17 +281,17 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         );
 
         overall_status
-            .set_with_description("Starting", hubcaps::statuses::State::Pending)
+            .set_with_description("Starting", StatusState::Pending)
             .await?;
 
-        evaluation_strategy.pre_clone().await?;
+        evaluation_strategy.pre_clone(&self.repo).await?;
 
         let project = self
             .cloner
             .project(&job.repo.full_name, job.repo.clone_url.clone());
 
         overall_status
-            .set_with_description("Cloning project", hubcaps::statuses::State::Pending)
+            .set_with_description("Cloning project", StatusState::Pending)
             .await?;
 
         info!("Working on {}", job.pr.number);
@@ -307,8 +312,8 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             overall_status
                 .set_with_description(
                     "The branch you have targeted is a read-only mirror for channels. \
-                    Please target release-* or master.",
-                    hubcaps::statuses::State::Error,
+                     Please target release-* or master.",
+                    StatusState::Error,
                 )
                 .await?;
 
@@ -319,7 +324,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         overall_status
             .set_with_description(
                 format!("Checking out {}", &target_branch).as_ref(),
-                hubcaps::statuses::State::Pending,
+                StatusState::Pending,
             )
             .await?;
         info!("Checking out target branch {}", &target_branch);
@@ -331,11 +336,11 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 )))
             })?;
 
+        let target_branch_rebuild_sniff_start = Instant::now();
+
         evaluation_strategy
             .on_target_branch(Path::new(&refpath), &mut overall_status)
             .await?;
-
-        let target_branch_rebuild_sniff_start = Instant::now();
 
         self.events
             .notify(Event::EvaluationDuration(
@@ -348,7 +353,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             .await;
 
         overall_status
-            .set_with_description("Fetching PR", hubcaps::statuses::State::Pending)
+            .set_with_description("Fetching PR", StatusState::Pending)
             .await?;
 
         co.fetch_pr(job.pr.number).map_err(|e| {
@@ -359,7 +364,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         if !co.commit_exists(job.pr.head_sha.as_ref()) {
             overall_status
-                .set_with_description("Commit not found", hubcaps::statuses::State::Error)
+                .set_with_description("Commit not found", StatusState::Error)
                 .await?;
 
             info!("Commit {} doesn't exist", job.pr.head_sha);
@@ -369,12 +374,12 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         evaluation_strategy.after_fetch(&co)?;
 
         overall_status
-            .set_with_description("Merging PR", hubcaps::statuses::State::Pending)
+            .set_with_description("Merging PR", StatusState::Pending)
             .await?;
 
         if co.merge_commit(job.pr.head_sha.as_ref()).is_err() {
             overall_status
-                .set_with_description("Failed to merge", hubcaps::statuses::State::Failure)
+                .set_with_description("Failed to merge", StatusState::Failure)
                 .await?;
 
             info!("Failed to merge {}", job.pr.head_sha);
@@ -386,41 +391,38 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
         info!("Got path: {:?}, building", refpath);
         overall_status
-            .set_with_description("Beginning Evaluations", hubcaps::statuses::State::Pending)
+            .set_with_description("Beginning Evaluations", StatusState::Pending)
             .await?;
 
         let eval_results: bool = futures::stream::iter(evaluation_strategy.evaluation_checks())
             .map(|check| {
-                // We need to clone or move variables into the async block
-                let repo_statuses = repo.statuses();
+                let repo = self.repo.clone();
                 let head_sha = job.pr.head_sha.clone();
                 let refpath = refpath.clone();
 
                 async move {
                     let status = CommitStatus::new(
-                        repo_statuses,
+                        repo,
                         head_sha,
                         format!("{prefix}-eval-{}", check.name()),
                         check.cli_cmd(),
                         None,
                     );
 
-                    status
-                        .set(hubcaps::statuses::State::Pending)
-                        .await
-                        .expect("Failed to set status on eval strategy");
+                    if let Err(e) = status.set(StatusState::Pending).await {
+                        warn!("Failed to set pending status on eval strategy: {e:?}");
+                    }
 
                     let state = match check.execute(Path::new(&refpath)) {
-                        Ok(_) => hubcaps::statuses::State::Success,
-                        Err(_) => hubcaps::statuses::State::Failure,
+                        Ok(_) => StatusState::Success,
+                        Err(_) => StatusState::Failure,
                     };
 
-                    status
-                        .set(state.clone())
-                        .await
-                        .expect("Failed to set status on eval strategy");
+                    if let Err(e) = status.set(state).await {
+                        warn!("Failed to set status on eval strategy: {e:?}");
+                    }
 
-                    if state == hubcaps::statuses::State::Success {
+                    if state == StatusState::Success {
                         Ok(())
                     } else {
                         Err(())
@@ -442,11 +444,11 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
             response.extend(schedule_builds(complete.builds, auto_schedule_build_archs));
 
             overall_status
-                .set_with_description("^.^!", hubcaps::statuses::State::Success)
+                .set_with_description("^.^!", StatusState::Success)
                 .await?;
         } else {
             overall_status
-                .set_with_description("Complete, with errors", hubcaps::statuses::State::Failure)
+                .set_with_description("Complete, with errors", StatusState::Failure)
                 .await?;
         }
 
@@ -489,68 +491,8 @@ fn schedule_builds(
     response
 }
 
-pub async fn update_labels(
-    issueref: &hubcaps::issues::IssueRef,
-    add: &[String],
-    remove: &[String],
-) {
-    let l = issueref.labels();
-    let issue = issueref.get().await.expect("Failed to get issue");
-
-    let existing: Vec<String> = issue.labels.iter().map(|l| l.name.clone()).collect();
-
-    let to_add: Vec<&str> = add
-        .iter()
-        .filter(|l| !existing.contains(l)) // Remove labels already on the issue
-        .map(|l| l.as_ref())
-        .collect();
-
-    let to_remove: Vec<String> = remove
-        .iter()
-        .filter(|l| existing.contains(l)) // Remove labels already on the issue
-        .cloned()
-        .collect();
-
-    let issue = issue.number;
-
-    info!("Labeling issue #{issue}: + {to_add:?} , - {to_remove:?}, = {existing:?}");
-
-    l.add(to_add.clone())
-        .await
-        .unwrap_or_else(|err| panic!("Failed to add labels {to_add:?} to issue #{issue}: {err:?}"));
-
-    for label in to_remove {
-        l.remove(&label).await.unwrap_or_else(|err| {
-            panic!("Failed to remove label {label:?} from issue #{issue}: {err:?}")
-        });
-    }
-}
-
-fn issue_is_wip(issue: &hubcaps::issues::Issue) -> bool {
+fn issue_is_wip(issue: &octocrab::models::issues::Issue) -> bool {
     issue.title.starts_with("WIP:") || issue.title.contains("[WIP]")
-}
-
-/// Determine whether or not to use the "old" status prefix, `grahamcofborg`, or
-/// the new one, `ofborg`.
-///
-/// If the PR already has any `grahamcofborg`-prefixed statuses, continue to use
-/// that (e.g. if someone used `@ofborg eval`, `@ofborg build`, `@ofborg test`).
-/// Otherwise, if it's a new PR or was recently force-pushed (and therefore
-/// doesn't have any old `grahamcofborg`-prefixed statuses), use the new prefix.
-pub async fn get_prefix(
-    statuses: hubcaps::statuses::Statuses,
-    sha: &str,
-) -> Result<&str, CommitStatusError> {
-    if statuses
-        .list(sha)
-        .await?
-        .iter()
-        .any(|s| s.context.starts_with("grahamcofborg-"))
-    {
-        Ok("grahamcofborg")
-    } else {
-        Ok("ofborg")
-    }
 }
 
 enum EvalWorkerError {

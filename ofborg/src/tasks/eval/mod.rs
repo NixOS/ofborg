@@ -4,12 +4,14 @@ pub use self::nixpkgs::NixpkgsStrategy;
 use crate::checkout::CachedProjectCo;
 use crate::commitstatus::{CommitStatus, CommitStatusError};
 use crate::evalchecker::EvalChecker;
+use crate::github::GithubRepo;
 use crate::message::buildjob::BuildJob;
 
 use std::path::Path;
 
 pub trait EvaluationStrategy {
-    fn pre_clone(&mut self) -> impl std::future::Future<Output = StepResult<()>>;
+    fn pre_clone(&mut self, repo: &GithubRepo)
+    -> impl std::future::Future<Output = StepResult<()>>;
 
     fn on_target_branch(
         &mut self,

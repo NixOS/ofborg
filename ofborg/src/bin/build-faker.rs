@@ -1,6 +1,7 @@
-use lapin::message::Delivery;
 use std::env;
 use std::error::Error;
+
+use lapin::message::Delivery;
 
 use ofborg::commentparser;
 use ofborg::config;

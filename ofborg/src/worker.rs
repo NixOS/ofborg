@@ -1,7 +1,5 @@
 use std::{marker::Send, sync::Arc};
 
-use serde::Serialize;
-
 pub struct Response {}
 
 pub type Actions = Vec<Action>;
@@ -24,7 +22,7 @@ pub struct QueueMsg {
     pub content: Vec<u8>,
 }
 
-pub fn publish_serde_action<T: Serialize + ?Sized>(
+pub fn publish_serde_action<T: serde::Serialize + ?Sized>(
     exchange: Option<String>,
     routing_key: Option<String>,
     msg: &T,
@@ -35,7 +33,7 @@ pub fn publish_serde_action<T: Serialize + ?Sized>(
         mandatory: false,
         immediate: false,
         content_type: Some("application/json".to_owned()),
-        content: serde_json::to_string(&msg).unwrap().into_bytes(),
+        content: serde_json::to_vec(&msg).expect("Failed to serialize message for publication"),
     }))
 }
 

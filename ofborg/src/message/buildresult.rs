@@ -1,6 +1,6 @@
-use crate::message::{Pr, Repo};
+use octocrab::models::workflows::Conclusion;
 
-use hubcaps::checks::Conclusion;
+use crate::message::{Pr, Repo};
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum BuildStatus {

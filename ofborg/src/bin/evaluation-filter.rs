@@ -3,10 +3,8 @@ use std::error::Error;
 
 use tracing::{error, info};
 
-use ofborg::config;
 use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
-use ofborg::easylapin;
-use ofborg::tasks;
+use ofborg::{config, easylapin, tasks};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

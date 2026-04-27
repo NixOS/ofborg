@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::Read;
+use std::io::Read as _;
 
 pub fn file_to_str(f: &mut File) -> String {
     let mut buffer = Vec::new();

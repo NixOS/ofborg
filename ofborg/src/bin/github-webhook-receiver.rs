@@ -13,12 +13,13 @@ use hyper::{Request, Response};
 use hyper_util::rt::TokioIo;
 use lapin::options::BasicPublishOptions;
 use lapin::{BasicProperties, Channel};
-use ofborg::ghevent::GenericWebhook;
-use ofborg::{config, easyamqp, easyamqp::ChannelExt, easylapin};
 use sha2::Sha256;
 use tokio::net::TcpListener;
 use tokio::sync::Mutex;
 use tracing::{error, info, warn};
+
+use ofborg::ghevent::GenericWebhook;
+use ofborg::{config, easyamqp, easyamqp::ChannelExt, easylapin};
 
 /// Prepares the the exchange we will write to, the queues that are bound to it
 /// and binds them.

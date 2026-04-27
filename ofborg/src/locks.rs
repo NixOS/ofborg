@@ -1,8 +1,8 @@
-use fs2::FileExt;
-
 use std::fs;
 use std::io::Error;
 use std::path::PathBuf;
+
+use fs2::FileExt;
 
 pub trait Lockable {
     fn lock_path(&self) -> PathBuf;
