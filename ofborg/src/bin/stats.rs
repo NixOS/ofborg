@@ -1,7 +1,8 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use http::StatusCode;
+use http::header::CONTENT_TYPE;
+use http::{HeaderValue, StatusCode};
 use http_body_util::Full;
 use hyper::body::Bytes;
 use hyper::server::conn::http1;
@@ -17,6 +18,10 @@ use ofborg::{config, easyamqp, easylapin, stats, tasks};
 fn response(body: String) -> Response<Full<Bytes>> {
     Response::builder()
         .status(StatusCode::OK)
+        .header(
+            CONTENT_TYPE,
+            HeaderValue::from_static("text/plain; version=0.0.4; charset=utf-8"),
+        )
         .body(Full::new(Bytes::from(body)))
         .unwrap()
 }
@@ -60,6 +65,7 @@ async fn main() -> anyhow::Result<()> {
         error!("No stats configuration found!");
         panic!();
     };
+    let addr: SocketAddr = stats_cfg.listen.parse().unwrap();
 
     let conn = easylapin::from_config(&stats_cfg.rabbitmq).await?;
 
@@ -117,7 +123,6 @@ async fn main() -> anyhow::Result<()> {
     // Spawn HTTP server in a separate thread with its own tokio runtime
     let metrics_clone = metrics.clone();
     tokio::task::spawn(async move {
-        let addr: SocketAddr = "0.0.0.0:9898".parse().unwrap();
         if let Err(e) = run_http_server(addr, metrics_clone).await {
             error!("HTTP server error: {:?}", e);
         }

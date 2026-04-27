@@ -126,6 +126,8 @@ pub struct LogMessageCollector {
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct Stats {
+    /// Listen host/port
+    pub listen: String,
     /// RabbitMQ broker to connect to
     pub rabbitmq: RabbitMqConfig,
 }
