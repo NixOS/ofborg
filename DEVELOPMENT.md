@@ -27,6 +27,7 @@ This brings up:
 | `mass-rebuilder`          | yes       | Orchestrates mass rebuild jobs                                  |
 | `stats`                   | yes       | Stats server on `[::1]:9898`                                    |
 | `github-comment-filter`   | yes       | Disabled by default; start manually in mprocs                   |
+| `hydra-evaluator`         | yes       | Consumes `HydraEvalJob` messages, imports derivations into queue-runner via gRPC |
 
 ## What happens under the hood
 
@@ -38,7 +39,18 @@ This brings up:
 
 4. **`mprocs/bootstrap-ofborg.sh`** — Generates a random webhook secret (`.ofborg-data/.webhook-secret`) and writes a complete config at `.ofborg-data/local.json`. The config wires all services to the local RabbitMQ instance.
 
-All services then start via `cargo r --bin <name> .ofborg-data/local.json`, so changes to source code are reflected immediately (cargo recompiles on restart).
+All services then start via `cargo r --bin <name> .ofborg-data/local.json`, so changes to source code are reflected immediately (cargo recompiles on restart). The `hydra-evaluator` crate runs via `cargo r -p hydra-evaluator -- .ofborg-data/local.json`.
+
+## Hydra evaluator flow
+
+When the `hydra_evaluator` config section is present, the mass-rebuilder publishes `HydraEvalJob` messages to the `hydra-eval-jobs` queue after a successful evaluation. The `hydra-evaluator` binary then:
+
+1. Consumes `HydraEvalJob` messages from `hydra-eval-jobs`.
+2. Resolves each drv path against the local Nix store.
+3. Streams the corresponding NARs (zstd-compressed) to the queue-runner via the `BuildResult` gRPC stream.
+4. Calls `CreateBuild` on the queue-runner to register the builds under the configured `jobset_id`.
+
+If the `hydra_evaluator` config is absent, the mass-rebuilder skips the hydra integration step entirely.
 
 ## Sending test webhook events
 
