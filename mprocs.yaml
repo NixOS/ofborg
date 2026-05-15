@@ -45,3 +45,7 @@ procs:
     shell: mprocs/wait-for-rabbitmq.sh && mprocs/bootstrap-ofborg.sh && cargo r --bin stats .ofborg-data/local.json
     env:
       RUST_LOG: info
+  hydra-evaluator:
+    shell: mprocs/wait-for-rabbitmq.sh && mprocs/bootstrap-ofborg.sh && cargo r -p hydra-evaluator -- .ofborg-data/local.json
+    env:
+      RUST_LOG: info

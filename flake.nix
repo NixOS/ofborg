@@ -1,12 +1,14 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
+    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable-small";
   };
 
   outputs =
     {
       self,
       nixpkgs,
+      nixpkgs-unstable,
       ...
     }@inputs:
     let
@@ -26,6 +28,10 @@
           pkgs = import nixpkgs {
             inherit system;
           };
+          unstable = import nixpkgs-unstable {
+            inherit system;
+          };
+          nix = unstable.nixVersions.nix_2_34;
         in
         {
           default = pkgs.mkShell {
@@ -41,6 +47,13 @@
               pkg-config
               git
               mprocs
+
+              zlib
+              protobuf
+
+              nlohmann_json
+              libsodium
+              boost
             ];
             buildInputs =
               with pkgs;
@@ -72,6 +85,7 @@
             RUST_BACKTRACE = "1";
             RUST_LOG = "ofborg=debug,info";
             NIX_PATH = "nixpkgs=${pkgs.path}";
+            NIX_CFLAGS_COMPILE = "-Wno-error";
           };
         }
       );

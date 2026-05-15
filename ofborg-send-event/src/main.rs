@@ -126,7 +126,8 @@ async fn main() -> Result<()> {
     );
 
     if let Some(secret_path) = &args.secret_path {
-        let signature = github_signature_256(&std::fs::read_to_string(secret_path)?.trim(), &body)?;
+        let secret = std::fs::read_to_string(secret_path)?;
+        let signature = github_signature_256(secret.trim(), &body)?;
         headers.insert(
             HeaderName::from_static("x-hub-signature-256"),
             HeaderValue::from_str(&signature).context("invalid X-Hub-Signature-256 value")?,

@@ -42,6 +42,27 @@ async fn main() -> anyhow::Result<()> {
     })
     .await?;
 
+    let hydra_eval_cfg = cfg.hydra_evaluator.clone();
+    let (hydra_eval_queue, hydra_eval_nix, hydra_eval_jobset_id) =
+        if let Some(ref hec) = hydra_eval_cfg {
+            chan.declare_queue(easyamqp::QueueConfig {
+                queue: String::from("hydra-eval-jobs"),
+                passive: false,
+                durable: true,
+                exclusive: false,
+                auto_delete: false,
+                no_wait: false,
+            })
+            .await?;
+            (
+                Some("hydra-eval-jobs".to_owned()),
+                Some(cfg.nix()),
+                Some(hec.jobset_id),
+            )
+        } else {
+            (None, None, None)
+        };
+
     let handle = easylapin::WorkerChannel(chan)
         .consume(
             tasks::evaluate::EvaluationWorker::new(
@@ -50,6 +71,9 @@ async fn main() -> anyhow::Result<()> {
                 cfg.acl(),
                 cfg.runner.identity.clone(),
                 events,
+                hydra_eval_queue,
+                hydra_eval_nix,
+                hydra_eval_jobset_id,
             ),
             easyamqp::ConsumeConfig {
                 queue: queue_name.clone(),

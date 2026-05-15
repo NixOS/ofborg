@@ -1,7 +1,9 @@
 [workspace]
 members = [
-    "ofborg", "ofborg-send-event",
-    "ofborg-simple-build"
+  "ofborg",
+  "ofborg-send-event",
+  "ofborg-simple-build",
+  "hydra-evaluator",
 ]
 resolver = "2"
 

@@ -28,6 +28,8 @@ pub struct Config {
     pub github_comment_poster: Option<GitHubCommentPoster>,
     /// Configuration for the mass rebuilder
     pub mass_rebuilder: Option<MassRebuilder>,
+    /// Configuration for the hydra evaluator integration
+    pub hydra_evaluator: Option<HydraEvaluatorConfig>,
     /// Configuration for the builder
     pub builder: Option<Builder>,
     /// Configuration for the log message collector
@@ -102,6 +104,18 @@ pub struct GitHubCommentPoster {
 pub struct MassRebuilder {
     /// RabbitMQ broker to connect to
     pub rabbitmq: RabbitMqConfig,
+}
+
+/// Configuration for the hydra evaluator integration
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct HydraEvaluatorConfig {
+    /// RabbitMQ broker to connect to
+    pub rabbitmq: RabbitMqConfig,
+    /// Queue-runner gRPC endpoint
+    pub gateway_endpoint: String,
+    /// Jobset ID to inject builds into
+    pub jobset_id: i32,
 }
 
 /// Configuration for the builder
