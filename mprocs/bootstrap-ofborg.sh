@@ -43,6 +43,26 @@ cat <<EOF > .ofborg-data/local.json
             "virtualhost": "ofborg"
         }
     },
+    "github_comment_filter": {
+        "rabbitmq": {
+            "host": "localhost:5672",
+            "ssl": false,
+            "username": "ofborg",
+            "password_file": "${DATA_DIR}/.amqp-password",
+            "virtualhost": "ofborg"
+        }
+    },
+    "hydra_evaluator": {
+        "rabbitmq": {
+            "host": "localhost:5672",
+            "ssl": false,
+            "username": "ofborg",
+            "password_file": "${DATA_DIR}/.amqp-password",
+            "virtualhost": "ofborg"
+        },
+        "gateway_endpoint": "[::1]:50051",
+        "jobset_id": 7
+    },
     "stats": {
         "listen": "[::1]:9898",
         "rabbitmq": {
@@ -56,7 +76,6 @@ cat <<EOF > .ofborg-data/local.json
     "runner": {
         "identity": "...",
         "repos": [
-          "nixos/nixpkgs",
           "ofborg/testpkgs"
         ],
         "disable_trusted_users": true

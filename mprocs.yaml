@@ -20,7 +20,6 @@ procs:
       RUST_LOG: info
   github-comment-filter:
     shell: mprocs/wait-for-rabbitmq.sh && mprocs/bootstrap-ofborg.sh && cargo r --bin github-comment-filter .ofborg-data/local.json
-    autostart: false
     env:
       RUST_LOG: info
   github-webhook-receiver:

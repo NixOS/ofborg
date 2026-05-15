@@ -26,7 +26,7 @@ This brings up:
 | `github-webhook-receiver` | yes       | HTTP server on `[::1]:9899` — receives GitHub webhooks          |
 | `mass-rebuilder`          | yes       | Orchestrates mass rebuild jobs                                  |
 | `stats`                   | yes       | Stats server on `[::1]:9898`                                    |
-| `github-comment-filter`   | —         | Disabled by default; start manually in mprocs                   |
+| `github-comment-filter`   | yes       | Disabled by default; start manually in mprocs                   |
 
 ## What happens under the hood
 

@@ -20,7 +20,7 @@ struct Args {
     webhook_receiver_url: String,
 
     /// PR that should be fetched
-    #[arg(long)]
+    #[arg()]
     pr_nr: u64,
 
     /// Webhook event name, e.g. push, pull_request, ping
