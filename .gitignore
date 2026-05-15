@@ -11,3 +11,4 @@ target
 *.nix.orig
 *.nix.rej
 /.direnv
+/.ofborg-data

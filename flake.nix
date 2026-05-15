@@ -40,6 +40,7 @@
               rustfmt
               pkg-config
               git
+              mprocs
             ];
             buildInputs =
               with pkgs;
