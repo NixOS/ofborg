@@ -247,7 +247,15 @@ where
     let Some(event_type) = event_type else {
         return Ok(response(StatusCode::BAD_REQUEST, "Missing event type"));
     };
-    let routing_key = format!("{event_type}.{}", input.repository.full_name.to_lowercase());
+    let routing_key = match event_type.as_str() {
+        "pull_request" | "issue_comment" => {
+            format!("{event_type}.{}", input.repository.full_name.to_lowercase())
+        }
+        other => {
+            warn!("Received unknown event type: {other}");
+            format!("unknown.{other}")
+        }
+    };
 
     // Publish message
     if let Err(e) = publisher.publish("github-events", &routing_key, &raw).await {
@@ -597,6 +605,33 @@ mod github_webhook_receiver {
 
             let published = publisher.get_published().await;
             assert_eq!(published[0].routing_key, "pull_request.test/myrepo");
+        }
+
+        #[tokio::test]
+        async fn test_unknown_event_type_routing_key() {
+            let publisher = Arc::new(MockPublisher::new());
+            let secret = Arc::new("test-secret".to_string());
+            let body = r#"{"repository":{"owner":{"login":"test"},"name":"my-repo","full_name":"test/my-repo","clone_url":"https://github.com/test/my-repo.git"}}"#;
+            let body_bytes = body.as_bytes();
+
+            let headers = vec![
+                (header::CONTENT_TYPE, hv("application/json")),
+                (
+                    hn("X-Hub-Signature-256"),
+                    hv(&compute_signature("test-secret", body_bytes)),
+                ),
+                (hn("X-Github-Event"), hv("push")),
+            ];
+
+            let req = create_request(http::Method::POST, headers, Bytes::from(body));
+            let resp = handle_request(req, secret, publisher.clone())
+                .await
+                .unwrap();
+
+            assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+
+            let published = publisher.get_published().await;
+            assert_eq!(published[0].routing_key, "unknown.push");
         }
     }
 }

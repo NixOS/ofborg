@@ -30,8 +30,6 @@ pub struct Config {
     pub mass_rebuilder: Option<MassRebuilder>,
     /// Configuration for the hydra evaluator integration
     pub hydra_evaluator: Option<HydraEvaluatorConfig>,
-    /// Configuration for the builder
-    pub builder: Option<Builder>,
     /// Configuration for the log message collector
     pub log_message_collector: Option<LogMessageCollector>,
     /// Configuration for the stats server
@@ -116,14 +114,6 @@ pub struct HydraEvaluatorConfig {
     pub gateway_endpoint: String,
     /// Jobset ID to inject builds into
     pub jobset_id: i32,
-}
-
-/// Configuration for the builder
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-#[serde(deny_unknown_fields)]
-pub struct Builder {
-    /// RabbitMQ broker to connect to
-    pub rabbitmq: RabbitMqConfig,
 }
 
 /// Configuration for the log message collector

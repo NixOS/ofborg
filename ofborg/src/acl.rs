@@ -35,17 +35,6 @@ impl Acl {
         }
     }
 
-    pub fn build_job_destinations_for_user_repo(
-        &self,
-        user: &str,
-        repo: &str,
-    ) -> Vec<(Option<String>, Option<String>)> {
-        self.build_job_architectures_for_user_repo(user, repo)
-            .iter()
-            .map(|system| system.as_build_destination())
-            .collect()
-    }
-
     pub fn can_build_unrestricted(&self, user: &str, repo: &str) -> bool {
         if let Some(ref users) = self.trusted_users {
             if repo.to_lowercase() == "nixos/nixpkgs" {

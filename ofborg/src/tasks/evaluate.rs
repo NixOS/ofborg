@@ -1,5 +1,5 @@
 /// This is what evaluates every pull-request
-use std::io::{BufRead as _, BufReader};
+use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::time::Instant;
 
@@ -7,7 +7,6 @@ use futures::stream::StreamExt;
 use octocrab::{Octocrab, models::StatusState};
 use tracing::{Instrument, debug_span, error, info, warn};
 
-use crate::acl::Acl;
 use crate::commitstatus::{CommitStatus, CommitStatusError};
 use crate::config::GithubAppVendingMachine;
 use crate::github::GithubRepo;
@@ -16,13 +15,12 @@ use crate::nix;
 use crate::stats::{self, Event};
 use crate::tasks::eval;
 use crate::tasks::eval::EvaluationStrategy;
-use crate::{checkout, systems, worker};
+use crate::{checkout, worker};
 use uuid::Uuid;
 
 pub struct EvaluationWorker<E> {
     cloner: checkout::CachedCloner,
     github_vend: Option<tokio::sync::RwLock<GithubAppVendingMachine>>,
-    acl: Acl,
     identity: String,
     events: E,
     hydra_eval_queue: Option<String>,
@@ -35,7 +33,6 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
     pub fn new(
         cloner: checkout::CachedCloner,
         github_vend: Option<GithubAppVendingMachine>,
-        acl: Acl,
         identity: String,
         events: E,
         hydra_eval_queue: Option<String>,
@@ -45,7 +42,6 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
         EvaluationWorker {
             cloner,
             github_vend: github_vend.map(tokio::sync::RwLock::new),
-            acl,
             identity,
             events,
             hydra_eval_queue,
@@ -105,7 +101,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
 
             OneEval::new(
                 github_client,
-                &self.acl,
                 &mut self.events,
                 &self.identity,
                 &self.cloner,
@@ -125,7 +120,6 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
 struct OneEval<'a, E> {
     repo: GithubRepo,
     enable_publish: bool,
-    acl: &'a Acl,
     events: &'a mut E,
     identity: &'a str,
     cloner: &'a checkout::CachedCloner,
@@ -141,7 +135,6 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
     #[allow(clippy::borrow_as_ptr)]
     fn new(
         octocrab: Option<Octocrab>,
-        acl: &'a Acl,
         events: &'a mut E,
         identity: &'a str,
         cloner: &'a checkout::CachedCloner,
@@ -165,7 +158,6 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         OneEval {
             repo,
             enable_publish,
-            acl,
             events,
             identity,
             cloner,
@@ -212,12 +204,16 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
     }
 
     async fn worker_actions(&mut self) -> worker::Actions {
-        self.prefix = Some(match self.repo.get_prefix(&self.job.pr.head_sha).await {
-            Ok(p) => p,
-            Err(e) => {
-                error!("Failed to determine commit status prefix: {:?}", e);
-                return self.actions().retry_later(self.job);
+        self.prefix = Some(if self.enable_publish {
+            match self.repo.get_prefix(&self.job.pr.head_sha).await {
+                Ok(p) => p,
+                Err(e) => {
+                    error!("Failed to determine commit status prefix: {:?}", e);
+                    return self.actions().retry_later(self.job);
+                }
             }
+        } else {
+            "ofborg"
         });
 
         let eval_result = match self.evaluate_job().await {
@@ -276,38 +272,30 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
 
     async fn evaluate_job(&mut self) -> Result<worker::Actions, EvalWorkerError> {
         let job = self.job;
-        let auto_schedule_build_archs: Vec<systems::System>;
+        let issue = if self.enable_publish {
+            let issue_result = self.repo.issues().get(job.pr.number).await;
 
-        let issue = self.repo.issues().get(job.pr.number).await;
+            match &issue_result {
+                Ok(iss) => {
+                    if iss.state == octocrab::models::IssueState::Closed {
+                        self.events.notify(Event::IssueAlreadyClosed).await;
+                        info!("Skipping {} because it is closed", job.pr.number);
+                        return Ok(self.actions().skip(job));
+                    }
+                }
 
-        match issue {
-            Ok(iss) => {
-                if iss.state == octocrab::models::IssueState::Closed {
-                    self.events.notify(Event::IssueAlreadyClosed).await;
-                    info!("Skipping {} because it is closed", job.pr.number);
+                Err(e) => {
+                    self.events.notify(Event::IssueFetchFailed).await;
+                    error!("Error fetching {}!", job.pr.number);
+                    error!("E: {:?}", e);
                     return Ok(self.actions().skip(job));
                 }
+            };
 
-                if issue_is_wip(&iss) {
-                    auto_schedule_build_archs = vec![];
-                } else {
-                    auto_schedule_build_archs = self.acl.build_job_architectures_for_user_repo(
-                        &iss.user.login,
-                        &job.repo.full_name,
-                    );
-                }
-            }
-
-            Err(e) => {
-                self.events.notify(Event::IssueFetchFailed).await;
-                error!("Error fetching {}!", job.pr.number);
-                error!("E: {:?}", e);
-                return Ok(self.actions().skip(job));
-            }
+            issue_result.ok()
+        } else {
+            None
         };
-
-        let issue = self.repo.issues().get(job.pr.number).await.ok();
-
         let mut evaluation_strategy = eval::NixpkgsStrategy::new(job, issue.as_ref());
 
         let prefix = self
@@ -488,11 +476,6 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 .all_evaluations_passed(&mut overall_status)
                 .await?;
 
-            response.extend(schedule_builds(
-                complete.builds.clone(),
-                auto_schedule_build_archs,
-            ));
-
             if let (Some(ref queue), Some(ref nix), Some(jobset_id)) = (
                 self.hydra_eval_queue.clone(),
                 self.hydra_eval_nix.clone(),
@@ -539,38 +522,6 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
     }
 }
 
-fn schedule_builds(
-    builds: Vec<buildjob::BuildJob>,
-    auto_schedule_build_archs: Vec<systems::System>,
-) -> Vec<worker::Action> {
-    let mut response = vec![];
-    info!(
-        "Scheduling build jobs {:?} on arches {:?}",
-        builds, auto_schedule_build_archs
-    );
-    for buildjob in builds {
-        for arch in auto_schedule_build_archs.iter() {
-            let (exchange, routingkey) = arch.as_build_destination();
-            response.push(worker::publish_serde_action(
-                exchange, routingkey, &buildjob,
-            ));
-        }
-        response.push(worker::publish_serde_action(
-            Some("build-results".to_string()),
-            None,
-            &buildjob::QueuedBuildJobs {
-                job: buildjob,
-                architectures: auto_schedule_build_archs
-                    .iter()
-                    .map(|arch| arch.to_string())
-                    .collect(),
-            },
-        ));
-    }
-
-    response
-}
-
 fn resolve_attrs_to_drv_paths(
     nix: &nix::Nix,
     nixpkgs: &std::path::Path,
@@ -593,6 +544,20 @@ fn resolve_attrs_to_drv_paths(
         })
         .unwrap_or(nix::File::DefaultNixpkgs);
 
+    // Try batch instantiation first for performance (single nix-instantiate process)
+    match nix.safely_instantiate_attrs(nixpkgs, file, all_attrs.clone()) {
+        Ok(f) => {
+            return BufReader::new(f)
+                .lines()
+                .map_while(Result::ok)
+                .filter(|line| line.trim().ends_with(".drv"))
+                .map(|line| line.trim().to_owned())
+                .collect();
+        }
+        Err(_) => warn!("Batch instantiation failed, falling back to per-attr fallback"),
+    }
+
+    // Fallback: try each attr individually
     all_attrs
         .into_iter()
         .flat_map(
@@ -606,16 +571,15 @@ fn resolve_attrs_to_drv_paths(
                 Err(f) => {
                     let stderr: Vec<String> =
                         BufReader::new(f).lines().map_while(Result::ok).collect();
-                    warn!("nix-instantiate failed for attrs: {:?}", stderr.join("\n"));
+                    warn!(
+                        "nix-instantiate failed for attr '{attr}': {:?}",
+                        stderr.join("\n")
+                    );
                     vec![]
                 }
             },
         )
         .collect()
-}
-
-fn issue_is_wip(issue: &octocrab::models::issues::Issue) -> bool {
-    issue.title.starts_with("WIP:") || issue.title.contains("[WIP]")
 }
 
 enum EvalWorkerError {

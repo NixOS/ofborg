@@ -68,7 +68,6 @@ async fn main() -> anyhow::Result<()> {
             tasks::evaluate::EvaluationWorker::new(
                 cloner,
                 cfg.github_app_vendingmachine(),
-                cfg.acl(),
                 cfg.runner.identity.clone(),
                 events,
                 hydra_eval_queue,
