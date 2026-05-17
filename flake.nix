@@ -80,16 +80,23 @@
         let
           pkgs = import nixpkgs { inherit system; };
 
+          # clippy fails to build on x86_64-darwin (nixpkgs missing
+          # -headerpad_max_install_names, cf. rustfmt fix in nixpkgs#369349).
+          # Skip the lint step there.
+          runClippy = !(pkgs.stdenv.hostPlatform.isDarwin && pkgs.stdenv.hostPlatform.isx86_64);
+
           pkg = pkgs.rustPlatform.buildRustPackage {
             name = "ofborg";
             src = pkgs.nix-gitignore.gitignoreSource [ ] ./.;
 
-            nativeBuildInputs = with pkgs; [
-              pkg-config
-              pkgs.rustPackages.clippy
-            ];
+            nativeBuildInputs =
+              with pkgs;
+              [
+                pkg-config
+              ]
+              ++ pkgs.lib.optional runClippy pkgs.rustPackages.clippy;
 
-            preBuild = ''
+            preBuild = pkgs.lib.optionalString runClippy ''
               cargo clippy
             '';
 
