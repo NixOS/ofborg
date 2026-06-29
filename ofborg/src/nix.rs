@@ -60,8 +60,8 @@ impl Operation {
                     "--no-out-link",
                     "--keep-going",
                     "--option",
-                    "extra-experimental-features",
-                    "no-url-literals",
+                    "lint-url-literals",
+                    "fatal",
                 ]);
             }
             Operation::QueryPackagesJson => {
@@ -70,8 +70,8 @@ impl Operation {
                     "--available",
                     "--json",
                     "--option",
-                    "extra-experimental-features",
-                    "no-url-literals",
+                    "lint-url-literals",
+                    "fatal",
                 ]);
             }
             Operation::QueryPackagesOutputs => {
@@ -82,8 +82,8 @@ impl Operation {
                     "--attr-path",
                     "--out-path",
                     "--option",
-                    "extra-experimental-features",
-                    "no-url-literals",
+                    "lint-url-literals",
+                    "fatal",
                 ]);
             }
             Operation::NoOp { ref operation } => {
@@ -95,12 +95,12 @@ impl Operation {
                     "--strict",
                     "--json",
                     "--option",
-                    "extra-experimental-features",
-                    "no-url-literals",
+                    "lint-url-literals",
+                    "fatal",
                 ]);
             }
             Operation::Instantiate => {
-                command.args(["--option", "extra-experimental-features", "no-url-literals"]);
+                command.args(["--option", "lint-url-literals", "fatal"]);
             }
             _ => (),
         };
