@@ -143,7 +143,6 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                                 job: msg,
                                 architectures: build_destinations
                                     .iter()
-                                    .cloned()
                                     .map(|arch| arch.to_string())
                                     .collect(),
                             },
