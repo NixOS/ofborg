@@ -29,10 +29,27 @@ pub fn publish_serde_action<T: Serialize + ?Sized>(
     routing_key: Option<String>,
     msg: &T,
 ) -> Action {
+    publish_serde_action_with_options(exchange, routing_key, msg, false)
+}
+
+pub fn publish_serde_action_mandatory<T: Serialize + ?Sized>(
+    exchange: Option<String>,
+    routing_key: Option<String>,
+    msg: &T,
+) -> Action {
+    publish_serde_action_with_options(exchange, routing_key, msg, true)
+}
+
+fn publish_serde_action_with_options<T: Serialize + ?Sized>(
+    exchange: Option<String>,
+    routing_key: Option<String>,
+    msg: &T,
+    mandatory: bool,
+) -> Action {
     Action::Publish(Arc::new(QueueMsg {
         exchange,
         routing_key,
-        mandatory: false,
+        mandatory,
         immediate: false,
         content_type: Some("application/json".to_owned()),
         content: serde_json::to_string(&msg).unwrap().into_bytes(),

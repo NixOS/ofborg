@@ -1,4 +1,5 @@
 use lapin::message::Delivery;
+use lapin::options::ConfirmSelectOptions;
 use std::env;
 use std::error::Error;
 
@@ -18,6 +19,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let conn = easylapin::from_config(&cfg.builder.unwrap().rabbitmq).await?;
     let chan = conn.create_channel().await?;
+    chan.confirm_select(ConfirmSelectOptions::default()).await?;
 
     let repo_msg = Repo {
         clone_url: "https://github.com/nixos/ofborg.git".to_owned(),
