@@ -49,6 +49,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             tasks::evaluate::EvaluationWorker::new(
                 cloner,
                 cfg.github_app_vendingmachine(),
+                cfg.nix(),
                 cfg.acl(),
                 cfg.runner.identity.clone(),
                 events,

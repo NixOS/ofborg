@@ -4,6 +4,7 @@ use crate::checkout;
 use crate::commitstatus::{CommitStatus, CommitStatusError};
 use crate::config::GithubAppVendingMachine;
 use crate::message::{buildjob, evaluationjob};
+use crate::nix;
 use crate::stats::{self, Event};
 use crate::systems;
 use crate::tasks::eval;
@@ -20,6 +21,7 @@ use tracing::{debug_span, error, info, warn};
 pub struct EvaluationWorker<E> {
     cloner: checkout::CachedCloner,
     github_vend: tokio::sync::RwLock<GithubAppVendingMachine>,
+    nix: nix::Nix,
     acl: Acl,
     identity: String,
     events: E,
@@ -29,6 +31,7 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
     pub fn new(
         cloner: checkout::CachedCloner,
         github_vend: GithubAppVendingMachine,
+        nix: nix::Nix,
         acl: Acl,
         identity: String,
         events: E,
@@ -36,6 +39,7 @@ impl<E: stats::SysEvents> EvaluationWorker<E> {
         EvaluationWorker {
             cloner,
             github_vend: tokio::sync::RwLock::new(github_vend),
+            nix,
             acl,
             identity,
             events,
@@ -82,6 +86,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
 
         OneEval::new(
             github_client,
+            &self.nix,
             &self.acl,
             &mut self.events,
             &self.identity,
@@ -96,6 +101,7 @@ impl<E: stats::SysEvents + 'static> worker::SimpleWorker for EvaluationWorker<E>
 struct OneEval<'a, E> {
     client_app: &'a hubcaps::Github,
     repo: hubcaps::repositories::Repository,
+    nix: &'a nix::Nix,
     acl: &'a Acl,
     events: &'a mut E,
     identity: &'a str,
@@ -107,6 +113,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
     #[allow(clippy::too_many_arguments)]
     fn new(
         client_app: &'a hubcaps::Github,
+        nix: &'a nix::Nix,
         acl: &'a Acl,
         events: &'a mut E,
         identity: &'a str,
@@ -117,6 +124,7 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
         OneEval {
             client_app,
             repo,
+            nix,
             acl,
             events,
             identity,
@@ -439,11 +447,20 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 .all_evaluations_passed(&mut overall_status)
                 .await?;
 
-            response.extend(schedule_builds(complete.builds, auto_schedule_build_archs));
+            let builds = classify_builds(
+                self.nix,
+                Path::new(&refpath),
+                complete.builds,
+                auto_schedule_build_archs,
+            )?;
 
-            overall_status
-                .set_with_description("^.^!", hubcaps::statuses::State::Success)
-                .await?;
+            if builds.is_empty() {
+                overall_status
+                    .set_with_description("^.^!", hubcaps::statuses::State::Success)
+                    .await?;
+            } else {
+                response.extend(schedule_builds(builds, format!("{prefix}-eval")));
+            }
         } else {
             overall_status
                 .set_with_description("Complete, with errors", hubcaps::statuses::State::Failure)
@@ -457,36 +474,78 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
     }
 }
 
-fn schedule_builds(
+struct ScheduledBuild {
+    job: buildjob::BuildJob,
+    architectures: Vec<systems::System>,
+}
+
+fn classify_builds(
+    nix: &nix::Nix,
+    nixpkgs: &Path,
     builds: Vec<buildjob::BuildJob>,
-    auto_schedule_build_archs: Vec<systems::System>,
-) -> Vec<worker::Action> {
-    let mut response = vec![];
-    info!(
-        "Scheduling build jobs {:?} on arches {:?}",
-        builds, auto_schedule_build_archs
-    );
-    for buildjob in builds {
-        for arch in auto_schedule_build_archs.iter() {
-            let (exchange, routingkey) = arch.as_build_destination();
-            response.push(worker::publish_serde_action(
-                exchange, routingkey, &buildjob,
-            ));
+    architectures: Vec<systems::System>,
+) -> Result<Vec<ScheduledBuild>, eval::Error> {
+    let mut scheduled = vec![];
+
+    for job in builds {
+        let mut relevant_architectures = vec![];
+
+        for architecture in &architectures {
+            match nix
+                .with_system(architecture.to_string())
+                .any_attr_instantiable(nixpkgs, &job.attrs)
+            {
+                Ok(true) => relevant_architectures.push(architecture.clone()),
+                Ok(false) => info!(
+                    system = %architecture,
+                    attrs = ?job.attrs,
+                    "Skipping automatic build without instantiable attributes"
+                ),
+                Err(errors) => {
+                    error!(
+                        system = %architecture,
+                        attrs = ?job.attrs,
+                        errors = ?errors,
+                        "Failed to determine automatic build relevance"
+                    );
+                    return Err(eval::Error::Fail(format!(
+                        "Failed to determine build relevance on {architecture}"
+                    )));
+                }
+            }
         }
-        response.push(worker::publish_serde_action(
-            Some("build-results".to_string()),
-            None,
-            &buildjob::QueuedBuildJobs {
-                job: buildjob,
-                architectures: auto_schedule_build_archs
-                    .iter()
-                    .map(|arch| arch.to_string())
-                    .collect(),
-            },
-        ));
+
+        if !relevant_architectures.is_empty() {
+            scheduled.push(ScheduledBuild {
+                job,
+                architectures: relevant_architectures,
+            });
+        }
     }
 
-    response
+    Ok(scheduled)
+}
+
+fn schedule_builds(builds: Vec<ScheduledBuild>, evaluation_status: String) -> Vec<worker::Action> {
+    let queued_builds = builds
+        .iter()
+        .map(|build| buildjob::QueuedBuildJobs {
+            job: build.job.clone(),
+            architectures: build
+                .architectures
+                .iter()
+                .map(ToString::to_string)
+                .collect(),
+        })
+        .collect();
+    vec![worker::publish_serde_action_mandatory(
+        Some("build-results".to_owned()),
+        None,
+        &buildjob::AutomaticBuildJobs {
+            builds: queued_builds,
+            evaluation_status,
+        },
+    )]
 }
 
 pub async fn update_labels(
@@ -567,5 +626,117 @@ impl From<eval::Error> for EvalWorkerError {
 impl From<CommitStatusError> for EvalWorkerError {
     fn from(e: CommitStatusError) -> EvalWorkerError {
         EvalWorkerError::CommitStatusWrite(e)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::commentparser::Subset;
+    use crate::message::{Pr, Repo};
+    use std::env;
+    use std::path::PathBuf;
+
+    fn nix() -> nix::Nix {
+        nix::Nix::new(
+            "x86_64-linux".to_owned(),
+            env::var("NIX_REMOTE").unwrap_or_default(),
+            1800,
+            None,
+        )
+    }
+
+    fn fixture(name: &str) -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("test-srcs")
+            .join(name)
+    }
+
+    fn build(attrs: &[&str]) -> buildjob::BuildJob {
+        buildjob::BuildJob::new(
+            Repo {
+                clone_url: "https://github.com/NixOS/nixpkgs.git".to_owned(),
+                full_name: "NixOS/nixpkgs".to_owned(),
+                owner: "NixOS".to_owned(),
+                name: "nixpkgs".to_owned(),
+            },
+            Pr {
+                head_sha: "abc123".to_owned(),
+                number: 42,
+                target_branch: Some("master".to_owned()),
+            },
+            Subset::Nixpkgs,
+            attrs.iter().map(|attr| (*attr).to_owned()).collect(),
+            None,
+            None,
+            "request-id".to_owned(),
+        )
+    }
+
+    #[test]
+    fn automatic_builds_only_target_relevant_systems() {
+        let scheduled = match classify_builds(
+            &nix(),
+            &fixture("instantiable"),
+            vec![build(&["linux-only"])],
+            systems::System::all_known_systems().to_vec(),
+        ) {
+            Ok(scheduled) => scheduled,
+            Err(_) => panic!("classification should succeed"),
+        };
+
+        assert_eq!(scheduled.len(), 1);
+        assert_eq!(scheduled[0].architectures.len(), 2);
+        assert_eq!(
+            scheduled[0]
+                .architectures
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>(),
+            vec!["x86_64-linux", "aarch64-linux"]
+        );
+
+        let actions = schedule_builds(scheduled, "ofborg-eval".to_owned());
+        assert_eq!(actions.len(), 1);
+        let worker::Action::Publish(queued_message) = &actions[0] else {
+            panic!("automatic build plan should be published");
+        };
+        assert_eq!(queued_message.exchange, Some("build-results".to_owned()));
+        assert!(queued_message.mandatory);
+        let queued: buildjob::AutomaticBuildJobs =
+            serde_json::from_slice(&queued_message.content).unwrap();
+        assert_eq!(queued.evaluation_status, "ofborg-eval");
+        assert_eq!(queued.builds.len(), 1);
+        assert_eq!(
+            queued.builds[0].architectures,
+            vec!["x86_64-linux", "aarch64-linux"]
+        );
+    }
+
+    #[test]
+    fn automatic_builds_are_not_scheduled_without_relevant_systems() {
+        let scheduled = match classify_builds(
+            &nix(),
+            &fixture("instantiable"),
+            vec![build(&["missing", "unavailable"])],
+            systems::System::all_known_systems().to_vec(),
+        ) {
+            Ok(scheduled) => scheduled,
+            Err(_) => panic!("classification should succeed"),
+        };
+
+        assert!(scheduled.is_empty());
+    }
+
+    #[test]
+    fn automatic_build_classification_errors_are_not_treated_as_irrelevant() {
+        let result = classify_builds(
+            &nix(),
+            &fixture("instantiable-broken"),
+            vec![build(&["package"])],
+            vec![systems::System::X8664Linux],
+        );
+
+        assert!(matches!(result, Err(eval::Error::Fail(_))));
     }
 }

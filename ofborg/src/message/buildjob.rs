@@ -1,7 +1,7 @@
 use crate::commentparser::Subset;
 use crate::message::{Pr, Repo};
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct BuildJob {
     pub repo: Repo,
     pub pr: Pr,
@@ -16,6 +16,12 @@ pub struct BuildJob {
 pub struct QueuedBuildJobs {
     pub job: BuildJob,
     pub architectures: Vec<String>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct AutomaticBuildJobs {
+    pub builds: Vec<QueuedBuildJobs>,
+    pub evaluation_status: String,
 }
 
 pub type ExchangeQueue = (Option<Exchange>, Option<RoutingKey>);

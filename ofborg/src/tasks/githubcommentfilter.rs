@@ -131,16 +131,11 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                             Uuid::new_v4().to_string(),
                         );
 
-                        for arch in build_destinations.iter() {
-                            let (exchange, routingkey) = arch.as_build_destination();
-                            response.push(worker::publish_serde_action(exchange, routingkey, &msg));
-                        }
-
-                        response.push(worker::publish_serde_action(
+                        response.push(worker::publish_serde_action_mandatory(
                             Some("build-results".to_string()),
                             None,
                             &buildjob::QueuedBuildJobs {
-                                job: msg,
+                                job: msg.clone(),
                                 architectures: build_destinations
                                     .iter()
                                     .cloned()
@@ -148,6 +143,13 @@ impl worker::SimpleWorker for GitHubCommentWorker {
                                     .collect(),
                             },
                         ));
+
+                        for arch in build_destinations.iter() {
+                            let (exchange, routingkey) = arch.as_build_destination();
+                            response.push(worker::publish_serde_action_mandatory(
+                                exchange, routingkey, &msg,
+                            ));
+                        }
                     }
                     commentparser::Instruction::Eval => {
                         let msg = evaluationjob::EvaluationJob {
