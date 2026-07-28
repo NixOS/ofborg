@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{BufRead, BufReader, Seek, SeekFrom, Write};
+use std::io::{BufRead as _, BufReader, Seek, SeekFrom, Write as _};
 
 pub struct LineWriter {
     file: File,

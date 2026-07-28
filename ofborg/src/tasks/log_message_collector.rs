@@ -1,14 +1,14 @@
-use crate::message::buildlogmsg::{BuildLogMsg, BuildLogStart};
-use crate::message::buildresult::BuildResult;
-use crate::worker;
-use crate::writetoline::LineWriter;
-
 use std::fs::{self, File, OpenOptions};
 use std::io::Write;
 use std::path::{Component, Path, PathBuf};
 
 use lru_cache::LruCache;
 use tracing::warn;
+
+use crate::message::buildlogmsg::{BuildLogMsg, BuildLogStart};
+use crate::message::buildresult::BuildResult;
+use crate::worker;
+use crate::writetoline::LineWriter;
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone)]
 pub struct LogFrom {

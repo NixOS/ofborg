@@ -6,22 +6,32 @@ build = "build.rs"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.0"
 async-trait = "0.1.89"
 brace-expand = "0.1.0"
+bytes = "1.11.1"
 chrono = { version = "0.4.38", default-features = false, features = [
   "clock",
   "std",
 ] }
 fs2 = "0.4.3"
 futures = "0.3.31"
-futures-util = "0.3.31"
 hex = "0.4.3"
 hmac = "0.13.0"
 http = "1"
+http-body = "1"
 http-body-util = "0.1"
-#hubcaps = "0.6"
-# for Conclusion::Skipped which is in master
-hubcaps = { git = "https://github.com/ofborg/hubcaps.git", rev = "0d7466ef941a7a8e160c071e2846e56b90b6ea86" }
+octocrab = { version = "0.54.0", default-features = false, features = [
+  "default-client",
+  "follow-redirect",
+  "jwt-rust-crypto",
+  "retry",
+  "rustls",
+  "rustls-ring",
+  "timeout",
+  "tracing",
+] }
+jsonwebtoken = "10"
 hyper = { version = "1.0", features = ["full", "server", "http1"] }
 hyper-util = { version = "0.1", features = ["server", "tokio", "http1"] }
 lapin = "4.3.0"
@@ -30,13 +40,16 @@ md5 = "0.8.0"
 nom = "8"
 parking_lot = "0.12.4"
 regex = "1.11.1"
-rustls-pki-types = "1.14"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.135"
 sha2 = "0.11.0"
 tempfile = "3.15.0"
-tokio = { version = "1", features = ["rt-multi-thread", "net", "macros", "sync"] }
+tokio = { version = "1", features = ["full"] }
 tokio-stream = "0.1"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["json", "env-filter"] }
 uuid = { version = "1.12", features = ["v4"] }
+
+[dev-dependencies]
+bytes = "1.11.1"
+http-body = "1.0.1"

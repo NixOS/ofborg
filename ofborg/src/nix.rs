@@ -1,17 +1,15 @@
+use std::collections::HashMap;
+use std::ffi::OsStr;
+use std::io::{BufRead as _, BufReader, Seek as _, SeekFrom};
+use std::path::Path;
+use std::process::{Command, Stdio};
+use std::{env, fmt, fs};
+
+use tempfile::tempfile;
+
 use crate::asynccmd::{AsyncCmd, SpawnedAsyncCmd};
 use crate::message::buildresult::BuildStatus;
 use crate::ofborg::partition_result;
-
-use std::collections::HashMap;
-use std::env;
-use std::ffi::OsStr;
-use std::fmt;
-use std::fs;
-use std::io::{BufRead, BufReader, Seek, SeekFrom};
-use std::path::Path;
-use std::process::{Command, Stdio};
-
-use tempfile::tempfile;
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

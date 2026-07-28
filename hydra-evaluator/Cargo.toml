@@ -1,0 +1,33 @@
+[package]
+name = "hydra-evaluator"
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0"
+
+[dependencies]
+tracing = "0.1"
+
+anyhow = "1.0.98"
+clap = { version = "4", features = ["derive"] }
+fs-err = { version = "3.0", features = ["tokio"] }
+
+tokio = { version = "1.50", features = ["full"] }
+tokio-stream = "0.1"
+futures = "0.3"
+tonic = { version = "0.14", features = ["zstd", "tls-webpki-roots"] }
+tower = "0.5"
+hyper-util = { version = "0.1.10", features = ["full"] }
+
+lapin = "4.3.0"
+serde_json = "1.0"
+
+url = "2.5.4"
+toml = "1.0.0"
+
+harmonia-store-path = { git = "https://github.com/nix-community/harmonia.git" }
+nix-utils = { git = "https://github.com/helsinki-systems/hydra", rev = "55a9f8bfd47380ecbd30ee6649175dab64bf6df7" }
+hydra-tracing = { git = "https://github.com/helsinki-systems/hydra", rev = "55a9f8bfd47380ecbd30ee6649175dab64bf6df7" }
+hydra-proto = { git = "https://github.com/helsinki-systems/hydra", rev = "55a9f8bfd47380ecbd30ee6649175dab64bf6df7", features = [ "client" ]  }
+store-transfer = { git = "https://github.com/helsinki-systems/hydra", rev = "55a9f8bfd47380ecbd30ee6649175dab64bf6df7" }
+ofborg = { path = "../ofborg" }
+hyper-rustls = "=0.27.3" # required for ofborg::octocrab

@@ -1,9 +1,8 @@
-use std::env;
-use std::error::Error;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use http::StatusCode;
+use http::header::CONTENT_TYPE;
+use http::{HeaderValue, StatusCode};
 use http_body_util::Full;
 use hyper::body::Bytes;
 use hyper::server::conn::http1;
@@ -19,6 +18,10 @@ use ofborg::{config, easyamqp, easylapin, stats, tasks};
 fn response(body: String) -> Response<Full<Bytes>> {
     Response::builder()
         .status(StatusCode::OK)
+        .header(
+            CONTENT_TYPE,
+            HeaderValue::from_static("text/plain; version=0.0.4; charset=utf-8"),
+        )
         .body(Full::new(Bytes::from(body)))
         .unwrap()
 }
@@ -26,7 +29,7 @@ fn response(body: String) -> Response<Full<Bytes>> {
 async fn run_http_server(
     addr: SocketAddr,
     metrics: Arc<stats::MetricCollector>,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
+) -> anyhow::Result<()> {
     let listener = TcpListener::bind(addr).await?;
     info!("HTTP server listening on {}", addr);
 
@@ -50,10 +53,10 @@ async fn run_http_server(
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> anyhow::Result<()> {
     ofborg::setup_log();
 
-    let arg = env::args()
+    let arg = std::env::args()
         .nth(1)
         .unwrap_or_else(|| panic!("usage: {} <config>", std::env::args().next().unwrap()));
     let cfg = config::load(arg.as_ref());
@@ -62,6 +65,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         error!("No stats configuration found!");
         panic!();
     };
+    let addr: SocketAddr = stats_cfg.listen.parse().unwrap();
 
     let conn = easylapin::from_config(&stats_cfg.rabbitmq).await?;
 
@@ -118,8 +122,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Spawn HTTP server in a separate thread with its own tokio runtime
     let metrics_clone = metrics.clone();
-    std::thread::spawn(async move || {
-        let addr: SocketAddr = "0.0.0.0:9898".parse().unwrap();
+    tokio::task::spawn(async move {
         if let Err(e) = run_http_server(addr, metrics_clone).await {
             error!("HTTP server error: {:?}", e);
         }

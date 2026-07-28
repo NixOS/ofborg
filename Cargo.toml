@@ -1,7 +1,9 @@
 [workspace]
 members = [
-    "ofborg",
-    "ofborg-simple-build"
+  "ofborg",
+  "ofborg-send-event",
+  "ofborg-simple-build",
+  "hydra-evaluator",
 ]
 resolver = "2"
 
@@ -9,5 +11,4 @@ resolver = "2"
 debug = true
 
 [patch.crates-io]
-#hubcaps = { path = "../hubcaps" }
 #amq-proto = { path = "rust-amq-proto" }

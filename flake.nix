@@ -1,12 +1,14 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
+    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable-small";
   };
 
   outputs =
     {
       self,
       nixpkgs,
+      nixpkgs-unstable,
       ...
     }@inputs:
     let
@@ -26,6 +28,10 @@
           pkgs = import nixpkgs {
             inherit system;
           };
+          unstable = import nixpkgs-unstable {
+            inherit system;
+          };
+          nix = unstable.nixVersions.nix_2_34;
         in
         {
           default = pkgs.mkShell {
@@ -40,6 +46,14 @@
               rustfmt
               pkg-config
               git
+              mprocs
+
+              zlib
+              protobuf
+
+              nlohmann_json
+              libsodium
+              boost
             ];
             buildInputs =
               with pkgs;
@@ -69,8 +83,9 @@
 
             RUSTFLAGS = "-D warnings";
             RUST_BACKTRACE = "1";
-            RUST_LOG = "ofborg=debug";
+            RUST_LOG = "ofborg=debug,info";
             NIX_PATH = "nixpkgs=${pkgs.path}";
+            NIX_CFLAGS_COMPILE = "-Wno-error";
           };
         }
       );
@@ -108,7 +123,6 @@
             cargoLock = {
               lockFile = ./Cargo.lock;
               outputHashes = {
-                "hubcaps-0.6.2" = "sha256-Vl4wQIKQVRxkpQxL8fL9rndAN3TKLV4OjgnZOpT6HRo=";
                 "hyperx-1.4.0" = "sha256-MW/KxxMYvj/DYVKrYa7rDKwrH6s8uQOCA0dR2W7GBeg=";
               };
             };

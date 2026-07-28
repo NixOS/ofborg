@@ -1,18 +1,13 @@
-use std::env;
-use std::error::Error;
-
 use tracing::{error, info};
 
-use ofborg::config;
 use ofborg::easyamqp::{self, ChannelExt, ConsumerExt};
-use ofborg::easylapin;
-use ofborg::tasks;
+use ofborg::{config, easylapin, tasks};
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> anyhow::Result<()> {
     ofborg::setup_log();
 
-    let arg = env::args()
+    let arg = std::env::args()
         .nth(1)
         .unwrap_or_else(|| panic!("usage: {} <config>", std::env::args().next().unwrap()));
     let cfg = config::load(arg.as_ref());
@@ -56,7 +51,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let handle = easylapin::WorkerChannel(chan)
         .consume(
-            tasks::githubcommentposter::GitHubCommentPoster::new(cfg.github_app_vendingmachine()),
+            tasks::githubcommentposter::GitHubCommentPoster::new(
+                cfg.github_app_vendingmachine().unwrap(),
+            ),
             easyamqp::ConsumeConfig {
                 queue: "build-results".to_owned(),
                 consumer_tag: format!("{}-github-comment-poster", cfg.whoami()),

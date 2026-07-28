@@ -1,3 +1,10 @@
+use std::collections::VecDeque;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+use tracing::{Instrument, debug, debug_span, error, info};
+use uuid::Uuid;
+
 use crate::checkout;
 use crate::commentparser;
 use crate::message::buildresult::{BuildResult, BuildStatus, V1Tag};
@@ -5,13 +12,6 @@ use crate::message::{buildjob, buildlogmsg};
 use crate::nix;
 use crate::notifyworker;
 use crate::worker;
-
-use std::collections::VecDeque;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
-
-use tracing::{debug, debug_span, error, info};
-use uuid::Uuid;
 
 pub struct BuildWorker {
     cloner: checkout::CachedCloner,
@@ -303,114 +303,116 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
         >,
     ) {
         let span = debug_span!("job", pr = ?job.pr.number);
-        let _enter = span.enter();
+        async {
+            let actions = self.actions(job, notifier);
 
-        let actions = self.actions(job, notifier);
+            if actions.job.attrs.is_empty() {
+                debug!("No attrs to build");
+                actions.nothing_to_do().await;
+                return;
+            }
 
-        if actions.job.attrs.is_empty() {
-            debug!("No attrs to build");
-            actions.nothing_to_do().await;
-            return;
+            info!(
+                "Working on https://github.com/{}/pull/{}",
+                actions.job.repo.full_name, actions.job.pr.number
+            );
+            let project = self.cloner.project(
+                &actions.job.repo.full_name,
+                actions.job.repo.clone_url.clone(),
+            );
+            let co = project
+                .clone_for("builder".to_string(), self.identity.clone())
+                .unwrap();
+
+            let target_branch = match actions.job.pr.target_branch.clone() {
+                Some(x) => x,
+                None => String::from("origin/master"),
+            };
+
+            let buildfile = match actions.job.subset {
+                Some(commentparser::Subset::NixOS) => nix::File::ReleaseNixOS,
+                _ => nix::File::DefaultNixpkgs,
+            };
+
+            let refpath = co.checkout_origin_ref(target_branch.as_ref()).unwrap();
+
+            if co.fetch_pr(actions.job.pr.number).is_err() {
+                info!("Failed to fetch {}", actions.job.pr.number);
+                actions.pr_head_missing().await;
+                return;
+            }
+
+            if !co.commit_exists(actions.job.pr.head_sha.as_ref()) {
+                info!("Commit {} doesn't exist", actions.job.pr.head_sha);
+                actions.commit_missing().await;
+                return;
+            }
+
+            if co.merge_commit(actions.job.pr.head_sha.as_ref()).is_err() {
+                info!("Failed to merge {}", actions.job.pr.head_sha);
+                actions.merge_failed().await;
+                return;
+            }
+
+            info!(
+                "Got path: {:?}, determining which ones we can build ",
+                refpath
+            );
+            let (can_build, cannot_build) = self.nix.safely_partition_instantiable_attrs(
+                refpath.as_ref(),
+                buildfile,
+                actions.job.attrs.clone(),
+            );
+
+            let cannot_build_attrs: Vec<String> = cannot_build
+                .clone()
+                .into_iter()
+                .map(|(attr, _)| attr)
+                .collect();
+
+            info!(
+                "Can build: '{}', Cannot build: '{}'",
+                can_build.join(", "),
+                cannot_build_attrs.join(", ")
+            );
+
+            actions
+                .log_started(can_build.clone(), cannot_build_attrs.clone())
+                .await;
+            actions.log_instantiation_errors(cannot_build).await;
+
+            if can_build.is_empty() {
+                actions.build_not_attempted(cannot_build_attrs).await;
+                return;
+            }
+
+            let mut spawned =
+                self.nix
+                    .safely_build_attrs_async(refpath.as_ref(), buildfile, can_build.clone());
+
+            while let Ok(line) = spawned.get_next_line() {
+                actions.log_line(line).await;
+            }
+
+            let status = nix::wait_for_build_status(spawned);
+
+            info!("ok built ({:?}), building", status);
+            info!("Lines:");
+            info!("-----8<-----");
+            actions
+                .log_snippet()
+                .iter()
+                .inspect(|x| info!("{}", x))
+                .next_back();
+            info!("----->8-----");
+
+            actions
+                .build_finished(status, can_build, cannot_build_attrs)
+                .await;
+            info!("Build done!");
         }
-
-        info!(
-            "Working on https://github.com/{}/pull/{}",
-            actions.job.repo.full_name, actions.job.pr.number
-        );
-        let project = self.cloner.project(
-            &actions.job.repo.full_name,
-            actions.job.repo.clone_url.clone(),
-        );
-        let co = project
-            .clone_for("builder".to_string(), self.identity.clone())
-            .unwrap();
-
-        let target_branch = match actions.job.pr.target_branch.clone() {
-            Some(x) => x,
-            None => String::from("origin/master"),
-        };
-
-        let buildfile = match actions.job.subset {
-            Some(commentparser::Subset::NixOS) => nix::File::ReleaseNixOS,
-            _ => nix::File::DefaultNixpkgs,
-        };
-
-        let refpath = co.checkout_origin_ref(target_branch.as_ref()).unwrap();
-
-        if co.fetch_pr(actions.job.pr.number).is_err() {
-            info!("Failed to fetch {}", actions.job.pr.number);
-            actions.pr_head_missing().await;
-            return;
-        }
-
-        if !co.commit_exists(actions.job.pr.head_sha.as_ref()) {
-            info!("Commit {} doesn't exist", actions.job.pr.head_sha);
-            actions.commit_missing().await;
-            return;
-        }
-
-        if co.merge_commit(actions.job.pr.head_sha.as_ref()).is_err() {
-            info!("Failed to merge {}", actions.job.pr.head_sha);
-            actions.merge_failed().await;
-            return;
-        }
-
-        info!(
-            "Got path: {:?}, determining which ones we can build ",
-            refpath
-        );
-        let (can_build, cannot_build) = self.nix.safely_partition_instantiable_attrs(
-            refpath.as_ref(),
-            buildfile,
-            actions.job.attrs.clone(),
-        );
-
-        let cannot_build_attrs: Vec<String> = cannot_build
-            .clone()
-            .into_iter()
-            .map(|(attr, _)| attr)
-            .collect();
-
-        info!(
-            "Can build: '{}', Cannot build: '{}'",
-            can_build.join(", "),
-            cannot_build_attrs.join(", ")
-        );
-
-        actions
-            .log_started(can_build.clone(), cannot_build_attrs.clone())
-            .await;
-        actions.log_instantiation_errors(cannot_build).await;
-
-        if can_build.is_empty() {
-            actions.build_not_attempted(cannot_build_attrs).await;
-            return;
-        }
-
-        let mut spawned =
-            self.nix
-                .safely_build_attrs_async(refpath.as_ref(), buildfile, can_build.clone());
-
-        while let Ok(line) = spawned.get_next_line() {
-            actions.log_line(line).await;
-        }
-
-        let status = nix::wait_for_build_status(spawned);
-
-        info!("ok built ({:?}), building", status);
-        info!("Lines:");
-        info!("-----8<-----");
-        actions
-            .log_snippet()
-            .iter()
-            .inspect(|x| info!("{}", x))
-            .next_back();
-        info!("----->8-----");
-
-        actions
-            .build_finished(status, can_build, cannot_build_attrs)
-            .await;
-        info!("Build done!");
+        .instrument(span)
+        .await
     }
 }
 

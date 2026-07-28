@@ -6,29 +6,12 @@
 2. Be gentle; try not to run mass rebuilds or massive builds (like Chromium) on
    it.
 
-## Automatic Building
+## Automatic Evaluation
 
-All users will have their PRs automatically trigger builds if their commits
+All users will have their PRs automatically evaluated if their commits
 follow the well-defined format of Nixpkgs. Specifically: prefixing the commit
 title with the package attribute. This includes package bumps as well as other
 changes.
-
-Example commit titles and the builds they will start:
-
-| Message                                                               | Automatic Build                                          |
-|-----------------------------------------------------------------------|----------------------------------------------------------|
-| `vim: 1.0.0 -> 2.0.0`                                                 | `vim`                                                    |
-| `vagrant: Fix dependencies for version 2.0.2 `                        | `vagrant`                                                |
-| `python36Packages.requests,python27Packages.requests: 1.0.0 -> 2.0.0` | `python36Packages.requests`, `python27Packages.requests` |
-| `python{27,310}Packages.requests: 1.0.0 -> 2.0.0`                        | `python27Packages.requests`, `python310Packages.requests`   |
-
-When opening a PR with multiple commits, ofborg creates a single build job for
-all detected packages. If multiple commits get pushed to a PR one-by-one, each
-detected package will get a separate build job.
-
-If the title of a PR begins with `WIP:` or contains `[WIP]` anywhere, its
-packages are not built automatically.
-**Note**: Marking a PR as a draft does not prevent automatic builds.
 
 ## Commands
 
@@ -230,7 +213,4 @@ This will override the default of `-D warnings` set in
 [`shell.nix`](./shell.nix), which tells Rust to error if it detects any
 warnings.
 
-# Running a builder
 
-If you want to run a builder of your own, check out the [wiki page on operating
-a builder](https://github.com/NixOS/ofborg/wiki/Operating-a-Builder/).

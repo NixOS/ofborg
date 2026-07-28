@@ -1,6 +1,16 @@
 use std::pin::Pin;
 use std::sync::Arc;
 
+use lapin::message::Delivery;
+use lapin::options::{
+    BasicAckOptions, BasicConsumeOptions, BasicNackOptions, BasicPublishOptions, BasicQosOptions,
+    ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions,
+};
+use lapin::types::FieldTable;
+use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind};
+use tokio_stream::StreamExt as _;
+use tracing::{debug, trace};
+
 use crate::config::RabbitMqConfig;
 use crate::easyamqp::{
     BindQueueConfig, ChannelExt, ConsumeConfig, ConsumerExt, ExchangeConfig, ExchangeType,
@@ -9,16 +19,6 @@ use crate::easyamqp::{
 use crate::notifyworker::{NotificationReceiver, SimpleNotifyWorker};
 use crate::ofborg;
 use crate::worker::{Action, SimpleWorker};
-
-use lapin::message::Delivery;
-use lapin::options::{
-    BasicAckOptions, BasicConsumeOptions, BasicNackOptions, BasicPublishOptions, BasicQosOptions,
-    ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions,
-};
-use lapin::types::FieldTable;
-use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind};
-use tokio_stream::StreamExt;
-use tracing::{debug, trace};
 
 pub async fn from_config(cfg: &RabbitMqConfig) -> Result<Connection, lapin::Error> {
     let opts = ConnectionProperties::default()

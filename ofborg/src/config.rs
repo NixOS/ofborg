@@ -1,17 +1,17 @@
-use crate::acl;
-use crate::nix::Nix;
-
-use std::collections::{HashMap, hash_map::Entry};
+use std::collections::HashMap;
 use std::fmt;
 use std::fs::File;
-use std::io::Read;
+use std::io::Read as _;
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 
-use hubcaps::{Credentials, Github, InstallationTokenGenerator, JWTCredentials};
-use rustls_pki_types::pem::PemObject as _;
+use octocrab::models::InstallationId;
+use octocrab::{Octocrab, auth::AppAuth};
 use serde::de::{self, Deserializer};
 use tracing::{debug, error, info, warn};
+
+use crate::acl;
+use crate::nix::Nix;
 
 /// Main ofBorg configuration
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
@@ -25,11 +25,11 @@ pub struct Config {
     /// Configuration for the GitHub comment filter
     pub github_comment_filter: Option<GithubCommentFilter>,
     /// Configuration for the GitHub comment poster
-    pub github_comment_poster: Option<GithubCommentPoster>,
+    pub github_comment_poster: Option<GitHubCommentPoster>,
     /// Configuration for the mass rebuilder
     pub mass_rebuilder: Option<MassRebuilder>,
-    /// Configuration for the builder
-    pub builder: Option<Builder>,
+    /// Configuration for the hydra evaluator integration
+    pub hydra_evaluator: Option<HydraEvaluatorConfig>,
     /// Configuration for the log message collector
     pub log_message_collector: Option<LogMessageCollector>,
     /// Configuration for the stats server
@@ -91,7 +91,7 @@ pub struct GithubCommentFilter {
 /// Configuration for the GitHub comment poster
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
-pub struct GithubCommentPoster {
+pub struct GitHubCommentPoster {
     /// RabbitMQ broker to connect to
     pub rabbitmq: RabbitMqConfig,
 }
@@ -104,12 +104,16 @@ pub struct MassRebuilder {
     pub rabbitmq: RabbitMqConfig,
 }
 
-/// Configuration for the builder
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+/// Configuration for the hydra evaluator integration
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct Builder {
+pub struct HydraEvaluatorConfig {
     /// RabbitMQ broker to connect to
     pub rabbitmq: RabbitMqConfig,
+    /// Queue-runner gRPC endpoint
+    pub gateway_endpoint: String,
+    /// Jobset ID to inject builds into
+    pub jobset_id: i32,
 }
 
 /// Configuration for the log message collector
@@ -126,6 +130,8 @@ pub struct LogMessageCollector {
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct Stats {
+    /// Listen host/port
+    pub listen: String,
     /// RabbitMQ broker to connect to
     pub rabbitmq: RabbitMqConfig,
 }
@@ -167,6 +173,17 @@ pub struct GithubAppConfig {
     pub private_key: PathBuf,
     pub oauth_client_id: String,
     pub oauth_client_secret_file: PathBuf,
+}
+
+impl GithubAppConfig {
+    fn app_auth(&self) -> AppAuth {
+        let pem = std::fs::read_to_string(&self.private_key).expect("Unable to read private key");
+        AppAuth {
+            app_id: self.app_id.into(),
+            key: jsonwebtoken::EncodingKey::from_rsa_pem(pem.as_bytes())
+                .expect("Invalid private key"),
+        }
+    }
 }
 
 const fn default_instance() -> u8 {
@@ -226,34 +243,24 @@ impl Config {
         acl::Acl::new(repos, trusted_users)
     }
 
-    pub fn github(&self) -> Github {
-        let token = std::fs::read_to_string(
-            self.github_app
-                .clone()
-                .expect("No GitHub app configured")
-                .oauth_client_secret_file,
-        )
-        .expect("Couldn't read from GitHub app token");
-        let token = token.trim();
-        Github::new(
-            "github.com/NixOS/ofborg",
-            Credentials::Client(
-                self.github_app
-                    .clone()
-                    .expect("No GitHub app configured")
-                    .oauth_client_id,
-                token.to_owned(),
-            ),
-        )
-        .expect("Unable to create a github client instance")
+    pub fn github(&self) -> Octocrab {
+        let app_auth = self
+            .github_app
+            .as_ref()
+            .map(|app| app.app_auth())
+            .expect("No GitHub app configured");
+        Octocrab::builder()
+            .app(app_auth.app_id, app_auth.key)
+            .build()
+            .expect("Unable to create a github client instance")
     }
 
-    pub fn github_app_vendingmachine(&self) -> GithubAppVendingMachine {
-        GithubAppVendingMachine {
-            conf: self.github_app.clone().unwrap(),
+    pub fn github_app_vendingmachine(&self) -> Option<GithubAppVendingMachine> {
+        Some(GithubAppVendingMachine {
+            conf: self.github_app.clone()?,
             id_cache: HashMap::new(),
             client_cache: HashMap::new(),
-        }
+        })
     }
 
     pub fn nix(&self) -> Nix {
@@ -307,8 +314,8 @@ pub fn load(filename: &Path) -> Config {
 
 pub struct GithubAppVendingMachine {
     conf: GithubAppConfig,
-    id_cache: HashMap<(String, String), Option<u64>>,
-    client_cache: HashMap<u64, Github>,
+    id_cache: HashMap<(String, String), Option<InstallationId>>,
+    client_cache: HashMap<InstallationId, Octocrab>,
 }
 
 impl GithubAppVendingMachine {
@@ -316,54 +323,56 @@ impl GithubAppVendingMachine {
         "github.com/NixOS/ofborg (app)"
     }
 
-    fn jwt(&self) -> JWTCredentials {
-        let pem = rustls_pki_types::PrivatePkcs1KeyDer::from_pem_file(&self.conf.private_key)
-            .expect("Unable to read private key");
-        let private_key_der = pem.secret_pkcs1_der().to_vec();
-        JWTCredentials::new(self.conf.app_id, private_key_der)
-            .expect("Unable to create JWTCredentials")
-    }
-
-    async fn install_id_for_repo(&mut self, owner: &str, repo: &str) -> Option<u64> {
-        let useragent = self.useragent();
-        let jwt = self.jwt();
-
+    async fn install_id_for_repo(&mut self, owner: &str, repo: &str) -> Option<InstallationId> {
         let key = (owner.to_owned(), repo.to_owned());
 
-        match self.id_cache.entry(key) {
-            Entry::Occupied(entry) => *entry.get(),
-            Entry::Vacant(entry) => {
-                info!("Looking up install ID for {}/{}", owner, repo);
+        if let Some(Some(id)) = self.id_cache.get(&key) {
+            return Some(*id);
+        }
 
-                let lookup_gh = Github::new(useragent, Credentials::JWT(jwt)).unwrap();
+        info!("Looking up install ID for {}/{}", owner, repo);
 
-                let v = match lookup_gh.app().find_repo_installation(owner, repo).await {
-                    Ok(install_id) => {
-                        debug!("Received install ID {:?}", install_id);
-                        Some(install_id.id)
-                    }
-                    Err(e) => {
-                        warn!("Error during install ID lookup: {:?}", e);
-                        None
-                    }
-                };
-                *entry.insert(v)
+        let app_auth = self.conf.app_auth();
+        let octocrab = Octocrab::builder()
+            .add_header(http::header::USER_AGENT, self.useragent().parse().unwrap())
+            .app(app_auth.app_id, app_auth.key)
+            .build()
+            .expect("Unable to create app client");
+
+        match octocrab
+            .apps()
+            .get_repository_installation(owner, repo)
+            .await
+        {
+            Ok(installation) => {
+                debug!("Received install ID {:?}", installation.id);
+                let id = installation.id;
+                self.id_cache.insert(key, Some(id));
+                Some(id)
+            }
+            Err(e) => {
+                warn!("Error during install ID lookup: {:?}", e);
+                None
             }
         }
     }
 
-    pub async fn for_repo<'a>(&'a mut self, owner: &str, repo: &str) -> Option<&'a Github> {
-        let useragent = self.useragent();
-        let jwt = self.jwt();
+    pub async fn for_repo<'a>(&'a mut self, owner: &str, repo: &str) -> Option<&'a Octocrab> {
         let install_id = self.install_id_for_repo(owner, repo).await?;
 
-        Some(self.client_cache.entry(install_id).or_insert_with(|| {
-            Github::new(
-                useragent,
-                Credentials::InstallationToken(InstallationTokenGenerator::new(install_id, jwt)),
-            )
-            .expect("Unable to create a github client instance")
-        }))
+        if !self.client_cache.contains_key(&install_id) {
+            let app_auth = self.conf.app_auth();
+            let client = Octocrab::builder()
+                .add_header(http::header::USER_AGENT, self.useragent().parse().unwrap())
+                .app(app_auth.app_id, app_auth.key)
+                .build()
+                .expect("Unable to create app client")
+                .installation(install_id)
+                .expect("Unable to create installation client");
+            self.client_cache.insert(install_id, client);
+        }
+
+        self.client_cache.get(&install_id)
     }
 }
 

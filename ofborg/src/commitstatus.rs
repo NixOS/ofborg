@@ -1,33 +1,37 @@
-use futures_util::future::TryFutureExt;
+use octocrab::{self, models::StatusState};
 use tracing::warn;
 
+use crate::github::GithubRepo;
+
 pub struct CommitStatus {
-    api: hubcaps::statuses::Statuses,
+    repo: GithubRepo,
     sha: String,
     context: String,
     description: String,
     url: String,
+    enable_publish: bool,
 }
 
 impl CommitStatus {
     pub fn new(
-        api: hubcaps::statuses::Statuses,
+        repo: GithubRepo,
         sha: String,
         context: String,
         description: String,
         url: Option<String>,
     ) -> CommitStatus {
-        let mut stat = CommitStatus {
-            api,
+        CommitStatus {
+            repo,
             sha,
             context,
             description,
-            url: "".to_owned(),
-        };
+            url: url.unwrap_or_else(|| String::from("")),
+            enable_publish: true,
+        }
+    }
 
-        stat.set_url(url);
-
-        stat
+    pub fn set_enable_publish(&mut self, enable_publish: bool) {
+        self.enable_publish = enable_publish;
     }
 
     pub fn set_url(&mut self, url: Option<String>) {
@@ -37,7 +41,7 @@ impl CommitStatus {
     pub async fn set_with_description(
         &mut self,
         description: &str,
-        state: hubcaps::statuses::State,
+        state: StatusState,
     ) -> Result<(), CommitStatusError> {
         self.set_description(description.to_owned());
         self.set(state).await
@@ -47,7 +51,11 @@ impl CommitStatus {
         self.description = description;
     }
 
-    pub async fn set(&self, state: hubcaps::statuses::State) -> Result<(), CommitStatusError> {
+    pub async fn set(&self, state: StatusState) -> Result<(), CommitStatusError> {
+        if !self.enable_publish {
+            return Ok(());
+        }
+
         let desc = if self.description.len() >= 140 {
             warn!(
                 "description is over 140 char; truncating: {:?}",
@@ -57,47 +65,28 @@ impl CommitStatus {
         } else {
             self.description.clone()
         };
-        self.api
-            .create(
-                self.sha.as_ref(),
-                &hubcaps::statuses::StatusOptions::builder(state)
-                    .context(self.context.clone())
-                    .description(desc)
-                    .target_url(self.url.clone())
-                    .build(),
-            )
-            .map_ok(|_| ())
-            .map_err(|e| CommitStatusError::from(e))
+
+        self.repo
+            .repos()
+            .create_status(self.sha.clone(), state)
+            .context(self.context.clone())
+            .description(desc)
+            .target(self.url.clone())
+            .send()
             .await?;
+
         Ok(())
     }
 }
 
 #[derive(Debug)]
 pub enum CommitStatusError {
-    ExpiredCreds(hubcaps::Error),
-    MissingSha(hubcaps::Error),
-    Error(hubcaps::Error),
+    OctocrabError(octocrab::Error),
     InternalError(String),
 }
 
-impl From<hubcaps::Error> for CommitStatusError {
-    fn from(e: hubcaps::Error) -> CommitStatusError {
-        use http::status::StatusCode;
-        use hubcaps::Error;
-        match &e {
-            Error::Fault { code, error }
-                if code == &StatusCode::UNAUTHORIZED && error.message == "Bad credentials" =>
-            {
-                CommitStatusError::ExpiredCreds(e)
-            }
-            Error::Fault { code, error }
-                if code == &StatusCode::UNPROCESSABLE_ENTITY
-                    && error.message.starts_with("No commit found for SHA:") =>
-            {
-                CommitStatusError::MissingSha(e)
-            }
-            _otherwise => CommitStatusError::Error(e),
-        }
+impl From<octocrab::Error> for CommitStatusError {
+    fn from(e: octocrab::Error) -> CommitStatusError {
+        CommitStatusError::OctocrabError(e)
     }
 }

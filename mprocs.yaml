@@ -1,0 +1,35 @@
+procs:
+  rabbitmq:
+    shell: mprocs/start-rabbitmq.sh
+    env:
+      RUST_LOG: info
+    stop:
+      send-keys: ["<C-c>"]
+  rabbitmq-init:
+    shell: mprocs/wait-for-rabbitmq.sh && mprocs/bootstrap-rabbitmq.sh
+    env:
+      RUST_LOG: info
+  evaluation-filter:
+    shell: mprocs/wait-for-rabbitmq.sh && mprocs/bootstrap-ofborg.sh && cargo r --bin evaluation-filter .ofborg-data/local.json
+    env:
+      RUST_LOG: info
+  github-comment-filter:
+    shell: mprocs/wait-for-rabbitmq.sh && mprocs/bootstrap-ofborg.sh && cargo r --bin github-comment-filter .ofborg-data/local.json
+    env:
+      RUST_LOG: info
+  github-webhook-receiver:
+    shell: mprocs/wait-for-rabbitmq.sh && mprocs/bootstrap-ofborg.sh && cargo r --bin github-webhook-receiver .ofborg-data/local.json
+    env:
+      RUST_LOG: info
+  mass-rebuilder:
+    shell: mprocs/wait-for-rabbitmq.sh && mprocs/bootstrap-ofborg.sh && cargo r --bin mass-rebuilder .ofborg-data/local.json
+    env:
+      RUST_LOG: info
+  stats:
+    shell: mprocs/wait-for-rabbitmq.sh && mprocs/bootstrap-ofborg.sh && cargo r --bin stats .ofborg-data/local.json
+    env:
+      RUST_LOG: info
+  hydra-evaluator:
+    shell: mprocs/wait-for-rabbitmq.sh && mprocs/bootstrap-ofborg.sh && cargo r -p hydra-evaluator -- .ofborg-data/local.json
+    env:
+      RUST_LOG: info

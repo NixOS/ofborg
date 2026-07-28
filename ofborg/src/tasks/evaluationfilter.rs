@@ -1,9 +1,7 @@
-use crate::acl;
-use crate::ghevent;
-use crate::message::{Pr, Repo, evaluationjob};
-use crate::worker;
+use tracing::{Instrument, debug_span, info};
 
-use tracing::{debug_span, info};
+use crate::message::{Pr, Repo, evaluationjob};
+use crate::{acl, ghevent, worker};
 
 pub struct EvaluationFilterWorker {
     acl: acl::Acl,
@@ -35,70 +33,76 @@ impl worker::SimpleWorker for EvaluationFilterWorker {
 
     async fn consumer(&mut self, job: &ghevent::PullRequestEvent) -> worker::Actions {
         let span = debug_span!("job", pr = ?job.number);
-        let _enter = span.enter();
-
-        if !self.acl.is_repo_eligible(&job.repository.full_name) {
-            info!("Repo not authorized ({})", job.repository.full_name);
-            return vec![worker::Action::Ack];
-        }
-
-        if job.pull_request.state != ghevent::PullRequestState::Open {
-            info!(
-                "PR is not open ({}#{})",
-                job.repository.full_name, job.number
-            );
-            return vec![worker::Action::Ack];
-        }
-
-        let interesting: bool = match job.action {
-            ghevent::PullRequestAction::Opened => true,
-            ghevent::PullRequestAction::Synchronize => true,
-            ghevent::PullRequestAction::Reopened => true,
-            ghevent::PullRequestAction::Edited => {
-                if let Some(ref changes) = job.changes {
-                    changes.base.is_some()
-                } else {
-                    false
-                }
+        async {
+            if !self.acl.is_repo_eligible(&job.repository.full_name) {
+                info!("Repo not authorized ({})", job.repository.full_name);
+                return vec![worker::Action::Ack];
             }
-            _ => false,
-        };
 
-        if !interesting {
+            if job.pull_request.state != ghevent::PullRequestState::Open {
+                info!(
+                    "PR is not open ({}#{})",
+                    job.repository.full_name, job.number
+                );
+                return vec![worker::Action::Ack];
+            }
+
+            let interesting: bool = match job.action {
+                ghevent::PullRequestAction::Opened => true,
+                ghevent::PullRequestAction::Synchronize => true,
+                ghevent::PullRequestAction::Reopened => true,
+                ghevent::PullRequestAction::Edited => {
+                    if let Some(ref changes) = job.changes {
+                        changes.base.is_some()
+                    } else {
+                        false
+                    }
+                }
+                _ => false,
+            };
+
+            if !interesting {
+                info!(
+                    "Not interesting: {}#{} because of {:?}",
+                    job.repository.full_name, job.number, job.action
+                );
+
+                return vec![worker::Action::Ack];
+            }
+
             info!(
-                "Not interesting: {}#{} because of {:?}",
+                "Found {}#{} to be interesting because of {:?}",
                 job.repository.full_name, job.number, job.action
             );
+            let repo_msg = Repo {
+                clone_url: job.repository.clone_url.clone(),
+                full_name: job.repository.full_name.clone(),
+                owner: job.repository.owner.login.clone(),
+                name: job.repository.name.clone(),
+            };
 
-            return vec![worker::Action::Ack];
+            let pr_msg = Pr {
+                number: job.number,
+                head_sha: job.pull_request.head.sha.clone(),
+                target_branch: Some(job.pull_request.base.git_ref.clone()),
+            };
+
+            let msg = evaluationjob::EvaluationJob {
+                repo: repo_msg,
+                pr: pr_msg,
+            };
+
+            vec![
+                worker::publish_serde_action(
+                    None,
+                    Some("mass-rebuild-check-jobs".to_owned()),
+                    &msg,
+                ),
+                worker::Action::Ack,
+            ]
         }
-
-        info!(
-            "Found {}#{} to be interesting because of {:?}",
-            job.repository.full_name, job.number, job.action
-        );
-        let repo_msg = Repo {
-            clone_url: job.repository.clone_url.clone(),
-            full_name: job.repository.full_name.clone(),
-            owner: job.repository.owner.login.clone(),
-            name: job.repository.name.clone(),
-        };
-
-        let pr_msg = Pr {
-            number: job.number,
-            head_sha: job.pull_request.head.sha.clone(),
-            target_branch: Some(job.pull_request.base.git_ref.clone()),
-        };
-
-        let msg = evaluationjob::EvaluationJob {
-            repo: repo_msg,
-            pr: pr_msg,
-        };
-
-        vec![
-            worker::publish_serde_action(None, Some("mass-rebuild-check-jobs".to_owned()), &msg),
-            worker::Action::Ack,
-        ]
+        .instrument(span)
+        .await
     }
 }
 

@@ -1,11 +1,10 @@
-use fs2::FileExt;
-
 use std::ffi::OsStr;
 use std::fs;
 use std::io::Error;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
+use fs2::FileExt as _;
 use tracing::{debug, info, warn};
 
 pub struct Lock {

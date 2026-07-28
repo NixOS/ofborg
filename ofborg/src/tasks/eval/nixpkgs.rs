@@ -1,17 +1,18 @@
+use std::path::Path;
+
+use octocrab::models::StatusState;
+use regex::Regex;
+use tracing::warn;
+use uuid::Uuid;
+
 use crate::checkout::CachedProjectCo;
 use crate::commentparser::Subset;
 use crate::commitstatus::CommitStatus;
 use crate::evalchecker::EvalChecker;
+use crate::github::GithubRepo;
 use crate::message::buildjob::BuildJob;
 use crate::message::evaluationjob::EvaluationJob;
 use crate::tasks::eval::{EvaluationComplete, EvaluationStrategy, StepResult};
-use crate::tasks::evaluate::update_labels;
-
-use std::path::Path;
-
-use hubcaps::issues::IssueRef;
-use regex::Regex;
-use uuid::Uuid;
 
 const TITLE_LABELS: [(&str, &str); 4] = [
     ("bsd", "6.topic: bsd"),
@@ -35,23 +36,26 @@ fn label_from_title(title: &str) -> Vec<String> {
 
 pub struct NixpkgsStrategy<'a> {
     job: &'a EvaluationJob,
-    issue_ref: &'a IssueRef,
+    issue: Option<&'a octocrab::models::issues::Issue>,
     touched_packages: Option<Vec<String>>,
 }
 
 impl<'a> NixpkgsStrategy<'a> {
-    pub fn new(job: &'a EvaluationJob, issue_ref: &'a IssueRef) -> NixpkgsStrategy<'a> {
+    pub fn new(
+        job: &'a EvaluationJob,
+        issue: Option<&'a octocrab::models::issues::Issue>,
+    ) -> NixpkgsStrategy<'a> {
         Self {
             job,
-            issue_ref,
+            issue,
             touched_packages: None,
         }
     }
 
-    async fn tag_from_title(&self) {
-        let title = match self.issue_ref.get().await {
-            Ok(issue) => issue.title.to_lowercase(),
-            Err(_) => return,
+    async fn tag_from_title(&self, repo: &GithubRepo) {
+        let title = match self.issue {
+            Some(issue) => issue.title.to_lowercase(),
+            None => return,
         };
 
         let labels = label_from_title(&title);
@@ -60,7 +64,10 @@ impl<'a> NixpkgsStrategy<'a> {
             return;
         }
 
-        update_labels(self.issue_ref, &labels, &[]).await;
+        let issue_number = self.issue.map(|i| i.number).unwrap_or(self.job.pr.number);
+        if let Err(e) = repo.update_labels(issue_number, &labels, &[]).await {
+            warn!("Failed to update labels on #{issue_number}: {e:?}");
+        }
     }
 
     fn check_outpaths_before(&mut self, _dir: &Path) -> StepResult<()> {
@@ -104,17 +111,14 @@ impl<'a> NixpkgsStrategy<'a> {
 }
 
 impl EvaluationStrategy for NixpkgsStrategy<'_> {
-    async fn pre_clone(&mut self) -> StepResult<()> {
-        self.tag_from_title().await;
+    async fn pre_clone(&mut self, repo: &GithubRepo) -> StepResult<()> {
+        self.tag_from_title(repo).await;
         Ok(())
     }
 
     async fn on_target_branch(&mut self, dir: &Path, status: &mut CommitStatus) -> StepResult<()> {
         status
-            .set_with_description(
-                "Checking original out paths",
-                hubcaps::statuses::State::Pending,
-            )
+            .set_with_description("Checking original out paths", StatusState::Pending)
             .await?;
         self.check_outpaths_before(dir)?;
 
@@ -132,7 +136,7 @@ impl EvaluationStrategy for NixpkgsStrategy<'_> {
 
     async fn after_merge(&mut self, status: &mut CommitStatus) -> StepResult<()> {
         status
-            .set_with_description("Checking new out paths", hubcaps::statuses::State::Pending)
+            .set_with_description("Checking new out paths", StatusState::Pending)
             .await?;
         self.check_outpaths_after()?;
 
@@ -148,10 +152,7 @@ impl EvaluationStrategy for NixpkgsStrategy<'_> {
         status: &mut CommitStatus,
     ) -> StepResult<EvaluationComplete> {
         status
-            .set_with_description(
-                "Calculating Changed Outputs",
-                hubcaps::statuses::State::Pending,
-            )
+            .set_with_description("Calculating Changed Outputs", StatusState::Pending)
             .await?;
 
         let builds = self.queue_builds()?;

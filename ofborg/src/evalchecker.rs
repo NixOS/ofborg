@@ -1,7 +1,7 @@
-use crate::nix;
-
 use std::fs::File;
 use std::path::Path;
+
+use crate::nix;
 
 pub struct EvalChecker {
     name: String,
