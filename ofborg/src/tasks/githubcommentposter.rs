@@ -1,61 +1,169 @@
+use crate::commitstatus::{CommitStatus, CommitStatusError};
 use crate::config::GithubAppVendingMachine;
 use crate::message::Repo;
-use crate::message::buildjob::{BuildJob, QueuedBuildJobs};
+use crate::message::buildjob::{AutomaticBuildJobs, BuildJob, QueuedBuildJobs};
 use crate::message::buildresult::{BuildResult, BuildStatus, LegacyBuildResult};
+use crate::message::evaluationjob::EvaluationStatus;
+use crate::notifyworker::{self, NotificationReceiver};
 use crate::worker;
 
 use chrono::{DateTime, Utc};
 use hubcaps::checks::{CheckRunOptions, CheckRunState, Conclusion, Output};
+use std::sync::Arc;
 use tracing::{debug, debug_span, info, warn};
 
 pub struct GitHubCommentPoster {
-    github_vend: GithubAppVendingMachine,
+    github_vend: tokio::sync::Mutex<GithubAppVendingMachine>,
 }
 
 impl GitHubCommentPoster {
     pub fn new(github_vend: GithubAppVendingMachine) -> GitHubCommentPoster {
-        GitHubCommentPoster { github_vend }
+        GitHubCommentPoster {
+            github_vend: tokio::sync::Mutex::new(github_vend),
+        }
+    }
+
+    async fn finish_evaluation(
+        &self,
+        evaluation: &EvaluationStatus,
+        notifier: Arc<dyn NotificationReceiver + Send + Sync>,
+    ) {
+        let repository = {
+            let mut github_vend = self.github_vend.lock().await;
+            github_vend
+                .for_repo(&evaluation.repo.owner, &evaluation.repo.name)
+                .await
+                .unwrap()
+                .repo(evaluation.repo.owner.clone(), evaluation.repo.name.clone())
+        };
+        let mut status = CommitStatus::new(
+            repository.statuses(),
+            evaluation.pr.head_sha.clone(),
+            evaluation.context.clone(),
+            evaluation.description.clone(),
+            None,
+        );
+        let state = if evaluation.success {
+            hubcaps::statuses::State::Success
+        } else {
+            hubcaps::statuses::State::Failure
+        };
+
+        match status
+            .set_with_description(&evaluation.description, state)
+            .await
+        {
+            Ok(()) => notifier.tell(worker::Action::Ack).await,
+            Err(CommitStatusError::MissingSha(err)) => {
+                warn!("Evaluation commit disappeared: {:?}", err);
+                notifier.tell(worker::Action::Ack).await;
+            }
+            Err(err) if evaluation.attempts < 5 => {
+                warn!(
+                    attempt = evaluation.attempts + 1,
+                    "Failed to complete evaluation status, retrying: {:?}", err
+                );
+                let mut retry = evaluation.clone();
+                retry.attempts += 1;
+                notifier
+                    .tell(worker::publish_serde_action_mandatory(
+                        Some("build-results".to_owned()),
+                        None,
+                        &retry,
+                    ))
+                    .await;
+                notifier.tell(worker::Action::Ack).await;
+            }
+            Err(err) => {
+                warn!("Failed to complete evaluation status: {:?}", err);
+                notifier.tell(worker::Action::Ack).await;
+            }
+        }
     }
 }
 
 pub enum PostableEvent {
+    AutomaticBuildsQueued(AutomaticBuildJobs),
     BuildQueued(QueuedBuildJobs),
     BuildFinished(BuildResult),
+    EvaluationStatus(EvaluationStatus),
 }
 
 impl PostableEvent {
     fn from(bytes: &[u8]) -> Result<PostableEvent, String> {
-        match serde_json::from_slice::<QueuedBuildJobs>(bytes) {
-            Ok(e) => Ok(PostableEvent::BuildQueued(e)),
-            Err(_) => match serde_json::from_slice::<BuildResult>(bytes) {
-                Ok(e) => Ok(PostableEvent::BuildFinished(e)),
-                Err(e) => Err(format!(
-                    "Failed to deserialize PostableEvent: {:?}, err: {:}",
-                    String::from_utf8_lossy(bytes),
-                    e
-                )),
+        match serde_json::from_slice::<AutomaticBuildJobs>(bytes) {
+            Ok(e) if !e.builds.is_empty() => Ok(PostableEvent::AutomaticBuildsQueued(e)),
+            Ok(_) => Err("Automatic build event contains no builds".to_owned()),
+            Err(_) => match serde_json::from_slice::<QueuedBuildJobs>(bytes) {
+                Ok(e) => Ok(PostableEvent::BuildQueued(e)),
+                Err(_) => match serde_json::from_slice::<BuildResult>(bytes) {
+                    Ok(e) => Ok(PostableEvent::BuildFinished(e)),
+                    Err(_) => match serde_json::from_slice::<EvaluationStatus>(bytes) {
+                        Ok(e) => Ok(PostableEvent::EvaluationStatus(e)),
+                        Err(e) => Err(format!(
+                            "Failed to deserialize PostableEvent: {:?}, err: {:}",
+                            String::from_utf8_lossy(bytes),
+                            e
+                        )),
+                    },
+                },
             },
         }
     }
 }
 
-impl worker::SimpleWorker for GitHubCommentPoster {
+fn automatic_build_actions(builds: &AutomaticBuildJobs) -> worker::Actions {
+    builds
+        .builds
+        .iter()
+        .flat_map(|queued_job| {
+            queued_job.architectures.iter().map(|architecture| {
+                worker::publish_serde_action_mandatory(
+                    None,
+                    Some(format!("build-inputs-{architecture}")),
+                    &queued_job.job,
+                )
+            })
+        })
+        .collect()
+}
+
+#[async_trait::async_trait]
+impl notifyworker::SimpleNotifyWorker for GitHubCommentPoster {
     type J = PostableEvent;
 
-    async fn msg_to_job(
-        &mut self,
-        _: &str,
-        _: &Option<String>,
-        body: &[u8],
-    ) -> Result<Self::J, String> {
+    fn msg_to_job(&self, _: &str, _: &Option<String>, body: &[u8]) -> Result<Self::J, String> {
         PostableEvent::from(body)
     }
 
-    async fn consumer(&mut self, job: &PostableEvent) -> worker::Actions {
+    async fn consumer(
+        &self,
+        job: PostableEvent,
+        notifier: Arc<dyn NotificationReceiver + Send + Sync>,
+    ) {
+        if let PostableEvent::EvaluationStatus(evaluation) = &job {
+            self.finish_evaluation(evaluation, notifier).await;
+            return;
+        }
+
         let mut checks: Vec<CheckRunOptions> = vec![];
+        let mut evaluation_status = None;
         let repo: Repo;
 
-        let pr = match job {
+        let pr = match &job {
+            PostableEvent::AutomaticBuildsQueued(automatic_builds) => {
+                let first_build = &automatic_builds.builds[0];
+                repo = first_build.job.repo.clone();
+                evaluation_status = Some(automatic_builds.evaluation_status.clone());
+
+                for queued_job in &automatic_builds.builds {
+                    for architecture in &queued_job.architectures {
+                        checks.push(job_to_check(&queued_job.job, architecture, Utc::now()));
+                    }
+                }
+
+                first_build.job.pr.to_owned()
+            }
             PostableEvent::BuildQueued(queued_job) => {
                 repo = queued_job.job.repo.clone();
                 for architecture in queued_job.architectures.iter() {
@@ -69,10 +177,27 @@ impl worker::SimpleWorker for GitHubCommentPoster {
                 checks.push(result_to_check(&result, Utc::now()));
                 finished_job.pr()
             }
+            PostableEvent::EvaluationStatus(_) => unreachable!(),
         };
 
         let span = debug_span!("job", pr = ?pr.number);
         let _enter = span.enter();
+
+        if let PostableEvent::AutomaticBuildsQueued(automatic_builds) = &job {
+            for action in automatic_build_actions(automatic_builds) {
+                notifier.tell(action).await;
+            }
+        }
+
+        let repository = {
+            let mut github_vend = self.github_vend.lock().await;
+            github_vend
+                .for_repo(&repo.owner, &repo.name)
+                .await
+                .unwrap()
+                .repo(repo.owner.clone(), repo.name.clone())
+        };
+        let mut checks_succeeded = true;
 
         for check in checks {
             info!(
@@ -83,23 +208,39 @@ impl worker::SimpleWorker for GitHubCommentPoster {
             );
             debug!("{:?}", check);
 
-            let check_create_attempt = self
-                .github_vend
-                .for_repo(&repo.owner, &repo.name)
-                .await
-                .unwrap()
-                .repo(repo.owner.clone(), repo.name.clone())
-                .checkruns()
-                .create(&check)
-                .await;
-
-            match check_create_attempt {
+            match repository.checkruns().create(&check).await {
                 Ok(_) => info!("Successfully sent."),
-                Err(err) => warn!("Failed to send check {:?}", err),
+                Err(err) => {
+                    checks_succeeded = false;
+                    warn!("Failed to send check {:?}", err);
+                }
             }
         }
 
-        vec![worker::Action::Ack]
+        if let Some(context) = evaluation_status {
+            let (description, success) = if checks_succeeded {
+                ("^.^!", true)
+            } else {
+                ("Failed to create automatic build checks", false)
+            };
+            let evaluation = EvaluationStatus {
+                repo,
+                pr,
+                context,
+                description: description.to_owned(),
+                success,
+                attempts: 0,
+            };
+            notifier
+                .tell(worker::publish_serde_action_mandatory(
+                    Some("build-results".to_owned()),
+                    None,
+                    &evaluation,
+                ))
+                .await;
+        }
+
+        notifier.tell(worker::Action::Ack).await;
     }
 }
 
@@ -245,6 +386,50 @@ mod tests {
             request_id: "bogus-request-id".to_owned(),
             attrs: vec!["foo".to_owned(), "bar".to_owned()],
         };
+
+        let automatic_event = AutomaticBuildJobs {
+            builds: vec![QueuedBuildJobs {
+                job: job.clone(),
+                architectures: vec!["x86_64-linux".to_owned(), "aarch64-linux".to_owned()],
+            }],
+            evaluation_status: "ofborg-eval".to_owned(),
+        };
+        let serialized = serde_json::to_vec(&automatic_event).unwrap();
+        assert!(matches!(
+            PostableEvent::from(&serialized),
+            Ok(PostableEvent::AutomaticBuildsQueued(_))
+        ));
+        let actions = automatic_build_actions(&automatic_event);
+        assert_eq!(actions.len(), 2);
+        assert_eq!(
+            actions
+                .iter()
+                .map(|action| match action {
+                    worker::Action::Publish(message) => {
+                        assert!(message.mandatory);
+                        message.routing_key.clone()
+                    }
+                    _ => panic!("automatic build should be published"),
+                })
+                .collect::<Vec<_>>(),
+            vec![
+                Some("build-inputs-x86_64-linux".to_owned()),
+                Some("build-inputs-aarch64-linux".to_owned())
+            ]
+        );
+
+        let evaluation = EvaluationStatus {
+            repo: job.repo.clone(),
+            pr: job.pr.clone(),
+            context: "ofborg-eval".to_owned(),
+            description: "^.^!".to_owned(),
+            success: true,
+            attempts: 0,
+        };
+        assert!(matches!(
+            PostableEvent::from(&serde_json::to_vec(&evaluation).unwrap()),
+            Ok(PostableEvent::EvaluationStatus(_))
+        ));
 
         let timestamp = Utc.with_ymd_and_hms(2023, 4, 20, 13, 37, 42).unwrap();
         assert_eq!(

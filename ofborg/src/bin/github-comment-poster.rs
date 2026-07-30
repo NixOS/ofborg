@@ -54,7 +54,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     })
     .await?;
 
-    let handle = easylapin::WorkerChannel(chan)
+    let handle = easylapin::NotifyChannel(chan)
         .consume(
             tasks::githubcommentposter::GitHubCommentPoster::new(cfg.github_app_vendingmachine()),
             easyamqp::ConsumeConfig {

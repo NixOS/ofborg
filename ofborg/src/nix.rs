@@ -194,6 +194,32 @@ impl Nix {
         self.run(command, true)
     }
 
+    pub fn any_attr_instantiable(
+        &self,
+        nixpkgs: &Path,
+        attrs: &[String],
+    ) -> Result<bool, Vec<String>> {
+        let attr_paths: Vec<Vec<&str>> =
+            attrs.iter().map(|attr| attr.split('.').collect()).collect();
+        let attrs_json = serde_json::to_string(&attr_paths)
+            .expect("serializing attribute paths should not fail");
+        let mut argstrs = HashMap::new();
+        argstrs.insert("attrsJSON", attrs_json.as_str());
+
+        let command = self.safely_evaluate_expr_cmd(
+            nixpkgs,
+            include_str!("any-instantiable.nix"),
+            argstrs,
+            &[],
+        );
+
+        match self.run(command, true) {
+            Ok(output) => serde_json::from_reader(output)
+                .map_err(|err| vec![format!("failed to parse Nix evaluation result: {err}")]),
+            Err(output) => Err(lines_from_file(output)),
+        }
+    }
+
     pub fn safely_evaluate_expr_cmd(
         &self,
         nixpkgs: &Path,
@@ -451,6 +477,12 @@ mod tests {
     fn individual_eval_path() -> PathBuf {
         let mut cwd = env::current_dir().unwrap();
         cwd.push(Path::new("./test-srcs/eval-mixed-failure"));
+        cwd
+    }
+
+    fn instantiable_path() -> PathBuf {
+        let mut cwd = env::current_dir().unwrap();
+        cwd.push(Path::new("./test-srcs/instantiable"));
         cwd
     }
 
@@ -716,6 +748,46 @@ mod tests {
                 "./nixos/release.nix",
                 "--arg nixpkgs { outPath=./.; revCount=999999; shortRev=\"ofborg\"; rev=\"0000000000000000000000000000000000000000\"; }",
             ],
+        );
+    }
+
+    #[test]
+    fn any_attr_instantiable() {
+        let nix = nix();
+        let path = instantiable_path();
+
+        assert_eq!(
+            nix.any_attr_instantiable(path.as_path(), &["package".to_owned()]),
+            Ok(true)
+        );
+        assert_eq!(
+            nix.any_attr_instantiable(path.as_path(), &["missing".to_owned()]),
+            Ok(false)
+        );
+        assert_eq!(
+            nix.any_attr_instantiable(path.as_path(), &["unavailable".to_owned()]),
+            Ok(false)
+        );
+        assert_eq!(
+            nix.any_attr_instantiable(path.as_path(), &["scalar".to_owned()]),
+            Ok(false)
+        );
+        assert_eq!(
+            nix.any_attr_instantiable(path.as_path(), &["missing".to_owned(), "tests".to_owned()]),
+            Ok(true)
+        );
+        assert_eq!(
+            nix.any_attr_instantiable(path.as_path(), &["tests.nested".to_owned()]),
+            Ok(true)
+        );
+        assert_eq!(
+            nix.any_attr_instantiable(path.as_path(), &["empty".to_owned()]),
+            Ok(true)
+        );
+        assert_eq!(
+            nix.with_system("unsupported-system".to_owned())
+                .any_attr_instantiable(path.as_path(), &["package".to_owned()]),
+            Ok(false)
         );
     }
 

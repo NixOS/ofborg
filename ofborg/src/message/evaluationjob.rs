@@ -11,6 +11,17 @@ pub struct EvaluationJob {
     pub pr: Pr,
 }
 
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub struct EvaluationStatus {
+    pub repo: Repo,
+    pub pr: Pr,
+    pub context: String,
+    pub description: String,
+    pub success: bool,
+    #[serde(default)]
+    pub attempts: u8,
+}
+
 pub struct Actions {}
 
 impl Actions {

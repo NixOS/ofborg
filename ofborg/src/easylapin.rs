@@ -13,10 +13,12 @@ use crate::worker::{Action, SimpleWorker};
 use lapin::message::Delivery;
 use lapin::options::{
     BasicAckOptions, BasicConsumeOptions, BasicNackOptions, BasicPublishOptions, BasicQosOptions,
-    ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions,
+    ConfirmSelectOptions, ExchangeDeclareOptions, QueueBindOptions, QueueDeclareOptions,
 };
 use lapin::types::FieldTable;
-use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind};
+use lapin::{
+    BasicProperties, Channel, Confirmation, Connection, ConnectionProperties, ExchangeKind,
+};
 use tokio_stream::StreamExt;
 use tracing::{debug, trace};
 
@@ -88,6 +90,7 @@ impl<'a, W: SimpleWorker + 'a> ConsumerExt<'a, W> for Channel {
         mut worker: W,
         config: ConsumeConfig,
     ) -> Result<Self::Handle, Self::Error> {
+        self.confirm_select(ConfirmSelectOptions::default()).await?;
         let mut consumer = self
             .basic_consume(
                 config.queue.into(),
@@ -163,6 +166,9 @@ impl<'a, W: SimpleNotifyWorker + 'a + Send> ConsumerExt<'a, W> for NotifyChannel
     type Handle = Pin<Box<dyn Future<Output = ()> + 'a + Send>>;
 
     async fn consume(self, worker: W, config: ConsumeConfig) -> Result<Self::Handle, Self::Error> {
+        self.0
+            .confirm_select(ConfirmSelectOptions::default())
+            .await?;
         self.0.basic_qos(1, BasicQosOptions::default()).await?;
 
         let mut consumer = self
@@ -235,17 +241,50 @@ async fn action_deliver(
                 props = props.with_content_type(s.into());
             }
 
-            let _confirmaton = chan
+            let confirmation = chan
                 .basic_publish(
                     exch.into(),
                     key.into(),
-                    BasicPublishOptions::default(),
+                    BasicPublishOptions {
+                        mandatory: msg.mandatory,
+                        immediate: msg.immediate,
+                    },
                     &msg.content,
                     props,
                 )
                 .await?
                 .await?;
-            Ok(())
+
+            ensure_publisher_confirmation(confirmation)
         }
+    }
+}
+
+fn ensure_publisher_confirmation(confirmation: Confirmation) -> Result<(), lapin::Error> {
+    match confirmation {
+        Confirmation::Ack(None) => Ok(()),
+        Confirmation::Ack(Some(returned)) => Err(std::io::Error::other(format!(
+            "message was returned as unroutable: {returned:?}"
+        ))
+        .into()),
+        Confirmation::Nack(returned) => Err(std::io::Error::other(format!(
+            "message was rejected by the broker: {returned:?}"
+        ))
+        .into()),
+        Confirmation::NotRequested => {
+            Err(std::io::Error::other("publisher confirmation was not requested").into())
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn publisher_confirmations_must_ack_without_returning_the_message() {
+        assert!(ensure_publisher_confirmation(Confirmation::Ack(None)).is_ok());
+        assert!(ensure_publisher_confirmation(Confirmation::Nack(None)).is_err());
+        assert!(ensure_publisher_confirmation(Confirmation::NotRequested).is_err());
     }
 }
