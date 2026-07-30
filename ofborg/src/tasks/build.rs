@@ -327,7 +327,7 @@ impl notifyworker::SimpleNotifyWorker for BuildWorker {
 
         let target_branch = match actions.job.pr.target_branch.clone() {
             Some(x) => x,
-            None => String::from("origin/master"),
+            None => String::from("master"),
         };
 
         let buildfile = match actions.job.subset {
