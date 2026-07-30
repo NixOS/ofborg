@@ -13,11 +13,12 @@ use hubcaps::issues::IssueRef;
 use regex::Regex;
 use uuid::Uuid;
 
-const TITLE_LABELS: [(&str, &str); 4] = [
+const TITLE_LABELS: [(&str, &str); 5] = [
     ("bsd", "6.topic: bsd"),
     ("darwin", "6.topic: darwin"),
     ("macos", "6.topic: darwin"),
-    ("cross", "6.topic: cross-compilation"),
+    ("cross|pkgsCross", "6.topic: cross-compilation"),
+    ("musl|pkgsMusl", "6.topic: musl"),
 ];
 
 fn label_from_title(title: &str) -> Vec<String> {
@@ -270,6 +271,18 @@ mod tests {
         assert_eq!(
             label_from_title("pkg: fix cross-compilation"),
             vec![String::from("6.topic: cross-compilation")]
+        );
+        assert_eq!(
+            label_from_title("haskellPackages: fix some pkgsCross.ghcjs packages"),
+            vec![String::from("6.topic: cross-compilation")]
+        );
+        assert_eq!(
+            label_from_title("pkg: fix musl"),
+            vec![String::from("6.topic: musl")]
+        );
+        assert_eq!(
+            label_from_title("pkgsMusl.attr-path: fix build"),
+            vec![String::from("6.topic: musl")]
         );
     }
 }
