@@ -104,6 +104,10 @@ pub struct MassRebuilder {
     pub rabbitmq: RabbitMqConfig,
 }
 
+const fn default_stale_after_seconds() -> u64 {
+    24 * 60 * 60
+}
+
 /// Configuration for the hydra evaluator integration
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
@@ -114,6 +118,15 @@ pub struct HydraEvaluatorConfig {
     pub gateway_endpoint: String,
     /// Jobset ID to inject builds into
     pub jobset_id: i32,
+    /// Base URL of the Hydra web UI, used as the check run's details URL
+    pub hydra_base_url: String,
+    /// Queue-runner HTTP status endpoint, used to reconcile after the event
+    /// stream reports that we fell behind
+    pub queue_runner_status_url: Option<String>,
+    /// How long to keep tracking a build that Hydra never reports on before
+    /// giving up and completing its check run as timed out
+    #[serde(default = "default_stale_after_seconds")]
+    pub stale_after_seconds: u64,
 }
 
 /// Configuration for the log message collector

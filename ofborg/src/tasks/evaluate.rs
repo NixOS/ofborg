@@ -481,15 +481,12 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                 self.hydra_eval_nix.clone(),
                 self.hydra_eval_jobset_id,
             ) {
-                let drv_paths = resolve_attrs_to_drv_paths(
-                    nix,
-                    std::path::Path::new(&refpath),
-                    &complete.builds,
-                );
-                if !drv_paths.is_empty() {
+                let drvs =
+                    resolve_attrs_to_drvs(nix, std::path::Path::new(&refpath), &complete.builds);
+                if !drvs.is_empty() {
                     info!(
                         "Publishing {} drv paths to hydra-eval-jobs for PR #{}",
-                        drv_paths.len(),
+                        drvs.len(),
                         job.pr.number
                     );
                     response.push(worker::publish_serde_action(
@@ -498,7 +495,9 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
                         &hydra_eval_job::HydraEvalJob {
                             repo: job.repo.clone(),
                             pr: job.pr.clone(),
-                            drv_paths,
+                            system: nix.system.clone(),
+                            drvs,
+                            drv_paths: vec![],
                             request_id: Uuid::new_v4().to_string(),
                             jobset_id,
                         },
@@ -522,11 +521,20 @@ impl<'a, E: stats::SysEvents + 'static> OneEval<'a, E> {
     }
 }
 
-fn resolve_attrs_to_drv_paths(
+fn drv_paths_from(reader: impl std::io::Read) -> Vec<String> {
+    BufReader::new(reader)
+        .lines()
+        .map_while(Result::ok)
+        .map(|line| line.trim().to_owned())
+        .filter(|line| line.ends_with(".drv"))
+        .collect()
+}
+
+fn resolve_attrs_to_drvs(
     nix: &nix::Nix,
     nixpkgs: &std::path::Path,
     builds: &[buildjob::BuildJob],
-) -> Vec<String> {
+) -> Vec<hydra_eval_job::HydraEvalDrv> {
     let mut all_attrs: Vec<String> = builds.iter().flat_map(|b| b.attrs.clone()).collect();
     all_attrs.sort();
     all_attrs.dedup();
@@ -544,30 +552,39 @@ fn resolve_attrs_to_drv_paths(
         })
         .unwrap_or(nix::File::DefaultNixpkgs);
 
-    // Try batch instantiation first for performance (single nix-instantiate process)
+    // Try batch instantiation first for performance (single nix-instantiate
+    // process). nix-instantiate prints one drv path per -A in argument order,
+    // but silently omits attrs that fail to evaluate — which would shift the
+    // zip and mislabel every attr after the first failure. Only trust the
+    // pairing when we got back exactly as many paths as we asked for.
     match nix.safely_instantiate_attrs(nixpkgs, file, all_attrs.clone()) {
         Ok(f) => {
-            return BufReader::new(f)
-                .lines()
-                .map_while(Result::ok)
-                .filter(|line| line.trim().ends_with(".drv"))
-                .map(|line| line.trim().to_owned())
-                .collect();
+            let drv_paths = drv_paths_from(f);
+            if drv_paths.len() == all_attrs.len() {
+                return zip_attrs_to_drvs(all_attrs, drv_paths);
+            }
+            warn!(
+                "Batch instantiation returned {} paths for {} attrs, falling back to per-attr \
+                 instantiation to keep the attr/drv pairing exact",
+                drv_paths.len(),
+                all_attrs.len()
+            );
         }
         Err(_) => warn!("Batch instantiation failed, falling back to per-attr fallback"),
     }
 
-    // Fallback: try each attr individually
+    // Fallback: one nix-instantiate per attr, which pairs by construction.
     all_attrs
         .into_iter()
         .flat_map(
             |attr| match nix.safely_instantiate_attrs(nixpkgs, file, vec![attr.clone()]) {
-                Ok(f) => BufReader::new(f)
-                    .lines()
-                    .map_while(Result::ok)
-                    .filter(|line| line.trim().ends_with(".drv"))
-                    .map(|line| line.trim().to_owned())
-                    .collect::<Vec<String>>(),
+                Ok(f) => drv_paths_from(f)
+                    .into_iter()
+                    .map(|drv_path| hydra_eval_job::HydraEvalDrv {
+                        attr: attr.clone(),
+                        drv_path,
+                    })
+                    .collect::<Vec<_>>(),
                 Err(f) => {
                     let stderr: Vec<String> =
                         BufReader::new(f).lines().map_while(Result::ok).collect();
@@ -579,6 +596,17 @@ fn resolve_attrs_to_drv_paths(
                 }
             },
         )
+        .collect()
+}
+
+fn zip_attrs_to_drvs(
+    attrs: Vec<String>,
+    drv_paths: Vec<String>,
+) -> Vec<hydra_eval_job::HydraEvalDrv> {
+    attrs
+        .into_iter()
+        .zip(drv_paths)
+        .map(|(attr, drv_path)| hydra_eval_job::HydraEvalDrv { attr, drv_path })
         .collect()
 }
 
@@ -596,5 +624,45 @@ impl From<eval::Error> for EvalWorkerError {
 impl From<CommitStatusError> for EvalWorkerError {
     fn from(e: CommitStatusError) -> EvalWorkerError {
         EvalWorkerError::CommitStatusWrite(e)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn drv_paths_from_keeps_only_drv_lines() {
+        let output = "\
+/nix/store/aaa-hello-2.12.1.drv
+warning: something
+   /nix/store/bbb-figlet.drv
+/nix/store/ccc-not-a-derivation
+";
+
+        assert_eq!(
+            drv_paths_from(output.as_bytes()),
+            vec![
+                "/nix/store/aaa-hello-2.12.1.drv".to_owned(),
+                "/nix/store/bbb-figlet.drv".to_owned(),
+            ]
+        );
+    }
+
+    #[test]
+    fn zip_pairs_attrs_with_paths_in_order() {
+        let drvs = zip_attrs_to_drvs(
+            vec!["figlet".to_owned(), "hello".to_owned()],
+            vec![
+                "/nix/store/bbb-figlet.drv".to_owned(),
+                "/nix/store/aaa-hello-2.12.1.drv".to_owned(),
+            ],
+        );
+
+        assert_eq!(drvs.len(), 2);
+        assert_eq!(drvs[0].attr, "figlet");
+        assert_eq!(drvs[0].drv_path, "/nix/store/bbb-figlet.drv");
+        assert_eq!(drvs[1].attr, "hello");
+        assert_eq!(drvs[1].drv_path, "/nix/store/aaa-hello-2.12.1.drv");
     }
 }

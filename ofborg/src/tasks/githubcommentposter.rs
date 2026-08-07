@@ -1,5 +1,8 @@
 use chrono::Utc;
+use lru_cache::LruCache;
+use octocrab::models::CheckRunId;
 use octocrab::params::checks::{CheckRunConclusion, CheckRunOutput, CheckRunStatus};
+use octocrab::params::repos::Commitish;
 use tracing::{Instrument, debug_span, info, warn};
 
 use crate::config::GithubAppVendingMachine;
@@ -7,15 +10,28 @@ use crate::github::GithubRepo;
 use crate::message::Repo;
 use crate::message::buildjob::{BuildJob, QueuedBuildJobs};
 use crate::message::buildresult::{BuildResult, BuildStatus, LegacyBuildResult};
+use crate::message::hydra_build::{HydraBuildState, HydraBuildUpdate};
 use crate::worker;
+
+/// How many `(repo, sha, check name) -> check run id` mappings to remember.
+///
+/// Only an optimisation: a miss costs one extra API call to re-resolve the id
+/// from GitHub, it never costs correctness.
+const CHECK_RUN_CACHE_SIZE: usize = 512;
+
+type CheckRunKey = (String, String, String);
 
 pub struct GitHubCommentPoster {
     github_vend: GithubAppVendingMachine,
+    check_run_ids: LruCache<CheckRunKey, CheckRunId>,
 }
 
 impl GitHubCommentPoster {
     pub fn new(github_vend: GithubAppVendingMachine) -> GitHubCommentPoster {
-        GitHubCommentPoster { github_vend }
+        GitHubCommentPoster {
+            github_vend,
+            check_run_ids: LruCache::new(CHECK_RUN_CACHE_SIZE),
+        }
     }
 }
 
@@ -31,10 +47,18 @@ pub struct CheckRunInfo {
 pub enum PostableEvent {
     BuildQueued(QueuedBuildJobs),
     BuildFinished(BuildResult),
+    HydraBuild(HydraBuildUpdate),
 }
 
 impl PostableEvent {
     fn from(bytes: &[u8]) -> Result<PostableEvent, String> {
+        // `HydraBuildUpdate` is tried first, and carries an explicit tag, because
+        // `BuildResult`'s untagged `Legacy` variant will happily accept loosely
+        // shaped JSON that was never meant for it.
+        if let Ok(e) = serde_json::from_slice::<HydraBuildUpdate>(bytes) {
+            return Ok(PostableEvent::HydraBuild(e));
+        }
+
         match serde_json::from_slice::<QueuedBuildJobs>(bytes) {
             Ok(e) => Ok(PostableEvent::BuildQueued(e)),
             Err(_) => match serde_json::from_slice::<BuildResult>(bytes) {
@@ -66,12 +90,18 @@ impl worker::SimpleWorker for GitHubCommentPoster {
         let repo: Repo;
         let pr_number: u64;
         let head_sha: String;
+        // Hydra reports the same build several times (queued, running, finished),
+        // so those updates have to advance one check run instead of piling up new
+        // ones. The legacy messages are each posted once and keep the old
+        // create-only behaviour.
+        let update_in_place: bool;
 
         match job {
             PostableEvent::BuildQueued(queued_job) => {
                 repo = queued_job.job.repo.clone();
                 pr_number = queued_job.job.pr.number;
                 head_sha = queued_job.job.pr.head_sha.clone();
+                update_in_place = false;
                 for architecture in queued_job.architectures.iter() {
                     check_runs.push(job_to_check_info(&queued_job.job, architecture));
                 }
@@ -81,12 +111,20 @@ impl worker::SimpleWorker for GitHubCommentPoster {
                 repo = result.repo.clone();
                 pr_number = result.pr.number;
                 head_sha = result.pr.head_sha.clone();
+                update_in_place = false;
                 check_runs.push(result_to_check_info(&result));
+            }
+            PostableEvent::HydraBuild(update) => {
+                repo = update.repo.clone();
+                pr_number = update.pr.number;
+                head_sha = update.pr.head_sha.clone();
+                update_in_place = true;
+                check_runs.push(hydra_update_to_check_info(update));
             }
         };
 
         let span = debug_span!("job", pr = ?pr_number);
-        async {
+        async move {
             let octocrab_ref = match self.github_vend.for_repo(&repo.owner, &repo.name).await {
                 Some(client) => client.clone(),
                 None => {
@@ -98,35 +136,19 @@ impl worker::SimpleWorker for GitHubCommentPoster {
                 }
             };
 
+            let github_repo = GithubRepo::new(octocrab_ref, &repo.owner, &repo.name);
+
             for check in check_runs {
                 info!(
                     "check {:?} {} {}",
                     check.status, check.name, check.details_url,
                 );
 
-                let github_repo = GithubRepo::new(octocrab_ref.clone(), &repo.owner, &repo.name);
-                let checks_handler = github_repo.checks();
-                let mut builder = checks_handler
-                    .create_check_run(check.name, head_sha.clone())
-                    .details_url(check.details_url);
-
-                builder = builder.output(check.output);
-
-                if let Some(completed_at) = check.completed_at {
-                    builder = builder.completed_at(completed_at);
-                }
-
-                if let Some(conclusion) = check.conclusion {
-                    builder = builder.conclusion(conclusion);
-                }
-
-                if let Some(status) = check.status {
-                    builder = builder.status(status);
-                }
-
-                match builder.send().await {
-                    Ok(_) => info!("Successfully sent check."),
-                    Err(err) => warn!("Failed to send check {:?}", err),
+                if update_in_place {
+                    self.upsert_check_run(&github_repo, &repo.full_name, &head_sha, check)
+                        .await;
+                } else {
+                    create_check_run(&github_repo, &head_sha, check).await;
                 }
             }
 
@@ -134,6 +156,137 @@ impl worker::SimpleWorker for GitHubCommentPoster {
         }
         .instrument(span)
         .await
+    }
+}
+
+impl GitHubCommentPoster {
+    /// Advance an existing check run if we can find one, otherwise create it.
+    async fn upsert_check_run(
+        &mut self,
+        github_repo: &GithubRepo,
+        full_name: &str,
+        head_sha: &str,
+        check: CheckRunInfo,
+    ) {
+        let key: CheckRunKey = (
+            full_name.to_owned(),
+            head_sha.to_owned(),
+            check.name.clone(),
+        );
+
+        let cached = self.check_run_ids.get_mut(&key).copied();
+        let known = match cached {
+            Some(id) => Some(id),
+            // Cache miss (first update for this build, or the poster restarted):
+            // ask GitHub which check run already carries this name.
+            None => find_check_run(github_repo, head_sha, &check.name).await,
+        };
+
+        if let Some(id) = known {
+            let checks_handler = github_repo.checks();
+            let mut builder = checks_handler
+                .update_check_run(id)
+                .details_url(check.details_url.clone())
+                .output(clone_output(&check.output));
+
+            if let Some(completed_at) = check.completed_at {
+                builder = builder.completed_at(completed_at);
+            }
+            if let Some(conclusion) = check.conclusion {
+                builder = builder.conclusion(conclusion);
+            }
+            if let Some(status) = check.status {
+                builder = builder.status(status);
+            }
+
+            match builder.send().await {
+                Ok(_) => {
+                    info!("Successfully updated check run {id}.");
+                    self.check_run_ids.insert(key, id);
+                    return;
+                }
+                // Most likely the run belongs to another app, or was deleted.
+                // Falling through to create is always safe.
+                Err(err) => warn!("Failed to update check run {id}, creating a new one: {err:?}"),
+            }
+        }
+
+        if let Some(id) = create_check_run(github_repo, head_sha, check).await {
+            self.check_run_ids.insert(key, id);
+        }
+    }
+}
+
+async fn create_check_run(
+    github_repo: &GithubRepo,
+    head_sha: &str,
+    check: CheckRunInfo,
+) -> Option<CheckRunId> {
+    let checks_handler = github_repo.checks();
+    let mut builder = checks_handler
+        .create_check_run(check.name, head_sha.to_owned())
+        .details_url(check.details_url)
+        .output(check.output);
+
+    if let Some(completed_at) = check.completed_at {
+        builder = builder.completed_at(completed_at);
+    }
+    if let Some(conclusion) = check.conclusion {
+        builder = builder.conclusion(conclusion);
+    }
+    if let Some(status) = check.status {
+        builder = builder.status(status);
+    }
+
+    match builder.send().await {
+        Ok(run) => {
+            info!("Successfully sent check.");
+            Some(run.id)
+        }
+        Err(err) => {
+            warn!("Failed to send check {:?}", err);
+            None
+        }
+    }
+}
+
+/// The list endpoint returns every app's check runs for the commit, and offers
+/// no name filter, so match on the name here. A collision with another app's
+/// run is harmless: the update then fails and we fall back to creating our own.
+async fn find_check_run(
+    github_repo: &GithubRepo,
+    head_sha: &str,
+    name: &str,
+) -> Option<CheckRunId> {
+    match github_repo
+        .checks()
+        .list_check_runs_for_git_ref(Commitish(head_sha.to_owned()))
+        .per_page(100u8)
+        .send()
+        .await
+    {
+        Ok(list) => list
+            .check_runs
+            .into_iter()
+            .find(|run| run.name == name)
+            .map(|run| run.id),
+        Err(err) => {
+            warn!("Failed to list check runs for {head_sha}: {err:?}");
+            None
+        }
+    }
+}
+
+/// `CheckRunOutput` is not `Clone`, and the update path needs one copy for the
+/// update attempt and one for the create it may fall back to. Annotations and
+/// images are not carried over — nothing in ofborg sets them.
+fn clone_output(output: &CheckRunOutput) -> CheckRunOutput {
+    CheckRunOutput {
+        title: output.title.clone(),
+        summary: output.summary.clone(),
+        text: output.text.clone(),
+        annotations: vec![],
+        images: vec![],
     }
 }
 
@@ -182,14 +335,7 @@ fn result_to_check_info(result: &LegacyBuildResult) -> CheckRunInfo {
         all_attrs = vec![String::from("(unknown attributes)")];
     }
 
-    let conclusion: CheckRunConclusion = match result.status {
-        BuildStatus::Skipped => CheckRunConclusion::Skipped,
-        BuildStatus::Success => CheckRunConclusion::Success,
-        BuildStatus::Failure => CheckRunConclusion::Neutral,
-        BuildStatus::TimedOut => CheckRunConclusion::Neutral,
-        BuildStatus::UnexpectedError { .. } => CheckRunConclusion::Neutral,
-        BuildStatus::HashMismatch => CheckRunConclusion::Failure,
-    };
+    let conclusion = conclusion_for(&result.status);
 
     let mut summary: Vec<String> = vec![];
     if let Some(ref attempted) = result.attempted_attrs {
@@ -246,6 +392,69 @@ fn result_to_check_info(result: &LegacyBuildResult) -> CheckRunInfo {
         conclusion: Some(conclusion),
         status: Some(CheckRunStatus::Completed),
         completed_at: Some(Utc::now()),
+    }
+}
+
+fn conclusion_for(status: &BuildStatus) -> CheckRunConclusion {
+    match status {
+        BuildStatus::Skipped => CheckRunConclusion::Skipped,
+        BuildStatus::Success => CheckRunConclusion::Success,
+        BuildStatus::Failure => CheckRunConclusion::Neutral,
+        BuildStatus::TimedOut => CheckRunConclusion::Neutral,
+        BuildStatus::UnexpectedError { .. } => CheckRunConclusion::Neutral,
+        BuildStatus::HashMismatch => CheckRunConclusion::Failure,
+    }
+}
+
+fn hydra_update_to_check_info(update: &HydraBuildUpdate) -> CheckRunInfo {
+    let details_url = update.details_url();
+    let name = format!("{} on {}", update.attr, update.system);
+
+    let (title, status, conclusion, completed_at, mut summary) = match &update.state {
+        HydraBuildState::Queued => (
+            "Queued".to_owned(),
+            CheckRunStatus::Queued,
+            None,
+            None,
+            vec![format!("Queued in Hydra as build {}.", update.build_id)],
+        ),
+        HydraBuildState::Running { step } => {
+            // The queue-runner reports which step the builder is on; fall back
+            // to the generic verb when it has not said yet.
+            let step = step.clone().unwrap_or_else(|| "Building".to_owned());
+            (step, CheckRunStatus::InProgress, None, None, vec![])
+        }
+        HydraBuildState::Finished { status } => (
+            String::from(status.clone()),
+            CheckRunStatus::Completed,
+            Some(conclusion_for(status)),
+            Some(Utc::now()),
+            vec![],
+        ),
+    };
+
+    // The machine only becomes known once a step has been scheduled, so it can
+    // show up on the running update, the finished one, or neither.
+    if let Some(machine) = &update.machine {
+        summary.push(match &update.state {
+            HydraBuildState::Finished { .. } => format!("Built on {machine}."),
+            _ => format!("{title} on {machine}."),
+        });
+    }
+
+    CheckRunInfo {
+        name,
+        details_url: details_url.clone(),
+        output: CheckRunOutput {
+            title,
+            summary: summary.join("\n"),
+            text: Some(format!("[Hydra build {}]({details_url})", update.build_id)),
+            annotations: vec![],
+            images: vec![],
+        },
+        conclusion,
+        status: Some(status),
+        completed_at,
     }
 }
 
@@ -565,6 +774,128 @@ mod tests {
                 .to_string()
             )
         );
+    }
+
+    fn hydra_update(state: HydraBuildState, machine: Option<&str>) -> HydraBuildUpdate {
+        HydraBuildUpdate {
+            tag: crate::message::hydra_build::HydraV1Tag::HydraV1,
+            repo: base_repo(),
+            pr: base_pr(),
+            attr: "hello".to_owned(),
+            system: "x86_64-linux".to_owned(),
+            build_id: 4711,
+            machine: machine.map(String::from),
+            state,
+            hydra_base_url: "https://hydra.example.com".to_owned(),
+        }
+    }
+
+    #[test]
+    pub fn test_hydra_queued() {
+        let check = hydra_update_to_check_info(&hydra_update(HydraBuildState::Queued, None));
+
+        assert_eq!(check.name, "hello on x86_64-linux");
+        assert_eq!(check.details_url, "https://hydra.example.com/build/4711");
+        assert_eq!(check.output.title, "Queued");
+        assert_eq!(check.output.summary, "Queued in Hydra as build 4711.");
+        assert!(matches!(check.status, Some(CheckRunStatus::Queued)));
+        assert!(check.conclusion.is_none());
+        assert!(check.completed_at.is_none());
+    }
+
+    #[test]
+    pub fn test_hydra_running_names_the_machine() {
+        let check = hydra_update_to_check_info(&hydra_update(
+            HydraBuildState::Running { step: None },
+            Some("builder-01.example.com"),
+        ));
+
+        assert_eq!(check.output.title, "Building");
+        assert_eq!(check.output.summary, "Building on builder-01.example.com.");
+        assert!(matches!(check.status, Some(CheckRunStatus::InProgress)));
+        assert!(check.conclusion.is_none());
+        assert_eq!(
+            check.output.text,
+            Some("[Hydra build 4711](https://hydra.example.com/build/4711)".to_owned())
+        );
+    }
+
+    #[test]
+    pub fn test_hydra_running_reports_the_step() {
+        let check = hydra_update_to_check_info(&hydra_update(
+            HydraBuildState::Running {
+                step: Some("Sending inputs".to_owned()),
+            },
+            Some("builder-01.example.com"),
+        ));
+
+        assert_eq!(check.output.title, "Sending inputs");
+        assert_eq!(
+            check.output.summary,
+            "Sending inputs on builder-01.example.com."
+        );
+        assert!(matches!(check.status, Some(CheckRunStatus::InProgress)));
+    }
+
+    #[test]
+    pub fn test_hydra_finished_success() {
+        let check = hydra_update_to_check_info(&hydra_update(
+            HydraBuildState::Finished {
+                status: BuildStatus::Success,
+            },
+            Some("builder-01.example.com"),
+        ));
+
+        assert_eq!(check.output.title, "Success");
+        assert_eq!(check.output.summary, "Built on builder-01.example.com.");
+        assert!(matches!(check.status, Some(CheckRunStatus::Completed)));
+        assert!(matches!(
+            check.conclusion,
+            Some(CheckRunConclusion::Success)
+        ));
+        assert!(check.completed_at.is_some());
+    }
+
+    #[test]
+    pub fn test_hydra_finished_failure() {
+        let check = hydra_update_to_check_info(&hydra_update(
+            HydraBuildState::Finished {
+                status: BuildStatus::Failure,
+            },
+            None,
+        ));
+
+        assert_eq!(check.output.title, "Failure");
+        assert_eq!(check.output.summary, "");
+        assert!(matches!(
+            check.conclusion,
+            Some(CheckRunConclusion::Neutral)
+        ));
+    }
+
+    #[test]
+    pub fn test_hydra_update_wins_over_build_result() {
+        let bytes =
+            serde_json::to_vec(&hydra_update(HydraBuildState::Running { step: None }, None))
+                .expect("json required");
+
+        match PostableEvent::from(&bytes) {
+            Ok(PostableEvent::HydraBuild(update)) => {
+                assert_eq!(update.build_id, 4711);
+            }
+            Ok(_) => panic!("a tagged HydraBuildUpdate was decoded as another event"),
+            Err(e) => panic!("failed to decode: {e}"),
+        }
+    }
+
+    #[test]
+    pub fn test_legacy_build_result_still_decodes() {
+        let bytes = br#"{"repo":{"owner":"NixOS","name":"nixpkgs","full_name":"NixOS/nixpkgs","clone_url":"https://github.com/nixos/nixpkgs.git"},"pr":{"target_branch":"master","number":42,"head_sha":"0000000000000000000000000000000000000000"},"system":"x86_64-linux","output":[],"attempt_id":"a","request_id":"r","success":true,"status":"Success","skipped_attrs":null,"attempted_attrs":["hello"]}"#;
+
+        assert!(matches!(
+            PostableEvent::from(bytes),
+            Ok(PostableEvent::BuildFinished(_))
+        ));
     }
 
     #[test]

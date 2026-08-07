@@ -1,0 +1,12 @@
+# Example build events for `hydra-build-tracker --replay`.
+#
+# One JSON `BuildEvent` per line, replayed with a delay in between
+# (`--replay-delay-secs`, default 1). Lines starting with `#` are ignored.
+#
+# `build_id` has to match a build id the queue-runner handed back to
+# hydra-evaluator; watch the hydra-evaluator log or the hydra-build-tracking
+# queue for the real values and edit this file accordingly.
+{"build_id":1,"kind":"Queued"}
+{"build_id":1,"machine":"builder-01.example.com","kind":"Running","step":"Sending inputs"}
+{"build_id":1,"machine":"builder-01.example.com","kind":"Running","step":"Building"}
+{"build_id":1,"machine":"builder-01.example.com","kind":"Finished","status":"Success"}

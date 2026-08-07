@@ -28,7 +28,7 @@ pub type OfborgClient =
     RunnerServiceClient<tonic::service::interceptor::InterceptedService<Channel, AuthInterceptor>>;
 
 #[tracing::instrument(err)]
-pub async fn init_client(cli: &crate::config::Cli) -> anyhow::Result<OfborgClient> {
+pub async fn init_client(cli: &crate::config::GrpcOpts) -> anyhow::Result<OfborgClient> {
     if !cli.mtls_configured_correctly() {
         tracing::error!(
             "mtls configured improperly, please pass all options: \
@@ -104,4 +104,126 @@ pub async fn init_client(cli: &crate::config::Cli) -> anyhow::Result<OfborgClien
     Ok(RunnerServiceClient::with_interceptor(channel, interceptor)
         .max_decoding_message_size(50 * 1024 * 1024)
         .max_encoding_message_size(50 * 1024 * 1024))
+}
+
+/// Subscribe to the queue-runner's build lifecycle events.
+///
+/// Gated behind `queue-runner-events` because it needs the
+/// `SubscribeBuildEvents` RPC that is being added to helsinki-systems/hydra
+/// alongside this component; until the `hydra-proto` pin in `Cargo.toml` moves
+/// to a revision that has it, `hydra-build-tracker --replay` covers the same
+/// path locally.
+#[cfg(feature = "queue-runner-events")]
+pub async fn subscribe_build_events(
+    cli: &crate::config::GrpcOpts,
+) -> anyhow::Result<crate::events::BuildEventStream> {
+    use tokio_stream::StreamExt as _;
+
+    let mut client = init_client(cli).await?;
+
+    let stream = client
+        .subscribe_build_events(hydra_proto::SubscribeBuildEventsRequest {
+            // Empty means "every ofborg jobset the credentials cover"; the
+            // tracker ignores events for builds it has no record of anyway.
+            jobset_ids: vec![],
+        })
+        .await
+        .context("Failed to call SubscribeBuildEvents")?
+        .into_inner();
+
+    Ok(Box::pin(stream.map(|event| {
+        event
+            .map_err(anyhow::Error::from)
+            .and_then(convert_build_event)
+    })))
+}
+
+#[cfg(feature = "queue-runner-events")]
+fn convert_build_event(
+    event: hydra_proto::BuildEvent,
+) -> anyhow::Result<crate::events::BuildEvent> {
+    use crate::events::{BuildEvent, BuildEventKind};
+    use hydra_proto::build_event::Event;
+
+    let inner = event
+        .event
+        .ok_or_else(|| anyhow::anyhow!("BuildEvent without an event variant"))?;
+
+    let (machine, kind) = match inner {
+        Event::Queued(_) => (None, BuildEventKind::Queued),
+        Event::Running(running) => (
+            Some(running.machine),
+            BuildEventKind::Running {
+                step: step_status_label(running.step_status),
+            },
+        ),
+        Event::Finished(finished) => (
+            Some(finished.machine),
+            BuildEventKind::Finished {
+                status: hydra_build_status_to_status(finished.status),
+            },
+        ),
+        Event::Lagged(lagged) => (
+            None,
+            BuildEventKind::Lagged {
+                dropped: lagged.dropped,
+            },
+        ),
+    };
+
+    Ok(BuildEvent {
+        build_id: event.build_id,
+        // The runner sends an empty string when no builder was involved.
+        machine: machine.filter(|m| !m.is_empty()),
+        kind,
+    })
+}
+
+/// Human-readable label for the step the builder is currently on, shown in the
+/// check run while a build is in progress.
+#[cfg(feature = "queue-runner-events")]
+fn step_status_label(step_status: i32) -> Option<String> {
+    let label = match hydra_proto::StepStatus::try_from(step_status).ok()? {
+        hydra_proto::StepStatus::Preparing => "Preparing",
+        hydra_proto::StepStatus::Connecting => "Connecting",
+        // The queue-runner's proto has this typo; do not repeat it in the UI.
+        hydra_proto::StepStatus::SeningInputs => "Sending inputs",
+        hydra_proto::StepStatus::Building => "Building",
+        hydra_proto::StepStatus::WaitingForLocalSlot => "Waiting for a local slot",
+        hydra_proto::StepStatus::ReceivingOutputs => "Receiving outputs",
+        hydra_proto::StepStatus::PostProcessing => "Post-processing",
+    };
+
+    Some(label.to_owned())
+}
+
+/// Map hydra's build status onto the status vocabulary ofborg already renders.
+#[cfg(feature = "queue-runner-events")]
+fn hydra_build_status_to_status(status: i32) -> ofborg::message::buildresult::BuildStatus {
+    use hydra_proto::build_finished::Status;
+    use ofborg::message::buildresult::BuildStatus;
+
+    let status = match Status::try_from(status) {
+        Ok(s) => s,
+        Err(e) => {
+            return BuildStatus::UnexpectedError {
+                err: format!("unknown hydra build status {status}: {e}"),
+            };
+        }
+    };
+
+    match status {
+        Status::Success => BuildStatus::Success,
+        // The build itself failed — the contributor's problem, and the thing
+        // they actually want to see.
+        Status::Failed | Status::FailedWithOutput | Status::DepFailed | Status::CachedFailure => {
+            BuildStatus::Failure
+        }
+        Status::TimedOut => BuildStatus::TimedOut,
+        Status::NotDeterministic => BuildStatus::HashMismatch,
+        // Everything else went wrong around the build rather than in it.
+        other => BuildStatus::UnexpectedError {
+            err: format!("{other:?}"),
+        },
+    }
 }

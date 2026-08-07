@@ -4,6 +4,18 @@ version = "0.1.0"
 edition = "2024"
 license = "GPL-3.0"
 
+[features]
+default = []
+# Subscribe to the queue-runner's build event stream. Needs a `hydra-proto`
+# revision that has the `SubscribeBuildEvents` RPC — see "Reporting builds back
+# to GitHub" in DEVELOPMENT.md for how to move the pin below. Without it, drive
+# `hydra-build-tracker` with `--replay`.
+queue-runner-events = []
+
+[lib]
+name = "hydra_evaluator"
+path = "src/lib.rs"
+
 [dependencies]
 tracing = "0.1"
 
@@ -19,15 +31,16 @@ tower = "0.5"
 hyper-util = { version = "0.1.10", features = ["full"] }
 
 lapin = "4.3.0"
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
 url = "2.5.4"
 toml = "1.0.0"
 
 harmonia-store-path = { git = "https://github.com/nix-community/harmonia.git" }
-nix-utils = { git = "https://github.com/helsinki-systems/hydra", rev = "55a9f8bfd47380ecbd30ee6649175dab64bf6df7" }
-hydra-tracing = { git = "https://github.com/helsinki-systems/hydra", rev = "55a9f8bfd47380ecbd30ee6649175dab64bf6df7" }
-hydra-proto = { git = "https://github.com/helsinki-systems/hydra", rev = "55a9f8bfd47380ecbd30ee6649175dab64bf6df7", features = [ "client" ]  }
-store-transfer = { git = "https://github.com/helsinki-systems/hydra", rev = "55a9f8bfd47380ecbd30ee6649175dab64bf6df7" }
+nix-utils = { git = "https://github.com/helsinki-systems/hydra", rev = "9325c91f00a812f628a0f093bdaa077ecca02de6" }
+hydra-tracing = { git = "https://github.com/helsinki-systems/hydra", rev = "9325c91f00a812f628a0f093bdaa077ecca02de6" }
+hydra-proto = { git = "https://github.com/helsinki-systems/hydra", rev = "9325c91f00a812f628a0f093bdaa077ecca02de6", features = [ "client" ]  }
+store-transfer = { git = "https://github.com/helsinki-systems/hydra", rev = "9325c91f00a812f628a0f093bdaa077ecca02de6" }
 ofborg = { path = "../ofborg" }
 hyper-rustls = "=0.27.3" # required for ofborg::octocrab

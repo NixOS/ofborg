@@ -61,7 +61,19 @@ cat <<EOF > .ofborg-data/local.json
             "virtualhost": "ofborg"
         },
         "gateway_endpoint": "[::1]:50051",
-        "jobset_id": 7
+        "jobset_id": 7,
+        "hydra_base_url": "http://localhost:3000",
+        "queue_runner_status_url": "http://localhost:8080/status",
+        "stale_after_seconds": 86400
+    },
+    "github_comment_poster": {
+        "rabbitmq": {
+            "host": "localhost:5672",
+            "ssl": false,
+            "username": "ofborg",
+            "password_file": "${DATA_DIR}/.amqp-password",
+            "virtualhost": "ofborg"
+        }
     },
     "stats": {
         "listen": "[::1]:9898",

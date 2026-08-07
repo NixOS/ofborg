@@ -1,13 +1,8 @@
-use clap::Parser;
+use clap::{Args, Parser};
 
-#[derive(Parser, Debug)]
-#[clap(
-    author,
-    version,
-    about,
-    long_about = "ofborg-evaluator: injects derivations into a queue-runner jobset"
-)]
-pub struct Cli {
+/// How to reach the queue-runner. Shared by every binary in this crate.
+#[derive(Args, Debug)]
+pub struct GrpcOpts {
     /// Queue-runner gRPC endpoint
     #[clap(short, long, default_value = "http://[::1]:50051")]
     pub gateway_endpoint: String,
@@ -35,10 +30,49 @@ pub struct Cli {
     /// Domain name for mTLS
     #[clap(long)]
     pub domain_name: Option<String>,
+}
+
+#[derive(Parser, Debug)]
+#[clap(
+    author,
+    version,
+    about,
+    long_about = "ofborg-evaluator: injects derivations into a queue-runner jobset"
+)]
+pub struct Cli {
+    #[clap(flatten)]
+    pub grpc: GrpcOpts,
 
     /// Config file path
     #[clap()]
     pub config_path: std::path::PathBuf,
+}
+
+/// `hydra-build-tracker`'s options: the same connection details, plus a way to
+/// drive it without a queue-runner.
+#[derive(Parser, Debug)]
+#[clap(
+    author,
+    version,
+    about,
+    long_about = "ofborg-build-tracker: reports queue-runner build progress back to GitHub"
+)]
+pub struct TrackerCli {
+    #[clap(flatten)]
+    pub grpc: GrpcOpts,
+
+    /// Config file path
+    #[clap()]
+    pub config_path: std::path::PathBuf,
+
+    /// Read build events from a JSON-lines file instead of the queue-runner.
+    /// One `BuildEvent` per line; `#` starts a comment.
+    #[clap(long)]
+    pub replay: Option<std::path::PathBuf>,
+
+    /// Seconds to wait between replayed events
+    #[clap(long, default_value = "1")]
+    pub replay_delay_secs: u64,
 }
 
 impl Cli {
@@ -46,7 +80,28 @@ impl Cli {
     pub fn new() -> Self {
         Self::parse()
     }
+}
 
+impl Default for Cli {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl TrackerCli {
+    #[must_use]
+    pub fn new() -> Self {
+        Self::parse()
+    }
+}
+
+impl Default for TrackerCli {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl GrpcOpts {
     pub async fn get_authorization_token(&self) -> anyhow::Result<Option<String>> {
         let Some(path) = &self.authorization_file else {
             return Ok(None);
@@ -118,11 +173,5 @@ impl Cli {
         let client_identity = tonic::transport::Identity::from_pem(client_cert, client_key);
 
         Ok((server_root_ca_cert, client_identity, domain_name.to_owned()))
-    }
-}
-
-impl Default for Cli {
-    fn default() -> Self {
-        Self::new()
     }
 }

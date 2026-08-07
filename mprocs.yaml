@@ -30,6 +30,19 @@ procs:
     env:
       RUST_LOG: info
   hydra-evaluator:
-    shell: mprocs/wait-for-rabbitmq.sh && mprocs/bootstrap-ofborg.sh && cargo r -p hydra-evaluator -- .ofborg-data/local.json
+    shell: mprocs/wait-for-rabbitmq.sh && mprocs/bootstrap-ofborg.sh && cargo r -p hydra-evaluator --bin hydra-evaluator -- .ofborg-data/local.json
+    env:
+      RUST_LOG: info
+  # Needs a `github_app` config section, which the local bootstrap does not
+  # write; start it manually once you have one.
+  github-comment-poster:
+    autostart: false
+    shell: mprocs/wait-for-rabbitmq.sh && mprocs/bootstrap-ofborg.sh && cargo r --bin github-comment-poster .ofborg-data/local.json
+    env:
+      RUST_LOG: info
+  # Needs either a queue-runner with the SubscribeBuildEvents RPC, or
+  # `--replay mprocs/example-build-events.jsonl` to drive it from a file.
+  hydra-build-tracker:
+    shell: mprocs/wait-for-rabbitmq.sh && mprocs/bootstrap-ofborg.sh && cargo r -p hydra-evaluator --bin hydra-build-tracker -- .ofborg-data/local.json --replay mprocs/example-build-events.jsonl
     env:
       RUST_LOG: info

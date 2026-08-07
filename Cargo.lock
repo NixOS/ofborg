@@ -1860,6 +1860,7 @@ dependencies = [
  "lapin",
  "nix-utils",
  "ofborg",
+ "serde",
  "serde_json",
  "store-transfer",
  "tokio",
@@ -1874,7 +1875,7 @@ dependencies = [
 [[package]]
 name = "hydra-proto"
 version = "0.1.0"
-source = "git+https://github.com/helsinki-systems/hydra?rev=55a9f8bfd47380ecbd30ee6649175dab64bf6df7#55a9f8bfd47380ecbd30ee6649175dab64bf6df7"
+source = "git+https://github.com/helsinki-systems/hydra?rev=9325c91f00a812f628a0f093bdaa077ecca02de6#9325c91f00a812f628a0f093bdaa077ecca02de6"
 dependencies = [
  "fs-err",
  "harmonia-store-content-address",
@@ -1896,7 +1897,7 @@ dependencies = [
 [[package]]
 name = "hydra-tracing"
 version = "0.1.0"
-source = "git+https://github.com/helsinki-systems/hydra?rev=55a9f8bfd47380ecbd30ee6649175dab64bf6df7#55a9f8bfd47380ecbd30ee6649175dab64bf6df7"
+source = "git+https://github.com/helsinki-systems/hydra?rev=9325c91f00a812f628a0f093bdaa077ecca02de6#9325c91f00a812f628a0f093bdaa077ecca02de6"
 dependencies = [
  "thiserror",
  "tracing",
@@ -2446,7 +2447,7 @@ checksum = "27b02d87554356db9e9a873add8782d4ea6e3e58ea071a9adb9a2e8ddb884a8b"
 [[package]]
 name = "nix-support"
 version = "0.1.0"
-source = "git+https://github.com/helsinki-systems/hydra?rev=55a9f8bfd47380ecbd30ee6649175dab64bf6df7#55a9f8bfd47380ecbd30ee6649175dab64bf6df7"
+source = "git+https://github.com/helsinki-systems/hydra?rev=9325c91f00a812f628a0f093bdaa077ecca02de6#9325c91f00a812f628a0f093bdaa077ecca02de6"
 dependencies = [
  "fs-err",
  "harmonia-store-derivation",
@@ -2462,7 +2463,7 @@ dependencies = [
 [[package]]
 name = "nix-utils"
 version = "0.1.0"
-source = "git+https://github.com/helsinki-systems/hydra?rev=55a9f8bfd47380ecbd30ee6649175dab64bf6df7#55a9f8bfd47380ecbd30ee6649175dab64bf6df7"
+source = "git+https://github.com/helsinki-systems/hydra?rev=9325c91f00a812f628a0f093bdaa077ecca02de6#9325c91f00a812f628a0f093bdaa077ecca02de6"
 dependencies = [
  "bytes",
  "cxx",
@@ -3884,7 +3885,7 @@ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 [[package]]
 name = "store-path-utils"
 version = "0.1.0"
-source = "git+https://github.com/helsinki-systems/hydra?rev=55a9f8bfd47380ecbd30ee6649175dab64bf6df7#55a9f8bfd47380ecbd30ee6649175dab64bf6df7"
+source = "git+https://github.com/helsinki-systems/hydra?rev=9325c91f00a812f628a0f093bdaa077ecca02de6#9325c91f00a812f628a0f093bdaa077ecca02de6"
 dependencies = [
  "harmonia-store-path",
 ]
@@ -3892,7 +3893,7 @@ dependencies = [
 [[package]]
 name = "store-transfer"
 version = "0.1.0"
-source = "git+https://github.com/helsinki-systems/hydra?rev=55a9f8bfd47380ecbd30ee6649175dab64bf6df7#55a9f8bfd47380ecbd30ee6649175dab64bf6df7"
+source = "git+https://github.com/helsinki-systems/hydra?rev=9325c91f00a812f628a0f093bdaa077ecca02de6#9325c91f00a812f628a0f093bdaa077ecca02de6"
 dependencies = [
  "async-compression",
  "bytes",

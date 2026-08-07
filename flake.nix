@@ -108,8 +108,25 @@
               with pkgs;
               [
                 pkg-config
+                # hydra-proto compiles .proto files in its build script.
+                protobuf
               ]
               ++ pkgs.lib.optional runClippy pkgs.rustPackages.clippy;
+
+            # The hydra-evaluator crate links against libnixstore through
+            # nix-utils, the same set hydra's own queue-runner package uses.
+            buildInputs = with pkgs; [
+              nixVersions.nix_2_34
+              boost
+              libsodium
+              nlohmann_json
+            ];
+
+            # Needs the SubscribeBuildEvents RPC, so this only builds once the
+            # hydra-proto pin in hydra-evaluator/Cargo.toml points at a revision
+            # that has it. See DEVELOPMENT.md, "Enabling the queue-runner event
+            # stream".
+            buildFeatures = [ "queue-runner-events" ];
 
             preBuild = pkgs.lib.optionalString runClippy ''
               cargo clippy
@@ -122,8 +139,11 @@
 
             cargoLock = {
               lockFile = ./Cargo.lock;
+              # One entry per git source. Run `nix build .#pkg` and paste the
+              # hashes it reports; they change whenever a pin above moves.
               outputHashes = {
-                "hyperx-1.4.0" = "sha256-MW/KxxMYvj/DYVKrYa7rDKwrH6s8uQOCA0dR2W7GBeg=";
+                "harmonia-store-path-3.1.0" = pkgs.lib.fakeHash;
+                "hydra-proto-0.1.0" = pkgs.lib.fakeHash;
               };
             };
           };
@@ -145,12 +165,13 @@
               fi
             done
 
-            test -e $out/bin/builder
             test -e $out/bin/github_comment_filter
             test -e $out/bin/github_comment_poster
             test -e $out/bin/github_webhook_receiver
-            test -e $out/bin/log_message_collector
             test -e $out/bin/evaluation_filter
+            test -e $out/bin/mass_rebuilder
+            test -e $out/bin/hydra_evaluator
+            test -e $out/bin/hydra_build_tracker
           '';
         }
       );
